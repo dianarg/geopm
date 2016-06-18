@@ -69,6 +69,7 @@ install-exec-hook:
 endif
 endif
 
+if ENABLE_MANS
 dist_man_MANS = man/geopm.7 \
                 man/geopmctl.1 \
                 man/geopm_comm.3 \
@@ -82,6 +83,7 @@ dist_man_MANS = man/geopm.7 \
                 man/geopm_prof_c.3 \
                 man/geopm_version.3 \
                 # end
+endif
 
 dist_doc_DATA = README \
                 COPYING \
@@ -340,6 +342,7 @@ doxygen:
 	doxygen dox/Doxyfile
 
 # MAN TARGET
+if ENABLE_MANS
 BUILT_SOURCES = ruby/bin/ronn
 
 ruby/bin/ronn:
@@ -357,6 +360,9 @@ $(dist_man_MANS): man/%: ruby/bin/ronn ronn/%.ronn ronn/index.txt ronn/header.tx
 	                 `basename $@`.ronn
 	cat ronn/header.txt ronn/`basename $@` | \
 	    sed -e 's/\(#include.*\) \\fIhttp.*/\1\\fR/g' > $@
+else
+BUILT_SOURCES =
+endif
 
 # GH_PAGES TARGET
 gh-pages: doxygen $(dist_man_MANS)
