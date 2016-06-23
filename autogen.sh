@@ -41,8 +41,17 @@ if [ ! -f VERSION ]; then
 	    version=${version}+dev${release}${sha}
 	fi
     else
-        echo "WARNING:  VERSION file does not exist and git describe failed, setting verison to 0.0.0" 2>&1
-        version=0.0.0
+        version=$(git tag | tail -n1 | sed 's|v\(.*\)|\1|' || echo "0.0.0")
+        sha=$(git rev-parse HEAD | head -c7)
+        if [ $version != "0.0.0" ]; then
+            release=$(git log v${version}..HEAD | grep ^commit | wc -l)
+        else
+            release=0
+            echo "WARNING:  VERSION file does not exist and git describe failed, setting verison to 0.0.0" 2>&1
+        fi
+        if [ "${release}" != "0" ]; then
+	    version=${version}+dev${release}${sha}
+        fi
     fi
     echo $version > VERSION
 fi
