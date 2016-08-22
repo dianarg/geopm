@@ -485,13 +485,18 @@ namespace geopm
         std::vector<struct geopm_policy_message_s> child_policy_msg(m_max_fanout);
         size_t length;
         struct geopm_time_s loop_t1;
+        int sleep_err = 0;
 
+        geopm_time_add(&m_loop_t0, m_rate_limit, &loop_t1);
         do {
-            geopm_time(&loop_t1);
+            sleep_err = clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &(loop_t1.t), NULL);
             geopm_signal_handler_check();
         }
-        while (geopm_time_diff(&m_loop_t0, &loop_t1) < m_rate_limit);
-        m_loop_t0 = loop_t1;
+        while (sleep_err == EINTR);
+        if (sleep_err) {
+            throw Exception("Controller::walk_up: clock_nanosleep()", sleep_err, __FILE__, __LINE__);
+        }
+        geopm_time(&m_loop_t0);
 
         for (level = 0; !m_do_shutdown && level < m_tree_comm->num_level(); ++level) {
             if (level) {
