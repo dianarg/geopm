@@ -247,7 +247,17 @@ class AlpsLauncher(Launcher):
         return '-N {rank_per_node}'.format(rank_per_node=rank_per_node)
 
     def _affinity_option(self):
-        return ''
+        result_base = '-cc '
+        mask_list = []
+        off_start = 1
+        if (self._pmpi_ctl == 'process'):
+            mask_list.append('1')
+            off_start = 2
+        rank_per_node = self._num_rank / self._num_node
+        thread_per_node = rank_per_node * self._num_thread
+        mask_list.extend(['{0}-{1}'.format(off, off + self._num_thread - 1)
+                          for off in range(off_start,thread_per_node + off_start, self._num_thread)])
+        return result_base + ':'.join(mask_list)
 
     def _host_option(self):
         result = ''
