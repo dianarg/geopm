@@ -240,7 +240,7 @@ namespace geopm
             int m_size;
             int m_rank;
             struct geopm_sample_message_s *m_sample_mailbox;
-            struct geopm_policy_message_s *m_policy_mailbox;
+            volatile struct geopm_policy_message_s *m_policy_mailbox;
             MPI_Win m_sample_window;
             MPI_Win m_policy_window;
             size_t m_overhead_send;
@@ -261,6 +261,7 @@ namespace geopm
         comm_create(comm);
         level_create();
         check_mpi(MPI_Comm_size(comm, &m_num_node));
+        PMPI_Barrier(comm);
     }
 
     TreeCommunicator::~TreeCommunicator()
@@ -494,11 +495,13 @@ namespace geopm
     {
         if (m_rank) {
             check_mpi(MPI_Win_lock(MPI_LOCK_SHARED, m_rank, 0, m_policy_window));
-            policy = *m_policy_mailbox;
+            memcpy(&policy, (const void *)m_policy_mailbox, sizeof(struct geopm_policy_message_s));
+//            policy = *m_policy_mailbox;
             check_mpi(MPI_Win_unlock(m_rank, m_policy_window));
         }
         else {
-            policy = *m_policy_mailbox;
+            memcpy(&policy, (const void *)m_policy_mailbox, sizeof(struct geopm_policy_message_s));
+//            policy = *m_policy_mailbox;
         }
 
         if (geopm_is_policy_equal(&policy, &GEOPM_POLICY_UNKNOWN)) {
@@ -573,14 +576,14 @@ namespace geopm
         size_t msg_size = sizeof(struct geopm_policy_message_s);
         check_mpi(MPI_Alloc_mem(msg_size, MPI_INFO_NULL, &m_policy_mailbox));
         *m_policy_mailbox = GEOPM_POLICY_UNKNOWN;
-        check_mpi(MPI_Win_create(m_policy_mailbox, msg_size, 1, MPI_INFO_NULL, m_comm, &m_policy_window));
+        check_mpi(MPI_Win_create((void*)m_policy_mailbox, msg_size, 1, MPI_INFO_NULL, m_comm, &m_policy_window));
 
         // Create sample window
         if (!m_rank) {
             size_t msg_size = sizeof(struct geopm_sample_message_s);
             check_mpi(MPI_Alloc_mem(m_size * msg_size, MPI_INFO_NULL, &m_sample_mailbox));
             std::fill(m_sample_mailbox, m_sample_mailbox + m_size, GEOPM_SAMPLE_INVALID);
-            check_mpi(MPI_Win_create(m_sample_mailbox, m_size * msg_size,
+            check_mpi(MPI_Win_create((void*)m_sample_mailbox, m_size * msg_size,
                                      1, MPI_INFO_NULL, m_comm, &m_sample_window));
         }
         else {
@@ -590,6 +593,7 @@ namespace geopm
 
     void TreeCommunicatorLevel::destroy_window(void)
     {
+        PMPI_Barrier(m_comm);
         // Destroy sample window
         check_mpi(MPI_Win_free(&m_sample_window));
         if (m_sample_mailbox) {
@@ -598,7 +602,7 @@ namespace geopm
         // Destroy policy window
         check_mpi(MPI_Win_free(&m_policy_window));
         if (m_policy_mailbox) {
-            MPI_Free_mem(m_policy_mailbox);
+            MPI_Free_mem((void *)m_policy_mailbox);
         }
     }
 

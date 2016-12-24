@@ -185,7 +185,7 @@ namespace geopm
         protected:
             virtual bool sticky(const struct geopm_prof_message_s &value);
             enum {
-                M_TABLE_DEPTH_MAX = 16,
+                M_TABLE_DEPTH_MAX = 128,
             };
             /// @brief structure to hold state for a single table entry.
             struct table_entry_s {
