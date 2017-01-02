@@ -139,12 +139,9 @@ class Launcher(object):
         num_cpu = core_socket[0] * core_socket[1] - 2
         try:
             rank_per_node = self._num_rank / self._num_node
-            print "\nnum_rank %d / num_node %d = rank_per_node %d" % (self._num_rank, self._num_node, rank_per_node)
             # Not needed if you set ranks first.
             rank_per_node = rank_per_node if rank_per_node != 0 else 1
-            print "num_cpu %d / rank_per_node %d" % (num_cpu, rank_per_node)
             self._num_thread = num_cpu / rank_per_node
-            print "_num_thread %d\n" % (self._num_thread)
         except AttributeError:
             pass
 
