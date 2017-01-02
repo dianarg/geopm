@@ -568,38 +568,6 @@ namespace geopm
         return m_rank;
     }
 
-#ifdef GEOPM_ENABLE_MPI3
-    void TreeCommunicatorLevel::create_window(void)
-    {
-        // Create policy window
-        size_t msg_size = sizeof(struct geopm_policy_message_s);
-        check_mpi(MPI_Win_create((void *)(&m_policy_mailbox), msg_size, 1,
-                                 MPI_INFO_NULL, m_comm, &m_policy_window));
-        // Create sample window
-        if (!m_rank) {
-            msg_size = sizeof(struct geopm_sample_message_s);
-            check_mpi(MPI_Win_allocate(m_size * msg_size, 1, MPI_INFO_NULL, m_comm,
-                                       &m_sample_mailbox, &m_sample_window));
-            std::fill(m_sample_mailbox, m_sample_mailbox + m_size, GEOPM_SAMPLE_INVALID);
-        }
-        else {
-            // Allocate one byte because some versions of OpenMPI
-            // segfault when createing a window of zero size.
-            check_mpi(MPI_Win_allocate(1, 1, MPI_INFO_NULL, m_comm, &m_sample_window, &m_sample_window));
-        }
-        PMPI_Barrier(m_comm);
-    }
-
-    void TreeCommunicatorLevel::destroy_window(void)
-    {
-        PMPI_Barrier(m_comm);
-        // Destroy sample window
-        check_mpi(MPI_Win_free(&m_sample_window));
-        // Destroy policy window
-        check_mpi(MPI_Win_free(&m_policy_window));
-    }
-
-#else
     void TreeCommunicatorLevel::create_window(void)
     {
         // Create policy window
@@ -630,9 +598,6 @@ namespace geopm
         // Destroy policy window
         check_mpi(MPI_Win_free(&m_policy_window));
     }
-
-#endif
-
 
     SingleTreeCommunicator::SingleTreeCommunicator(GlobalPolicy *global_policy)
         : m_policy(global_policy)
