@@ -239,9 +239,9 @@ namespace geopm
             MPI_Comm m_comm;
             int m_size;
             int m_rank;
-            struct geopm_sample_message_s *m_sample_mailbox;
+            std::vector<struct geopm_sample_message_s *> m_sample_mailbox;
             volatile struct geopm_policy_message_s m_policy_mailbox;
-            MPI_Win m_sample_window;
+            std::vector<MPI_Win> m_sample_window;
             MPI_Win m_policy_window;
             size_t m_overhead_send;
             std::vector<struct geopm_policy_message_s> m_last_policy;
@@ -442,9 +442,7 @@ namespace geopm
         : m_comm(comm)
         , m_size(0)
         , m_rank(0)
-        , m_sample_mailbox(NULL)
         , m_policy_mailbox(GEOPM_POLICY_UNKNOWN)
-        , m_sample_window(MPI_WIN_NULL)
         , m_policy_window(MPI_WIN_NULL)
         , m_overhead_send(0)
     {
@@ -453,6 +451,8 @@ namespace geopm
         if (!m_rank) {
             m_last_policy.resize(m_size, GEOPM_POLICY_UNKNOWN);
         }
+        m_sample_mailbox.resize(m_size, NULL);
+        m_sample_window.resize(m_size, MPI_WIN_NULL);
         create_window();
     }
 
@@ -473,22 +473,32 @@ namespace geopm
         }
 
         bool is_complete = true;
-        check_mpi(MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, m_sample_window));
-        for (int i = 0; is_complete && i < m_size; ++i) {
-            if (m_sample_mailbox[i].region_id == 0) {
+        for (int i = 0; is_complete && i != m_size; ++i) {
+            if (i) {
+                check_mpi(MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, m_sample_window[i]));
+            }
+            if (m_sample_mailbox[i]->region_id == 0) {
                 is_complete = false;
             }
+            if (i) {
+                check_mpi(MPI_Win_unlock(0, m_sample_window[i]));
+            }
         }
-        check_mpi(MPI_Win_unlock(0, m_sample_window));
 
         if (!is_complete) {
             throw Exception(__func__, GEOPM_ERROR_SAMPLE_INCOMPLETE, __FILE__, __LINE__);
         }
 
-        check_mpi(MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, m_sample_window));
-        std::copy(m_sample_mailbox, m_sample_mailbox + m_size, sample.begin());
-        std::fill(m_sample_mailbox, m_sample_mailbox + m_size, GEOPM_SAMPLE_INVALID);
-        check_mpi(MPI_Win_unlock(0, m_sample_window));
+        for (int i = 0; i != m_size; ++i) {
+            if (i) {
+                check_mpi(MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, m_sample_window[i]));
+            }
+            sample[i] = *(m_sample_mailbox[i]);
+            *(m_sample_mailbox[i]) = GEOPM_SAMPLE_INVALID;
+            if (i) {
+                check_mpi(MPI_Win_unlock(0, m_sample_window[i]));
+            }
+        }
     }
 
     void TreeCommunicatorLevel::get_policy(struct geopm_policy_message_s &policy)
@@ -512,19 +522,19 @@ namespace geopm
     {
         size_t msg_size = sizeof(struct geopm_sample_message_s);
         if (m_rank) {
-            check_mpi(MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, m_sample_window));
+            check_mpi(MPI_Win_lock(MPI_LOCK_EXCLUSIVE, 0, 0, m_sample_window[m_rank]));
 #ifdef GEOPM_ENABLE_MPI3
-            check_mpi(MPI_Put(&sample, msg_size, MPI_BYTE, 0, m_rank * msg_size,
-                              msg_size, MPI_BYTE, m_sample_window));
+            check_mpi(MPI_Put(&sample, msg_size, MPI_BYTE, 0, 0,
+                              msg_size, MPI_BYTE, m_sample_window[m_rank]));
 #else
-            check_mpi(MPI_Put((void *)&sample, msg_size, MPI_BYTE, 0, m_rank * msg_size,
-                              msg_size, MPI_BYTE, m_sample_window));
+            check_mpi(MPI_Put((void *)&sample, msg_size, MPI_BYTE, 0, 0,
+                              msg_size, MPI_BYTE, m_sample_window[m_rank]));
 #endif
-            check_mpi(MPI_Win_unlock(0, m_sample_window));
-            m_overhead_send += sizeof(struct geopm_sample_message_s);
+            check_mpi(MPI_Win_unlock(0, m_sample_window[m_rank]));
+            m_overhead_send += msg_size;
         }
         else {
-            *m_sample_mailbox = sample;
+            *(m_sample_mailbox[0]) = sample;
         }
     }
 
@@ -554,6 +564,7 @@ namespace geopm
 #endif
                 check_mpi(MPI_Win_unlock(child_rank, m_policy_window));
                 *last_it = *this_it;
+                m_overhead_send += msg_size;
             }
         }
     }
@@ -574,16 +585,23 @@ namespace geopm
         size_t msg_size = sizeof(struct geopm_policy_message_s);
         check_mpi(MPI_Win_create((void *)(&m_policy_mailbox), msg_size, 1,
                                  MPI_INFO_NULL, m_comm, &m_policy_window));
+
+        msg_size = sizeof(struct geopm_sample_message_s);
         // Create sample window
-        if (!m_rank) {
-            size_t msg_size = sizeof(struct geopm_sample_message_s);
-            check_mpi(MPI_Alloc_mem(m_size * msg_size, MPI_INFO_NULL, &m_sample_mailbox));
-            std::fill(m_sample_mailbox, m_sample_mailbox + m_size, GEOPM_SAMPLE_INVALID);
-            check_mpi(MPI_Win_create((void *)m_sample_mailbox, m_size * msg_size,
-                                     1, MPI_INFO_NULL, m_comm, &m_sample_window));
-        }
-        else {
-            check_mpi(MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, m_comm, &m_sample_window));
+        for (int i = 0; i < m_size; ++i) {
+            if (!m_rank) {
+                check_mpi(MPI_Alloc_mem(msg_size, MPI_INFO_NULL, &(m_sample_mailbox[i])));
+                *(m_sample_mailbox[i]) = GEOPM_SAMPLE_INVALID;
+                if (i) {
+                    check_mpi(MPI_Win_create((void *)(m_sample_mailbox[i]), msg_size,
+                                             1, MPI_INFO_NULL, m_comm, &(m_sample_window[i])));
+                }
+            }
+            else {
+                if (i) {
+                    check_mpi(MPI_Win_create(NULL, 0, 1, MPI_INFO_NULL, m_comm, &(m_sample_window[i])));
+                }
+            }
         }
     }
 
@@ -591,9 +609,13 @@ namespace geopm
     {
         PMPI_Barrier(m_comm);
         // Destroy sample window
-        check_mpi(MPI_Win_free(&m_sample_window));
-        if (m_sample_mailbox) {
-            MPI_Free_mem(m_sample_mailbox);
+        for (int i = 0; i < m_size; ++i) {
+            if (i) {
+                check_mpi(MPI_Win_free(&(m_sample_window[i])));
+            }
+            if (m_sample_mailbox[i]) {
+                MPI_Free_mem(m_sample_mailbox[i]);
+            }
         }
         // Destroy policy window
         check_mpi(MPI_Win_free(&m_policy_window));
