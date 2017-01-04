@@ -197,22 +197,20 @@ namespace geopm
             bool name_fill(size_t header_offset);
             bool name_set(size_t header_offset, std::set<std::string> &name);
         protected:
-            virtual bool sticky(const struct geopm_prof_message_s &value);
             enum {
                 M_TABLE_DEPTH_MAX = 16,
+            }
+            /// @brief structure to hold state sample stack.
+            struct table_header_s {
+                pthread_mutex_t read_lock;
+                pthread_mutex_t write_lock;
+                bool do_add_half;
+                size_t half;
+                size_t depth;
+                struct geopm_prof_message_s stack[1];
             };
-            /// @brief structure to hold state for a single table entry.
-            struct table_entry_s {
-                pthread_mutex_t lock;
-                uint64_t key[M_TABLE_DEPTH_MAX];
-                struct geopm_prof_message_s value[M_TABLE_DEPTH_MAX];
-            };
-            size_t hash(uint64_t key) const;
-            size_t table_length(size_t buffer_size) const;
             size_t m_buffer_size;
-            size_t m_table_length;
-            uint64_t m_mask;
-            struct table_entry_s *m_table;
+            struct table_s *m_table;
             pthread_mutex_t m_key_map_lock;
             std::map<const std::string, uint64_t> m_key_map;
             std::set<uint64_t> m_key_set;

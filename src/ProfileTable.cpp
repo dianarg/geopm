@@ -48,8 +48,6 @@ namespace geopm
 {
     ProfileTable::ProfileTable(size_t size, void *buffer)
         : m_buffer_size(size)
-        , m_table_length(table_length(m_buffer_size))
-        , m_mask(m_table_length - GEOPM_NUM_REGION_ID_PRIVATE - 1)
         , m_table((struct table_entry_s *)buffer)
         , m_key_map_lock(PTHREAD_MUTEX_INITIALIZER)
         , m_is_pshared(true)
@@ -61,26 +59,39 @@ namespace geopm
         if (M_TABLE_DEPTH_MAX < 4) {
             throw Exception("ProfileTable: Table depth must be at least 4", GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
-        struct table_entry_s table_init;
-        memset((void *)&table_init, 0, sizeof(struct table_entry_s));
+        memset(buffer, 0, size);
         pthread_mutexattr_t lock_attr;
         int err = pthread_mutexattr_init(&lock_attr);
         if (err) {
-            throw Exception("ProfileTable: pthread mutex initialization", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            throw Exception("ProfileTable: pthread mutex initialization",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
         if (m_is_pshared) {
             err = pthread_mutexattr_setpshared(&lock_attr, PTHREAD_PROCESS_SHARED);
             if (err) {
-                throw Exception("ProfileTable: pthread mutex initialization", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+                throw Exception("ProfileTable: pthread mutex initialization",
+                                GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
             }
         }
-        for (size_t i = 0; i < m_table_length; ++i) {
-            m_table[i] = table_init;
-            err = pthread_mutex_init(&(m_table[i].lock), &lock_attr);
-            if (err) {
-                throw Exception("ProfileTable: pthread mutex initialization", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-            }
+
+        err = pthread_mutex_init(&(m_table->read_lock), &lock_attr);
+        if (err) {
+            throw Exception("ProfileTable: pthread mutex initialization",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
+        err = pthread_mutex_init(&(m_table->write_lock), &lock_attr);
+        if (err) {
+            throw Exception("ProfileTable: pthread mutex initialization",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
+
+        m_table->do_add_half = false;
+        m_table->half = (((size - sizeof(table_header_s)) / sizeof(struct geopm_prof_message_s))  + 1) / 2;
+        if (m_table->half < 1) {
+            throw Exception("ProfileTable: buffer too small",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
+        m_table->depth = 0;
     }
 
     ProfileTable::~ProfileTable()
@@ -88,123 +99,81 @@ namespace geopm
 
     }
 
-    size_t ProfileTable::table_length(size_t buffer_size) const
+    void ProfileTable::insert(const struct geopm_prof_message_s &value)
     {
-        size_t private_size = GEOPM_NUM_REGION_ID_PRIVATE * sizeof(struct table_entry_s);
-        if (buffer_size < private_size + sizeof(struct table_entry_s)) {
-            throw Exception("ProfileTable: Buffer size too small",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        size_t result = (buffer_size - private_size) / sizeof(struct table_entry_s);
-        // The closest power of two small enough to fit in the buffer
-        if (result) {
-            result--;
-            result |= result >> 1;
-            result |= result >> 2;
-            result |= result >> 4;
-            result |= result >> 8;
-            result |= result >> 16;
-            result |= result >> 32;
-            result++;
-            result = result >> 1;
-        }
-        if (result * sizeof(struct table_entry_s) + private_size > buffer_size) {
-            result /= 2;
-        }
-        if (result <= 0) {
-            throw Exception("ProfileTable: Failing to created empty table, increase size", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-        }
-        result += GEOPM_NUM_REGION_ID_PRIVATE;
-        return result;
-    }
-
-    size_t ProfileTable::hash(uint64_t key) const
-    {
-        size_t result = 0;
-        if (geopm_region_id_is_mpi(key)) {
-            result = m_mask + 1;
-        }
-        else if (geopm_region_id_is_epoch(key)) {
-            result = m_mask + 2;
-        }
-        else {
-            result = geopm_crc32_u64(0, key) & m_mask;
-        }
-        return result;
-    }
-
-    void ProfileTable::insert(uint64_t key, const struct geopm_prof_message_s &value)
-    {
-        if (key == 0) {
+        if (value.region_id == 0) {
             throw Exception("ProfileTable::insert(): zero is not a valid key", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        size_t table_idx = hash(key);
-        int err = pthread_mutex_lock(&(m_table[table_idx].lock));
+
+        int err = pthread_mutex_lock(&(m_table->write_lock));
         if (err) {
             throw Exception("ProfileTable::insert(): pthread_mutex_lock()", err, __FILE__, __LINE__);
         }
+
+        size_t stack_off = m_table->depth + m_table->do_add_half * m_table->half;
+        uint64_t last_region_id = 0;
+        double last_progress = 0.0;
         bool is_stored = false;
-        for (size_t i = 0; !is_stored && i != M_TABLE_DEPTH_MAX; ++i) {
-            if (m_table[table_idx].key[i] == 0 ||
-                (m_table[table_idx].key[i] == key &&
-                 !sticky(m_table[table_idx].value[i]))) {
-                m_table[table_idx].key[i] = key;
-                m_table[table_idx].value[i] = value;
-                is_stored = true;
-            }
+        if (m_table->depth) {
+            last_region_id = m_table->stack[stack_off - 1].region_id;
+            last_progress = m_table->stack[stack_off - 1].progress;
+        }
+        if (last_region_id == value.region_id &&
+            last_progress != 0.0 &&
+            last_progress != 1.0) {
+            m_table->stack[stack_off - 1] = value;
+            is_stored = true;
+        }
+        else if (m_table->depth != half) {
+            m_table->stack[stack_off] = value;
+            ++(m_table->depth);
+            is_stored = true;
+        }
+        if (err) {
+            throw Exception("ProfileTable::insert(): pthread_mutex_unlock()", err, __FILE__, __LINE__);
+        }
+        if (!is_stored) {
+            throw Exception("ProfileTable::insert(): epoch time interval too short.",
+                            GEOPM_ERROR_TOO_MANY_COLLISIONS, __FILE__, __LINE__);
         }
         if (!is_stored) {
             // Overwrite all sequential entry/exit pairs in array and
             // move others to head of the array, then insert new value.
-            uint64_t *key_ptr = m_table[table_idx].key;
-            uint64_t *key_insert_ptr = m_table[table_idx].key;
-            struct geopm_prof_message_s *value_ptr = m_table[table_idx].value;
-            struct geopm_prof_message_s *value_insert_ptr = m_table[table_idx].value;
+            struct geopm_prof_message_s *value_ptr = m_table->stack + m_table->do_add_half * m_table->half;
+            struct geopm_prof_message_s *value_insert_ptr = value_ptr;
+            struct geopm_prof_message_s *value_end_ptr = value_ptr + half;
             int i = 0;
-            while (i < M_TABLE_DEPTH_MAX - 1) {
-                if (key_ptr[0] == key_ptr[1] &&
-                    value_ptr[0].region_id == value_ptr[1].region_id &&
+            while (i < half - 1) {
+                if (value_ptr[0].region_id == value_ptr[1].region_id &&
                     value_ptr[0].progress == 0.0 &&
                     value_ptr[1].progress == 1.0) {
-                    key_ptr += 2;
                     value_ptr += 2;
                     i += 2;
                 }
                 else {
-                    *key_insert_ptr = *key_ptr;
-                    ++key_insert_ptr;
                     *value_insert_ptr = *value_ptr;
                     ++value_insert_ptr;
-                    ++key_ptr;
                     ++value_ptr;
                     ++i;
                 }
             }
-            if (i == M_TABLE_DEPTH_MAX - 1) {
-                *key_insert_ptr = *key_ptr;
+            if (i == half - 1) {
                 *value_insert_ptr = *value_ptr;
-                ++key_insert_ptr;
                 ++value_insert_ptr;
             }
 
-            if (key_insert_ptr >= m_table[table_idx].key + M_TABLE_DEPTH_MAX - 1) {
-                (void) pthread_mutex_unlock(&(m_table[table_idx].lock));
-                if (m_table[table_idx].value[0].region_id == GEOPM_REGION_ID_EPOCH) {
+            if (value_insert_ptr >= value_end_ptr) {
+                (void) pthread_mutex_unlock(&(m_table->write_lock));
+                if (last_region_id == GEOPM_REGION_ID_EPOCH) {
                     throw Exception("ProfileTable::insert(): controller unresponsive or epoch time interval too short.",
                                     GEOPM_ERROR_TOO_MANY_COLLISIONS, __FILE__, __LINE__);
                 }
-                throw Exception("ProfileTable::insert(): failed to compact table.",
+                throw Exception("ProfileTable::insert(): application sample table overflow.",
                                 GEOPM_ERROR_TOO_MANY_COLLISIONS, __FILE__, __LINE__);
             }
-            *key_insert_ptr = key;
             *value_insert_ptr = value;
-            ++key_insert_ptr;
-            while (key_insert_ptr < m_table[table_idx].key + M_TABLE_DEPTH_MAX) {
-                *key_insert_ptr = 0;
-                ++key_insert_ptr;
-            }
         }
-        err = pthread_mutex_unlock(&(m_table[table_idx].lock));
+        err = pthread_mutex_unlock(&(m_table->write_lock));
         if (err) {
             throw Exception("ProfileTable::insert(): pthread_mutex_unlock()", err, __FILE__, __LINE__);
         }
@@ -251,26 +220,14 @@ namespace geopm
 
     size_t ProfileTable::capacity(void) const
     {
-        return m_table_length * M_TABLE_DEPTH_MAX;
+        return m_table->half;
     }
 
     size_t ProfileTable::size(void) const
     {
-        int err;
-        size_t result = 0;
-        for (size_t table_idx = 0; table_idx < m_table_length; ++table_idx) {
-            err = pthread_mutex_lock(&(m_table[table_idx].lock));
-            if (err) {
-                throw Exception("ProfileTable::size(): pthread_mutex_lock()", err, __FILE__, __LINE__);
-            }
-            for (int depth = 0; depth < M_TABLE_DEPTH_MAX && m_table[table_idx].key[depth]; ++depth) {
-                ++result;
-            }
-            err = pthread_mutex_unlock(&(m_table[table_idx].lock));
-            if (err) {
-                throw Exception("ProfileTable::size(): pthread_mutex_unlock()", err, __FILE__, __LINE__);
-            }
-        }
+        int err = pthread_mutex_lock(&(m_table->read_lock));
+        size_t result = m_table->depth;
+        int err = pthread_mutex_unlock(&(m_table->read_lock));
         return result;
     }
 
@@ -346,15 +303,6 @@ namespace geopm
                 }
                 buffer_remain = 0;
             }
-        }
-        return result;
-    }
-
-    bool ProfileTable::sticky(const struct geopm_prof_message_s &value)
-    {
-        bool result = false;
-        if (value.progress == 0.0 || value.progress == 1.0) {
-            result = true;
         }
         return result;
     }
