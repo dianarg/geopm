@@ -382,8 +382,8 @@ namespace geopm
 
             check_mpi(MPI_Comm_split(comm_cart, color, key, &(m_comm[level])));
 
-            if (depth && coords[depth - 1] != 0) {
-               is_all_zero = false;
+            if (coords[depth] != 0) {
+                is_all_zero = false;
             }
         }
         check_mpi(MPI_Comm_free(&comm_cart));
