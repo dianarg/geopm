@@ -57,22 +57,22 @@ class MPITreeCommunicatorTest: public :: testing :: Test
     protected:
         geopm::TreeCommunicator *m_tcomm;
         geopm::GlobalPolicy *m_polctl;
+        const std::string m_ctl_path;
 };
 
 
 MPITreeCommunicatorTest::MPITreeCommunicatorTest()
     : m_tcomm(NULL)
     , m_polctl(NULL)
+    , m_ctl_path("/tmp/MPIControllerTest.hello.control")
 {
     int rank;
     std::vector<int> factor(2);
-    std::string control;
     factor[0] = 2;
     factor[1] = 8;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (!rank) {
-        control = "/tmp/MPIControllerTest.hello.control";
-        m_polctl = new geopm::GlobalPolicy("", control);
+        m_polctl = new geopm::GlobalPolicy("", m_ctl_path);
         m_polctl->mode(GEOPM_POLICY_MODE_FREQ_UNIFORM_STATIC);
         m_polctl->frequency_mhz(1200);
         m_polctl->write();
@@ -85,7 +85,7 @@ MPITreeCommunicatorTest::MPITreeCommunicatorTest()
 MPITreeCommunicatorTest::~MPITreeCommunicatorTest()
 {
     if (m_polctl) {
-        unlink(control.c_str());
+        unlink(m_ctl_path.c_str());
         delete m_polctl;
     }
     delete m_tcomm;
@@ -107,17 +107,15 @@ TEST_F(MPITreeCommunicatorTest, send_policy_down)
     struct geopm_policy_message_s policy = {0};
     std::vector <struct geopm_policy_message_s> send_policy;
 
-    for (int level = m_tcomm->num_level() - 1; level >= 0; --level) {
+    for (int level = m_tcomm->num_level() - 1; level > 0; --level) {
         if (level == m_tcomm->root_level()) {
             m_tcomm->get_policy(level, policy);
             policy.flags = m_tcomm->root_level();
+            send_policy.resize(m_tcomm->level_size(level - 1));
+            fill(send_policy.begin(), send_policy.end(), policy);
+            m_tcomm->send_policy(level - 1, send_policy);
         }
         else {
-            if (m_tcomm->level_rank(level) == 0) {
-                send_policy.resize(m_tcomm->level_size(level));
-                fill(send_policy.begin(), send_policy.end(), policy);
-                m_tcomm->send_policy(level, send_policy);
-            }
             success = 0;
             while (!success) {
                 try {
@@ -130,6 +128,11 @@ TEST_F(MPITreeCommunicatorTest, send_policy_down)
                         throw ex;
                     }
                 }
+            }
+            if (level) {
+                send_policy.resize(m_tcomm->level_size(level - 1));
+                fill(send_policy.begin(), send_policy.end(), policy);
+                m_tcomm->send_policy(level - 1, send_policy);
             }
         }
     }
