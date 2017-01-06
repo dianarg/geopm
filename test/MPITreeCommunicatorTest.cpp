@@ -60,19 +60,6 @@ class MPITreeCommunicatorTest: public :: testing :: Test
 };
 
 
-class MPITreeCommunicatorTestShmem: public :: testing :: Test
-{
-    public:
-        MPITreeCommunicatorTestShmem();
-        ~MPITreeCommunicatorTestShmem();
-    protected:
-        geopm::TreeCommunicator *m_tcomm;
-        std::string m_shm_id;
-        struct geopm_policy_message_s m_initial_policy;
-        struct geopm_policy_message_s m_final_policy;
-};
-
-
 MPITreeCommunicatorTest::MPITreeCommunicatorTest()
     : m_tcomm(NULL)
     , m_polctl(NULL)
@@ -107,76 +94,6 @@ MPITreeCommunicatorTest::~MPITreeCommunicatorTest()
     }
 }
 
-#if 0
-MPITreeCommunicatorTestShmem::MPITreeCommunicatorTestShmem()
-    : m_tcomm(NULL)
-    ,  m_polctl(NULL)
-    , m_initial_policy(
-{
-    1, 2, 3, 4, 5.0
-})
-, m_final_policy({5, 4, 3, 2, 1.0})
-{
-    int rank, comm_size;
-    std::vector<int> factor(2);
-    char shm_id[NAME_MAX] = {0};
-    std::string control;
-    factor[0] = 4;
-    factor[1] = 4;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-    EXPECT_EQ(16, comm_size);
-
-    if (!rank) {
-        snprintf(shm_id, NAME_MAX - 1, "/MPITreeCommunicatorTestShmem.control-%ld", (long)getpid());
-    }
-    MPI_Bcast(shm_id, NAME_MAX, MPI_CHAR, 0, MPI_COMM_WORLD);
-
-    m_shm_id = std::string(shm_id);
-
-    if (rank == 15) {
-        m_polctl = new geopm::PolicyController(std::string(shm_id), m_initial_policy);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (!rank) {
-        m_tcomm = new geopm::TreeCommunicator(factor, std::string(shm_id), MPI_COMM_WORLD);
-    }
-    else {
-        m_tcomm = new geopm::TreeCommunicator(factor, std::string(), MPI_COMM_WORLD);
-    }
-}
-
-
-MPITreeCommunicatorTestShmem::~MPITreeCommunicatorTestShmem()
-{
-    delete m_polctl;
-    delete m_tcomm;
-}
-
-
-TEST_F(MPITreeCommunicatorTestShmem, hello)
-{
-    int rank, comm_size;
-    geopm_policy_message_s root_policy;
-
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &comm_size);
-    if (!rank) {
-        EXPECT_EQ(m_tcomm->root_level(), m_tcomm->num_level() - 1);
-        m_tcomm->get_policy(m_tcomm->root_level(), root_policy);
-        EXPECT_EQ(1, is_policy_equal(&root_policy, &m_initial_policy));
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank == 15) {
-        m_polctl->set_policy(m_final_policy);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (!rank) {
-        m_tcomm->get_policy(m_tcomm->root_level(), root_policy);
-        EXPECT_EQ(1, is_policy_equal(&root_policy, &m_final_policy));
-    }
-}
-#endif
 
 TEST_F(MPITreeCommunicatorTest, hello)
 {
