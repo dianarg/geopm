@@ -93,6 +93,9 @@ else
         echo "Error: MPIEXEC unset, and no alternative found." 2>&1
         exit -1
     fi
+    if $mpiexec --version | grep -q OpenRTE; then
+        mpiexec+=" --mca osc pt2pt"
+    fi
 
     # Enable GEOPM runtime variables for MPIProfile tests
     if [[ $test_name =~ ^MPIProfile ||
