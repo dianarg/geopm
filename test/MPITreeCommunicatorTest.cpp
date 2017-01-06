@@ -111,9 +111,6 @@ TEST_F(MPITreeCommunicatorTest, send_policy_down)
         if (level == m_tcomm->root_level()) {
             m_tcomm->get_policy(level, policy);
             policy.flags = m_tcomm->root_level();
-            send_policy.resize(m_tcomm->level_size(level - 1));
-            fill(send_policy.begin(), send_policy.end(), policy);
-            m_tcomm->send_policy(level - 1, send_policy);
         }
         else {
             success = 0;
@@ -129,11 +126,11 @@ TEST_F(MPITreeCommunicatorTest, send_policy_down)
                     }
                 }
             }
-            if (level) {
-                send_policy.resize(m_tcomm->level_size(level - 1));
-                fill(send_policy.begin(), send_policy.end(), policy);
-                m_tcomm->send_policy(level - 1, send_policy);
-            }
+        }
+        if (level) {
+            send_policy.resize(m_tcomm->level_size(level - 1));
+            fill(send_policy.begin(), send_policy.end(), policy);
+            m_tcomm->send_policy(level - 1, send_policy);
         }
     }
 }
