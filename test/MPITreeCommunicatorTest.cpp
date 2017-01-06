@@ -80,8 +80,8 @@ MPITreeCommunicatorTest::MPITreeCommunicatorTest()
     int rank;
     std::vector<int> factor(2);
     std::string control;
-    factor[0] = 4;
-    factor[1] = 4;
+    factor[0] = 2;
+    factor[1] = 8;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     if (!rank) {
         control = "/tmp/MPIControllerTest.hello.control";
@@ -182,8 +182,8 @@ TEST_F(MPITreeCommunicatorTest, hello)
 {
     EXPECT_EQ(1, m_tcomm->num_level() > 0 && m_tcomm->num_level() <= 3);
     EXPECT_EQ(1, m_tcomm->root_level() == 2);
-    EXPECT_EQ(1, m_tcomm->level_size(0) == 4);
-    EXPECT_EQ(1, m_tcomm->level_size(1) == 4);
+    EXPECT_EQ(1, m_tcomm->level_size(0) == 8);
+    EXPECT_EQ(1, m_tcomm->level_size(1) == 2);
     EXPECT_EQ(1, m_tcomm->level_size(2) == 1);
 }
 
@@ -212,10 +212,7 @@ TEST_F(MPITreeCommunicatorTest, send_policy_down)
                     success = 1;
                 }
                 catch (geopm::Exception ex) {
-                    if (ex.err_value() == GEOPM_ERROR_POLICY_UNKNOWN) {
-                        //sleep(1);
-                    }
-                    else {
+                    if (ex.err_value() != GEOPM_ERROR_POLICY_UNKNOWN) {
                         throw ex;
                     }
                 }
@@ -239,7 +236,7 @@ TEST_F(MPITreeCommunicatorTest, send_sample_up)
         send_sample.signal[0] = m_tcomm->level_rank(level) * (level + 1);
         m_tcomm->send_sample(level, send_sample);
         if (level && m_tcomm->level_rank(level) == 0) {
-            sample.resize(m_tcomm->level_size(level));
+            sample.resize(m_tcomm->level_size(level - 1));
             success = 0;
             while (!success) {
                 try {
@@ -250,10 +247,7 @@ TEST_F(MPITreeCommunicatorTest, send_sample_up)
                     success = 1;
                 }
                 catch (geopm::Exception ex) {
-                    if (ex.err_value() == GEOPM_ERROR_SAMPLE_INCOMPLETE) {
-                        //sleep(1);
-                    }
-                    else {
+                    if (ex.err_value() != GEOPM_ERROR_SAMPLE_INCOMPLETE) {
                         throw ex;
                     }
                 }
