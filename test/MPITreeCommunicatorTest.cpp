@@ -79,19 +79,16 @@ MPITreeCommunicatorTest::MPITreeCommunicatorTest()
     }
 
     m_tcomm = new geopm::TreeCommunicator(factor, m_polctl, MPI_COMM_WORLD);
-
-    if (!rank) {
-        unlink(control.c_str());
-    }
 }
 
 
 MPITreeCommunicatorTest::~MPITreeCommunicatorTest()
 {
-    delete m_tcomm;
     if (m_polctl) {
+        unlink(control.c_str());
         delete m_polctl;
     }
+    delete m_tcomm;
 }
 
 
