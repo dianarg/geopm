@@ -35,11 +35,11 @@
 
 #include <stdint.h>
 #include <string>
-#include <stack>
 
 #include "Policy.hpp"
 #include "CircularBuffer.hpp"
 #include "ProfileThread.hpp"
+#include "TelemetryConfig.hpp"
 
 namespace geopm
 {
@@ -48,6 +48,13 @@ namespace geopm
     class IRegion
     {
         public:
+            /// @brief Enter/Exit status of the incoming sample.
+            enum telemetry_status_e {
+                TELEMETRY_STATUS_NONE,
+                TELEMETRY_STATUS_ENTRY,
+                TELEMETRY_STATUS_EXIT,
+                TELEMETRY_STATUS_EPOCH,
+            };
             IRegion() {}
             virtual ~IRegion() {}
             /// @brief Record an entry into the region.
@@ -60,15 +67,10 @@ namespace geopm
             /// internal buffers for the region. This API is used by leaf
             /// level objects.
             ///
-            /// @param [in] A vector of telemetry samples to be inserted.
-            virtual void insert(std::vector<struct geopm_telemetry_message_s> &telemetry) = 0;
-            /// @brief Insert signal data into internal buffers
-            ///
-            /// Inserts aggregated sample message and data into the internal buffers
-            /// for the region. This API is used by tree level objects.
-            ///
-            /// @param [in] A vector of sample messages to be inserted.
-            virtual void insert(const std::vector<struct geopm_sample_message_s> &sample) = 0;
+            /// @param [in] timestamp A timestamp of when the sample was taken.
+            /// @param [in] telemetry A vector of telemetry (double) samples to be inserted.
+            /// @param [in] status telemetry_status_e for the current sample.
+            virtual void insert(const struct geopm_time_s timestamp, std::vector<double> &telemetry, int status);
             /// @brief Clear data from internal buffers
             ///
             /// Clears aggregated data from the internal buffers.
@@ -84,178 +86,169 @@ namespace geopm
             /// Called once this region has converged to send a sample
             /// up to the next level of the tree.
             /// @param [out] Sample message structure to fill in.
-            virtual void sample_message(struct geopm_sample_message_s &sample) = 0;
-            /// @brief Returns the latest value
-            virtual double signal(int domain_idx, int signal_type) = 0;
-            /// @brief Retrieve the number of valid samples for a domain of control.
+            virtual void sample_message(std::vector<double> &sample) const = 0;
+            /// @brief Retrieve the latest signal value for a domain of control.
             ///
-            /// Get the number of valid samples  for a given domain of control and
+            /// Get the latest signal value for a given signal domain and
             /// a signal type for the buffered data associated with the application
-            /// region. This is the number of samples used to calculate the other
-            /// statistics.
+            /// region.
             ///
-            /// @param [in] domain_idx The index to the domain of
-            ///        control as ordered in the Platform and the
-            ///        Policy.
+            /// @param [in] domain The signal domain of the
+            ///        requested signal.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
-            ///        geopm_message.h.
+            /// @param [in] signal_idx The index of the signal as ordered by its
+            ///        request in the TelemetryConfig object.
             ///
-            /// @return The number of valid samples.
-            virtual int num_sample(int domain_idx, int signal_type) const = 0;
+            /// @param [out] value The latest signal value for each element in the domain.
+            virtual void signal(int domain_idx, int signal_idx, std::vector<double> &signal) const = 0;
             /// @brief Retrieve the mean signal value for a domain of control.
             ///
-            /// Get the mean signal value for a given domain of control and
+            /// Get the mean signal value for a given signal domain and
             /// a signal type for the buffered data associated with the application
             /// region.
             ///
-            /// @param [in] domain_idx The index to the domain of
-            ///        control as ordered in the Platform and the
-            ///        Policy.
+            /// @param [in] domain The signal domain of the
+            ///        requested signal.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
-            ///        geopm_message.h.
+            /// @param [in] signal_idx The index of the signal as ordered by its
+            ///        request in the TelemetryConfig object.
             ///
-            /// @return The mean signal value.
-            virtual double mean(int domain_idx, int signal_type) const = 0;
+            /// @param [out] value The mean signal value for each element in the domain.
+            virtual void mean(int domain, int signal_idx, std::vector<double> &value) const = 0;
             /// @brief Retrieve the median signal value for a domain of control.
             ///
-            /// Get the median signal value for a given domain of control and
+            /// Get the median signal value for a given signal domain and
             /// a signal type for the buffered data associated with the application
             /// region.
             ///
-            /// @param [in] domain_idx The index to the domain of
-            ///        control as ordered in the Platform and the
-            ///        Policy.
+            /// @param [in] domain The signal domain of the
+            ///        requested signal.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
-            ///        geopm_message.h.
+            /// @param [in] signal_idx The index of the signal as ordered by its
+            ///        request in the TelemetryConfig object.
             ///
-            /// @return The median signal value.
-            virtual double median(int domain_idx, int signal_type) const = 0;
-            /// @brief Retrieve the standard deviation of the signal values for a domain of control.
+            /// @param [out] value The median signal value for each element in the domain.
+            virtual void median(int domain, int signal_idx, std::vector<double> &value) const = 0;
+            /// @brief Retrieve the standard deviation signal value for a domain of control.
             ///
-            /// Get the standard deviation of the signal values for a given domain of
-            /// control and a signal type for the buffered data associated with the
-            /// application region.
+            /// Get the standard deviation signal value for a given signal domain and
+            /// a signal type for the buffered data associated with the application
+            /// region.
             ///
-            /// @param [in] domain_idx The index to the domain of
-            ///        control as ordered in the Platform and the
-            ///        Policy.
+            /// @param [in] domain The signal domain of the
+            ///        requested signal.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
-            ///        geopm_message.h.
+            /// @param [in] signal_idx The index of the signal as ordered by its
+            ///        request in the TelemetryConfig object.
             ///
-            /// @return The standard deviation of the signal values.
-            virtual double std_deviation(int domain_idx, int signal_type) const = 0;
+            /// @param [out] value The standard deviation signal value for each element in the domain.
+            virtual void std_deviation(int domain, int signal_idx, std::vector<double> &value) const = 0;
             /// @brief Retrieve the min signal value for a domain of control.
             ///
-            /// Get the min signal value for a given domain of control and
+            /// Get the min signal value for a given signal domain and
             /// a signal type for the buffered data associated with the application
             /// region.
             ///
-            /// @param [in] domain_idx The index to the domain of
-            ///        control as ordered in the Platform and the
-            ///        Policy.
+            /// @param [in] domain The signal domain of the
+            ///        requested signal.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
-            ///        geopm_message.h.
+            /// @param [in] signal_idx The index of the signal as ordered by its
+            ///        request in the TelemetryConfig object.
             ///
-            /// @return The min signal value.
-            virtual double min(int domain_idx, int signal_type) const = 0;
+            /// @param [out] value The min signal value for each element in the domain.
+            virtual void min(int domain, int signal_idx, std::vector<double> &value) const = 0;
             /// @brief Retrieve the max signal value for a domain of control.
             ///
-            /// Get the max signal value for a given domain of control and
+            /// Get the max signal value for a given signal domain and
             /// a signal type for the buffered data associated with the application
             /// region.
             ///
-            /// @param [in] domain_idx The index to the domain of
-            ///        control as ordered in the Platform and the
-            ///        Policy.
+            /// @param [in] domain The signal domain of the
+            ///        requested signal.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
-            ///        geopm_message.h.
+            /// @param [in] signal_idx The index of the signal as ordered by its
+            ///        request in the TelemetryConfig object.
             ///
-            /// @return The max signal value.
-            virtual double max(int domain_idx, int signal_type) const = 0;
-            /// @brief Retrieve the derivative of the signal values for a domain of control.
+            /// @param [out] value The max signal value for each element in the domain.
+            virtual void max(int domain, int signal_idx, std::vector<double> &value) const = 0;
+            /// @brief Retrieve the derivative signal value for a domain of control.
             ///
-            /// Get the derivative of the signal values for a given domain of control and
+            /// Get the derivative signal value for a given signal domain and
             /// a signal type for the buffered data associated with the application
-            /// region. There must be at least 2 valid samples recorded.
+            /// region.
             ///
-            /// @param [in] domain_idx The index to the domain of
-            ///        control as ordered in the Platform and the
-            ///        Policy.
+            /// @param [in] domain The signal domain of the
+            ///        requested signal.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
-            ///        geopm_message.h.
+            /// @param [in] signal_idx The index of the signal as ordered by its
+            ///        request in the TelemetryConfig object.
             ///
-            /// @return If there are 2 valid samples then return he derivative of the
-            /// signal values, else return NAN.
-            virtual double derivative(int domain_idx, int signal_type) = 0;
-            /// @brief Integrate a signal over time.
+            /// @param [out] value The derivative signal value for each element in the domain.
+            virtual void derivative(int domain, int signal_idx, std::vector<double> &value) = 0;
+            /// @brief Retrieve the integral signal value for a domain of control.
             ///
-            /// Computes the integral of the signal over the interval
-            /// of time spanned by the samples stored in the region
-            /// which where gathered since the applications most
-            /// recent entry into the region.
+            /// Get the integral signal value for a given signal domain and
+            /// a signal type for the buffered data associated with the application
+            /// region.
             ///
-            /// @param [in] domain_idx The index to the domain of
-            ///        control as ordered in the Platform and the
-            ///        Policy.
+            /// @param [in] domain The signal domain of the
+            ///        requested signal.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
-            ///        geopm_message.h.
+            /// @param [in] signal_idx The index of the signal as ordered by its
+            ///        request in the TelemetryConfig object.
             ///
-            virtual double integral(int domain_idx, int signal_type, double &delta_time, double &integral) const = 0;
+            /// @param [out] value The integral signal value for each element in the domain.
+            virtual void integral(int domain_idx, int signal_idx, double &delta_time, std::vector<double> &integral) const = 0;
+            /// @brief Report out statistical data for the region.
+            ///
+            /// @param [in/out] string_stream Stream in which to concatenate the region statistics.
+            ///
+            /// @param [in] name The name of the region.
+            ///
+            /// @param [in] rank_per_node The number of ranks on the node.
             virtual void report(std::ostringstream &string_stream, const std::string &name, int rank_per_node) const = 0;
+            /// @brief Get the application progress for every logical linux CPU on the machine.
+            ///
+            /// @param progress Container for per-thread progress values.
             virtual void thread_progress(std::vector<double> &progress) = 0;
     };
 
     class Region : public IRegion
     {
         public:
-            enum m_const_e {
-                // If number of samples stored is large, we need to
-                // modify the derivative method to just use the last
-                // few samples.
-                M_NUM_SAMPLE_HISTORY = 8,
-            };
             /// @brief Default constructor.
             /// @param [in] identifier Unique 64 bit region identifier.
-            /// @param [in] num_domain Number of control domains.
-            Region(uint64_t identifier, int num_domain, int level, IProfileThreadTable *tprof_table);
+            /// @param [in] level Level of the tree this region belongs to.
+            /// @param [in] tprof_table Pointer to the per-thread progress table.
+            /// @param [in] config Telemetry configuration information.
+            Region(uint64_t identifier, int level, IProfileThreadTable *tprof_table, TelemetryConfig &config);
             /// @brief Default destructor.
             virtual ~Region();
             void entry(void);
             int num_entry(void);
-            void insert(std::vector<struct geopm_telemetry_message_s> &telemetry);
-            void insert(const std::vector<struct geopm_sample_message_s> &sample);
+            void insert(const struct geopm_time_s timestamp, std::vector<double> &telemetry, int status);
             void clear(void);
             uint64_t identifier(void) const;
             void increment_mpi_time(double mpi_increment_amount);
-            void sample_message(struct geopm_sample_message_s &sample);
-            double signal(int domain_idx, int signal_type);
-            int num_sample(int domain_idx, int signal_type) const;
-            double mean(int domain_idx, int signal_type) const;
-            double median(int domain_idx, int signal_type) const;
-            double std_deviation(int domain_idx, int signal_type) const;
-            double min(int domain_idx, int signal_type) const;
-            double max(int domain_idx, int signal_type) const;
-            double derivative(int domain_idx, int signal_type);
-            double integral(int domain_idx, int signal_type, double &delta_time, double &integral) const;
+            void sample_message(std::vector<double> &sample) const;
+            void signal(int domain_idx, int signal_type, std::vector<double> &signal) const;
+            void mean(int domain_idx, int signal_type, std::vector<double> &mean) const;
+            void median(int domain_idx, int signal_type, std::vector<double> &median) const;
+            void std_deviation(int domain_idx, int signal_type, std::vector<double> &std_deviation) const;
+            void min(int domain_idx, int signal_type, std::vector<double> &min) const;
+            void max(int domain_idx, int signal_type, std::vector<double> &max) const;
+            void derivative(int domain_idx, int signal_type, std::vector<double> &derivative);
+            void integral(int domain_idx, int signal_idx, double &delta_time, std::vector<double> &integral) const;
+            double last_runtime(void) const;
             void report(std::ostringstream &string_stream, const std::string &name, int rank_per_node) const;
             void thread_progress(std::vector<double> &progress);
         protected:
+            struct m_agg_desc {
+                int offset;
+                int range;
+                int spatial_op;
+                int temporal_op;
+            };
             /// @brief Bound testing of input parameters.
             ///
             /// Checks the requested domain index and signal type to make sure thay are within
@@ -265,8 +258,8 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @param [in] file Name of source file where exception
@@ -276,52 +269,53 @@ namespace geopm
             ///        exception was thrown, e.g. preprocessor
             ///        __LINE__.
             ///
-            void check_bounds(int domain_idx, int signal_type, const char *file, int line) const;
-            double domain_buffer_value(int buffer_idx, int domain_idx, int signal_type);
-            bool is_telemetry_entry(const struct geopm_telemetry_message_s &telemetry, int domain_idx);
-            bool is_telemetry_exit(const struct geopm_telemetry_message_s &telemetry, int domain_idx);
-            void update_domain_sample(const struct geopm_telemetry_message_s &telemetry, int domain_idx);
-            void update_signal_matrix(const double *signal, int domain_idx);
-            void update_valid_entries(const struct geopm_telemetry_message_s &telemetry, int domain_idx);
-            void update_stats(const double *signal, int domain_idx);
-            void update_curr_sample(void);
+            void check_bounds(int domain_idx, int signal_idx, const char *file, int line) const;
+            void update_stats(int domain_idx, const std::vector<double> &signal);
             /// @brief Holds a unique 64 bit region identifier.
             const uint64_t m_identifier;
             /// @brief Numnber of domains reporting to the region.
-            const unsigned m_num_domain;
+            std::vector<int> m_num_sig_domain;
             /// @brief The level of the tree where the region resides
-            const unsigned m_level;
-            /// @brief The number of distinct signal in a single domain.
-            int m_num_signal;
-            /// @brief Temporary signal matrix storeage used before insertion.
-            std::vector<double> m_signal_matrix;
+            const int m_level;
+            struct geopm_time_s m_entry_timestamp;
             /// @brief Holder for telemerty state on region entry.
-            std::vector<struct geopm_telemetry_message_s> m_entry_telemetry;
+            std::vector<double> m_entry_telemetry;
             /// @brief the current sample message to be sent up the tree.
-            struct geopm_sample_message_s m_curr_sample;
-            /// @brief Holder for sample data calculated after a domain exits a region.
-            std::vector<struct geopm_sample_message_s> m_domain_sample;
+            std::vector<double> m_curr_sample;
             /// @brief Circular buffer is over time, vector is indexed over both domains and signals.
-            ICircularBuffer<std::vector<double> > *m_domain_buffer;
+            std::vector<ICircularBuffer<std::vector<double> > *> m_domain_buffer;
             /// @brief time stamp for each entry in the m_domain_buffer.
             ICircularBuffer<struct geopm_time_s> *m_time_buffer;
-            /// @brief the number of valid samples per domain and signal type.
-            std::vector<int> m_valid_entries;
             /// @brief the current minimum signal value per domain and signal type.
-            std::vector<double> m_min;
+            std::vector<std::vector<double> > m_min;
             /// @brief the current maximum signal value per domain and signal type.
-            std::vector<double> m_max;
+            std::vector<std::vector<double> > m_max;
             /// @brief the current sum of signal values per domain and signal type.
-            std::vector<double> m_sum;
+            std::vector<std::vector<double> > m_sum;
             /// @brief the current sum of squares of signal values per domain and signal type.
-            std::vector<double> m_sum_squares;
-            std::vector<double> m_derivative_last;
-            struct geopm_sample_message_s m_agg_stats;
+            std::vector<std::vector<double> > m_sum_squares;
+            std::vector<std::vector<double> > m_derivative_last;
+            std::vector<double> m_agg_stat;
+            std::vector<struct m_agg_desc> m_agg_desc;
+            std::vector<std::pair<std::string, std::pair<int, int> > > m_aggregate_signal;
             uint64_t m_num_entry;
-            std::vector<bool> m_is_entered;
             int m_derivative_num_fit;
             double m_mpi_time;
             IProfileThreadTable *m_tprof_table;
+            std::map<int, std::vector<std::string> > m_signal;
+            double m_last_runtime;
+            double m_agg_runtime;
+            bool m_is_runtime_requested;
+            int m_runtime_slot;
+            int m_num_total_signal;
+            std::vector<int> m_domain_size;
+        private:
+            enum m_const_e {
+                // If number of samples stored is large, we need to
+                // modify the derivative method to just use the last
+                // few samples.
+                M_NUM_SAMPLE_HISTORY = 8,
+            };
     };
 }
 
