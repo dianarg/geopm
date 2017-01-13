@@ -49,9 +49,6 @@ namespace geopm
         public:
             /// @brief Default constructor.
             Platform();
-            /// @param [in] control_domain_type enum geopm_domain_type_e
-            ///        describing the finest grain domain of control.
-            Platform(int control_domain_type);
             /// @brief Default destructor.
             virtual ~Platform();
             /// @brief Set our member variable pointing to a PlatformImp object.
@@ -92,8 +89,6 @@ namespace geopm
             void write_msr_whitelist(FILE *file_desc) const;
             /// @brief Revert the MSR values to their initial state.
             void revert_msr_state(void) const;
-            /// @brief Return the domain of control;
-            virtual int control_domain(void) = 0;
             /// @brief Number of MSR values returned from sample().
             virtual size_t capacity(void) = 0;
             /// @brief Record telemetry from counters and RAPL MSRs.
@@ -107,27 +102,21 @@ namespace geopm
             ///        platform can fulfill the requirements of the request.
             /// @return true if this Platform supports platform_id,
             ///         else false.
-            virtual bool model_supported(int platform_id, const std::string &description) const = 0;
+            virtual bool is_model_supported(int platform_id, const std::string &description) const = 0;
             /// @brief Enforce a static power management mode including
             /// tdp_balance_static, freq_uniform_static, and
             /// freq_hybrid_static.
             /// @param [in] policy A Policy object containing the policy information
             ///        to be enforced.
             virtual void enforce_policy(uint64_t region_id, Policy &policy) const = 0;
-            /// @brief Return the upper and lower bounds of the control.
+            /// @brief Return the upper and lower bounds of all controls.
             ///
-            /// For a RAPL platform this would be the package power limit,
-            /// for a frequency platform this would be the p-state bounds.
+            /// For a RAPL domain this would be the package power limit,
+            /// for a frequency domain this would be the p-state bounds.
             ///
-            /// @param [out] upper_bound The upper control bound.
-            ///
-            /// @param [out] lower_bound The lower control bound.
-            ///
-            virtual void bound(double &upper_bound, double &lower_bound) = 0;
-            /// @brief Retrieve the topology of the current platform.
-            /// @return PlatformTopology object containing the current
-            ///         topology information.
-            const PlatformTopology *topology(void) const;
+            /// @param [out] map from control domain to the lower and upper
+            ///        control bounds for each control.
+            virtual void bound(std::map<int, std::pair<double, double> > &bound) = 0;
             ////////////////////////////////////////
             /// signals are expected as follows: ///
             /// per socket signals               ///
@@ -150,8 +139,8 @@ namespace geopm
             void init_transform(const std::vector<int> &cpu_rank);
             /// @brief Retrieve the number of control domains
             /// @return The number of control domains on the hw platform.
-            int num_control_domain(void) const;
-            double control_latency_ms(void) const;
+            int num_domain(void);
+            double control_latency_ms(int control_type) const;
             /// @brief Return the frequency limit where throttling occurs.
             ///
             /// @return frequency limit where anything <= is considered throttling.
@@ -167,13 +156,8 @@ namespace geopm
             /// @brief Pointer to a PlatformImp object that supports the target
             /// hardware platform.
             PlatformImp *m_imp;
-            /// @brief The number of power domains
+            /// @brief The number of control domains
             int m_num_domain;
-            /// @brief The geopm_domain_type_e of the finest domain of control
-            /// on the hw platform.
-            int m_control_domain_type;
-            int m_num_energy_domain;
-            int m_num_counter_domain;
             /// @brief The matrix that transforms the per package,
             /// per-cpu, and per-rank signals into the domain of control.
             std::vector<std::vector<int> > m_rank_cpu;

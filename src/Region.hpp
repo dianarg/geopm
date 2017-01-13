@@ -55,8 +55,9 @@ namespace geopm
             };
             /// @brief Default constructor.
             /// @param [in] identifier Unique 64 bit region identifier.
-            /// @param [in] num_domain Number of control domains.
-            Region(uint64_t identifier, int num_domain, int level);
+            /// @param [in] num_control_domain Number of control domains.
+            /// @param [in] level Level of the tree where the region is defined.
+            Region(uint64_t identifier, int num_control_domain, int level);
             /// @brief Default destructor.
             virtual ~Region();
             /// @brief Record an entry into the region.
@@ -260,7 +261,7 @@ namespace geopm
             /// @brief Holds a unique 64 bit region identifier.
             const uint64_t m_identifier;
             /// @brief Numnber of domains reporting to the region.
-            const unsigned m_num_domain;
+            const unsigned m_num_control_domain;
             /// @brief The level of the tree where the region resides
             const unsigned m_level;
             /// @brief The number of distinct signal in a single domain.

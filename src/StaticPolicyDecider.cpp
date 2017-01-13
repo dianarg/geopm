@@ -68,6 +68,11 @@ namespace geopm
         return m_name;
     }
 
+    void StaticPolicyDecider::bound(std::map<int, std::pair<double, double> > &bound)
+    {
+        return;
+    }
+
     bool StaticPolicyDecider::update_policy(Region &curr_region, Policy &curr_policy)
     {
         return false;

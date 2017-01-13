@@ -47,6 +47,7 @@ class DumbDecider : public Decider
         virtual ~DumbDecider();
         virtual Decider *clone() const;
         virtual bool update_policy(Region &curr_region, Policy &curr_policy);
+        virtual void bound(std::map<int, std::pair<double, double> > &bound);
         virtual bool decider_supported(const std::string &descripton);
         virtual const std::string& name(void) const;
     protected:
@@ -64,7 +65,7 @@ class DumbPlatform : public Platform
         virtual bool model_supported(int platfrom_id, const std::string &description) const;
         virtual void enforce_policy(uint64_t region_id, Policy &policy) const;
         virtual int control_domain(void);
-        virtual void bound(double &upper_bound, double &lower_bound);
+        virtual void bound(std::map<int, std::pair<double, double> > &bound);
     protected:
         const std::string m_name;
 };
@@ -83,7 +84,7 @@ class ShmemFreqPlatformImp : public PlatformImp
         virtual double read_signal(int device_type, int device_idx, int signal_type);
         virtual void batch_read_signal(std::vector<struct geopm_signal_descriptor> &signal_desc, bool is_changed); 
         virtual void write_control(int device_type, int device_idx, int signal_type, double value);
-        virtual void bound(int control_type, double &upper_bound, double &lower_bound);
+        virtual void bound(std::map<int, std::pair<double, double> > &bound);
         virtual double throttle_limit_mhz(void) const;
     protected:
         virtual void msr_initialize(void);

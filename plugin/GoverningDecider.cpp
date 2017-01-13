@@ -97,6 +97,19 @@ namespace geopm
         return m_name;
     }
 
+    void GoverningDecider::bound(std::map<int, std::pair<double, double> > &bound)
+    {
+        auto rapl_bound = bound.find(GEOPM_CONTROL_TYPE_POWER);
+        if (rapl_bound != bound.end()) {
+            m_lower_bound = (*rapl_bound).second.first;
+            m_upper_bound = (*rapl_bound).second.second;
+        }
+        else {
+            throw Exception("GoverningDecider::bound(): Platform and Decider are not compatable, Power controls not found",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+    }
+
     bool GoverningDecider::update_policy(const struct geopm_policy_message_s &policy_msg, Policy &curr_policy)
     {
         bool result = false;
@@ -108,7 +121,7 @@ namespace geopm
             std::vector<uint64_t> region_id;
             curr_policy.region_id(region_id);
             for (auto region = region_id.begin(); region != region_id.end(); ++region) {
-                curr_policy.update((*region), domain_budget);
+                curr_policy.update((*region), GEOPM_CONTROL_TYPE_POWER, domain_budget);
                 auto it = m_num_converged.lower_bound((*region));
                 if (it != m_num_converged.end() && (*it).first == (*region)) {
                     (*it).second = 0;
@@ -142,9 +155,9 @@ namespace geopm
             std::vector<double> target(num_domain);
             std::vector<double> domain_dram_power(num_domain);
             // Get node limit for epoch set by tree decider
-            curr_policy.target(GEOPM_REGION_ID_EPOCH, limit);
+            curr_policy.target(GEOPM_REGION_ID_EPOCH, GEOPM_CONTROL_TYPE_POWER, limit);
             // Get last policy target for the current region
-            curr_policy.target(region_id, target);
+            curr_policy.target(region_id, GEOPM_CONTROL_TYPE_POWER, target);
 
             // Sum package and dram power over all domains to get total_power
             double dram_power = 0.0;
@@ -165,7 +178,7 @@ namespace geopm
                     for (int domain_idx = 0; domain_idx < num_domain; ++domain_idx) {
                         target[domain_idx] = limit[domain_idx] - domain_dram_power[domain_idx];
                     }
-                    curr_policy.update(region_id, target);
+                    curr_policy.update(region_id, GEOPM_CONTROL_TYPE_POWER, target);
                     is_target_updated = true;
                 }
                 if (!curr_policy.is_converged(region_id)) {

@@ -50,20 +50,20 @@ namespace geopm
     {
         public:
             /// @brief Policy constructor.
-            /// @param [in] num_domain number of control domains the policy regulates.
-            Policy(int num_domain);
+            /// @param [in] num_control_domain number of control domains the policy regulates.
+            Policy(int num_control_domain);
             /// @brief Policy destructor, virtual
             virtual ~Policy();
             /// @brief Get number of control domains for the policy.
             /// @returns number of domains under control.
-            int num_domain(void);
+            int num_control_domain(void);
             void region_id(std::vector<uint64_t> &region_id);
-            void update(uint64_t region_id, int domain_idx, double target);
-            void update(uint64_t region_id, const std::vector<double> &target);
+            void update(uint64_t region_id, int ctl_type, int domain_idx, double target);
+            void update(uint64_t region_id, int ctl_type, const std::vector<double> &target);
             void mode(int new_mode);
             void policy_flags(unsigned long new_flags);
-            void target(uint64_t region_id, std::vector<double> &target);
-            void target(uint64_t region_id, int domain, double &target);
+            void target(uint64_t region_id, int ctl_type, std::vector<double> &target);
+            void target(uint64_t region_id, int ctl_type, int domain_idx, double &target);
             /// @brief Get the policy power mode
             /// @return geopm_policy_mode_e power mode
             int mode(void) const;
@@ -89,8 +89,6 @@ namespace geopm
             /// @return number of cores where we will run
             ///         unconstrained power.
             int num_max_perf(void) const;
-            void target_updated(uint64_t region_id, std::map<int, double> &target); // map from domain index to updated target value
-            void target_valid(uint64_t region_id, std::map<int, double> &target);
             void policy_message(uint64_t region_id,
                                 const struct geopm_policy_message_s &parent_msg,
                                 std::vector<struct geopm_policy_message_s> &child_msg);
@@ -105,10 +103,11 @@ namespace geopm
             /// acceptance state.
             /// @return true if converged else false.
             bool is_converged(uint64_t region_id);
+            static const double INVALID_TARGET;
         protected:
             PolicyFlags m_policy_flags;
             RegionPolicy *region_policy(uint64_t region_id);
-            int m_num_domain;
+            int m_num_control_domain;
             int m_mode;
             int m_num_sample;
             std::map<uint64_t, RegionPolicy *> m_region_policy;

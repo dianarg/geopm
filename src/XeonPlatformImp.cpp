@@ -50,10 +50,13 @@ namespace geopm
         , m_energy_units(0.0)
         , m_dram_energy_units(0.0)
         , m_power_units_inv(0.0)
-        , m_min_pkg_watts(1)
-        , m_max_pkg_watts(100)
-        , m_min_dram_watts(1)
-        , m_max_dram_watts(100)
+        , m_min_pkg_watts(1.0)
+        , m_max_pkg_watts(100.0)
+        , m_min_dram_watts(1.0)
+        , m_max_dram_watts(100.0)
+        , m_min_freq_mhz(1000.0)
+        , m_max_freq_mhz(1200.0)
+        , m_freq_step_mhz(100.0)
         , m_signal_msr_offset(M_LLC_VICTIMS)
         , m_control_msr_pair(M_NUM_CONTROL)
         , m_pkg_power_limit_static(0)
@@ -117,7 +120,10 @@ namespace geopm
     SNBPlatformImp::SNBPlatformImp()
         : XeonPlatformImp(platform_id(), "Sandybridge E", &(snb_msr_map()))
     {
-
+        // Get supported p-state bounds
+        uint64_t tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "IA32_PLATFORM_INFO");
+        m_min_freq_mhz = ((tmp >> 40) | 0xFF) * 100.0;
+        m_max_freq_mhz = (tmp | 0xFF) * 100.0;
     }
 
     SNBPlatformImp::SNBPlatformImp(int platform_id, const std::string &model_name)
@@ -138,6 +144,22 @@ namespace geopm
 
     }
 
+    int SNBPlatformImp::control_domain(int control_type) const
+    {
+        int result = -1;
+        switch (control_type) {
+            case GEOPM_CONTROL_TYPE_POWER:
+            case GEOPM_CONTROL_TYPE_FREQUENCY:
+                result = GEOPM_DOMAIN_PACKAGE;
+                break;
+            default:
+                throw Exception("SNBPlatformImp::control_domain() unknown control type:" +
+                                std::to_string(control_type),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                break;
+        }
+        return result;
+    }
 
     int IVTPlatformImp::platform_id(void)
     {
@@ -161,6 +183,23 @@ namespace geopm
 
     }
 
+    int IVTPlatformImp::control_domain(int control_type) const
+    {
+        int result = -1;
+        switch (control_type) {
+            case GEOPM_CONTROL_TYPE_POWER:
+            case GEOPM_CONTROL_TYPE_FREQUENCY:
+                result = GEOPM_DOMAIN_PACKAGE;
+                break;
+            default:
+                throw Exception("IVTPlatformImp::control_domain() unknown control type:" +
+                                std::to_string(control_type),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                break;
+        }
+        return result;
+    }
+
     int HSXPlatformImp::platform_id(void)
     {
         return 0x63F;
@@ -176,6 +215,13 @@ namespace geopm
         : XeonPlatformImp(platform_id, model_name, &(hsx_msr_map()))
     {
         XeonPlatformImp::m_dram_energy_units = 1.5258789063E-5;
+
+        // Get supported p-state bounds
+        uint64_t tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "IA32_PLATFORM_INFO");
+        m_min_freq_mhz = (tmp >> 40) | 0xFF;
+        tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "TURBO_RATIO_LIMIT");
+        // This value is single core turbo
+        m_max_freq_mhz = (tmp | 0xFF) * 100.0;
     }
 
     HSXPlatformImp::HSXPlatformImp(const HSXPlatformImp &other)
@@ -187,6 +233,25 @@ namespace geopm
     HSXPlatformImp::~HSXPlatformImp()
     {
 
+    }
+
+    int HSXPlatformImp::control_domain(int control_type) const
+    {
+        int result = -1;
+        switch (control_type) {
+            case GEOPM_CONTROL_TYPE_POWER:
+                result = GEOPM_DOMAIN_PACKAGE;
+                break;
+            case GEOPM_CONTROL_TYPE_FREQUENCY:
+                result = GEOPM_DOMAIN_CPU;
+                break;
+            default:
+                throw Exception("HSXPlatformImp::control_domain() unknown control type:" +
+                                std::to_string(control_type),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                break;
+        }
+        return result;
     }
 
     int BDXPlatformImp::platform_id(void)
@@ -211,7 +276,26 @@ namespace geopm
 
     }
 
-    bool XeonPlatformImp::model_supported(int platform_id)
+    int BDXPlatformImp::control_domain(int control_type) const
+    {
+        int result = -1;
+        switch (control_type) {
+            case GEOPM_CONTROL_TYPE_POWER:
+                result = GEOPM_DOMAIN_PACKAGE;
+                break;
+            case GEOPM_CONTROL_TYPE_FREQUENCY:
+                result = GEOPM_DOMAIN_CPU;
+                break;
+            default:
+                throw Exception("BDXPlatformImp::control_domain() unknown control type:" +
+                                std::to_string(control_type),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                break;
+        }
+        return result;
+    }
+
+    bool XeonPlatformImp::is_model_supported(int platform_id)
     {
         return (platform_id == M_PLATFORM_ID);
     }
@@ -221,50 +305,18 @@ namespace geopm
         return M_MODEL_NAME;
     }
 
-    int XeonPlatformImp::power_control_domain(void) const
-    {
-        return GEOPM_DOMAIN_PACKAGE;
-    }
-
-    int XeonPlatformImp::frequency_control_domain(void) const
-    {
-        return GEOPM_DOMAIN_CPU;
-    }
-
-    int SNBPlatformImp::frequency_control_domain(void) const
-    {
-        return GEOPM_DOMAIN_PACKAGE;
-    }
-
-    int IVTPlatformImp::frequency_control_domain(void) const
-    {
-        return GEOPM_DOMAIN_PACKAGE;
-    }
 
     int XeonPlatformImp::performance_counter_domain(void) const
     {
         return GEOPM_DOMAIN_CPU;
     }
 
-    void XeonPlatformImp::bound(int control_type, double &upper_bound, double &lower_bound)
+    void XeonPlatformImp::bound(std::map<int, std::pair<double, double> > &bound)
     {
-        switch (control_type) {
-            case GEOPM_TELEMETRY_TYPE_PKG_ENERGY:
-                upper_bound = m_max_pkg_watts;
-                lower_bound = m_min_pkg_watts;
-                break;
-            case GEOPM_TELEMETRY_TYPE_DRAM_ENERGY:
-                upper_bound = m_max_dram_watts;
-                lower_bound = m_min_dram_watts;
-                break;
-            case GEOPM_TELEMETRY_TYPE_FREQUENCY:
-                throw Exception("XeonPlatformImp::bound(GEOPM_TELEMETRY_TYPE_FREQUENCY)", GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-                break;
-            default:
-                throw geopm::Exception("XeonPlatformImp::bound(): Invalid control type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-                break;
-        }
-
+        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_CONTROL_TYPE_POWER,
+                               std::pair<double, double>(m_min_pkg_watts + m_max_dram_watts, m_max_pkg_watts + m_max_dram_watts)));
+        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_CONTROL_TYPE_FREQUENCY,
+                               std::pair<double, double>(m_min_freq_mhz, m_max_freq_mhz)));
     }
 
     double XeonPlatformImp::throttle_limit_mhz(void) const
@@ -721,6 +773,7 @@ namespace geopm
     static const std::map<std::string, std::pair<off_t, unsigned long> > &snb_msr_map(void)
     {
         static const std::map<std::string, std::pair<off_t, unsigned long> > msr_map({
+            {"IA32_PLATFORM_INFO",      {0x00CE, 0x0000000000000000}},
             {"IA32_PERF_STATUS",        {0x0198, 0x0000000000000000}},
             {"IA32_PERF_CTL",           {0x0199, 0x000000010000ffff}},
             {"RAPL_POWER_UNIT",         {0x0606, 0x0000000000000000}},
@@ -849,8 +902,10 @@ namespace geopm
     static const std::map<std::string, std::pair<off_t, unsigned long> > &hsx_msr_map(void)
     {
         static const std::map<std::string, std::pair<off_t, unsigned long> > msr_map({
+            {"IA32_PLATFORM_INFO",      {0x00CE, 0x0000000000000000}},
             {"IA32_PERF_STATUS",        {0x0198, 0x0000000000000000}},
             {"IA32_PERF_CTL",           {0x0199, 0x000000010000ffff}},
+            {"TURBO_RATIO_LIMIT",       {0x01AD, 0x0000000000000000}},
             {"RAPL_POWER_UNIT",         {0x0606, 0x0000000000000000}},
             {"PKG_POWER_LIMIT",         {0x0610, 0x00ffffff00ffffff}},
             {"PKG_ENERGY_STATUS",       {0x0611, 0x0000000000000000}},

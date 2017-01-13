@@ -57,15 +57,14 @@ namespace geopm
             XeonPlatformImp(const XeonPlatformImp &other);
             /// @brief Default destructor.
             virtual ~XeonPlatformImp();
-            virtual bool model_supported(int platform_id);
+            virtual bool is_model_supported(int platform_id);
             virtual std::string platform_name(void);
             virtual double read_signal(int device_type, int device_index, int signal_type);
             virtual void batch_read_signal(std::vector<struct geopm_signal_descriptor> &signal_desc, bool is_changed);
             virtual void write_control(int device_type, int device_index, int signal_type, double value);
             virtual void msr_initialize(void);
             virtual void msr_reset(void);
-            virtual int power_control_domain(void) const;
-            virtual int frequency_control_domain(void) const;
+            virtual int control_domain(int control_type) const = 0;
             virtual int performance_counter_domain(void) const;
             virtual double throttle_limit_mhz(void) const;
 
@@ -81,7 +80,7 @@ namespace geopm
             /// @brief Reset free running counters to default state.
             virtual void fixed_counters_reset(void);
             /// @brief Return the upper and lower bounds of the control.
-            virtual void bound(int control_type, double &upper_bound, double &lower_bound);
+            virtual void bound(std::map<int, std::pair<double, double> > &bound);
 
             /// @brief Frequency where anything <= is considered throttling.
             double m_throttle_limit_mhz;
@@ -99,6 +98,12 @@ namespace geopm
             double m_min_dram_watts;
             /// @brief Maximum value for DRAM power read from RAPL.
             double m_max_dram_watts;
+            /// @brief Minimum supported p-state.
+            double m_min_freq_mhz;
+            /// @brief Maximum supported p-state.
+            double m_max_freq_mhz;
+            /// @brief Step size in between supported p-states.
+            double m_freq_step_mhz;
             /// @brief Vector of MSR offsets for reading.
             std::vector<off_t> m_signal_msr_offset;
             ///@brief Vector of MSR data containing pairs of offsets and write masks.
@@ -162,7 +167,7 @@ namespace geopm
             SNBPlatformImp(const SNBPlatformImp &other);
             /// @brief Default destructor.
             virtual ~SNBPlatformImp();
-            virtual int frequency_control_domain(void) const;
+            virtual int control_domain(int control_type) const;
             static int platform_id(void);
     };
 
@@ -176,7 +181,7 @@ namespace geopm
             IVTPlatformImp(const IVTPlatformImp &other);
             /// @brief Default destructor.
             virtual ~IVTPlatformImp();
-            virtual int frequency_control_domain(void) const;
+            virtual int control_domain(int control_type) const;
             static int platform_id(void);
     };
 
@@ -192,6 +197,7 @@ namespace geopm
             HSXPlatformImp(int platform_id, const std::string &model_name);
             /// @brief Default destructor.
             virtual ~HSXPlatformImp();
+            virtual int control_domain(int control_type) const;
             static int platform_id(void);
     };
 
@@ -203,6 +209,7 @@ namespace geopm
             BDXPlatformImp(const BDXPlatformImp &other);
             /// @brief Default destructor.
             virtual ~BDXPlatformImp();
+            virtual int control_domain(int control_type) const;
             static int platform_id(void);
     };
 

@@ -55,17 +55,16 @@ namespace geopm
             virtual ~Decider();
             /// @brief return a pointer of the derived class, virtual.
             virtual Decider *clone() const = 0;
-            ///@brief Return the upper and lower control bounds.
+            ///@brief Return the list of upper and lower control bounds for all controls.
             /// For a power based control, this will be the upper and lower
             /// power bounds of a single tree node below the current one. For
             /// a frequency based control this will be the p-state bounds of
             /// a single leaf node.
             ///
-            /// @param [in] upper_bound The upper control bound.
+            /// @param [in] bound Map from control domain to the lower and upper
+            ///             bounds for the control.
             ///
-            /// @param [in] lower_bound The lower control bound.
-            ///
-            virtual void bound(double upper_bound, double lower_bound);
+            virtual void bound(std::map<int, std::pair<double, double> > &bound) = 0;
             /// @brief Updates the power split among power control domains when
             /// recieving a new global budget, vitual.
             virtual bool update_policy(const struct geopm_policy_message_s &policy_msg, Policy &curr_policy);
@@ -75,12 +74,9 @@ namespace geopm
             virtual bool decider_supported(const std::string &descripton) = 0;
             /// @brief Return the name of the decider, virtual.
             virtual const std::string& name(void) const = 0;
+        protected:
             /// @brief Save the last known power budget
             double m_last_power_budget;
-            /// @brief The upper control bound;
-            double m_upper_bound;
-            /// @brief The lower control bound;
-            double m_lower_bound;
     };
 
 }
