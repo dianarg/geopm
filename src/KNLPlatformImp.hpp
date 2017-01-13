@@ -62,21 +62,20 @@ namespace geopm
             //////////////////////////////////////////////
             // KNLPlatformImp dependent implementations //
             //////////////////////////////////////////////
-            virtual bool model_supported(int platform_id);
+            virtual bool is_model_supported(int platform_id);
             virtual std::string platform_name();
             virtual double read_signal(int device_type, int device_index, int signal_type);
             virtual void batch_read_signal(std::vector<struct geopm_signal_descriptor> &signal_desc, bool is_changed);
             virtual void write_control(int device_type, int device_index, int signal_type, double value);
             virtual void msr_initialize();
             virtual void msr_reset();
-            virtual int power_control_domain(void) const;
-            virtual int frequency_control_domain(void) const;
+            virtual int control_domain(int control_type) const;
             virtual int performance_counter_domain(void) const;
+
             /// @brief Return the upper and lower bounds of the control.
-            virtual void bound(int control_type, double &upper_bound, double &lower_bound);
+            virtual void bound(std::map<int, std::pair<double, double> > &bound);
             virtual double throttle_limit_mhz(void) const;
             static int platform_id(void);
-
         protected:
             /// @brief Initialize Running Average Power Limiting (RAPL) controls.
             void rapl_init();
@@ -105,6 +104,12 @@ namespace geopm
             double m_min_dram_watts;
             /// @brief Maximum value for DRAM power read from RAPL.
             double m_max_dram_watts;
+            /// @brief Minimum supported p-state.
+            double m_min_freq_mhz;
+            /// @brief Maximum supported p-state.
+            double m_max_freq_mhz;
+            /// @brief Step size in between supported p-states.
+            double m_freq_step_mhz;
             /// @brief Vector of MSR offsets for reading.
             std::vector<off_t> m_signal_msr_offset;
             ///@brief Vector of MSR data containing pairs of offsets and write masks.

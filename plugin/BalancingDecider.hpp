@@ -67,6 +67,8 @@ namespace geopm
             unsigned m_num_converged;
             double m_last_power_budget;
             int m_num_sample;
+            double m_lower_bound;
+            double m_upper_bound;
             unsigned m_num_out_of_range;
             double m_slope_modifier;
             const double M_GUARD_BAND;

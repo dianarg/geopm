@@ -54,14 +54,14 @@ namespace geopm
             /// @returns number of domains under control.
             virtual int num_domain(void) = 0;
             virtual void region_id(std::vector<uint64_t> &region_id) = 0;
-            virtual void update(uint64_t region_id, int domain_idx, double target) = 0;
-            virtual void update(uint64_t region_id, const std::vector<double> &target) = 0;
+            virtual void update(uint64_t region_id, int ctl_type, int domain_idx, double target) = 0;
+            virtual void update(uint64_t region_id, int ctl_type, const std::vector<double> &target) = 0;
+            virtual void target(uint64_t region_id, int ctl_type, std::vector<double> &target) = 0;
+            virtual void target(uint64_t region_id, int ctl_type, int domain_idx, double &target) = 0;
             /// @brief Get the policy power mode
             /// @return geopm_policy_mode_e power mode
             virtual void mode(int new_mode) = 0;
             virtual void policy_flags(unsigned long new_flags) = 0;
-            virtual void target(uint64_t region_id, std::vector<double> &target) = 0;
-            virtual void target(uint64_t region_id, int domain, double &target) = 0;
             virtual int mode(void) const = 0;
             /// @brief Get the policy frequency
             /// @return frequency in MHz
@@ -113,12 +113,12 @@ namespace geopm
             virtual ~Policy();
             int num_domain(void);
             void region_id(std::vector<uint64_t> &region_id);
-            void update(uint64_t region_id, int domain_idx, double target);
-            void update(uint64_t region_id, const std::vector<double> &target);
+            void update(uint64_t region_id, int ctl_type, int domain_idx, double target);
+            void update(uint64_t region_id, int ctl_type, const std::vector<double> &target);
+            void target(uint64_t region_id, int ctl_type, std::vector<double> &target);
+            void target(uint64_t region_id, int ctl_type, int domain_idx, double &target);
             void mode(int new_mode);
             void policy_flags(unsigned long new_flags);
-            void target(uint64_t region_id, std::vector<double> &target);
-            void target(uint64_t region_id, int domain, double &target);
             int mode(void) const;
             int frequency_mhz(void) const;
             int tdp_percent(void) const;
@@ -132,10 +132,11 @@ namespace geopm
                                 std::vector<struct geopm_policy_message_s> &child_msg);
             void is_converged(uint64_t region_id, bool converged_state);
             bool is_converged(uint64_t region_id);
+            static const double INVALID_TARGET;
         protected:
             IPolicyFlags *m_policy_flags;
             RegionPolicy *region_policy(uint64_t region_id);
-            int m_num_domain;
+            int m_num_control_domain;
             int m_mode;
             int m_num_sample;
             std::map<uint64_t, RegionPolicy *> m_region_policy;

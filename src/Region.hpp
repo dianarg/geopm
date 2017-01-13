@@ -285,7 +285,7 @@ namespace geopm
             /// @brief Holds a unique 64 bit region identifier.
             const uint64_t m_identifier;
             /// @brief Numnber of domains reporting to the region.
-            const unsigned m_num_domain;
+            const unsigned m_num_control_domain;
             /// @brief The level of the tree where the region resides
             const unsigned m_level;
             /// @brief The number of distinct signal in a single domain.

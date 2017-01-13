@@ -42,13 +42,14 @@
 
 namespace geopm
 {
-    Region::Region(uint64_t identifier, int num_domain, int level)
+    Region::Region(uint64_t identifier, int num_control_domain, int level)
         : m_identifier(identifier)
-        , m_num_domain(num_domain)
+        , m_num_control_domain(num_control_domain)
         , m_level(level)
         , m_num_signal(m_level == 0 ? (int)GEOPM_NUM_TELEMETRY_TYPE : (int)GEOPM_NUM_SAMPLE_TYPE)
-        , m_signal_matrix(m_num_signal * m_num_domain)
-        , m_entry_telemetry(m_num_domain, {GEOPM_REGION_ID_UNDEFINED, {{0, 0}}, {0}})
+        , m_signal_matrix(m_num_signal * m_num_control_domain)
+        , m_entry_telemetry(m_num_control_domain, {GEOPM_REGION_ID_UNDEFINED, {{0, 0}}, {0}})
+        , m_domain_sample(m_num_control_domain)
         , m_curr_sample({m_identifier, {0.0, 0.0, 0.0, 0.0}})
         , m_domain_sample(m_num_domain, m_curr_sample)
         , m_domain_buffer(NULL)
@@ -61,7 +62,7 @@ namespace geopm
         , m_derivative_last(m_num_signal * m_num_domain, NAN)
         , m_agg_stats({m_identifier, {0.0, 0.0, 0.0, 0.0}})
         , m_num_entry(0)
-        , m_is_entered(m_num_domain, false)
+        , m_is_entered(m_num_control_domain, false)
         , m_derivative_num_fit(0)
         , m_mpi_time(0.0)
     {
@@ -88,7 +89,7 @@ namespace geopm
 
     void Region::insert(std::vector<struct geopm_telemetry_message_s> &telemetry)
     {
-        if (telemetry.size()!= m_num_domain) {
+        if (telemetry.size()!= m_num_control_domain) {
             throw Exception("Region::insert(): telemetry not properly sized", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
 
@@ -113,11 +114,11 @@ namespace geopm
         m_domain_buffer->insert(m_signal_matrix);
         // If all ranks have exited the region update current sample
         for (domain_idx = 0;
-             domain_idx != m_num_domain &&
+             domain_idx != m_num_control_domain &&
              telemetry[domain_idx].signal[GEOPM_TELEMETRY_TYPE_PROGRESS] == 1.0 &&
              telemetry[domain_idx].signal[GEOPM_TELEMETRY_TYPE_RUNTIME] != -1.0;
              ++domain_idx);
-        if (domain_idx == m_num_domain) {
+        if (domain_idx == m_num_control_domain) {
             // All domains have completed so do update
             update_curr_sample();
             /// @fixme Commenting out the following line. It restarts samples after
@@ -134,11 +135,11 @@ namespace geopm
 
     void Region::insert(const std::vector<struct geopm_sample_message_s> &sample)
     {
-        if (sample.size() < m_num_domain) {
+        if (sample.size() < m_num_control_domain) {
             throw Exception("Region::insert(): input sample vector too small",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        std::copy(sample.begin(), sample.begin() + m_num_domain, m_domain_sample.begin());
+        std::copy(sample.begin(), sample.begin() + m_num_control_domain, m_domain_sample.begin());
         update_curr_sample();
         // Calculate the number of entries *after* we insert the new data: size() + 1 or capacity
         int num_entries = m_domain_buffer->size() + 1 < m_domain_buffer->capacity() ?
@@ -147,7 +148,7 @@ namespace geopm
         std::fill(m_valid_entries.begin(), m_valid_entries.end(), num_entries);
 
         auto it = sample.begin();
-        for (size_t domain_idx = 0; domain_idx != m_num_domain; ++domain_idx, ++it) {
+        for (size_t domain_idx = 0; domain_idx != m_num_control_domain; ++domain_idx, ++it) {
             update_signal_matrix((*it).signal, domain_idx);
             update_stats((*it).signal, domain_idx);
         }
@@ -324,7 +325,7 @@ namespace geopm
 
     void Region::check_bounds(int domain_idx, int signal_type, const char *file, int line) const
     {
-        if (domain_idx < 0 || domain_idx > (int)m_num_domain) {
+        if (domain_idx < 0 || domain_idx > (int)m_num_control_domain) {
             throw geopm::Exception("Region::check_bounds(): the requested domain index is out of bounds.",
                                    GEOPM_ERROR_INVALID, file, line);
         }
@@ -489,7 +490,7 @@ namespace geopm
     void Region::update_curr_sample(void)
     {
         std::fill(m_curr_sample.signal, m_curr_sample.signal + GEOPM_NUM_SAMPLE_TYPE, 0.0);
-        for (unsigned domain_idx = 0; domain_idx != m_num_domain; ++domain_idx) {
+        for (unsigned domain_idx = 0; domain_idx != m_num_control_domain; ++domain_idx) {
             m_curr_sample.signal[GEOPM_SAMPLE_TYPE_RUNTIME] =
                 m_domain_sample[domain_idx].signal[GEOPM_SAMPLE_TYPE_RUNTIME] > m_curr_sample.signal[GEOPM_SAMPLE_TYPE_RUNTIME] ?
                 m_domain_sample[domain_idx].signal[GEOPM_SAMPLE_TYPE_RUNTIME] : m_curr_sample.signal[GEOPM_SAMPLE_TYPE_RUNTIME];

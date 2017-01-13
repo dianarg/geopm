@@ -100,7 +100,7 @@ namespace geopm
     Platform::Platform()
         : m_imp(NULL)
         , m_num_domain(0)
-        , m_control_domain_type(GEOPM_CONTROL_DOMAIN_POWER)
+        , m_control_domain_type(GEOPM_CONTROL_TYPE_POWER)
         , m_num_energy_domain(0)
         , m_num_counter_domain(0)
         , m_num_rank(0)
@@ -141,78 +141,68 @@ namespace geopm
         plat_name = m_imp->platform_name();
     }
 
-    int Platform::num_domain(void) const
+    void Platform::transform_rank_data(uint64_t region_id, const struct geopm_time_s &aligned_time,
+                                       const std::vector<double> &aligned_data,
+                                       std::vector<struct geopm_telemetry_message_s> &telemetry)
     {
-        return m_imp->num_energy_signal();
-    }
-
-    const PlatformTopology *Platform::topology(void) const
-    {
-        return m_imp->topology();
-    }
-
-    void Platform::transform_rank_data(uint64_t region_id, const struct geopm_time_s &aligned_time, const std::vector<double> &aligned_data, std::vector<struct geopm_telemetry_message_s> &telemetry)
-    {
-        const int NUM_RANK_SIGNAL = 2;
-        int num_package = m_imp->num_package();
         int num_cpu = m_imp->num_logical_cpu();
-        int num_platform_signal = m_imp->num_energy_signal() + m_imp->num_counter_signal();
-        /// @todo assumes domain of control is the package
-        std::vector<double> runtime(num_package);
-        std::vector<double> min_progress(num_package);
-        std::vector<double> max_progress(num_package);
+        int num_platform_signal = m_imp->num_energy_signal() +
+                                  m_imp->num_counter_signal();
+
+        std::vector<double> runtime(m_num_domain);
+        std::vector<double> min_progress(m_num_domain);
+        std::vector<double> max_progress(m_num_domain);
 
         std::fill(runtime.begin(), runtime.end(), -DBL_MAX);
         std::fill(min_progress.begin(), min_progress.end(), DBL_MAX);
         std::fill(max_progress.begin(), max_progress.end(), -DBL_MAX);
 
-        int num_cpu_per_package = num_cpu / num_package;
-        if (m_imp->power_control_domain() == GEOPM_DOMAIN_PACKAGE) {
-            int rank_offset = num_package * num_platform_signal;
-            int rank_id = 0;
-            for (size_t i = rank_offset;  i < aligned_data.size(); i += NUM_RANK_SIGNAL)  {
-                for (auto it = m_rank_cpu[rank_id].begin(); it != m_rank_cpu[rank_id].end(); ++it) {
-                    if (aligned_data[i + 1] != -1.0) {
-                        // Find minimum progress for any rank on the package
-                        if (aligned_data[i] < min_progress[(*it) / num_cpu_per_package]) {
-                            min_progress[(*it) / num_cpu_per_package] = aligned_data[i];
-                        }
-                        // Find maximum progress for any rank on the package
-                        if (aligned_data[i] > max_progress[(*it) / num_cpu_per_package]) {
-                            max_progress[(*it) / num_cpu_per_package] = aligned_data[i];
-                        }
-                        // Find maximum runtime for any rank on the package
-                        if (aligned_data[i + 1] > runtime[(*it) / num_cpu_per_package]) {
-                            runtime[(*it) / num_cpu_per_package] = aligned_data[i + 1];
-                        }
+        int num_cpu_per_domain = num_cpu / m_num_domain;
+        int rank_offset = m_num_domain * num_platform_signal;
+        int local_rank = 0; // Rank index local to the compute node
+        for (size_t i = rank_offset;  i < aligned_data.size(); i += GEOPM_NUM_TELEMETRY_TYPE_RANK) {
+            for (auto it = m_rank_cpu[local_rank].begin(); it != m_rank_cpu[local_rank].end(); ++it) {
+                if (aligned_data[i + 1] != -1.0) { // Check runtime to see if the sample is valid
+                    int off = (*it) / num_cpu_per_domain;
+                    // Find minimum progress for any rank on the package
+                    if (aligned_data[i] < min_progress[off]) {
+                        min_progress[off] = aligned_data[i];
+                    }
+                    // Find maximum progress for any rank on the package
+                    if (aligned_data[i] > max_progress[off]) {
+                         max_progress[off] = aligned_data[i];
+                    }
+                    // Find maximum runtime for any rank on the package
+                    if (aligned_data[i + 1] > runtime[off]) {
+                        runtime[off] = aligned_data[i + 1];
                     }
                 }
-                ++rank_id;
             }
-            // Insert platform signals
-            for (int i = 0; i < rank_offset; ++i) {
-                int domain_idx = i / num_platform_signal;
-                int signal_idx = i % num_platform_signal;
-                telemetry[domain_idx].signal[signal_idx] = aligned_data[domain_idx * num_platform_signal + signal_idx];
+            ++local_rank;
+        }
+        // Insert platform signals
+        for (int i = 0; i < rank_offset; ++i) {
+            int domain_idx = i / num_platform_signal;
+            int signal_idx = i % num_platform_signal;
+            telemetry[domain_idx].signal[signal_idx] = aligned_data[domain_idx * num_platform_signal + signal_idx];
+        }
+        // Insert application signals
+        int domain_idx = 0;
+        for (int i = 0; i < m_num_domain * GEOPM_NUM_TELEMETRY_TYPE_RANK; i += GEOPM_NUM_TELEMETRY_TYPE_RANK) {
+            // Do not drop a region exit
+            if (max_progress[domain_idx] == 1.0) {
+                telemetry[domain_idx].signal[num_platform_signal] = 1.0;
             }
-            // Insert application signals
-            int domain_idx = 0;
-            for (int i = 0; i < num_package * NUM_RANK_SIGNAL; i += NUM_RANK_SIGNAL) {
-                // Do not drop a region exit
-                if (max_progress[domain_idx] == 1.0) {
-                    telemetry[domain_idx].signal[num_platform_signal] = 1.0;
-                }
-                else {
-                    telemetry[domain_idx].signal[num_platform_signal] = min_progress[domain_idx] == DBL_MAX ? 0.0 : min_progress[domain_idx];
-                }
-                telemetry[domain_idx].signal[num_platform_signal + 1] = runtime[domain_idx] == -DBL_MAX ? -1.0 : runtime[domain_idx];
-                ++domain_idx;
+            else {
+                telemetry[domain_idx].signal[num_platform_signal] = min_progress[domain_idx] == DBL_MAX ? 0.0 : min_progress[domain_idx];
             }
-            // Insert region and timestamp
-            for (int i = 0; i < num_package; ++i) {
-                telemetry[i].region_id = region_id;
-                telemetry[i].timestamp = aligned_time;
-            }
+            telemetry[domain_idx].signal[num_platform_signal + 1] = runtime[domain_idx] == -DBL_MAX ? -1.0 : runtime[domain_idx];
+            ++domain_idx;
+        }
+        // Insert region and timestamp
+        for (int i = 0; i < m_num_domain; ++i) {
+            telemetry[i].region_id = region_id;
+            telemetry[i].timestamp = aligned_time;
         }
     }
 
@@ -235,9 +225,19 @@ namespace geopm
         }
     }
 
-    int Platform::num_control_domain(void) const
+    int Platform::num_domain(void)
     {
-        return (topology()->num_domain(m_imp->power_control_domain()));
+        if (!m_num_domain && m_imp) {
+            // Of all available control methods, set m_num_domain to the
+            // finest granularity of control.
+            for (int ctl_type = 0; ctl_type < GEOPM_NUM_CONTROL_TYPE; ++ctl_type) {
+                int num_domain = m_imp->topology()->num_domain(m_imp->domain_type(ctl_type));
+                if (num_domain > m_num_domain) {
+                   m_num_domain = num_domain;
+                }
+            }
+        }
+        return m_num_domain;
     }
 
     void Platform::tdp_limit(double percentage) const
@@ -247,7 +247,7 @@ namespace geopm
         double tdp = m_imp->package_tdp();
         double pkg_lim = tdp * (percentage * 0.01);
         for (int i = 0; i < packages; i++) {
-            m_imp->write_control(m_imp->power_control_domain(), i,  GEOPM_TELEMETRY_TYPE_PKG_ENERGY, pkg_lim);
+            m_imp->write_control(m_imp->control_domain(GEOPM_CONTROL_TYPE_POWER), i,  GEOPM_TELEMETRY_TYPE_PKG_ENERGY, pkg_lim);
         }
     }
 
@@ -314,9 +314,9 @@ namespace geopm
         m_imp->revert_msr_state();
     }
 
-    double Platform::control_latency_ms(void) const
+    double Platform::control_latency_ms(int control_type) const
     {
-        return m_imp->control_latency_ms();
+        return m_imp->control_latency_ms(control_type);
     }
 
     double Platform::throttle_limit_mhz(void) const

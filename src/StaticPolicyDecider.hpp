@@ -54,6 +54,8 @@ namespace geopm
             virtual bool update_policy(IRegion &curr_region, IPolicy &curr_policy);
             virtual bool decider_supported(const std::string &descripton);
             virtual const std::string& name(void) const;
+            virtual void bound(std::map<int, std::pair<double, double> > &bound);
+
         private:
             const std::string m_name;
     };
