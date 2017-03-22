@@ -63,6 +63,10 @@ class TestIntegration(unittest.TestCase):
         if abs(a - b) / a >= epsilon:
             self.fail('The fractional difference between {a} and {b} is greater than {epsilon}'.format(a=a, b=b, epsilon=epsilon))
 
+    def write_log(self, test_name, message):
+        with open(test_name + '.log', 'a') as outfile:
+            outfile.write(message + '\n\n')
+
     def test_report_and_trace_generation(self):
         name = 'test_report_and_trace_generation'
         report_path = name + '.report'
@@ -107,18 +111,18 @@ class TestIntegration(unittest.TestCase):
         idle_nodes = launcher.get_idle_nodes()
         idle_nodes_copy = list(idle_nodes)
         alloc_nodes = launcher.get_alloc_nodes()
-        launcher.write_log(name, 'Idle nodes : {nodes}'.format(nodes=idle_nodes))
-        launcher.write_log(name, 'Alloc\'d  nodes : {nodes}'.format(nodes=alloc_nodes))
+        self.write_log(name, 'Idle nodes : {nodes}'.format(nodes=idle_nodes))
+        self.write_log(name, 'Alloc\'d  nodes : {nodes}'.format(nodes=alloc_nodes))
         for n in idle_nodes_copy:
             launcher.set_node_list(n.split()) # Hack to convert string to list
             try:
                 launcher.run(name)
             except subprocess.CalledProcessError as e:
                 if e.returncode == 1 and n not in launcher.get_idle_nodes():
-                    launcher.write_log(name, '{node} has disappeared from the idle list!'.format(node=n))
+                    self.write_log(name, '{node} has disappeared from the idle list!'.format(node=n))
                     idle_nodes.remove(n)
                 else:
-                    launcher.write_log(name, 'Return code = {code}'.format(code=e.returncode))
+                    self.write_log(name, 'Return code = {code}'.format(code=e.returncode))
                     raise e
 
         output = geopm_io.AppOutput(report_path)
@@ -311,7 +315,7 @@ class TestIntegration(unittest.TestCase):
                     raise e
                 check_successful = False
             if check_successful:
-                launcher.write_log(name, 'About to run on {} nodes.'.format(num_node))
+                self.write_log(name, 'About to run on {} nodes.'.format(num_node))
                 launcher.run(name)
                 output = geopm_io.AppOutput(report_path)
                 node_names = output.get_node_names()
@@ -343,7 +347,7 @@ class TestIntegration(unittest.TestCase):
         launcher = geopm_launcher.factory(app_conf, ctl_conf, report_path, trace_path, time_limit=15)
         launcher.set_num_node(num_node)
         launcher.set_num_rank(num_rank)
-        launcher.write_log(name, 'Power cap = {}W'.format(self._options['power_budget']))
+        self.write_log(name, 'Power cap = {}W'.format(self._options['power_budget']))
         launcher.run(name)
 
         output = geopm_io.AppOutput(report_path, trace_path)
@@ -371,7 +375,7 @@ class TestIntegration(unittest.TestCase):
             power_data['combined_power'] = power_data['socket_power'] + power_data['dram_power']
 
             pandas.set_option('display.width', 100)
-            launcher.write_log(name, 'Power stats from {} :\n{}'.format(nn, power_data.describe()))
+            self.write_log(name, 'Power stats from {} :\n{}'.format(nn, power_data.describe()))
 
             all_power_data[nn] = power_data
 
@@ -422,7 +426,7 @@ class TestIntegration(unittest.TestCase):
                 if region_id != '0':
                     tmp = data['progress-0'].diff()
                     negative_progress =  tmp.loc[ (tmp > -1) & (tmp < 0) ]
-                    launcher.write_log(name, '{}'.format(negative_progress))
+                    self.write_log(name, '{}'.format(negative_progress))
                     self.assertEqual(0, len(negative_progress))
 
     def test_sample_rate(self):
