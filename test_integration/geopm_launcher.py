@@ -72,15 +72,12 @@ def get_resource_manager():
     return result;
 
 
-def factory(ctl_conf, report_path,
-            trace_path=None, host_file=None, time_limit=1):
+def launcher_factory(ctl_conf, report_path, trace_path=None, host_file=None, time_limit=1):
     resource_manager = get_resource_manager()
     if resource_manager == "SLURM":
-        return SrunLauncher(ctl_conf, report_path,
-                            trace_path, host_file, time_limit)
+        return SrunLauncher(ctl_conf, report_path, trace_path, host_file, time_limit)
     elif resource_manager == "ALPS":
-        return AlpsLauncher(ctl_conf, report_path,
-                            trace_path, host_file, time_limit)
+        return AlpsLauncher(ctl_conf, report_path, trace_path, host_file, time_limit)
 
 class Launcher(object):
     def __init__(self, num_rank, num_node, ctl_conf, report_path,
@@ -92,7 +89,7 @@ class Launcher(object):
         self._time_limit = time_limit
         self._region_barrier = region_barrier
         self._node_list = None
-        self._pmpi_ctl = 'process'
+        self._launch_type = 'process'
         self._default_handler = signal.getsignal(signal.SIGINT)
         self.set_num_rank(num_rank)
         self.set_num_node(num_node)
@@ -109,8 +106,9 @@ class Launcher(object):
 
     def _int_handler(self, signum, frame):
         """
-        This is necessary to prevent the script from dying on the first CTRL-C press.  SLURM requires 2
-        SIGINT signals to abort the job.
+        This is necessary to prevent the script from dying on the
+        first CTRL-C press.  SLURM requires 2 SIGINT signals to abort
+        the job.
         """
         if type(self) == SrunLauncher:
             print "srun: interrupt (one more within 1 sec to abort)"
@@ -128,8 +126,8 @@ class Launcher(object):
         self._num_rank = num_rank
         self._set_num_thread()
 
-    def set_pmpi_ctl(self, pmpi_ctl):
-        self._pmpi_ctl = pmpi_ctl
+    def set_launch_type(self, pmpi_ctl):
+        self._launch_type = pmpi_ctl
 
     def check_call(self, exec_str, env_ext={}, stdout=sys.stdout, stderr=sys.stderr):
         env = dict(os.environ)
@@ -155,8 +153,8 @@ class Launcher(object):
 
     def _set_num_thread(self):
         # Figure out the number of CPUs per rank leaving one for the
-        # OS and one (potentially, may/may not be use depending on pmpi_ctl)
-        # for the controller.
+        # OS and one (potentially, may/may not be use depending on
+        # pmpi_ctl) for the controller.
         cmd = ' '.join((self._exec_option(), 'lscpu'))
         signal.signal(signal.SIGINT, self._int_handler)
         pid = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -174,7 +172,8 @@ class Launcher(object):
         num_cpu = core_socket[0] * core_socket[1] - 2
         try:
             rank_per_node = self._num_rank / self._num_node
-            # Fixes situations when rank_per_node may be 0 which results in a divide by 0 below.
+            # Fixes situations when rank_per_node may be 0 which
+            # results in a divide by 0 below.
             rank_per_node = rank_per_node if rank_per_node != 0 else 1
             self._num_thread = num_cpu / rank_per_node
         except AttributeError:
@@ -183,9 +182,10 @@ class Launcher(object):
     def _environ(self):
         result = {'LD_DYNAMIC_WEAK': 'true',
                   'OMP_NUM_THREADS' : str(self._num_thread),
-                  'GEOPM_PMPI_CTL' : self._pmpi_ctl,
                   'GEOPM_REPORT' : self._report_path,
                   'GEOPM_POLICY' : self._ctl_conf.get_path()}
+        if self._launch_type != 'application':
+            result['GEOPM_PMPI_CTL'] = self._launch_type
         if self._trace_path:
             result['GEOPM_TRACE'] = self._trace_path
         if self._region_barrier:
@@ -194,10 +194,10 @@ class Launcher(object):
 
     def _exec_str(self, argv):
         # Save the pmpi_ctl state and unset the value for non-geopom execution
-        tmp_pmpi_ctl = self._pmpi_ctl
-        self._pmpi_ctl = None
+        tmp_launch_type = self._launch_type
+        self._launch_type = None
         result = self._geopm_exec_str(argv)
-        self._pmpi_ctl = tmp_pmpi_ctl
+        self._launch_type = tmp_launch_type
         return result
 
     def _geopm_exec_str(self, argv):
@@ -212,7 +212,7 @@ class Launcher(object):
 
     def _num_rank_option(self):
         num_rank = self._num_rank
-        if self._pmpi_ctl == 'process':
+        if self._launch_type == 'process':
             num_rank += self._num_node
         return '-n {num_rank}'.format(num_rank=num_rank)
 
@@ -255,12 +255,38 @@ class SrunLauncher(Launcher):
         proc_mask = self._num_thread * '1' + '00'
         result_base = '--cpu_bind=v,mask_cpu:'
         mask_list = []
-        if (self._pmpi_ctl == 'process'):
+        if (self._launch_type == 'process'):
             mask_list.append('0x2')
         for ii in range(self._num_rank / self._num_node):
             mask_list.append('0x{:x}'.format(int(proc_mask, 2)))
             proc_mask = proc_mask + self._num_thread * '0'
         return result_base + ','.join(mask_list)
+
+    def _affinity_option(num_rank, num_thread):
+        """
+        num_rank: Number of ranks per node used by main application.
+        num_thread: Number of threads per rank used by main application.
+        """
+        result_base = '--cpu_bind=v,mask_cpu:'
+        mask_list = []
+            if self._launch_type == 'process':
+            mask_list.append('0x1')
+            binary_mask = num_thread * '1' + '0'
+        elif self._launch_type == 'pthread':
+            binary_mask = (num_thread + 1) * '1'
+        elif self._launch_type == 'application':
+            binary_mask = num_thread * '1' + '0'
+        else:
+            raise NameError('Unknown launch_type: "{}", valid options are "process", "pthread", or "application"'.format(self._launch_type))
+        for ii in range(num_rank):
+            hex_mask = '0x{:x}'.format(int(binary_mask, 2))
+            mask_list.append(hex_mask)
+            if ii == 0 and mode == 'pthread':
+                binary_mask = num_thread * '1' + '0'
+            binary_mask = binary_mask + num_thread * '0'
+
+        return result_base + ','.join(mask_list)
+
 
     def _host_option(self):
         result = ''
@@ -273,6 +299,61 @@ class SrunLauncher(Launcher):
 
     def get_alloc_nodes(self):
         return subprocess.check_output('sinfo -t alloc -hNo %N', shell=True).splitlines()
+
+    def swap_args(in_args):
+        # Parse the subset of arguements used by geopm
+        parser = SubsetOptionParser()
+        parser.add_option('-n', '--ntasks', dest='num_rank', nargs=1, type='int')
+        parser.add_option('-N', '--nodes', dest='num_node', nargs=1, type='int')
+        parser.add_option('-c', '--cpus-per-task', dest='cpu_per_rank', nargs=1, type='int')
+        parser.add_option('--geopm-ctl', dest='ctl', nargs=1, type='string')
+        parser.add_option('--geopm-report', dest='report', nargs=1, type='string')
+        parser.add_option('--geopm-trace', dest='trace', nargs=1, type='string')
+        parser.add_option('--geopm-region-barrier', dest='barrier', nargs=0, type='bool')
+
+        opts, args = parser.parse_args(in_args)
+
+        if opts.ctl is None:
+            app_args = in_args
+            geopm_args['ctl'] = None
+        else:
+            # Check required arguments and disallowed arguments
+            if opts.num_rank is None:
+                raise SyntaxError('Number of tasks must be specified with -n.')
+            if opts.num_node is None:
+                raise SyntaxError('Number of nodes must be specified with -N.')
+            if '--cpu_bind' in args:
+                raise SyntaxError('The option --cpu_bind must not be specified, this is controlled by geopm_srun.')
+
+            # Create dictionary for geopm specific arguments
+            geomp_args['ctl'] = opts.ctl
+            geopm_args['report'] = opts.report
+            geopm_args['trace'] = opts.trace
+            geopm_args['barrier'] = opts.barrier
+
+            # Modify aruments for srun
+            ctl = opts.ctl
+            num_rank = opts.num_rank
+            num_node = opts.num_node
+            if ctl not in ('process', 'pthread', 'application'):
+                raise SyntaxError('--geopm-ctl must be one of: "process", "pthread", or "application"')
+            if opts.cpu_per_rank is None:
+                cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
+            else:
+                cpu_per_rank = opts.cpu_per_rank
+            if ctl == 'process':
+                num_rank += num_node
+
+            # Put back modified -n and -N
+            args_mod = ['-n', str(num_rank), '-N', str(num_node)]
+            # Add affinity mask for geopm
+            args_mod.extend(self._affinity(ctl, num_rank / num_node, cpu_per_rank).split())
+            args_mod.extend(args)
+            args = args_mod
+
+        # Put srun at head of the arguments
+        args.insert(0, 'srun')
+        return geopm_args, args
 
 class AlpsLauncher(Launcher):
     def __init__(self, app_conf, ctl_conf, report_path,
@@ -301,7 +382,7 @@ class AlpsLauncher(Launcher):
 
     def _num_node_option(self):
         rank_per_node = self._num_rank / self._num_node
-        if self._pmpi_ctl == 'process':
+        if self._launch_type == 'process':
             rank_per_node += 1
         return '-N {rank_per_node}'.format(rank_per_node=rank_per_node)
 
@@ -309,7 +390,7 @@ class AlpsLauncher(Launcher):
         result_base = '-cc '
         mask_list = []
         off_start = 1
-        if (self._pmpi_ctl == 'process'):
+        if (self._launch_type == 'process'):
             mask_list.append('1')
             off_start = 2
         rank_per_node = self._num_rank / self._num_node
@@ -331,40 +412,6 @@ class AlpsLauncher(Launcher):
         raise NotImplementedError;
 
 
-def geopm_srun_affinity(mode, num_rank, num_thread):
-    """
-    geopm_srun_affinty(mode, num_rank, num_thread)
-        mode: One of the following strings
-              "process" - geopm controller as an mpi process.
-              "pthread" - geopm controller as a posix thread.
-              "geopmctl" - for geopmctl application.
-              "application" - for main application when launching with geopmctl.
-        num_rank: Number of ranks per node used by main application.
-        num_thread: Number of threads per rank used by main application.
-    """
-    result_base = '--cpu_bind=v,mask_cpu:'
-    if mode == 'geopmctl':
-        result = result_base + '0x1'
-    else:
-        mask_list = []
-        if mode == 'process':
-            mask_list.append('0x1')
-            binary_mask = num_thread * '1' + '0'
-        elif mode == 'pthread':
-            binary_mask = (num_thread + 1) * '1'
-        elif mode == 'application':
-            binary_mask = num_thread * '1' + '0'
-        else:
-            raise NameError('Unknown mode: "{mode}", valid options are "process", "pthread", "geopmctl", or "application"'.format(mode=mode))
-        for ii in range(num_rank):
-            hex_mask = '0x{:x}'.format(int(binary_mask, 2))
-            mask_list.append(hex_mask)
-            if ii == 0 and mode == 'pthread':
-                binary_mask = num_thread * '1' + '0'
-            binary_mask = binary_mask + num_thread * '0'
-
-        result = result_base + ','.join(mask_list)
-    return result
 
 class SubsetOptionParser(optparse.OptionParser):
     def _process_args(self, largs, rargs, values):
@@ -374,47 +421,6 @@ class SubsetOptionParser(optparse.OptionParser):
             except (optparse.BadOptionError, optparse.AmbiguousOptionError) as e:
                 largs.append(e.opt_str)
 
-def swap_args(in_args):
-    # Parse the subset of arguements used by geopm
-    parser = SubsetOptionParser()
-    parser.add_option('-n', '--ntasks', dest='num_rank', nargs=1, type='int')
-    parser.add_option('-N', '--nodes', dest='num_node', nargs=1, type='int')
-    parser.add_option('-c', '--cpus-per-task', dest='cpu_per_rank', nargs=1, type='int')
-    parser.add_option('--geopm-ctl', dest='ctl', nargs=1, type='string')
-    opts, args = parser.parse_args(in_args)
-
-    if opts.ctl is None:
-        args = in_args
-        ctl = None
-    else:
-        # Check required arguements and add a rank per node for the controller
-        if opts.num_rank is None:
-            raise SyntaxError('Number of tasks must be specified with -n.')
-        if opts.num_node is None:
-            raise SyntaxError('Number of nodes must be specified with -N.')
-        if '--cpu_bind' in args:
-            raise SyntaxError('The option --cpu_bind must not be specified, this is controlled by geopm_srun.')
-        ctl = opts.ctl
-        num_rank = opts.num_rank
-        num_node = opts.num_node
-        if ctl not in ('process', 'pthread', 'application'):
-            raise SyntaxError('--geopm-ctl must be one of: "process", "pthread", or "application"')
-        if opts.cpu_per_rank is None:
-            cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
-        else:
-            cpu_per_rank = opts.cpu_per_rank
-        if ctl == 'process':
-            num_rank += num_node
-
-        # Put back modified -n and -N
-        geopm_args = ['-n', str(num_rank), '-N', str(num_node)]
-        # Add affinity mask for geopm
-        geopm_args.extend(geopm_srun_affinity(ctl, num_rank / num_node, cpu_per_rank).split())
-        geopm_args.extend(args)
-        args = geopm_args
-    # Put srun at head of the arguments
-    args.insert(0, 'srun')
-    return ctl, args
 
 def main():
     help_msg = """\
@@ -431,10 +437,15 @@ GEOPM options:
         arg0 = 'srun'
     elif rm == 'ALPS'
         arg0 = 'aprun'
-    
+
     err = 0
     args = sys.argv[1:]
     # Print launcher help if requested
+
+    # FIXME: must differentiate between aprun/srun arguements and
+    # application arguements here, if appliction takes -h then it can
+    # not be run with the implementation below, it will just print the
+    # help for srun/aprun.
     if '--help' in args or '-h' in args:
         pid = subprocess.Popen([arg0, '--help'])
         pid.wait()
@@ -442,16 +453,18 @@ GEOPM options:
         err = pid.returncode
     else:
         launcher = launcher_factory():
-  
-        ctl, args = swap_args(args)
-        if ctl is None:
+
+        geopm_args, app_args = swap_args(args)
+        if geopm_args['ctl'] is None:
             pid = subprocess.Popen(args)
             pid.wait()
             err = pid.returncode
-        if ctl in ('process', 'pthread'):
+        else:
+
+        if geopm_args['ctl'] in ('process', 'pthread'):
             env = os.environ;
-            env['GEOPM_PMPI_CTL'] = ctl
-            sys.stdout.write('GEOPM_PMPI_CTL={ctl} '.format(ctl=ctl) + ' '.join(args) + '\n')
+            env['GEOPM_PMPI_CTL'] = geopm_args['ctl']
+            sys.stdout.write('GEOPM_PMPI_CTL={ctl} '.format(ctl=geopm_args['ctl']) + ' '.join(args) + '\n')
             pid = subprocess.Popen(args, env=env)
             pid.wait()
             err = pid.returncode
