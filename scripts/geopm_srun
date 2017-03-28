@@ -108,6 +108,7 @@ def swap_args(in_args):
         ctl = opts.ctl
         num_rank = opts.num_rank
         num_node = opts.num_node
+        rank_per_node = num_rank / num_node
         if ctl not in ('process', 'pthread', 'application'):
             raise SyntaxError('--geopm-ctl must be one of: "process", "pthread", or "application"')
         if opts.cpu_per_rank is None:
@@ -120,7 +121,7 @@ def swap_args(in_args):
         # Put back modified -n and -N
         geopm_args = ['-n', str(num_rank), '-N', str(num_node)]
         # Add affinity mask for geopm
-        geopm_args.extend(geopm_srun_affinity(ctl, num_rank / num_node, cpu_per_rank).split())
+        geopm_args.extend(geopm_srun_affinity(ctl, rank_per_node, cpu_per_rank).split())
         geopm_args.extend(args)
         args = geopm_args
     # Put srun at head of the arguments
