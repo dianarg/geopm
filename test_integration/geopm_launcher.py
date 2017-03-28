@@ -58,13 +58,13 @@ def get_resource_manager():
             try:
                 exec_str = 'srun --version'
                 subprocess.check_call(exec_str, shell=True)
-                sys.stderr.write('Warning: Unrecognized host: "{hh}", using SLURM\n'.format(hh=hostname))
+                sys.stderr.write('Warning: GEOPM_RM undefined and unrecognized host: "{hh}", using SLURM\n'.format(hh=hostname))
                 result = "SLURM"
             except subprocess.CalledProcessError:
                 try:
                     exec_str = 'aprun --version'
                     subprocess.check_call(exec_str, shell=True)
-                    sys.stderr.write("Warning: Unrecognized host: \"{hh}\", using ALPS\n".format(hh=hostname))
+                    sys.stderr.write("Warning: GEOPM_RM undefined and unrecognized host: \"{hh}\", using ALPS\n".format(hh=hostname))
                     result = "ALPS"
                 except subprocess.CalledProcessError:
                     raise LookupError('Unable to determine resource manager, set GEOPM_RM environment variable to "SLURM" or "ALPS"')
@@ -72,7 +72,7 @@ def get_resource_manager():
     return result;
 
 
-def launcher_factory(ctl_conf, report_path, trace_path=None, host_file=None, time_limit=1):
+def factory(ctl_conf, report_path, trace_path=None, host_file=None, time_limit=None):
     resource_manager = get_resource_manager()
     if resource_manager == "SLURM":
         return SrunLauncher(ctl_conf, report_path, trace_path, host_file, time_limit)
@@ -103,17 +103,6 @@ class Launcher(object):
 
     def __str__(self):
         return self.__repr__()
-
-    def _int_handler(self, signum, frame):
-        """
-        This is necessary to prevent the script from dying on the
-        first CTRL-C press.  SLURM requires 2 SIGINT signals to abort
-        the job.
-        """
-        if type(self) == SrunLauncher:
-            print "srun: interrupt (one more within 1 sec to abort)"
-        else:
-            self._default_handler(signum, frame)
 
     def set_node_list(self, node_list):
         self._node_list = node_list
@@ -236,6 +225,13 @@ class SrunLauncher(Launcher):
         super(SrunLauncher, self).__init__(app_conf, ctl_conf, report_path,
                                            trace_path=trace_path, host_file=host_file,
                                            time_limit=time_limit)
+    def _int_handler(self, signum, frame):
+        """
+        This is necessary to prevent the script from dying on the
+        first CTRL-C press.  SLURM requires 2 SIGINT signals to abort
+        the job.
+        """
+        sys.stdout.write("srun: interrupt (one more within 1 sec to abort)\n")
 
     def _mpiexec_option(self):
         mpiexec = 'srun -K -I{timeout} -J {name}'.format(timeout=self._queuing_timeout, name=self._job_name)
@@ -363,6 +359,8 @@ class AlpsLauncher(Launcher):
         super(AlpsLauncher, self).__init__(app_conf, ctl_conf, report_path,
                                            trace_path=trace_path, host_file=host_file,
                                            time_limit=time_limit)
+    def _int_handler(self, signum, frame):
+        self._default_handler(signum, frame)
 
     def _environ(self):
         result = super(AlpsLauncher, self)._environ()
