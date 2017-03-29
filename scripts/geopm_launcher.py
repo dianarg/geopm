@@ -97,7 +97,7 @@ def factory(argv):
     if rm == "SLURM":
         return SrunLauncher(argv[1:])
     elif rm == "ALPS":
-        return AlpsLauncher(argv[1:])
+        return AprunLauncher(argv[1:])
 
 class PassThroughError(Exception):
     """
@@ -291,6 +291,11 @@ class AprunLauncher(Launcher):
     def __init__(self, argv):
         super(AprunLauncher, self).__init__(argv)
 
+    def environ(self):
+        result = super(AprunLauncher, self).environ()
+        result['KMP_AFFINITY'] = 'disabled'
+        return result
+
     def parse_alloc(self):
         # Parse the subset of arguements used by geopm
         parser = SubsetOptionParser()
@@ -302,11 +307,11 @@ class AprunLauncher(Launcher):
         # Check required arguements
         if opts.num_rank is None:
             raise SyntaxError('Number of tasks must be specified with -n.')
-        if opts.num_node is None:
+        if opts.rank_per_node is None:
             raise SyntaxError('Number of tasks per node must be specified with -N.')
-        if any(aa.startswith('--cpu_binding') or
-               aa.startwith('-cc') for aa self.argv):
-            raise SyntaxError('The options --cpu_binding or -cc must not be specified, this is controlled by geopm_launcher.')
+        if any(aa.startswith('--cpu-binding') or
+               aa.startswith('-cc') for aa in self.argv):
+            raise SyntaxError('The options --cpu-binding or -cc must not be specified, this is controlled by geopm_launcher.')
 
         self.num_rank = opts.num_rank
         self.num_app_rank = opts.num_rank
@@ -327,7 +332,7 @@ class AprunLauncher(Launcher):
 
     def num_node_option(self):
         return ['-N', str(int(math.ceil(float(self.num_rank) /
-                                        float(self.num_node))]
+                                        float(self.num_node))))]
 
     def num_rank_option(self):
         return ['-n', str(self.num_rank)]
@@ -335,7 +340,7 @@ class AprunLauncher(Launcher):
     def affinity_option(self):
         if self.config.ctl == 'application':
             raise NotImplementedError('Launch with geopmctl not supported')
-        result = ['--cpu_binding']
+        result = ['--cpu-binding']
         mask_list = []
         off_start = 1
         cpu_per_node = self.num_app_rank * self.cpu_per_rank
