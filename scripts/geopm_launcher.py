@@ -131,7 +131,7 @@ class Config(object):
         parser.add_option('--geopm-plugin', dest='plugin', nargs=1, type='string')
         parser.add_option('--geopm-debug-attach', dest='debug_attach', nargs=1, type='string')
         parser.add_option('--geopm-barrier', dest='barrier', action='store_true', default=False)
-        opts, args = parser.parse_args(argv[1:])
+        opts, self.args = parser.parse_args(argv)
         # Error check inputs
         if opts.policy is None:
             raise SyntaxError('--geopm-policy must be given if --geopm-ctl is specified')
@@ -177,15 +177,18 @@ class Config(object):
             result['GEOPM_REGION_BARRIER'] = 'true'
         return result
 
+    def unparsed(self):
+        return self.args
+
 class Launcher(object):
     def __init__(self, argv):
-        self.argv = argv
         try:
             self.config = Config(argv)
+            self.argv = self.config.unparsed()
             self.parse_alloc()
-            self.modify_alloc()
         except PassThroughError:
             self.config = None
+            self.argv = argv
 
     def run(self):
         argv_mod = self.mpiexec()
@@ -198,7 +201,7 @@ class Launcher(object):
         if self.config:
             echo.append(self.config.__str__())
         echo.extend(argv_mod)
-        echo = ' '.join(echo) + '\n'
+        echo = '\n' + ' '.join(echo) + '\n\n'
         sys.stdout.write(echo)
         sys.stdout.flush()
         subprocess.check_call(argv_mod, env=self.environ())
@@ -226,7 +229,7 @@ class Launcher(object):
 
 class SrunLauncher(Launcher):
     def __init__(self, argv):
-        Launcher.__init__(self, argv)
+        super(SrunLauncher, self).__init__(argv)
 
     def parse_alloc(self):
         # Parse the subset of arguements used by geopm
@@ -234,26 +237,26 @@ class SrunLauncher(Launcher):
         parser.add_option('-n', '--ntasks', dest='num_rank', nargs=1, type='int')
         parser.add_option('-N', '--nodes', dest='num_node', nargs=1, type='int')
         parser.add_option('-c', '--cpus-per-task', dest='cpu_per_rank', nargs=1, type='int')
-        opts, args = parser.parse_args(self.argv[1:])
+        opts, self.argv = parser.parse_args(self.argv)
 
         # Check required arguements
         if opts.num_rank is None:
             raise SyntaxError('Number of tasks must be specified with -n.')
         if opts.num_node is None:
             raise SyntaxError('Number of nodes must be specified with -N.')
-        if '--cpu_bind' in args:
+        if '--cpu_bind' in self.argv:
             raise SyntaxError('The option --cpu_bind must not be specified, this is controlled by geopm_srun.')
 
-        self.argv = args
         self.num_rank = opts.num_rank
+        self.num_app_rank = opts.num_rank
         self.num_node = opts.num_node
-        rank_per_node = num_rank / num_node
+
         if opts.cpu_per_rank is None:
             self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
         else:
             self.cpu_per_rank = opts.cpu_per_rank
         if self.config.ctl == 'process':
-            self.num_rank += num_node
+            self.num_rank += self.num_node
 
     def mpiexec(self):
         return ['srun']
@@ -269,17 +272,17 @@ class SrunLauncher(Launcher):
             raise NotImplementedError('Launch with geopmctl not supported')
         result_base = '--cpu_bind=v,mask_cpu:'
         mask_list = []
-        if mode == 'process':
+        if self.config.ctl == 'process':
             mask_list.append('0x1')
             binary_mask = self.cpu_per_rank * '1' + '0'
-        elif mode == 'pthread':
+        elif self.config.ctl == 'pthread':
             binary_mask = (self.cpu_per_rank + 1) * '1'
-        for ii in range(num_rank):
+        for ii in range(self.num_app_rank):
             hex_mask = '0x{:x}'.format(int(binary_mask, 2))
             mask_list.append(hex_mask)
-            if ii == 0 and mode == 'pthread':
-                binary_mask = num_thread * '1' + '0'
-            binary_mask = binary_mask + num_thread * '0'
+            if ii == 0 and self.config.ctl == 'pthread':
+                binary_mask = self.cpu_per_rank * '1' + '0'
+            binary_mask = binary_mask + self.cpu_per_rank * '0'
         return [result_base + ','.join(mask_list)]
 
 def main():
