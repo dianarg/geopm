@@ -56,6 +56,7 @@ import os
 import optparse
 import subprocess
 import socket
+import math
 
 def resource_manager():
     slurm_hosts = ['mr-fusion', 'KNP12']
@@ -244,7 +245,7 @@ class SrunLauncher(Launcher):
             raise SyntaxError('Number of tasks must be specified with -n.')
         if opts.num_node is None:
             raise SyntaxError('Number of nodes must be specified with -N.')
-        if '--cpu_bind' in self.argv:
+        if any(aa.startswith('--cpu_bind') for aa in self.argv):
             raise SyntaxError('The option --cpu_bind must not be specified, this is controlled by geopm_srun.')
 
         self.num_rank = opts.num_rank
@@ -270,7 +271,7 @@ class SrunLauncher(Launcher):
     def affinity_option(self):
         if self.config.ctl == 'application':
             raise NotImplementedError('Launch with geopmctl not supported')
-        result_base = '--cpu_bind=v,mask_cpu:'
+        result = ['--cpu_bind']
         mask_list = []
         if self.config.ctl == 'process':
             mask_list.append('0x1')
@@ -283,7 +284,67 @@ class SrunLauncher(Launcher):
             if ii == 0 and self.config.ctl == 'pthread':
                 binary_mask = self.cpu_per_rank * '1' + '0'
             binary_mask = binary_mask + self.cpu_per_rank * '0'
-        return [result_base + ','.join(mask_list)]
+        result.append('v,mask_cpu:' + ','.join(mask_list))
+        return result
+
+class AprunLauncher(Launcher):
+    def __init__(self, argv):
+        super(AprunLauncher, self).__init__(argv)
+
+    def parse_alloc(self):
+        # Parse the subset of arguements used by geopm
+        parser = SubsetOptionParser()
+        parser.add_option('-n', '--pes', dest='num_rank', nargs=1, type='int')
+        parser.add_option('-N', '--pes-per-node', dest='rank_per_node', nargs=1, type='int')
+        parser.add_option('-d', '--cpus-per-pe', dest='cpu_per_rank', nargs=1, type='int')
+        opts, self.argv = parser.parse_args(self.argv)
+
+        # Check required arguements
+        if opts.num_rank is None:
+            raise SyntaxError('Number of tasks must be specified with -n.')
+        if opts.num_node is None:
+            raise SyntaxError('Number of tasks per node must be specified with -N.')
+        if any(aa.startswith('--cpu_binding') or
+               aa.startwith('-cc') for aa self.argv):
+            raise SyntaxError('The options --cpu_binding or -cc must not be specified, this is controlled by geopm_launcher.')
+
+        self.num_rank = opts.num_rank
+        self.num_app_rank = opts.num_rank
+        self.num_node = int(math.ceil(float(opts.num_rank) /
+                                      float(opts.rank_per_node)))
+        self.rank_per_node = opts.rank_per_node
+
+        if opts.cpu_per_rank is None:
+            self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
+        else:
+            self.cpu_per_rank = opts.cpu_per_rank
+        if self.config.ctl == 'process':
+            self.num_rank += self.num_node
+            self.rank_per_node += 1
+
+    def mpiexec(self):
+        return ['aprun']
+
+    def num_node_option(self):
+        return ['-N', str(int(math.ceil(float(self.num_rank) /
+                                        float(self.num_node))]
+
+    def num_rank_option(self):
+        return ['-n', str(self.num_rank)]
+
+    def affinity_option(self):
+        if self.config.ctl == 'application':
+            raise NotImplementedError('Launch with geopmctl not supported')
+        result = ['--cpu_binding']
+        mask_list = []
+        off_start = 1
+        cpu_per_node = self.num_app_rank * self.cpu_per_rank
+        if self.config.ctl == 'process':
+            mask_list.append('0')
+        mask_list.extend(['{0}-{1}'.format(off, off + self.cpu_per_rank - 1)
+                          for off in range(off_start, cpu_per_node + off_start, self.cpu_per_rank)])
+        result.append(':'.join(mask_list))
+        return result
 
 def main():
     launcher = factory(sys.argv)
