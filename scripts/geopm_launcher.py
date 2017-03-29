@@ -179,7 +179,7 @@ class Config(object):
 
 class Launcher(object):
     def __init__(self, argv):
-        self.argv = argv[1:]
+        self.argv = argv
         try:
             self.config = Config(argv)
             self.parse_alloc()
@@ -194,6 +194,13 @@ class Launcher(object):
             argv_mod.extend(self.num_rank_option())
             argv_mod.extend(self.affinity_option())
         argv_mod.extend(self.argv)
+        echo = []
+        if self.config:
+            echo.append(self.config.__str__())
+        echo.extend(argv_mod)
+        echo = ' '.join(echo) + '\n'
+        sys.stdout.write(echo)
+        sys.stdout.flush()
         subprocess.check_call(argv_mod, env=self.environ())
 
     def environ(self):
