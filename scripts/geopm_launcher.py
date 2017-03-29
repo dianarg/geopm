@@ -30,19 +30,84 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
+"""\
+GEOPM options:
+      --geopm-ctl=ctl         use geopm runtime and launch geopm with the
+                              "ctl" method, one of "process", "pthread" or
+                              "application"
+      --geopm-policy=pol      use the geopm policy file or shared memory
+                              region "pol"
+      --geopm-report=path     create geopm report files with base name "path"
+      --geopm-trace=path      create geopm trace files with base name "path"
+      --geopm-shmkey=key      use shared memory keys for geopm starting with
+                              "key"
+      --geopm-timeout=sec     appliation waits "sec" seconds for handshake
+                              with geopm
+      --geopm-plugin=path     look for geopm plugins in "path", a : separated
+                              list of directories
+      --geopm-debug-attach=rk attach serial debugger to rank "rk"
+      --geopm-barrier         apply node local barriers when application enters
+                              or exits a geopm region
+
 """
-    geopm_launcher.py [launcher-args...] [--geopm-ctl=<mode>] executable [exec-args...]
-        mode: One of the following strings
-              "process" - Launch geopm controller as an mpi process.
-              "pthread" - Launch geopm controller as a posix thread.
-              "application" - Launch geopm controller as a separate MPI application (geopmctl).
-"""
+
 import sys
 import os
 import optparse
 import subprocess
+import socket
+
+def resource_manager():
+    slurm_hosts = ['mr-fusion', 'KNP12']
+    alps_hosts = ['theta']
+
+    result = os.environ.get('GEOPM_RM')
+
+    if not result:
+        hostname = socket.gethostname()
+
+        if sys.argv[0].endswith('srun'):
+            result = "SLURM"
+        elif sys.argv[0].endswith('aprun'):
+            result = "ALPS"
+        elif any(hostname.startswith(word) for word in slurm_hosts):
+            result = "SLURM"
+        elif any(hostname.startswith(word) for word in alps_hosts):
+            result = "ALPS"
+        else:
+            try:
+                exec_str = 'srun --version'
+                subprocess.check_call(exec_str, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                sys.stderr.write('Warning: GEOPM_RM undefined and unrecognized host: "{hh}", using SLURM\n'.format(hh=hostname))
+                result = "SLURM"
+            except subprocess.CalledProcessError:
+                try:
+                    exec_str = 'aprun --version'
+                    subprocess.check_call(exec_str, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                    sys.stderr.write("Warning: GEOPM_RM undefined and unrecognized host: \"{hh}\", using ALPS\n".format(hh=hostname))
+                    result = "ALPS"
+                except subprocess.CalledProcessError:
+                    raise LookupError('Unable to determine resource manager, set GEOPM_RM environment variable to "SLURM" or "ALPS"')
+
+    return result;
+
+def factory(argv):
+    rm = resource_manager()
+    if rm == "SLURM":
+        return SrunLauncher(argv[1:])
+    elif rm == "ALPS":
+        return AlpsLauncher(argv[1:])
+
+class PassThroughError(Exception):
+    """
+    Exception raised when geopm is not to be used.
+    """
 
 class SubsetOptionParser(optparse.OptionParser):
+    """
+    Parse a subset of comand line arguements and prepend unrecognized
+    arguments to positional arguments.
+    """
     def _process_args(self, largs, rargs, values):
         while rargs:
             try:
@@ -50,13 +115,9 @@ class SubsetOptionParser(optparse.OptionParser):
             except (optparse.BadOptionError, optparse.AmbiguousOptionError) as e:
                 largs.append(e.opt_str)
 
-class PassThroughError(Exception):
-    """
-    Exception raised when geopm is not to be used.
-    """
-
 class Config(object):
     def __init__(self, argv):
+        self.ctl = None
         if '--geopm-ctl' not in argv:
             raise PassThroughError('The --geopm-ctl flag is not specified.')
         # Parse the subset of arguements used by geopm
@@ -71,6 +132,12 @@ class Config(object):
         parser.add_option('--geopm-debug-attach', dest='debug_attach', nargs=1, type='string')
         parser.add_option('--geopm-barrier', dest='barrier', action='store_true', default=False)
         opts, args = parser.parse_args(argv[1:])
+        # Error check inputs
+        if opts.policy is None:
+            raise SyntaxError('--geopm-policy must be given if --geopm-ctl is specified')
+        if opts.ctl not in ('process', 'pthread', 'application'):
+            raise SyntaxError('--geopm-ctl must be one of: "process", "pthread", or "application"')
+        # copy opts object into self
         self.ctl = opts.ctl
         self.policy = opts.policy
         self.report = opts.report
@@ -80,8 +147,35 @@ class Config(object):
         self.plugin = opts.plugin
         self.debug_attach = opts.debug_attach
         self.barrier = opts.barrier
-        if self.ctl not in ('process', 'pthread', 'application'):
-            raise SyntaxError('--geopm-ctl must be one of: "process", "pthread", or "application"')
+
+    def __repr__(self):
+        return ' '.join(['{kk}={vv}'.format(kk=kk, vv=vv)
+                         for (kk, vv) in self.environ().iteritems()])
+
+    def __str__(self):
+        return self.__repr__()
+
+    def environ(self):
+        result = {}
+        if self.ctl in ('process', 'pthread'):
+            result['GEOPM_PMPI_CTL'] = self.ctl
+        if self.policy:
+            result['GEOPM_POLICY'] = self.policy
+        if self.report:
+            result['GEOPM_REPORT'] = self.report
+        if self.trace:
+            result['GEOPM_TRACE'] = self.trace
+        if self.shmkey:
+            result['GEOPM_SHMKEY'] = self.shmkey
+        if self.timeout:
+            result['GEOPM_PROFILE_TIMEOUT'] = self.timeout
+        if self.plugin:
+            result['GEOPM_PLUGIN_PATH'] = self.timeout
+        if self.debug_attach:
+            result['GEOPM_DEBUG_ATTACH'] = self.debug_attach
+        if self.barrier:
+            result['GEOPM_REGION_BARRIER'] = 'true'
+        return result
 
 class Launcher(object):
     def __init__(self, argv):
@@ -94,7 +188,7 @@ class Launcher(object):
             self.config = None
 
     def run(self):
-        argv_mod = [self.mpiexec()]
+        argv_mod = self.mpiexec()
         if self.config is not None:
             argv_mod.extend(self.num_node_option())
             argv_mod.extend(self.num_rank_option())
@@ -103,23 +197,9 @@ class Launcher(object):
         subprocess.check_call(argv_mod, env=self.environ())
 
     def environ(self):
-        result = dict(sys.environ)
+        result = dict(os.environ)
         if self.config is not None:
-            result['GEOPM_POLICY'] = self.config.policy
-            if self.config.report:
-                result['GEOPM_REPORT'] = self.config.report
-            if self.config.trace:
-                result['GEOPM_TRACE'] = self.config.trace
-            if self.config.shmkey:
-                result['GEOPM_SHMKEY'] = self.config.shmkey
-            if self.config.timeout:
-                result['GEOPM_PROFILE_TIMEOUT'] = self.config.timeout
-            if self.config.plugin:
-                result['GEOPM_PLUGIN_PATH'] = self.config.timeout
-            if self.config.debug_attach:
-                result['GEOPM_DEBUG_ATTACH'] = self.config.debug_attach
-            if self.config.barrier:
-                result['GEOPM_REGION_BARRIER'] = 'true'
+            result.update(self.config.environ())
         return result
 
     def parse_alloc(self):
@@ -139,7 +219,7 @@ class Launcher(object):
 
 class SrunLauncher(Launcher):
     def __init__(self, argv):
-        Launcher.__init__(argv)
+        Launcher.__init__(self, argv)
 
     def parse_alloc(self):
         # Parse the subset of arguements used by geopm
@@ -168,14 +248,14 @@ class SrunLauncher(Launcher):
         if self.config.ctl == 'process':
             self.num_rank += num_node
 
+    def mpiexec(self):
+        return ['srun']
+
     def num_node_option(self):
         return ['-N', str(self.num_node)]
 
     def num_rank_option(self):
         return ['-n', str(self.num_rank)]
-
-    def mpiexec_option(self):
-        return 'srun'
 
     def affinity_option(self):
         if self.config.ctl == 'application':
@@ -193,59 +273,24 @@ class SrunLauncher(Launcher):
             if ii == 0 and mode == 'pthread':
                 binary_mask = num_thread * '1' + '0'
             binary_mask = binary_mask + num_thread * '0'
-        return result_base + ','.join(mask_list)
+        return [result_base + ','.join(mask_list)]
 
-def srun_main():
-    help_msg = """\
-GEOPM options:
-      --geopm-ctl=ctl         use geopm runtime and launch geopm with the
-                              "ctl" method, one of "process", "pthread" or
-                              "application"
-      --geopm-policy=pol      use the geopm policy file or shared memory
-                              region "pol"
-      --geopm-report=path     create geopm report files with base name "path"
-      --geopm-trace=path      create geopm trace files with base name "path"
-      --geopm-shmkey=key      use shared memory keys for geopm starting with
-                              "key"
-      --geopm-timeout=sec     appliation waits "sec" seconds for handshake
-                              with geopm
-      --geopm-plugin=path     look for geopm plugins in "path", a : separated
-                              list of directories
-      --geopm-debug-attach=rk attach serial debugger to rank "rk"
-      --geopm-barrier         apply node local barriers when application enters
-                              or exits a geopm region
-
-"""
-    err = 0
-    args = sys.argv[1:]
-    # Print srun help if requested
-    if '--help' in args or '-h' in args:
-        args.insert(0, 'srun')
-        pid = subprocess.Popen(args)
-        pid.wait()
-        sys.stdout.write(help_msg)
-        err = pid.returncode
-    else:
-        ctl, args = swap_args(args)
-        if ctl is None:
-            pid = subprocess.Popen(args)
-            pid.wait()
-            err = pid.returncode
-        if ctl in ('process', 'pthread'):
-            env = os.environ;
-            env['GEOPM_PMPI_CTL'] = ctl
-            sys.stdout.write('GEOPM_PMPI_CTL={ctl} '.format(ctl=ctl) + ' '.join(args) + '\n')
-            pid = subprocess.Popen(args, env=env)
-            pid.wait()
-            err = pid.returncode
-        elif ctl == 'application':
-            raise NotImplementedError('Launching geopm as separate MPI application not yet supported by geopm_srun.')
-    sys.exit(err)
+def main():
+    launcher = factory(sys.argv)
+    launcher.run()
 
 if __name__ == '__main__':
+    err = 0
     try:
-        err = main()
+        main()
+        # Print geopm help if it appears that documentation was requested
+        # Note: if application uses -h as a parameter or some other corner
+        # cases there will be an extraneous help text printed at the end
+        # of the run.
+        if '--help' in sys.argv or '-h' in sys.argv:
+            sys.stdout.write(__doc__)
+
     except Exception as e:
-        sys.stderr.write("<geopm_srun> {err}\n".format(err=e))
+        sys.stderr.write("<geopm_launcher> {err}\n".format(err=e))
         err = -1
     sys.exit(err)
