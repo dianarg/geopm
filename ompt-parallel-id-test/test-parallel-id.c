@@ -42,21 +42,26 @@ enum {
 };
 
 static int g_err = 0;
+static void *g_curr_function = NULL;
+static ompt_parallel_id_t g_curr_parallel_id;
 
 static void on_ompt_event_parallel_begin(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
                                          ompt_parallel_id_t parallel_id, uint32_t requested_team_size,
                                          void *parallel_function, ompt_invoker_t invoker)
 {
      static unsigned is_once = 1;
-     static ompt_parallel_id_t first_parallel_id;
+     static void *first_function = NULL;
      if (is_once) {
-         first_parallel_id = parallel_id;
+         first_function = parallel_function;
          is_once = 0;
      }
-     if (g_err == 0 && parallel_id != first_parallel_id) {
-          fprintf(stderr, "Begin: parallel ID is not the same: 0x%llx != 0x%llx\n\n",
-                  (unsigned long long)(first_parallel_id),
-                  (unsigned long long)(parallel_id));
+
+     g_curr_function = parallel_function;
+     g_curr_parallel_id = parallel_id;
+
+     if (g_err == 0 && parallel_function != first_function) {
+          fprintf(stderr, "Begin: parallel function is not the same: 0x%zx != 0x%zx\n\n",
+                  (size_t)first_function, (size_t)parallel_function);
           g_err = -1;
      }
 }
@@ -65,15 +70,14 @@ static void on_ompt_event_parallel_end(ompt_parallel_id_t parallel_id, ompt_task
                                        ompt_invoker_t invoker)
 {
      static unsigned is_once = 1;
-     static ompt_parallel_id_t first_parallel_id;
-     if (is_once) {
-         first_parallel_id = parallel_id;
+     static void *first_function = NULL;
+     if (is_once && parallel_id == g_curr_parallel_id) {
+         first_function = g_curr_function;
          is_once = 0;
      }
-     if (g_err == 0 && parallel_id != first_parallel_id) {
-          fprintf(stderr, "End: parallel ID is not the same: 0x%llx != 0x%llx\n\n",
-                  (unsigned long long)(first_parallel_id),
-                  (unsigned long long)(parallel_id));
+     if (g_err == 0 && g_curr_function != first_function) {
+          fprintf(stderr, "End: parallel function is not the same: 0x%z != 0x%z\n\n",
+                  first_function, g_curr_function);
           g_err = -2;
      }
 }

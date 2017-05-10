@@ -52,10 +52,10 @@ ompt.h: libiomp5.so
 
 test-parallel-id: test-parallel-id.c ompt.h
 	icc -fopenmp -I$(PWD) -L$(PWD) test-parallel-id.c -o $@
-	echo [PASS]
 
 check: test-parallel-id
 	LD_LIBRARY_PATH=:$LD_LIBRARY_PATH ./test-parallel-id
+	@echo [PASS]
 
 clean:
 	rm -f test-parallel-id
