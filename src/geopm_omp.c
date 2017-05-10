@@ -36,6 +36,7 @@
 #include <sched.h>
 #include <stdint.h>
 #include "geopm_omp.h"
+#include "geopm_message.h"
 #include "geopm_error.h"
 #include "config.h"
 
@@ -46,25 +47,41 @@
 #include "geopm.h"
 #include <ompt.h>
 
+static void *g_curr_parallel_function = NULL;
+static ompt_parallel_id_t g_curr_parallel_id;
+static uint64_t g_curr_region_id = GEOPM_REGION_ID_UNDEFINED;
+
 static void on_ompt_event_parallel_begin(ompt_task_id_t parent_task_id, ompt_frame_t *parent_task_frame,
                                          ompt_parallel_id_t parallel_id, uint32_t requested_team_size,
                                          void *parallel_function, ompt_invoker_t invoker)
 {
-     uint64_t region_id;
-     char parallel_id_str[NAME_MAX];
-     snprintf(parallel_id_str, NAME_MAX, "0x%llx", (unsigned long long)(parallel_id));
-     geopm_prof_region(parallel_id_str, GEOPM_REGION_HINT_UNKNOWN, &region_id);
-     geopm_prof_enter(region_id);
+     if (g_curr_parallel_function != parallel_function) {
+         g_curr_parallel_function = parallel_function;
+         g_curr_parallel_id = parallel_id;
+         char region_str[NAME_MAX];
+         snprintf(region_str, NAME_MAX, "OMPT-0x%zx", (size_t)(parallel_function));
+         uint64_t region_id;
+         int err = geopm_prof_region(region_str, GEOPM_REGION_HINT_UNKNOWN, &region_id);
+         if (err) {
+             g_curr_parallel_function = NULL;
+             g_curr_region_id = GEOPM_REGION_ID_UNDEFINED;
+         }
+         else {
+             g_curr_region_id = region_id;
+         }
+     }
+     if (g_curr_region_id != GEOPM_REGION_ID_UNDEFINED) {
+         geopm_prof_enter(g_curr_region_id);
+     }
 }
 
 static void on_ompt_event_parallel_end(ompt_parallel_id_t parallel_id, ompt_task_id_t task_id,
                                        ompt_invoker_t invoker)
 {
-     uint64_t region_id;
-     char parallel_id_str[NAME_MAX];
-     snprintf(parallel_id_str, NAME_MAX, "0x%llx", (unsigned long long)(parallel_id));
-     geopm_prof_region(parallel_id_str, GEOPM_REGION_HINT_UNKNOWN, &region_id);
-     geopm_prof_exit(region_id);
+     if (g_curr_region_id != GEOPM_REGION_ID_UNDEFINED &&
+         g_curr_parallel_id == parallel_id) {
+         geopm_prof_exit(g_curr_region_id);
+     }
 }
 
 
