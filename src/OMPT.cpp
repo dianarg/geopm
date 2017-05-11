@@ -30,21 +30,146 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifdef _OPENMP
-#ifdef GEOPM_HAS_OMPT
-
-#define _GNU_SOURCE
-#include <omp.h>
-#include <ompt.h>
 #include <string>
-#include <stringstream>
+#include <iostream>
+#include <fstream>
 #include <map>
+#include <sstream>
+#include <iomanip>
 
 #include "geopm.h"
 #include "geopm_omp.h"
 #include "geopm_message.h"
 #include "geopm_error.h"
+#include "Exception.hpp"
 #include "config.h"
+
+#ifdef _OPENMP
+#include <omp.h>
+
+#ifdef GEOPM_HAS_OMPT
+#include <ompt.h>
+
+
+namespace geopm
+{
+    class OMPT
+    {
+        public:
+            OMPT();
+            virtual ~OMPT();
+            uint64_t region_id(void *parallel_function);
+            void region_name(void *parallel_function, std::string &name);
+        private:
+            /// Map from <virtual_address, is_end> pair representing
+            /// half of a virtual address range to the object file
+            /// asigned to the address range.
+            std::map<std::pair<size_t, bool>, std::string> m_range_object_map;
+            /// Map from function address to geopm region ID
+            std::map<size_t, uint64_t> m_function_region_id_map;
+            const std::string &object_name(void *function_ptr);
+            size_t virtual_offset(void *function_ptr);
+    };
+
+    static OMPT &ompt(void)
+    {
+        static OMPT instance;
+        return instance;
+    }
+
+    class MapParseException : public Exception
+    {
+        public:
+            MapParseException() {}
+            virtual ~MapParseException() {}
+    };
+
+    OMPT::OMPT()
+    {
+        std::ifstream maps_stream("/proc/self/maps");
+        while (maps_stream.good()) {
+            try {
+                int err = 0;
+                std::string line;
+                std::getline(maps_stream, line);
+                if (line.length() == 0) {
+                    throw MapParseException();
+                }
+                size_t addr_begin, addr_end;
+                int n_scan = sscanf(line.c_str(), "%zx-%zx", &addr_begin, &addr_end);
+                if (n_scan != 2) {
+                    throw MapParseException();
+                }
+
+                std::string object;
+                size_t object_loc = line.rfind(' ') + 1;
+                if (object_loc == std::string::npos) {
+                    throw MapParseException();
+                }
+                object = line.substr(object_loc);
+                if (line.find(" r-xp ") != line.find(' ')) {
+                    throw MapParseException();
+                }
+                std::pair<size_t, bool> aa(addr_begin, false);
+                std::pair<size_t, bool> bb(addr_end, true);
+                std::pair<std::pair<size_t, bool>, std::string> cc(aa, object);
+                std::pair<std::pair<size_t, bool>, std::string> dd(bb, object);
+                auto it0 = m_range_object_map.insert(m_range_object_map.begin(), cc);
+                auto it1 = m_range_object_map.insert(it0, dd);
+                ++it0;
+                if (it0 != it1) {
+                    throw Exception("Error parsing /proc/self/maps, overlapping address ranges.",
+                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+                }
+            }
+            catch (MapParseException) {
+
+            }
+        }
+    }
+
+    OMPT::~OMPT()
+    {
+
+    }
+
+    uint64_t OMPT::region_id(void *parallel_function)
+    {
+        uint64_t result = GEOPM_REGION_ID_UNDEFINED;
+        auto it = m_function_region_id_map.find((size_t)parallel_function);
+        if (m_function_region_id_map.end() != it) {
+            result = (*it).second;
+        }
+        else {
+            std::string rn;
+            region_name(parallel_function, rn);
+            int err = geopm_prof_region(rn.c_str(), GEOPM_REGION_HINT_UNKNOWN, &result);
+            if (err) {
+                result = GEOPM_REGION_ID_UNDEFINED;
+            }
+            else {
+                m_function_region_id_map.insert(std::pair<size_t, uint64_t>((size_t)parallel_function, result));
+            }
+        }
+        return result;
+    }
+
+    void OMPT::region_name(void *parallel_function, std::string &name)
+    {
+        name.clear();
+        auto it = m_range_object_map.lower_bound(std::pair<size_t, bool>((size_t)parallel_function, false));
+        auto it_next = it;
+        it_next++;
+        if (std::distance(it, m_range_object_map.end()) > 1 &&
+            false == (*it).first.second &&
+            true == (*it_next).first.second) {
+            size_t offset = (size_t)parallel_function - (size_t)((*it).first.first);
+            std::ostringstream name_stream("OMPT-");
+            name_stream << (*it).second << "-0x" << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << offset;
+            name = name_stream.str();
+        }
+    }
+}
 
 
 extern "C"
@@ -60,7 +185,7 @@ extern "C"
           if (g_curr_parallel_function != parallel_function) {
               g_curr_parallel_function = parallel_function;
               g_curr_parallel_id = parallel_id;
-              g_curr_region_id = OMPT::OMPT().region_id(parallel_function);
+              g_curr_region_id = geopm::ompt().region_id(parallel_function);
           }
           if (g_curr_region_id != GEOPM_REGION_ID_UNDEFINED) {
               geopm_prof_enter(g_curr_region_id);
@@ -91,84 +216,6 @@ extern "C"
      }
 }
 
-
-namespace geopm
-{
-    /// @todo MAKE OMPT A SINGLETON!
-    class OMPT
-    {
-        public:
-            OMPT();
-            virtual ~OMPT();
-            uint64_t region_id(void *parallel_function);
-            void region_name(void *parallel_function, std::string &name);
-        private:
-            /// Map from <virtual_address, is_end> pair representing
-            /// half of a virtual address range to the object file
-            /// asigned to the address range.
-            std::map<std::pair<void *, bool>, std::string> m_range_object_map;
-            /// Map from function address to geopm region ID
-            std::map<void *, uint64_t> m_function_region_id_map;
-            const std::string &object_name(void *function_ptr);
-            size_t virtual_offset(void *function_ptr);
-    };
-
-
-    OMPT::OMPT()
-    {
-        size_t addr_begin, addr_end;
-        std::string perm, dummy0, dummy1, dummy2, object;
-        std::istream maps_file("/proc/self/maps")
-        while (maps_file.good()) {
-            maps_file >> std::hex >> addr_begin >> '-' >> addr_end >> perm >> dummy0 >> dummy1 >> dummy2, object;
-            if (perm.find('x') != string::npos) {
-                std::pair<void *, bool> aa(addr_begin, false);
-                std::pair<void *, bool> bb(addr_end, false);
-                auto it0 = m_range_object_map.insert(m_range_object_map.begin(), std::pair<std::pair<void *, bool>, std::string>(aa, object));
-                auto it1 = m_range_object_map.insert(it0, std::pair<std::pair<void *, bool>, std::string>(bb, object));
-                if (it0 + 1 != it1) {
-                    raise Exception("Error parsing /proc/self/maps, overlapping address ranges.", GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-                }
-            }
-        }
-    }
-
-    OMPT::~OMPT()
-    {
-
-    }
-
-    uint64_t OMPT::region_id(void *parallel_function)
-    {
-        uint64_t result = GEOPM_REGION_ID_UNDEFINED;
-        auto it = m_function_region_id_map.find(parallel_function);
-        if (m_function_region_id_map.end() != it) {
-            result = (*it).second;
-        }
-        else {
-            int err = geopm_prof_region(region_name().c_str(), GEOPM_REGION_HINT_UNKNOWN, &result);
-            if (err) {
-                result = GEOPM_REGION_ID_UNDEFINED;
-            }
-        }
-    }
-
-    void OMPT::region_name(void *parallel_function, std::string &name)
-    {
-        name.clear();
-        auto it = m_range_object_map.lower_bound(std::pair<void *, bool>(parallel_function, false));
-        if (m_range_object_map.end() != it &&
-            m_range_object_map.end() - 1 != it &&
-            false == (*it).first.second &&
-            true == (*(it + 1).first.second) {
-            size_t offset = (size_t)parallel_function - (size_t)((*it).first.first);
-            std::ostringstream name_stream('OMPT-');
-            name_stream << (*it).second << '-0x' << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << offset;
-            name = name_stream.str();
-            m_function_region_id_map.insert(std::pair<void*, std::string>(parallel_function, name));
-        }
-    }
-}
 
 #endif
 #endif
