@@ -192,7 +192,7 @@ static const char *g_test_map =
 "7fff3cf98000-7fff3cf9a000 r-xp 00000000 00:00 0                          [vdso]\n"
 "ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]\n";
 
-class OMPTTest: public :: testing :: Test
+class MPIOMPTTest: public :: testing :: Test
 {
     protected:
         void SetUp();
@@ -200,7 +200,7 @@ class OMPTTest: public :: testing :: Test
         std::string m_maps_path;
 };
 
-void OMPTTest::SetUp()
+void MPIOMPTTest::SetUp()
 {
     m_maps_path = "OMPTest.maps";
     std::ofstream maps_file(m_maps_path);
@@ -208,12 +208,12 @@ void OMPTTest::SetUp()
     maps_file.close();
 }
 
-void OMPTTest::TearDown()
+void MPIOMPTTest::TearDown()
 {
     unlink(m_maps_path.c_str());
 }
 
-TEST_F(OMPTTest, hello)
+TEST_F(MPIOMPTTest, hello)
 {
     geopm::OMPT ompt_o(m_maps_path);
     std::string name;
