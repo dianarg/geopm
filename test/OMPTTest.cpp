@@ -31,10 +31,9 @@
  */
 
 
+#include <fstream>
 #include "gtest/gtest.h"
-#include "geopm_error.h"
-#include "Exception.hpp"
-#include "Policy.hpp"
+#include "OMPT.hpp"
 
 static const char *g_test_map = 
 "00400000-005a8000 r-xp 00000000 fd:00 101506074                          /usr/bin/emacs-24.3-nox\n"
@@ -191,35 +190,35 @@ static const char *g_test_map =
 "7f4a20067000-7f4a20068000 rw-p 00000000 00:00 0 \n"
 "7fff3ce01000-7fff3ce2d000 rw-p 00000000 00:00 0                          [stack]\n"
 "7fff3cf98000-7fff3cf9a000 r-xp 00000000 00:00 0                          [vdso]\n"
-"ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]\n"
+"ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [vsyscall]\n";
 
 class OMPTTest: public :: testing :: Test
 {
     protected:
         void SetUp();
         void TearDown();
-        std::string m_map_file;
+        std::string m_maps_path;
 };
 
-void PolicyTest::SetUp()
+void OMPTTest::SetUp()
 {
-    m_map_file = "OMPTest.maps";
-    ofstream map_file(m_map_file);
-    map_file << g_test_map;
-    map_file.close();
+    m_maps_path = "OMPTest.maps";
+    std::ofstream maps_file(m_maps_path);
+    maps_file << g_test_map;
+    maps_file.close();
 }
 
-void PolicyTest::TearDown()
+void OMPTTest::TearDown()
 {
-    unlink(m_map_file.c_str());
+    unlink(m_maps_path.c_str());
 }
 
 TEST_F(OMPTTest, hello)
 {
-    OMPT ompt_o = OMPT(m_maps_file);
+    geopm::OMPT ompt_o(m_maps_path);
     std::string name;
-    ompt_o.region_name(0x7f4a1b0e7000ULL, name);
-    self.assertEqual("/usr/lib64/libresolv-2.17.so-0x0000000000000000", name);
-    ompt_o.region_name(0x7f4a1b0e7256ULL, name);
-    self.assertEqual("/usr/lib64/libresolv-2.17.so-0x0000000000000256", name);
+    ompt_o.region_name((void*)0x7f4a1b0e7000ULL, name);
+    ASSERT_EQ("/usr/lib64/libresolv-2.17.so-0x0000000000000000", name);
+    ompt_o.region_name((void*)0x7f4a1b0e7256ULL, name);
+    ASSERT_EQ("/usr/lib64/libresolv-2.17.so-0x0000000000000256", name);
 }

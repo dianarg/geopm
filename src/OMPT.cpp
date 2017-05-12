@@ -30,10 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <string>
 #include <iostream>
 #include <fstream>
-#include <map>
 #include <sstream>
 #include <iomanip>
 
@@ -42,6 +40,7 @@
 #include "geopm_message.h"
 #include "geopm_error.h"
 #include "Exception.hpp"
+#include "OMPT.hpp"
 #include "config.h"
 
 #ifdef _OPENMP
@@ -53,24 +52,6 @@
 
 namespace geopm
 {
-    class OMPT
-    {
-        public:
-            OMPT();
-            virtual ~OMPT();
-            uint64_t region_id(void *parallel_function);
-            void region_name(void *parallel_function, std::string &name);
-        private:
-            /// Map from <virtual_address, is_end> pair representing
-            /// half of a virtual address range to the object file
-            /// asigned to the address range.
-            std::map<std::pair<size_t, bool>, std::string> m_range_object_map;
-            /// Map from function address to geopm region ID
-            std::map<size_t, uint64_t> m_function_region_id_map;
-            const std::string &object_name(void *function_ptr);
-            size_t virtual_offset(void *function_ptr);
-    };
-
     static OMPT &ompt(void)
     {
         static OMPT instance;
@@ -85,8 +66,14 @@ namespace geopm
     };
 
     OMPT::OMPT()
+        : OMPT("/proc/self/maps")
     {
-        std::ifstream maps_stream("/proc/self/maps");
+
+    }
+
+    OMPT::OMPT(const std::string &map_path)
+    {
+        std::ifstream maps_stream(map_path);
         while (maps_stream.good()) {
             try {
                 int err = 0;
@@ -159,7 +146,7 @@ namespace geopm
         name.clear();
         auto it = m_range_object_map.lower_bound(std::pair<size_t, bool>((size_t)parallel_function, false));
         auto it_next = it;
-        it_next++;
+        ++it_next;
         if (std::distance(it, m_range_object_map.end()) > 1 &&
             false == (*it).first.second &&
             true == (*it_next).first.second) {
