@@ -35,7 +35,7 @@
 #include <sstream>
 #include <iomanip>
 
-#include "geopm_omp.h"
+#include "geopm.h"
 #include "geopm_message.h"
 #include "geopm_error.h"
 #include "Exception.hpp"

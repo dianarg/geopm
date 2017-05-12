@@ -57,42 +57,47 @@ namespace geopm
     {
         bool do_imbalance = (name.find("-imbalance") != std::string::npos);
         bool do_progress = (name.find("-progress") != std::string::npos);
+        bool do_unmarked = (name.find("-unmarked") != std::string::npos);
+
+        if (do_unmarked) {
+            do_progress = false;
+        }
 
         ModelRegionBase *result = NULL;
         if (name.find("sleep") == 0 &&
             (name[strlen("sleep")] == '\0' ||
              name[strlen("sleep")] == '-')) {
-            result = new SleepModelRegion(big_o, verbosity, do_imbalance, do_progress);
+            result = new SleepModelRegion(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
         }
         else if (name.find("spin") == 0 &&
                  (name[strlen("spin")] == '\0' ||
                   name[strlen("spin")] == '-'))  {
-            result = new SpinModelRegion(big_o, verbosity, do_imbalance, do_progress);
+            result = new SpinModelRegion(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
         }
         else if (name.find("dgemm") == 0 &&
                  (name[strlen("dgemm")] == '\0' ||
                   name[strlen("dgemm")] == '-'))  {
-            result = new DGEMMModelRegion(big_o, verbosity, do_imbalance, do_progress);
+            result = new DGEMMModelRegion(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
         }
         else if (name.find("stream") == 0 &&
                  (name[strlen("stream")] == '\0' ||
                   name[strlen("stream")] == '-')) {
-            result = new StreamModelRegion(big_o, verbosity, do_imbalance, do_progress);
+            result = new StreamModelRegion(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
         }
         else if (name.find("all2all") == 0 &&
                  (name[strlen("all2all")] == '\0' ||
                   name[strlen("all2all")] == '-')) {
-            result = new All2allModelRegion(big_o, verbosity, do_imbalance, do_progress);
+            result = new All2allModelRegion(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
         }
         else if (name.find("nested") == 0 &&
                  (name[strlen("nested")] == '\0' ||
                   name[strlen("nested")] == '-')) {
-            result = new NestedModelRegion(big_o, verbosity, do_imbalance, do_progress);
+            result = new NestedModelRegion(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
         }
         else if (name.find("ignore") == 0 &&
             (name[strlen("ignore")] == '\0' ||
              name[strlen("ignore")] == '-')) {
-            result = new IgnoreModelRegion(big_o, verbosity, do_imbalance, do_progress);
+            result = new IgnoreModelRegion(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
         }
         else {
             throw Exception("model_region_factory: unknown name: " + name,
@@ -106,6 +111,7 @@ namespace geopm
         , m_verbosity(verbosity)
         , m_do_imbalance(false)
         , m_do_progress(false)
+        , m_do_unmarked(false)
         , m_loop_count(1)
     {
 
@@ -139,12 +145,13 @@ namespace geopm
         }
     }
 
-    SleepModelRegion::SleepModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress)
+    SleepModelRegion::SleepModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
         : ModelRegionBase(verbosity)
     {
         m_name = "sleep";
         m_do_imbalance = do_imbalance;
         m_do_progress = do_progress;
+        m_do_unmarked = do_unmarked;
         big_o(big_o_in);
         int err = geopm_prof_region(m_name.c_str(), GEOPM_REGION_HINT_UNKNOWN, &m_region_id);
         if (err) {
@@ -204,12 +211,13 @@ namespace geopm
         }
     }
 
-    SpinModelRegion::SpinModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress)
+    SpinModelRegion::SpinModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
         : ModelRegionBase(verbosity)
     {
         m_name = "spin";
         m_do_imbalance = do_imbalance;
         m_do_progress = do_progress;
+        m_do_unmarked = do_unmarked;
         big_o(big_o_in);
         int err = geopm_prof_region(m_name.c_str(), GEOPM_REGION_HINT_UNKNOWN, &m_region_id);
         if (err) {
@@ -237,7 +245,9 @@ namespace geopm
                 std::cout << "Executing " << m_big_o << " second spin."  << std::endl << std::flush;
             }
             double norm = 1.0 / m_loop_count;
-            (void)geopm_prof_enter(m_region_id);
+            if (!m_do_unmarked) {
+                (void)geopm_prof_enter(m_region_id);
+            }
             for (uint64_t i = 0 ; i < m_loop_count; ++i) {
                 if (m_do_progress) {
                     geopm_prof_progress(m_region_id, i * norm);
@@ -259,11 +269,13 @@ namespace geopm
                     (void)imbalancer_exit();
                 }
             }
-            (void)geopm_prof_exit(m_region_id);
+            if (!m_do_unmarked) {
+                (void)geopm_prof_exit(m_region_id);
+            }
         }
     }
 
-    DGEMMModelRegion::DGEMMModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress)
+    DGEMMModelRegion::DGEMMModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
         : ModelRegionBase(verbosity)
         , m_matrix_a(NULL)
         , m_matrix_b(NULL)
@@ -274,6 +286,7 @@ namespace geopm
         m_name = "dgemm";
         m_do_imbalance = do_imbalance;
         m_do_progress = do_progress;
+        m_do_unmarked = do_unmarked;
         big_o(big_o_in);
         int err = geopm_prof_region(m_name.c_str(), GEOPM_REGION_HINT_COMPUTE, &m_region_id);
         if (err) {
@@ -359,7 +372,7 @@ namespace geopm
         }
     }
 
-    StreamModelRegion::StreamModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress)
+    StreamModelRegion::StreamModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool m_do_unmarked)
         : ModelRegionBase(verbosity)
         , m_array_a(NULL)
         , m_array_b(NULL)
@@ -370,6 +383,7 @@ namespace geopm
         m_name = "stream";
         m_do_imbalance = do_imbalance;
         m_do_progress = do_progress;
+        m_do_unmarked = do_unmarked;
         big_o(big_o_in);
         int err = geopm_prof_region(m_name.c_str(), GEOPM_REGION_HINT_MEMORY, &m_region_id);
         if (err) {
@@ -445,7 +459,7 @@ namespace geopm
         }
     }
 
-    All2allModelRegion::All2allModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress)
+    All2allModelRegion::All2allModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
         : ModelRegionBase(verbosity)
         , m_send_buffer(NULL)
         , m_recv_buffer(NULL)
@@ -457,6 +471,7 @@ namespace geopm
         m_name = "all2all";
         m_do_imbalance = do_imbalance;
         m_do_progress = do_progress;
+        m_do_unmarked = do_unmarked;
         big_o(big_o_in);
         int err = geopm_prof_region(m_name.c_str(), GEOPM_REGION_HINT_NETWORK, &m_region_id);
         if (!err) {
@@ -565,10 +580,10 @@ namespace geopm
         }
     }
 
-    NestedModelRegion::NestedModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress)
+    NestedModelRegion::NestedModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
         : ModelRegionBase(verbosity)
-        , m_spin_region(big_o_in, verbosity, do_imbalance, do_progress)
-        , m_all2all_region(big_o_in, verbosity, do_imbalance, do_progress)
+        , m_spin_region(big_o_in, verbosity, do_imbalance, do_progress, do_unmarked)
+        , m_all2all_region(big_o_in, verbosity, do_imbalance, do_progress, do_unmarked)
     {
     }
 
@@ -668,12 +683,13 @@ namespace geopm
         }
     }
 
-    IgnoreModelRegion::IgnoreModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress)
+    IgnoreModelRegion::IgnoreModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
         : ModelRegionBase(verbosity)
     {
         m_name = "ignore";
         m_do_imbalance = do_imbalance;
         m_do_progress = do_progress;
+        m_do_unmarked = do_unmarked;
         big_o(big_o_in);
         int err = geopm_prof_region(m_name.c_str(), GEOPM_REGION_HINT_IGNORE, &m_region_id);
         if (err) {
