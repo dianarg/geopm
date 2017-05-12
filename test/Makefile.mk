@@ -133,10 +133,6 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/GoverningDeciderTest.2_socket_over_budget \
               #end
 
-if ENABLE_OMPT
-GTEST_TESTS += test/gtest_links/OMPTTest.hello
-endif
-
 if ENABLE_MPI
 GTEST_TESTS += test/gtest_links/MPITreeCommunicatorTest.hello \
                test/gtest_links/MPITreeCommunicatorTest.send_policy_down \
@@ -187,7 +183,6 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/MockPlatform.hpp \
                           test/MockPlatformImp.hpp \
                           test/MockPlatformTopology.hpp \
-                          test/OMPTTest.cpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \
