@@ -56,7 +56,6 @@ endif
 endif
 
 include_HEADERS = src/geopm.h \
-                  src/geopm_ctl.h \
                   src/geopm_error.h \
                   src/geopm_mpi_pcontrol.h \
                   src/geopm_policy.h \
