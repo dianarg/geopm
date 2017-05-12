@@ -47,6 +47,7 @@ const char *program_invocation_name = "geopm_profile";
 #include <errno.h>
 
 #include "geopm.h"
+#include "geopm_ctl.h"
 #include "geopm_sched.h"
 #include "geopm_message.h"
 #include "geopm_time.h"

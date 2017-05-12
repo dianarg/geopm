@@ -56,6 +56,7 @@ endif
 endif
 
 include_HEADERS = src/geopm.h \
+                  src/geopm_ctl.h \
                   src/geopm_error.h \
                   src/geopm_mpi_pcontrol.h \
                   src/geopm_policy.h \
@@ -70,7 +71,7 @@ if ENABLE_FORTRAN
 all-local: geopm.mod
 
 install-fortran:
-	$(INSTALL) -d  $(DESTDIR)/$(libdir)/$(FC)/modules/geopm-`uname -m`
+	$(INSTALL) -d $(DESTDIR)/$(libdir)/$(FC)/modules/geopm-`uname -m`
 	$(INSTALL) geopm.mod $(DESTDIR)/$(libdir)/$(FC)/modules/geopm-`uname -m`
 
 endif
