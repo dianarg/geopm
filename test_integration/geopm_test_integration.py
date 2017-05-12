@@ -616,7 +616,7 @@ class TestIntegration(unittest.TestCase):
         app_conf.append_region('all2all-unmarked', 1.0)
         ctl_conf = geopm_io.CtlConf(name + '_ctl.config', self._mode, self._options)
         self._tmp_files.append(ctl_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path)
+        launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path)
         launcher.set_num_node(num_node)
         launcher.set_num_rank(num_rank)
         launcher.run(name)
@@ -627,7 +627,7 @@ class TestIntegration(unittest.TestCase):
         for nn in node_names:
             rr = self._output.get_report(nn)
             region_names = rr.keys()
-            self.assertTrue(any([key.startswith('OMPT-') for key in ]))
+            self.assertTrue(any([key.startswith('OMPT-') for key in region_names]))
 
     @unittest.skipUnless(False, 'Not implemented')
     def test_variable_end_time(self):

@@ -264,11 +264,6 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/geopm_version.c \
                             src/geopm_version.h \
                             # end
-if ENABLE_OMPT
-    libgeopmpolicy_la_SOURCES += src/OMPT.cpp \
-                                 src/OMPT.hpp \
-                                 #end
-endif
 
 geopmpolicy_SOURCES = src/geopmpolicy_main.c \
                       src/geopm_policy.h \
