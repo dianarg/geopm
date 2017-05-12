@@ -34,11 +34,9 @@
 #include <mpi.h>
 
 #include "geopm.h"
-#include "geopm_ctl.h"
 #include "geopm_policy.h"
 #include "config.h"
 
-/// @fixme geopm_ctl_spawn() is not implemented properly.
 int geopm_ctl_spawn(struct geopm_ctl_c *ctl)
 {
 #if 0
