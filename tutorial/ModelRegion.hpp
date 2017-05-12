@@ -45,6 +45,11 @@ namespace geopm
             virtual ~ModelRegionBase();
             std::string name(void);
             double big_o(void);
+            int region(void);
+            void region_enter(void);
+            void region_exit(void);
+            void loop_enter(int count, double norm);
+            void loop_exit(void);
             virtual void big_o(double big_o_in) = 0;
             virtual void run(void) = 0;
         protected:
@@ -56,6 +61,7 @@ namespace geopm
             bool m_do_imbalance;
             bool m_do_progress;
             uint64_t m_loop_count;
+            double m_norm;
     };
 
     class SleepModelRegion : public ModelRegionBase
