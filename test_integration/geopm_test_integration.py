@@ -624,10 +624,21 @@ class TestIntegration(unittest.TestCase):
         self._output = geopm_io.AppOutput(report_path)
         node_names = self._output.get_node_names()
         self.assertEqual(len(node_names), num_node)
+        stream_id = None
         for nn in node_names:
             rr = self._output.get_report(nn)
             region_names = rr.keys()
-            self.assertTrue(any([key.startswith('OMPT-') for key in region_names]))
+            stream_region = [key for key in region_names if key.startswith('OMPT-geopm_test_integration-')]
+            self.assertEqual(1, len(stream_region))
+            stream_region = stream_region[0]
+            self.assertEqual(1, rr[stream_region].get_count())
+            if stream_id:
+                self.assertEqual(stream_id, rr[stream_region].get_id())
+            else:
+                stream_id = rr[stream_region].get_id()
+            ompt_regions = [key for key in region_names if key.startswith('OMPT-')]
+            self.assertLessEqual(2, len(ompt_regions));
+            self.assertTrue(('MPI_Alltoall' in rr));
 
     @unittest.skipUnless(False, 'Not implemented')
     def test_variable_end_time(self):

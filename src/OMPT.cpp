@@ -57,13 +57,6 @@ namespace geopm
         return instance;
     }
 
-    class MapParseException : public Exception
-    {
-        public:
-            MapParseException() {}
-            virtual ~MapParseException() {}
-    };
-
     OMPT::OMPT()
         : OMPT("/proc/self/maps")
     {
@@ -74,43 +67,38 @@ namespace geopm
     {
         std::ifstream maps_stream(map_path);
         while (maps_stream.good()) {
-            try {
-                int err = 0;
-                std::string line;
-                std::getline(maps_stream, line);
-                if (line.length() == 0) {
-                    throw MapParseException();
-                }
-                size_t addr_begin, addr_end;
-                int n_scan = sscanf(line.c_str(), "%zx-%zx", &addr_begin, &addr_end);
-                if (n_scan != 2) {
-                    throw MapParseException();
-                }
+           int err = 0;
+           std::string line;
+           std::getline(maps_stream, line);
+           if (line.length() == 0) {
+               continue;
+           }
+           size_t addr_begin, addr_end;
+           int n_scan = sscanf(line.c_str(), "%zx-%zx", &addr_begin, &addr_end);
+           if (n_scan != 2) {
+               continue;
+           }
 
-                std::string object;
-                size_t object_loc = line.rfind(' ') + 1;
-                if (object_loc == std::string::npos) {
-                    throw MapParseException();
-                }
-                object = line.substr(object_loc);
-                if (line.find(" r-xp ") != line.find(' ')) {
-                    throw MapParseException();
-                }
-                std::pair<size_t, bool> aa(addr_begin, false);
-                std::pair<size_t, bool> bb(addr_end, true);
-                std::pair<std::pair<size_t, bool>, std::string> cc(aa, object);
-                std::pair<std::pair<size_t, bool>, std::string> dd(bb, object);
-                auto it0 = m_range_object_map.insert(m_range_object_map.begin(), cc);
-                auto it1 = m_range_object_map.insert(it0, dd);
-                ++it0;
-                if (it0 != it1) {
-                    throw Exception("Error parsing /proc/self/maps, overlapping address ranges.",
-                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-                }
-            }
-            catch (MapParseException) {
-
-            }
+           std::string object;
+           size_t object_loc = line.rfind(' ') + 1;
+           if (object_loc == std::string::npos) {
+               continue;
+           }
+           object = line.substr(object_loc);
+           if (line.find(" r-xp ") != line.find(' ')) {
+               continue;
+           }
+           std::pair<size_t, bool> aa(addr_begin, false);
+           std::pair<size_t, bool> bb(addr_end, true);
+           std::pair<std::pair<size_t, bool>, std::string> cc(aa, object);
+           std::pair<std::pair<size_t, bool>, std::string> dd(bb, object);
+           auto it0 = m_range_object_map.insert(m_range_object_map.begin(), cc);
+           auto it1 = m_range_object_map.insert(it0, dd);
+           ++it0;
+           if (it0 != it1) {
+               throw Exception("Error parsing /proc/self/maps, overlapping address ranges.",
+                               GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+           }
         }
     }
 
@@ -143,15 +131,24 @@ namespace geopm
     void OMPT::region_name(void *parallel_function, std::string &name)
     {
         name.clear();
-        auto it = m_range_object_map.lower_bound(std::pair<size_t, bool>((size_t)parallel_function, false));
-        auto it_next = it;
-        ++it_next;
-        if (std::distance(it, m_range_object_map.end()) > 1 &&
-            false == (*it).first.second &&
-            true == (*it_next).first.second) {
-            size_t offset = (size_t)parallel_function - (size_t)((*it).first.first);
-            std::ostringstream name_stream("OMPT-");
-            name_stream << (*it).second << "-0x" << std::uppercase << std::setfill('0') << std::setw(16) << std::hex << offset;
+        auto it_max = m_range_object_map.upper_bound(std::pair<size_t, bool>((size_t)parallel_function, false));
+        auto it_min = it_max;
+        --it_min;
+        if (it_max != m_range_object_map.end() &&
+            it_max != m_range_object_map.begin() &&
+            false == (*it_min).first.second &&
+            true == (*it_max).first.second) {
+            size_t offset = (size_t)parallel_function - (size_t)((*it_min).first.first);
+            std::ostringstream name_stream;
+            size_t last_slash = (*it_min).second.rfind('/');
+            std::string object_name;
+            if (last_slash != std::string::npos && last_slash < (*it_min).second.length() - 1 ) {
+                object_name = (*it_min).second.substr(last_slash + 1);
+            }
+            else {
+                object_name = (*it_min).second;
+            }
+            name_stream << "OMPT-" << object_name << "-0x" << std::setfill('0') << std::setw(16) << std::hex << offset;
             name = name_stream.str();
         }
     }
