@@ -67,6 +67,8 @@ namespace geopm
                 int llc_victims_base;
                 int num_slot;
             };
+            int m_num_freq_domain;
+            int m_num_power_domain;
             /// @brief Structure of buffer indices to store data into to
             /// avoid map look-ups.
             struct m_buffer_index_s m_buffer_index;

@@ -90,28 +90,6 @@ namespace geopm
             ////////////////////////////////////////////////////////////////////
             //                     Topology Information                       //
             ////////////////////////////////////////////////////////////////////
-            /// @brief Retrieve the number of packages present on
-            /// the platform.
-            /// @return number of packages.
-            virtual int num_package(void) const;
-            /// @brief Retrieve the number of tiles present on
-            /// the platform.
-            /// @return number of tiles.
-            virtual int num_tile(void) const;
-            /// @brief Retrieve the number of tile groups present on
-            /// the platform.
-            /// @return number of tile groups.
-            virtual int num_tile_group(void) const;
-            /// @brief Retrieve the number of physical CPUs present
-            /// on the platform.
-            /// @return number of physical CPUs.
-            virtual int num_hw_cpu(void) const;
-            /// @brief Retrieve the number of logical CPUs present
-            /// on the platform.
-            /// @return number of logical CPUs.
-            virtual int num_logical_cpu(void) const;
-            /// @brief Retrieve the number of per-package signals
-            /// @return number of per-package signals.
             virtual int num_energy_signal(void) const;
             /// @brief Retrieve the number of per-cpu signals
             /// @return number of per-cpu signals.
@@ -123,11 +101,6 @@ namespace geopm
             virtual int domain_type(int control_type) const;
             /// @brief Return the TDP of a single package.
             double package_tdp(void) const;
-            /// @brief Retrieve the topology tree for the platform.
-            /// @return PlatformTopology object holding the
-            ///         current platform topology.
-            virtual const PlatformTopology *topology(void) const;
-
             ////////////////////////////////////////////////////////////////////
             //                     MSR read/write support                     //
             ////////////////////////////////////////////////////////////////////
