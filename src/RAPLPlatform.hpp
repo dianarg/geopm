@@ -68,19 +68,15 @@ namespace geopm
                 int llc_victims_base;
                 int num_slot;
             };
-            int m_num_freq_domain;
-            int m_num_power_domain;
+            int m_num_freq_ctl_domain;
+            int m_num_power_ctl_domain;
+            int m_num_energy_ctr_domain;
+            int m_num_pmon_ctr_domain;
             /// @brief Structure of buffer indices to store data into to
             /// avoid map look-ups.
             struct m_buffer_index_s m_buffer_index;
             /// @brief Vector of signal read operations.
             std::vector<struct geopm_signal_descriptor> m_batch_desc;
-            /// @brief Number of CPUs on the platform.
-            int m_num_cpu;
-            /// @brief Number of packages on the platform.
-            int m_num_package;
-            /// @brief Number of tiles on the platform.
-            int m_num_tile;
             /// @brief platform capability description string.
             const std::string m_description;
             const int M_HSX_ID;

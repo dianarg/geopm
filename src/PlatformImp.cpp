@@ -161,31 +161,6 @@ namespace geopm
         }
     }
 
-    int PlatformImp::num_package(void) const
-    {
-        return m_num_package;
-    }
-
-    int PlatformImp::num_tile(void) const
-    {
-        return m_num_tile;
-    }
-
-    int PlatformImp::num_tile_group(void) const
-    {
-        return m_num_tile_group;
-    }
-
-    int PlatformImp::num_hw_cpu(void) const
-    {
-        return m_num_hw_cpu;
-    }
-
-    int PlatformImp::num_logical_cpu(void) const
-    {
-        return m_num_logical_cpu;
-    }
-
     int PlatformImp::num_energy_signal(void) const
     {
         return m_num_energy_signal;
@@ -203,8 +178,18 @@ namespace geopm
 
     int PlatformImp::num_control_domain(int control_type) const
     {
+        return num_domain(control_domain(control_type));
+    }
+
+    int PlatformImp::num_counter_domain(int counter_type) const
+    {
+        return num_domain(counter_domain(counter_type));
+    }
+
+    int PlatformImp::num_domain(int domain_type) const
+    {
         int count;
-        switch (control_domain(control_type)) {
+        switch (domain_type) {
             case GEOPM_DOMAIN_PACKAGE:
                 count = m_num_package;
                 break;
@@ -233,11 +218,6 @@ namespace geopm
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return (*it).second;
-    }
-
-    const PlatformTopology *PlatformImp::topology(void) const
-    {
-        return &m_topology;
     }
 
     void PlatformImp::msr_write(int device_type, int device_index, const std::string &msr_name, uint64_t value)

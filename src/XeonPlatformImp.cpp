@@ -45,7 +45,7 @@ namespace geopm
     static const std::map<std::string, std::pair<off_t, unsigned long> > &hsx_msr_map(void);
 
     XeonPlatformImp::XeonPlatformImp(int platform_id, const std::string &model_name, const std::map<std::string, std::pair<off_t, unsigned long> > *msr_map)
-        : PlatformImp(2, 5, 50.0, msr_map)
+        : PlatformImp(2, 5, {{GEOPM_CONTROL_TYPE_POWER, 50.0},{GEOPM_CONTROL_TYPE_FREQUENCY, 1.0}}, msr_map)
         , m_throttle_limit_mhz(0.5)
         , m_energy_units(0.0)
         , m_dram_energy_units(0.0)
@@ -153,8 +153,25 @@ namespace geopm
                 result = GEOPM_DOMAIN_PACKAGE;
                 break;
             default:
-                throw Exception("SNBPlatformImp::control_domain() unknown control type:" +
+                throw Exception("KNLPlatformImp::control_domain() unknown control type:" +
                                 std::to_string(control_type),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                break;
+        }
+        return result;
+    }
+
+    int SNBPlatformImp::counter_domain(int counter_type) const
+    {
+        int result = -1;
+        switch (counter_type) {
+            case GEOPM_COUNTER_TYPE_ENERGY:
+            case GEOPM_COUNTER_TYPE_PERF:
+                result = GEOPM_DOMAIN_PACKAGE;
+                break;
+            default:
+                throw Exception("KNLPlatformImp::control_domain() unknown counter type:" +
+                                std::to_string(counter_type),
                                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
                 break;
         }
@@ -181,23 +198,6 @@ namespace geopm
     IVTPlatformImp::~IVTPlatformImp()
     {
 
-    }
-
-    int IVTPlatformImp::control_domain(int control_type) const
-    {
-        int result = -1;
-        switch (control_type) {
-            case GEOPM_CONTROL_TYPE_POWER:
-            case GEOPM_CONTROL_TYPE_FREQUENCY:
-                result = GEOPM_DOMAIN_PACKAGE;
-                break;
-            default:
-                throw Exception("IVTPlatformImp::control_domain() unknown control type:" +
-                                std::to_string(control_type),
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-                break;
-        }
-        return result;
     }
 
     int HSXPlatformImp::platform_id(void)
@@ -246,8 +246,27 @@ namespace geopm
                 result = GEOPM_DOMAIN_CPU;
                 break;
             default:
-                throw Exception("HSXPlatformImp::control_domain() unknown control type:" +
+                throw Exception("KNLPlatformImp::control_domain() unknown control type:" +
                                 std::to_string(control_type),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                break;
+        }
+        return result;
+    }
+
+    int HSXPlatformImp::counter_domain(int counter_type) const
+    {
+        int result = -1;
+        switch (counter_type) {
+            case GEOPM_COUNTER_TYPE_ENERGY:
+                result = GEOPM_DOMAIN_PACKAGE;
+                break;
+            case GEOPM_COUNTER_TYPE_PERF:
+                result = GEOPM_DOMAIN_CPU;
+                break;
+            default:
+                throw Exception("KNLPlatformImp::control_domain() unknown counter type:" +
+                                std::to_string(counter_type),
                                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
                 break;
         }
@@ -276,25 +295,6 @@ namespace geopm
 
     }
 
-    int BDXPlatformImp::control_domain(int control_type) const
-    {
-        int result = -1;
-        switch (control_type) {
-            case GEOPM_CONTROL_TYPE_POWER:
-                result = GEOPM_DOMAIN_PACKAGE;
-                break;
-            case GEOPM_CONTROL_TYPE_FREQUENCY:
-                result = GEOPM_DOMAIN_CPU;
-                break;
-            default:
-                throw Exception("BDXPlatformImp::control_domain() unknown control type:" +
-                                std::to_string(control_type),
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-                break;
-        }
-        return result;
-    }
-
     bool XeonPlatformImp::is_model_supported(int platform_id)
     {
         return (platform_id == M_PLATFORM_ID);
@@ -305,11 +305,6 @@ namespace geopm
         return M_MODEL_NAME;
     }
 
-
-    int XeonPlatformImp::performance_counter_domain(void) const
-    {
-        return GEOPM_DOMAIN_CPU;
-    }
 
     void XeonPlatformImp::bound(std::map<int, std::pair<double, double> > &bound)
     {

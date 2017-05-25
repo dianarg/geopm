@@ -69,12 +69,12 @@ namespace geopm
             virtual void write_control(int device_type, int device_index, int signal_type, double value);
             virtual void msr_initialize();
             virtual void msr_reset();
-            virtual int control_domain(int control_type) const;
-            virtual int performance_counter_domain(void) const;
 
             /// @brief Return the upper and lower bounds of the control.
             virtual void bound(std::map<int, std::pair<double, double> > &bound);
             virtual double throttle_limit_mhz(void) const;
+            virtual int control_domain(int domain_type) const;
+            virtual int counter_domain(int domain_type) const;
             static int platform_id(void);
         protected:
             /// @brief Initialize Running Average Power Limiting (RAPL) controls.

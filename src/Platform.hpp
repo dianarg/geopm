@@ -137,9 +137,6 @@ namespace geopm
             /// per-cpu, and per-rank signals into the domain of control.
             /// @param [in] cpu_rank The mapping from cpu index to rank id.
             void init_transform(const std::vector<int> &cpu_rank);
-            /// @brief Retrieve the number of control domains
-            /// @return The number of control domains on the hw platform.
-            int num_domain(void);
             double control_latency_ms(int control_type) const;
             /// @brief Return the frequency limit where throttling occurs.
             ///

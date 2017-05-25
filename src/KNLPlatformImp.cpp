@@ -48,7 +48,7 @@ namespace geopm
     }
 
     KNLPlatformImp::KNLPlatformImp()
-        : PlatformImp(2, 5, {{GEOPM_CONTROL_TYPE_POWER, 50.0}}, &(knl_msr_map()))
+        : PlatformImp(2, 5, {{GEOPM_CONTROL_TYPE_POWER, 50.0},{GEOPM_CONTROL_TYPE_FREQUENCY, 1.0}}, &(knl_msr_map()))
         , m_throttle_limit_mhz(0.5)
         , m_energy_units(1.0)
         , m_power_units_inv(1.0)
@@ -152,9 +152,21 @@ namespace geopm
         return result;
     }
 
-    int KNLPlatformImp::performance_counter_domain(void) const
+    int KNLPlatformImp::counter_domain(int counter_type) const
     {
-        return GEOPM_DOMAIN_TILE;
+        int result = -1;
+        switch (counter_type) {
+            case GEOPM_COUNTER_TYPE_ENERGY:
+            case GEOPM_COUNTER_TYPE_PERF:
+                result = GEOPM_DOMAIN_PACKAGE;
+                break;
+            default:
+                throw Exception("KNLPlatformImp::control_domain() unknown counter type:" +
+                                std::to_string(counter_type),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                break;
+        }
+        return result;
     }
 
     void KNLPlatformImp::bound(std::map<int, std::pair<double, double> > &bound)
