@@ -96,10 +96,20 @@ static inline uint64_t geopm_region_id_set_hint(uint64_t hint_type, uint64_t rid
     return (rid | hint_type);
 }
 
+enum geopm_invalid_type_e {
+    GEOPM_TARGET_INVALID = -1
+};
+
 enum geopm_control_type_e {
     GEOPM_CONTROL_TYPE_POWER,
     GEOPM_CONTROL_TYPE_FREQUENCY,
     GEOPM_NUM_CONTROL_TYPE // Control counter, must be last
+};
+
+enum geopm_counter_type_e {
+    GEOPM_COUNTER_TYPE_ENERGY,
+    GEOPM_COUNTER_TYPE_PERF,
+    GEOPM_NUM_COUNTER_TYPE // Counter, must be last
 };
 
 enum geopm_sample_type_e {

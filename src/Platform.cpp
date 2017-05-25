@@ -130,7 +130,7 @@ namespace geopm
                                        const std::vector<double> &aligned_data,
                                        std::vector<struct geopm_telemetry_message_s> &telemetry)
     {
-        int num_cpu = m_imp->num_logical_cpu();
+/*        int num_cpu = m_imp->num_logical_cpu();
         int num_platform_signal = m_imp->num_energy_signal() +
                                   m_imp->num_counter_signal();
 
@@ -188,11 +188,12 @@ namespace geopm
         for (int i = 0; i < m_num_domain; ++i) {
             telemetry[i].region_id = region_id;
             telemetry[i].timestamp = aligned_time;
-        }
+        }*/
     }
 
     void Platform::init_transform(const std::vector<int> &cpu_rank)
     {
+/*
         std::set<int> rank_set;
         for (auto it = cpu_rank.begin(); it != cpu_rank.end(); ++it) {
             rank_set.insert(*it);
@@ -207,7 +208,7 @@ namespace geopm
         m_rank_cpu.resize(m_num_rank);
         for (i = 0; i < (int)cpu_rank.size(); ++i) {
             m_rank_cpu[rank_map.find(cpu_rank[i])->second].push_back(i);
-        }
+        }*/
     }
 
     int Platform::num_domain(void)
@@ -216,63 +217,13 @@ namespace geopm
             // Of all available control methods, set m_num_domain to the
             // finest granularity of control.
             for (int ctl_type = 0; ctl_type < GEOPM_NUM_CONTROL_TYPE; ++ctl_type) {
-                int num_domain = m_imp->topology()->num_domain(m_imp->domain_type(ctl_type));
+                int num_domain = m_imp->num_control_domain(ctl_type);
                 if (num_domain > m_num_domain) {
                    m_num_domain = num_domain;
                 }
             }
         }
         return m_num_domain;
-    }
-
-    void Platform::tdp_limit(double percentage) const
-    {
-        //Get the TDP for each socket and set its power limit to match
-        int packages = m_imp->num_package();
-        double tdp = m_imp->package_tdp();
-        double pkg_lim = tdp * (percentage * 0.01);
-        for (int i = 0; i < packages; i++) {
-            m_imp->write_control(m_imp->control_domain(GEOPM_CONTROL_TYPE_POWER), i,  GEOPM_TELEMETRY_TYPE_PKG_ENERGY, pkg_lim);
-        }
-    }
-
-    void Platform::manual_frequency(int frequency, int num_cpu_max_perf, int affinity) const
-    {
-        //Set the frequency for each cpu
-        int64_t freq_perc;
-        bool small = false;
-        int num_logical_cpus = m_imp->num_logical_cpu();
-        int num_real_cpus = m_imp->num_hw_cpu();
-        int packages = m_imp->num_package();
-        int num_cpus_per_package = num_real_cpus / packages;
-        int num_small_cores_per_package = num_cpus_per_package - (num_cpu_max_perf / packages);
-
-        if (num_cpu_max_perf >= num_real_cpus) {
-            throw Exception("requested number of max perf cpus is greater than controllable number of frequency domains on the platform",
-                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-        }
-
-        for (int i = 0; i < num_logical_cpus; i++) {
-            int real_cpu = i % num_real_cpus;
-            if (affinity == GEOPM_POLICY_AFFINITY_SCATTER && num_cpu_max_perf > 0) {
-                if ((real_cpu % num_cpus_per_package) < num_small_cores_per_package) {
-                    small = true;
-                }
-            }
-            else if (affinity == GEOPM_POLICY_AFFINITY_COMPACT && num_cpu_max_perf > 0) {
-                if (real_cpu < (num_real_cpus - num_cpu_max_perf)) {
-                    small = true;
-                }
-            }
-            else {
-                small = true;
-            }
-            if (small) {
-                freq_perc = ((int64_t)(frequency * 0.01) << 8) & 0xffff;
-                m_imp->msr_write(GEOPM_DOMAIN_CPU, i, "IA32_PERF_CTL", freq_perc & 0xffff);
-            }
-            small = false;
-        }
     }
 
     void Platform::save_msr_state(const char *path) const

@@ -127,15 +127,10 @@ namespace geopm
             ///     PROGRESS                     ///
             ///     RUNTIME                      ///
             ////////////////////////////////////////
-            /// @brief initialize the signal transformation matrix.
-            /// Initialize the matrix that transforms the per package,
-            /// per-cpu, and per-rank signals into the domain of control.
-            /// @param [in] cpu_rank The mapping from cpu index to rank id.
-            virtual void init_transform(const std::vector<int> &cpu_rank) = 0;
             /// @brief Retrieve the number of control domains
             /// @return The number of control domains on the hw platform.
-            virtual double control_latency_ms(void) const = 0;
             virtual int num_domain(void) = 0;
+            virtual double control_latency_ms(void) const = 0;
             /// @brief Return the frequency limit where throttling occurs.
             ///
             /// @return frequency limit where anything <= is considered throttling.

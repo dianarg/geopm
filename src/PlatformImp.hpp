@@ -95,6 +95,7 @@ namespace geopm
             /// @return number of per-cpu signals.
             virtual int num_counter_signal(void) const;
             virtual int num_control_domain(int control_type) const;
+            virtual int num_counter_domain(int counter_type) const;
             virtual double control_latency_ms(int control_type) const;
             /// @brief Gives the domain type for specified control type.
             /// @return The domain type.
@@ -184,10 +185,6 @@ namespace geopm
             virtual void write_control(int device_type, int device_index, int signal_type, double value) = 0;
             /// @brief Reset MSRs to a default state.
             virtual void msr_reset(void) = 0;
-            /// @brief Retrieve the domain of control for the given control type.
-            virtual int control_domain(int control_type) const = 0;
-            /// @brief Retrieve the domain for performance counter collection.
-            virtual int performance_counter_domain(void) const = 0;
             /// @brief Return the upper and lower bounds for each control.
             ///
             /// For a RAPL platform this would be the package power limit,
@@ -200,6 +197,8 @@ namespace geopm
             ///
             /// @return frequency limit where anything <= is considered throttling.
             virtual double throttle_limit_mhz(void) const = 0;
+            virtual int control_domain(int domain_type) const = 0;
+            virtual int counter_domain(int domain_type) const = 0;
             /// @brief Return the path used for the MSR default save file.
             std::string msr_save_file_path(void);
 
@@ -251,6 +250,7 @@ namespace geopm
             /// @brief Opens the per cpu special files, initializes the MSR offset
             /// map, initialize RAPL, CBO and fixed counter MSRs.
             virtual void msr_initialize() = 0;
+            int num_domain(int domain_type) const;
             /// @brief Handles the overflow of fixed size counters.
             /// @param [in] signal_idx The index into the overflow offset vector
             ///        for this counter.

@@ -319,7 +319,7 @@ namespace geopm
             double upper_bound = DBL_MAX;
             for (int level = 0; level < num_level; ++level) {
                 if (level == 0) {
-                    num_control_domain = m_platform->num_control_domain();
+                    num_control_domain = m_platform->_domain();
                     m_telemetry_sample.resize(num_control_domain, {0, {{0, 0}}, {0}});
                 }
                 else {
@@ -327,8 +327,8 @@ namespace geopm
                 }
                 m_policy[level] = new Policy(num_control_domain);
                 if (level == 1) {
-                    upper_bound *= m_platform->num_control_domain();
-                    lower_bound *= m_platform->num_control_domain();
+                    upper_bound *= m_platform->num_domain();
+                    lower_bound *= m_platform->num_domain();
                     if (level > 1) {
                         int i = level - 1;
                         while (i >= 0) {
