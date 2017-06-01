@@ -134,11 +134,6 @@ namespace geopm
         return m_num_energy_ctr_domain * m_imp->num_energy_signal() + m_num_pmon_ctr_domain * m_imp->num_counter_signal();
     }
 
-    void RAPLPlatform::bound(std::map<int, std::pair<double, double> > &bound)
-    {
-        m_imp->bound(bound);
-    }
-
     void RAPLPlatform::sample(std::vector<struct geopm_msr_message_s> &msr_values)
     {
         int count = 0;
@@ -233,5 +228,31 @@ namespace geopm
         else {
             throw geopm::Exception("RAPLPlatform::enforce_policy: Policy size does not match domains of control", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
+    }
+
+    void RAPLPlatform::capabilities(TelemetryConfig &config) const
+    {
+        std::set<int> ctl_domain = {GEOPM_CONTROL_TYPE_POWER, GEOPM_CONTROL_TYPE_FREQUENCY};
+        std::set<int> ctr_domain = {GEOPM_COUNTER_TYPE_ENERGY, GEOPM_COUNTER_TYPE_PERF};
+        std::set<std::string> energy_signals = {"dram_energy", "pkg_energy"};
+        std::set<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
+        std::map<int, std::set<std::string> > signal;
+        signal.insert(std::pair<int, std::set<std::string> >(GEOPM_COUNTER_TYPE_ENERGY, energy_signals));
+        signal.insert(std::pair<int, std::set<std::string> >(GEOPM_COUNTER_TYPE_PERF, counter_signals));
+        std::map<int, std::pair<double, double> > bounds;
+        std::map<int, std::map<int, std::set<int> > > domain_map;
+        config.supported_counter_domain(ctr_domain);
+        config.supported_control_domain(ctl_domain);
+        config.signals(signal);
+        m_imp->bound(bounds);
+        config.bounds(bounds);
+        ctl_domain.insert(ctr_domain.begin(), ctr_domain.end());
+        m_imp->create_domain_maps(ctl_domain, domain_map);
+        config.domain_cpu_map(domain_map);
+    }
+
+    void RAPLPlatform::init_features(const TelemetryConfig &config)
+    {
+
     }
 } //geopm

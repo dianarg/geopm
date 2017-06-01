@@ -48,7 +48,7 @@ namespace geopm
     }
 
     KNLPlatformImp::KNLPlatformImp()
-        : PlatformImp(2, 5, {{GEOPM_CONTROL_TYPE_POWER, 50.0},{GEOPM_CONTROL_TYPE_FREQUENCY, 1.0}}, &(knl_msr_map()))
+        : PlatformImp(2, 5, {{GEOPM_DOMAIN_CONTROL_POWER, 50.0},{GEOPM_DOMAIN_CONTROL_FREQUENCY, 1.0}}, &(knl_msr_map()))
         , m_throttle_limit_mhz(0.5)
         , m_energy_units(1.0)
         , m_power_units_inv(1.0)
@@ -135,46 +135,46 @@ namespace geopm
         return M_MODEL_NAME;
     }
 
-    int KNLPlatformImp::control_domain(int control_type) const
-    {
-        int result = -1;
-        switch (control_type) {
-            case GEOPM_CONTROL_TYPE_POWER:
-            case GEOPM_CONTROL_TYPE_FREQUENCY:
-                result = GEOPM_DOMAIN_PACKAGE;
-                break;
-            default:
-                throw Exception("KNLPlatformImp::control_domain() unknown control type:" +
-                                std::to_string(control_type),
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-                break;
-        }
-        return result;
-    }
-
-    int KNLPlatformImp::counter_domain(int counter_type) const
-    {
-        int result = -1;
-        switch (counter_type) {
-            case GEOPM_COUNTER_TYPE_ENERGY:
-            case GEOPM_COUNTER_TYPE_PERF:
-                result = GEOPM_DOMAIN_PACKAGE;
-                break;
-            default:
-                throw Exception("KNLPlatformImp::control_domain() unknown counter type:" +
-                                std::to_string(counter_type),
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-                break;
-        }
-        return result;
-    }
-
     void KNLPlatformImp::bound(std::map<int, std::pair<double, double> > &bound)
     {
-        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_CONTROL_TYPE_POWER,
+        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_DOMAIN_CONTROL_POWER,
                                std::pair<double, double>(m_min_pkg_watts + m_max_dram_watts, m_max_pkg_watts + m_max_dram_watts)));
-        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_CONTROL_TYPE_FREQUENCY,
+        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_DOMAIN_CONTROL_FREQUENCY,
                                std::pair<double, double>(m_min_freq_mhz, m_max_freq_mhz)));
+    }
+
+    void KNLPlatformImp::create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map)
+    {
+        for (auto it = domain.begin(); it != domain.end(); ++it) {
+            if ((*it) == GEOPM_DOMAIN_SIGNAL_PERF) {
+                std::map<int, std::set<int> > tmp_map;
+                for (int i = 0; i < m_num_logical_cpu; ++i) {
+                    tmp_map.insert(std::pair<int, std::set<int> >(i, std::set<int>({i})));
+                }
+                domain_map.insert(std::pair<int, std::map<int, std::set<int> > >((*it), tmp_map));
+            }
+            else if ((*it) == GEOPM_DOMAIN_SIGNAL_ENERGY ||
+                     (*it) == GEOPM_DOMAIN_CONTROL_POWER  ||
+                     (*it) == GEOPM_DOMAIN_CONTROL_FREQUENCY) {
+                std::set<int> tmp_set;
+                std::map<int, std::set<int> > tmp_map;
+                for (int i = 0; i < m_num_package; ++i) {
+                    for (int j = i * m_num_hw_cpu; j < (i + 1) * m_num_hw_cpu; ++j) {
+                        for (int k = 0; k < m_num_cpu_per_core; ++k) {
+                            tmp_set.insert(m_num_hw_cpu * k + j);
+                        }
+                    }
+                    tmp_map.insert(std::pair<int, std::set<int> >(i, tmp_set));
+                    tmp_set.clear();
+                }
+                domain_map.insert(std::pair<int, std::map<int, std::set<int> > >((*it), tmp_map));
+            }
+            else {
+                throw Exception("KNLPlatformImp::create_domain_maps() unknown domain type:" +
+                                std::to_string(*it),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
     }
 
     double KNLPlatformImp::throttle_limit_mhz(void) const
@@ -182,19 +182,16 @@ namespace geopm
         return m_throttle_limit_mhz;
     }
 
-    double KNLPlatformImp::read_signal(int device_type, int device_index, int signal_type)
+    double KNLPlatformImp::read_signal(int domain, int domain_idx, int signal_idx)
     {
         double value = 0.0;
         int offset_idx = 0;
 
-        switch (signal_type) {
-            case GEOPM_TELEMETRY_TYPE_PKG_ENERGY:
-                offset_idx = device_index * m_num_energy_signal + M_PKG_STATUS_OVERFLOW;
-                value = msr_overflow(offset_idx, 32,
-                                     msr_read(device_type, device_index,
-                                              m_signal_msr_offset[M_RAPL_PKG_STATUS]));
-                value *= m_energy_units;
-                break;
+            offset_idx = device_index * m_num_energy_signal + M_PKG_STATUS_OVERFLOW;
+            value = msr_overflow(offset_idx, 32,
+                                 msr_read(device_type, device_index,
+                                          m_signal_msr_offset[M_RAPL_PKG_STATUS]));
+            value *= m_energy_units;
             case GEOPM_TELEMETRY_TYPE_DRAM_ENERGY:
                 offset_idx = device_index * m_num_energy_signal + M_DRAM_STATUS_OVERFLOW;
                 value = msr_overflow(offset_idx, 32,
@@ -333,7 +330,7 @@ namespace geopm
             int offset_idx;
             for (auto it = signal_desc.begin(); it != signal_desc.end(); ++it) {
                 switch ((*it).signal_type) {
-                    case GEOPM_TELEMETRY_TYPE_PKG_ENERGY:
+                    case "pkg_energy":
                         offset_idx = (*it).device_index * m_num_energy_signal + M_PKG_STATUS_OVERFLOW;
                         (*it).value = msr_overflow(offset_idx, 32,
                                                    m_batch.ops[signal_index++].msrdata);
@@ -376,6 +373,8 @@ namespace geopm
                     default:
                         throw geopm::Exception("KNLPlatformImp::read_signal: Invalid signal type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
                         break;
+{signal},{field size, l-shift, r-shift, mask, multiplier};
+{"frequency"},{40, 0, 8, 0x0FF, 1.0};
                 }
             }
         }
@@ -430,59 +429,6 @@ namespace geopm
     void KNLPlatformImp::msr_initialize()
     {
         rapl_init();
-        cbo_counters_init();
-        fixed_counters_init();
-
-        m_signal_msr_offset.resize(M_L2_MISSES + 2 * m_num_tile);
-
-        // Add en extra counter signal since we use two counters to calculate read bandwidth
-        size_t num_signal = m_num_energy_signal * m_num_package + (m_num_counter_signal + M_EXTRA_SIGNAL)  * m_num_tile;
-        m_msr_value_last.resize(num_signal);
-        m_msr_overflow_offset.resize(num_signal);
-        std::fill(m_msr_value_last.begin(), m_msr_value_last.end(), 0.0);
-        std::fill(m_msr_overflow_offset.begin(), m_msr_overflow_offset.end(), 0.0);
-
-        //Save off the msr offsets for the signals we want to read to avoid a map lookup
-        for (int i = 0; i < M_L2_MISSES; ++i) {
-            switch (i) {
-                case M_RAPL_PKG_STATUS:
-                    m_signal_msr_offset[i] = msr_offset("PKG_ENERGY_STATUS");
-                    break;
-                case M_RAPL_DRAM_STATUS:
-                    m_signal_msr_offset[i] = msr_offset("DRAM_ENERGY_STATUS");
-                    break;
-                case M_IA32_PERF_STATUS:
-                    m_signal_msr_offset[i] = msr_offset("IA32_PERF_STATUS");
-                    break;
-                case M_INST_RETIRED:
-                    m_signal_msr_offset[i] = msr_offset("PERF_FIXED_CTR0");
-                    break;
-                case M_CLK_UNHALTED_CORE:
-                    m_signal_msr_offset[i] = msr_offset("PERF_FIXED_CTR1");
-                    break;
-                case M_CLK_UNHALTED_REF:
-                    m_signal_msr_offset[i] = msr_offset("PERF_FIXED_CTR2");
-                    break;
-                default:
-                    throw Exception("KNLPlatformImp: Index not enumerated",
-                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-                    break;
-            }
-        }
-        for (int i = 0; i < m_num_tile; i++) {
-            std::ostringstream msr_name;
-            msr_name << "C" <<  i  << "_MSR_PMON_CTR0";
-            m_signal_msr_offset[M_L2_MISSES + 2 * i] = msr_offset(msr_name.str());
-            msr_name.str("");
-            msr_name << "C"  <<  i <<  "_MSR_PMON_CTR1";
-            m_signal_msr_offset[M_HW_L2_PREFETCH + 2 * i] = msr_offset(msr_name.str());
-        }
-
-        //Save off the msr offsets and masks for the controls we want to write to avoid a map lookup
-        m_control_msr_pair[M_RAPL_PKG_LIMIT] = std::make_pair(msr_offset("PKG_POWER_LIMIT"), msr_mask("PKG_POWER_LIMIT") );
-        m_control_msr_pair[M_RAPL_DRAM_LIMIT] = std::make_pair(msr_offset("DRAM_POWER_LIMIT"), msr_mask("DRAM_POWER_LIMIT") );
-        m_control_msr_pair[M_IA32_PERF_CTL] = std::make_pair(msr_offset("IA32_PERF_CTL"), msr_mask("IA32_PERF_CTL") );
-
         m_trigger_offset = msr_offset(M_TRIGGER_NAME);
         // Get supported p-state bounds
         uint64_t tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "IA32_PLATFORM_INFO");
@@ -490,6 +436,95 @@ namespace geopm
         tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "TURBO_RATIO_LIMIT");
         // This value is single core turbo
         m_max_freq_mhz = (tmp >> 8 | 0xFF) * 100.0;
+//        cbo_counters_init(); /// @fixme This must happen later...
+        fixed_counters_init();
+    }
+
+    void KNLPlatform::init_telemetry(TelemetryConfig &config)
+    {
+        std::set<std::string> rapl_signals;
+        std::set<std::string> cpu_signals;
+        config.get_required(GEOPM_DOMAIN_SIGNAL_ENERGY, rapl_signals);
+        config.get_required(GEOPM_DOMAIN_SIGNAL_PERF, cpu_signals);
+        for (auto it = rapl_signals.begin(); it != rapl_signals.end(); ++it) {
+            auto signal_name = signal_to_msr_map.find(*it);
+            if (signal_name == signal_to_msr_map.end() {
+                //throw
+            }
+            auto msr_entry = msr_signal_map.find(signal_name.second);
+            if (msr_entry == msr_signal_map.end() {
+                //throw
+            }
+            for (int i = 0; i < m_num_package; i++) {
+                MSRSignal signal(msr_entry.second.size, 
+                                 msr_entry.second.lshift_mod,
+                                 msr_entry.second.rshift_mod,
+                                 msr_entry.second.mask_mod,
+                                 msr_entry.second.multiply_mod);
+                rapl_signals.push_back(signal);
+                struct m_msr_batch_op batch_op;
+                batch_op.cpu = i * m_num_cpu_per_package + 1;
+                batch_op.isrdmsr = 1;
+                batch_op.err = 0;
+                batch_op.msr = msr_entry.offset;
+                batch_op.msrdata = 0;
+                batch_op.wmask = 0;
+                batch.push_back(batch_op);
+            }
+        }
+        for (auto it = cpu_signals.begin(); it != cpu_signals.end(); ++it) {
+            int counter_idx = 0;
+            std::vector<std::string> signame;
+            std::vector<struct m_msr_signal_entry> msr_entry;
+            if ((*it) == "bandwidth") {
+                signame.push_back("l2_cache_misses");
+                signame.push_back("l2_prefetches");
+            }
+            else {
+                signame.push_back((*it));
+            }
+            for (auto name = signame.begin(); name != signame.end; ++name) {
+                for (int i = 0; i < m_num_logical_cpu; i++) {
+                    auto signal_name = signal_to_msr_map.find(name);
+                    if (signal_name == signal_to_msr_map.end() {
+                        //throw
+                    }
+                    std::string key(signal_name.second);
+                    if (signal_name.second.find("event-0x") == 0) {
+                        uint32_t event = strtol(signal_name.second.substr("event-0x".size()).c_str(), NULL, 16);
+                        cbo_counters_init(counter_idx, event);
+                        counter_idx++;
+                        std::ostringstream buffer;
+                        buffer << "C" << i << "_MSR_PMON_CTR" << events.size() - 1;
+                        key = buffer.str();   
+                    }
+                    auto msr_entry = msr_signal_map.find(key);
+                    if (msr_entry == msr_signal_map.end() {
+                        //throw
+                    }
+                    MSRSignal signal(msr_entry.second.size, 
+                              msr_entry.second.lshift_mod,
+                              msr_entry.second.rshift_mod,
+                              msr_entry.second.mask_mod,
+                              msr_entry.second.multiply_mod);
+                    rapl_signals.push_back(signal);
+                    struct m_msr_batch_op batch_op;
+                    batch_op.cpu = i;
+                    batch_op.isrdmsr = 1;
+                    batch_op.err = 0;
+                    batch_op.msr = msr_entry.offset;
+                    batch_op.msrdata = 0;
+                    batch_op.wmask = 0;
+                    batch.push_back(batch_op);
+                }
+            }
+        }
+
+        //Save off the msr offsets and masks for the controls we want to write to avoid a map lookup
+        m_control_msr_pair[M_RAPL_PKG_LIMIT] = std::make_pair(msr_offset("PKG_POWER_LIMIT"), msr_mask("PKG_POWER_LIMIT") );
+        m_control_msr_pair[M_RAPL_DRAM_LIMIT] = std::make_pair(msr_offset("DRAM_POWER_LIMIT"), msr_mask("DRAM_POWER_LIMIT") );
+        m_control_msr_pair[M_IA32_PERF_CTL] = std::make_pair(msr_offset("IA32_PERF_CTL"), msr_mask("IA32_PERF_CTL") );
+
     }
 
     void KNLPlatformImp::msr_reset()
@@ -584,19 +619,16 @@ namespace geopm
         }
     }
 
-    void KNLPlatformImp::cbo_counters_init()
+    void KNLPlatformImp::cbo_counters_init(int counter_idx, uint32_t event)
     {
         for (int i = 0; i < m_num_tile; i++) {
-            std::string ctl1_msr_name("_MSR_PMON_CTL0");
-            std::string ctl2_msr_name("_MSR_PMON_CTL1");
+            std::string ctl_msr_name("_MSR_PMON_CTL" + std::to_string(counter_idx));
             std::string box_msr_name("_MSR_PMON_BOX_CTL");
             std::string filter_msr_name("_MSR_PMON_BOX_FILTER");
             box_msr_name.insert(0, std::to_string(i));
             box_msr_name.insert(0, "C");
-            ctl1_msr_name.insert(0, std::to_string(i));
-            ctl1_msr_name.insert(0, "C");
-            ctl2_msr_name.insert(0, std::to_string(i));
-            ctl2_msr_name.insert(0, "C");
+            ctl_msr_name.insert(0, std::to_string(i));
+            ctl_msr_name.insert(0, "C");
             filter_msr_name.insert(0, std::to_string(i));
             filter_msr_name.insert(0, "C");
 
@@ -608,22 +640,14 @@ namespace geopm
             msr_write(GEOPM_DOMAIN_TILE, i, box_msr_name,
                       msr_read(GEOPM_DOMAIN_TILE, i, box_msr_name)
                       | M_BOX_FRZ);
-            // enable counter 0
+            // enable counter
+            msr_write(GEOPM_DOMAIN_TILE, i, ctl_msr_name,
+                      msr_read(GEOPM_DOMAIN_TILE, i, ctl_msr_name)
+                      | M_CTR_EN);
+            // program event
             msr_write(GEOPM_DOMAIN_TILE, i, ctl1_msr_name,
                       msr_read(GEOPM_DOMAIN_TILE, i, ctl1_msr_name)
-                      | M_CTR_EN);
-            // enable counter 1
-            msr_write(GEOPM_DOMAIN_TILE, i, ctl2_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, ctl2_msr_name)
-                      | M_CTR_EN);
-            // l2 misses
-            msr_write(GEOPM_DOMAIN_TILE, i, ctl1_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, ctl1_msr_name)
-                      | M_EVENT_SEL_0 | M_UMASK_0);
-            // l2 prefetches
-            msr_write(GEOPM_DOMAIN_TILE, i, ctl2_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, ctl2_msr_name)
-                      | M_EVENT_SEL_1 | M_UMASK_1);
+                      | event);
             // reset counters
             msr_write(GEOPM_DOMAIN_TILE, i, box_msr_name,
                       msr_read(GEOPM_DOMAIN_TILE, i, box_msr_name)
@@ -670,27 +694,121 @@ namespace geopm
         }
     }
 
-    static const std::map<std::string, std::pair<off_t, unsigned long> > &knl_msr_map(void)
+    static const std::map<std::string, std::string> signal_to_msr_map {
+        {"pkg_energy", "PKG_ENERGY_STATUS"},
+        {"dram_energy", "DRAM_ENERGY_STATUS"},
+        {"frequency", "IA32_PERF_STATUS"},
+        {"instructions_retired", "PERF_FIXED_CTR0"},
+        {"clock_unhalted_core", "PERF_FIXED_CTR1"},
+        {"clock_unhalted_ref", "PERF_FIXED_CTR2"},
+        {"l2_cache_victims", "event-0x4123"},
+        {"l2_prefetches", "event-0x43e"}
+    };
+
+    static const std::map<std::string, struct m_msr_signal_entry> &knl_msr_signal_map(void)
     {
-        static const std::map<std::string, std::pair<off_t, unsigned long> > msr_map({
+        static const std::map<std::string, struct m_msr_signal_entry> msr_signal_map({
+            {"IA32_PERF_STATUS",        {0x0198, 0x0000000000000000, 32, 0, 8, 0x0ff, 0.1}},
+            {"PKG_ENERGY_STATUS",       {0x0611, 0x0000000000000000, 32, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"DRAM_ENERGY_STATUS",      {0x0619, 0x0000000000000000, 32, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"PERF_FIXED_CTR0",         {0x0309, 0xffffffffffffffff, 40, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"PERF_FIXED_CTR1",         {0x030A, 0xffffffffffffffff, 40, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"PERF_FIXED_CTR2",         {0x030B, 0xffffffffffffffff, 40, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C0_MSR_PMON_CTR0",        {0x0E08, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C1_MSR_PMON_CTR0",        {0x0E14, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C2_MSR_PMON_CTR0",        {0x0E20, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C3_MSR_PMON_CTR0",        {0x0E2C, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C4_MSR_PMON_CTR0",        {0x0E38, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C5_MSR_PMON_CTR0",        {0x0E44, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C6_MSR_PMON_CTR0",        {0x0E50, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C7_MSR_PMON_CTR0",        {0x0E5C, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C8_MSR_PMON_CTR0",        {0x0E68, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C9_MSR_PMON_CTR0",        {0x0E74, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C10_MSR_PMON_CTR0",       {0x0E80, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C11_MSR_PMON_CTR0",       {0x0E8C, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C12_MSR_PMON_CTR0",       {0x0E98, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C13_MSR_PMON_CTR0",       {0x0EA4, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C14_MSR_PMON_CTR0",       {0x0EB0, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C15_MSR_PMON_CTR0",       {0x0EBC, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C16_MSR_PMON_CTR0",       {0x0EC8, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C17_MSR_PMON_CTR0",       {0x0ED4, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C18_MSR_PMON_CTR0",       {0x0EE0, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C19_MSR_PMON_CTR0",       {0x0EEC, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C20_MSR_PMON_CTR0",       {0x0EF8, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C21_MSR_PMON_CTR0",       {0x0F04, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C22_MSR_PMON_CTR0",       {0x0F10, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C23_MSR_PMON_CTR0",       {0x0F1C, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C24_MSR_PMON_CTR0",       {0x0F28, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C25_MSR_PMON_CTR0",       {0x0F34, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C26_MSR_PMON_CTR0",       {0x0F40, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C27_MSR_PMON_CTR0",       {0x0F4C, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C28_MSR_PMON_CTR0",       {0x0F58, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C29_MSR_PMON_CTR0",       {0x0F64, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C30_MSR_PMON_CTR0",       {0x0F70, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C31_MSR_PMON_CTR0",       {0x0F7C, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C32_MSR_PMON_CTR0",       {0x0F88, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C33_MSR_PMON_CTR0",       {0x0F94, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C34_MSR_PMON_CTR0",       {0x0FA0, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C35_MSR_PMON_CTR0",       {0x0FAC, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C36_MSR_PMON_CTR0",       {0x0FB8, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C37_MSR_PMON_CTR0",       {0x0FC4, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C0_MSR_PMON_CTR1",        {0x0E09, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C1_MSR_PMON_CTR1",        {0x0E15, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C2_MSR_PMON_CTR1",        {0x0E21, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C3_MSR_PMON_CTR1",        {0x0E2D, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C4_MSR_PMON_CTR1",        {0x0E39, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C5_MSR_PMON_CTR1",        {0x0E45, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C6_MSR_PMON_CTR1",        {0x0E51, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C7_MSR_PMON_CTR1",        {0x0E5D, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C8_MSR_PMON_CTR1",        {0x0E69, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C9_MSR_PMON_CTR1",        {0x0E75, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C10_MSR_PMON_CTR1",       {0x0E81, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C11_MSR_PMON_CTR1",       {0x0E8D, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C12_MSR_PMON_CTR1",       {0x0E99, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C13_MSR_PMON_CTR1",       {0x0EA5, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C14_MSR_PMON_CTR1",       {0x0EB1, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C15_MSR_PMON_CTR1",       {0x0EBD, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C16_MSR_PMON_CTR1",       {0x0EC9, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C17_MSR_PMON_CTR1",       {0x0ED5, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C17_MSR_PMON_CTR1",       {0x0EE1, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C18_MSR_PMON_CTR1",       {0x0EED, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C19_MSR_PMON_CTR1",       {0x0EF9, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C20_MSR_PMON_CTR1",       {0x0F05, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C21_MSR_PMON_CTR1",       {0x0F11, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C22_MSR_PMON_CTR1",       {0x0F1D, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C23_MSR_PMON_CTR1",       {0x0F29, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C24_MSR_PMON_CTR1",       {0x0F35, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C25_MSR_PMON_CTR1",       {0x0F41, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C26_MSR_PMON_CTR1",       {0x0F4D, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C27_MSR_PMON_CTR1",       {0x0F59, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C28_MSR_PMON_CTR1",       {0x0F65, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C29_MSR_PMON_CTR1",       {0x0F71, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C30_MSR_PMON_CTR1",       {0x0F7D, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C31_MSR_PMON_CTR1",       {0x0F89, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C32_MSR_PMON_CTR1",       {0x0F95, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C33_MSR_PMON_CTR1",       {0x0FA1, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C34_MSR_PMON_CTR1",       {0x0FAD, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C35_MSR_PMON_CTR1",       {0x0FB9, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}},
+            {"C37_MSR_PMON_CTR1",       {0x0FC5, 0x0000000000000000, 44, 0, 0, 0xffffffffffffffff, 1.0}}
+        });
+        return msr_signal_map;
+    }
+
+    static const std::map<std::string, std::pair<off_t, uint64_t> > &knl_msr_control_map(void)
+    {
+        static const std::map<std::string, std::pair<off_t, uint64_t> > msr_control_map({
             {"IA32_PLATFORM_INFO",      {0x00CE, 0x0000000000000000}},
-            {"IA32_PERF_STATUS",        {0x0198, 0x0000000000000000}},
             {"IA32_PERF_CTL",           {0x0199, 0x000000010000ffff}},
             {"TURBO_RATIO_LIMIT",       {0x01AD, 0x0000000000000000}},
             {"RAPL_POWER_UNIT",         {0x0606, 0x0000000000000000}},
             {"PKG_POWER_LIMIT",         {0x0610, 0x00ffffff00ffffff}},
-            {"PKG_ENERGY_STATUS",       {0x0611, 0x0000000000000000}},
             {"PKG_POWER_INFO",          {0x0614, 0x0000000000000000}},
             {"DRAM_POWER_LIMIT",        {0x0618, 0x0000000000ffffff}},
-            {"DRAM_ENERGY_STATUS",      {0x0619, 0x0000000000000000}},
             {"DRAM_PERF_STATUS",        {0x061B, 0x0000000000000000}},
             {"DRAM_POWER_INFO",         {0x061C, 0x0000000000000000}},
             {"PERF_FIXED_CTR_CTRL",     {0x038D, 0x0000000000000bbb}},
             {"PERF_GLOBAL_CTRL",        {0x038F, 0x0000000700000003}},
             {"PERF_GLOBAL_OVF_CTRL",    {0x0390, 0xc000000700000003}},
-            {"PERF_FIXED_CTR0",         {0x0309, 0xffffffffffffffff}},
-            {"PERF_FIXED_CTR1",         {0x030A, 0xffffffffffffffff}},
-            {"PERF_FIXED_CTR2",         {0x030B, 0xffffffffffffffff}},
             {"C0_MSR_PMON_BOX_CTL",     {0x0E00, 0x00000000ffffffff}},
             {"C1_MSR_PMON_BOX_CTL",     {0x0E0C, 0x00000000ffffffff}},
             {"C2_MSR_PMON_BOX_CTL",     {0x0E18, 0x00000000ffffffff}},
@@ -881,82 +999,6 @@ namespace geopm
             {"C35_MSR_PMON_CTL1",       {0x0FA6, 0x00000000ffffffff}},
             {"C36_MSR_PMON_CTL1",       {0x0FB2, 0x00000000ffffffff}},
             {"C37_MSR_PMON_CTL1",       {0x0FBE, 0x00000000ffffffff}},
-            {"C0_MSR_PMON_CTR0",        {0x0E08, 0x0000000000000000}},
-            {"C1_MSR_PMON_CTR0",        {0x0E14, 0x0000000000000000}},
-            {"C2_MSR_PMON_CTR0",        {0x0E20, 0x0000000000000000}},
-            {"C3_MSR_PMON_CTR0",        {0x0E2C, 0x0000000000000000}},
-            {"C4_MSR_PMON_CTR0",        {0x0E38, 0x0000000000000000}},
-            {"C5_MSR_PMON_CTR0",        {0x0E44, 0x0000000000000000}},
-            {"C6_MSR_PMON_CTR0",        {0x0E50, 0x0000000000000000}},
-            {"C7_MSR_PMON_CTR0",        {0x0E5C, 0x0000000000000000}},
-            {"C8_MSR_PMON_CTR0",        {0x0E68, 0x0000000000000000}},
-            {"C9_MSR_PMON_CTR0",        {0x0E74, 0x0000000000000000}},
-            {"C10_MSR_PMON_CTR0",       {0x0E80, 0x0000000000000000}},
-            {"C11_MSR_PMON_CTR0",       {0x0E8C, 0x0000000000000000}},
-            {"C12_MSR_PMON_CTR0",       {0x0E98, 0x0000000000000000}},
-            {"C13_MSR_PMON_CTR0",       {0x0EA4, 0x0000000000000000}},
-            {"C14_MSR_PMON_CTR0",       {0x0EB0, 0x0000000000000000}},
-            {"C15_MSR_PMON_CTR0",       {0x0EBC, 0x0000000000000000}},
-            {"C16_MSR_PMON_CTR0",       {0x0EC8, 0x0000000000000000}},
-            {"C17_MSR_PMON_CTR0",       {0x0ED4, 0x0000000000000000}},
-            {"C18_MSR_PMON_CTR0",       {0x0EE0, 0x0000000000000000}},
-            {"C19_MSR_PMON_CTR0",       {0x0EEC, 0x0000000000000000}},
-            {"C20_MSR_PMON_CTR0",       {0x0EF8, 0x0000000000000000}},
-            {"C21_MSR_PMON_CTR0",       {0x0F04, 0x0000000000000000}},
-            {"C22_MSR_PMON_CTR0",       {0x0F10, 0x0000000000000000}},
-            {"C23_MSR_PMON_CTR0",       {0x0F1C, 0x0000000000000000}},
-            {"C24_MSR_PMON_CTR0",       {0x0F28, 0x0000000000000000}},
-            {"C25_MSR_PMON_CTR0",       {0x0F34, 0x0000000000000000}},
-            {"C26_MSR_PMON_CTR0",       {0x0F40, 0x0000000000000000}},
-            {"C27_MSR_PMON_CTR0",       {0x0F4C, 0x0000000000000000}},
-            {"C28_MSR_PMON_CTR0",       {0x0F58, 0x0000000000000000}},
-            {"C29_MSR_PMON_CTR0",       {0x0F64, 0x0000000000000000}},
-            {"C30_MSR_PMON_CTR0",       {0x0F70, 0x0000000000000000}},
-            {"C31_MSR_PMON_CTR0",       {0x0F7C, 0x0000000000000000}},
-            {"C32_MSR_PMON_CTR0",       {0x0F88, 0x0000000000000000}},
-            {"C33_MSR_PMON_CTR0",       {0x0F94, 0x0000000000000000}},
-            {"C34_MSR_PMON_CTR0",       {0x0FA0, 0x0000000000000000}},
-            {"C35_MSR_PMON_CTR0",       {0x0FAC, 0x0000000000000000}},
-            {"C36_MSR_PMON_CTR0",       {0x0FB8, 0x0000000000000000}},
-            {"C37_MSR_PMON_CTR0",       {0x0FC4, 0x0000000000000000}},
-            {"C0_MSR_PMON_CTR1",        {0x0E09, 0x0000000000000000}},
-            {"C1_MSR_PMON_CTR1",        {0x0E15, 0x0000000000000000}},
-            {"C2_MSR_PMON_CTR1",        {0x0E21, 0x0000000000000000}},
-            {"C3_MSR_PMON_CTR1",        {0x0E2D, 0x0000000000000000}},
-            {"C4_MSR_PMON_CTR1",        {0x0E39, 0x0000000000000000}},
-            {"C5_MSR_PMON_CTR1",        {0x0E45, 0x0000000000000000}},
-            {"C6_MSR_PMON_CTR1",        {0x0E51, 0x0000000000000000}},
-            {"C7_MSR_PMON_CTR1",        {0x0E5D, 0x0000000000000000}},
-            {"C8_MSR_PMON_CTR1",        {0x0E69, 0x0000000000000000}},
-            {"C9_MSR_PMON_CTR1",        {0x0E75, 0x0000000000000000}},
-            {"C10_MSR_PMON_CTR1",       {0x0E81, 0x0000000000000000}},
-            {"C11_MSR_PMON_CTR1",       {0x0E8D, 0x0000000000000000}},
-            {"C12_MSR_PMON_CTR1",       {0x0E99, 0x0000000000000000}},
-            {"C13_MSR_PMON_CTR1",       {0x0EA5, 0x0000000000000000}},
-            {"C14_MSR_PMON_CTR1",       {0x0EB1, 0x0000000000000000}},
-            {"C15_MSR_PMON_CTR1",       {0x0EBD, 0x0000000000000000}},
-            {"C16_MSR_PMON_CTR1",       {0x0EC9, 0x0000000000000000}},
-            {"C17_MSR_PMON_CTR1",       {0x0ED5, 0x0000000000000000}},
-            {"C17_MSR_PMON_CTR1",       {0x0EE1, 0x0000000000000000}},
-            {"C18_MSR_PMON_CTR1",       {0x0EED, 0x0000000000000000}},
-            {"C19_MSR_PMON_CTR1",       {0x0EF9, 0x0000000000000000}},
-            {"C20_MSR_PMON_CTR1",       {0x0F05, 0x0000000000000000}},
-            {"C21_MSR_PMON_CTR1",       {0x0F11, 0x0000000000000000}},
-            {"C22_MSR_PMON_CTR1",       {0x0F1D, 0x0000000000000000}},
-            {"C23_MSR_PMON_CTR1",       {0x0F29, 0x0000000000000000}},
-            {"C24_MSR_PMON_CTR1",       {0x0F35, 0x0000000000000000}},
-            {"C25_MSR_PMON_CTR1",       {0x0F41, 0x0000000000000000}},
-            {"C26_MSR_PMON_CTR1",       {0x0F4D, 0x0000000000000000}},
-            {"C27_MSR_PMON_CTR1",       {0x0F59, 0x0000000000000000}},
-            {"C28_MSR_PMON_CTR1",       {0x0F65, 0x0000000000000000}},
-            {"C29_MSR_PMON_CTR1",       {0x0F71, 0x0000000000000000}},
-            {"C30_MSR_PMON_CTR1",       {0x0F7D, 0x0000000000000000}},
-            {"C31_MSR_PMON_CTR1",       {0x0F89, 0x0000000000000000}},
-            {"C32_MSR_PMON_CTR1",       {0x0F95, 0x0000000000000000}},
-            {"C33_MSR_PMON_CTR1",       {0x0FA1, 0x0000000000000000}},
-            {"C34_MSR_PMON_CTR1",       {0x0FAD, 0x0000000000000000}},
-            {"C35_MSR_PMON_CTR1",       {0x0FB9, 0x0000000000000000}},
-            {"C37_MSR_PMON_CTR1",       {0x0FC5, 0x0000000000000000}}
         });
         return msr_map;
     }

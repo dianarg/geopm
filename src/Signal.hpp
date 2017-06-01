@@ -30,35 +30,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef STATICPOLICYDECIDER_HPP_INCLUDE
-#define STATICPOLICYDECIDER_HPP_INCLUDE
-
-#include "Decider.hpp"
+#ifndef SIGNAL_HPP_INCLUDE
+#define SIGNAL_HPP_INCLUDE
 
 namespace geopm
 {
-    /// @brief Decider which does not update the policy.
-    ///
-    /// Useful for running geopm as a profile only tool.  When using
-    /// this decider at the leaf or tree level, policy will never be
-    /// updated and therefore never enforced.
-    class StaticPolicyDecider : public Decider
+    class Signal
     {
         public:
-            /// @ brief StaticPolicyDecider default constructor.
-            StaticPolicyDecider();
-            StaticPolicyDecider(const StaticPolicyDecider &other);
-            /// @ brief StaticPolicyDecider destructor, virtual.
-            virtual ~StaticPolicyDecider();
-            virtual Decider *clone(void) const;
-            virtual bool update_policy(Region &curr_region, Policy &curr_policy);
-            virtual bool decider_supported(const std::string &descripton);
-            virtual const std::string& name(void) const;
-            virtual void requires(int level, TelemetryConfig &config);
-
-        private:
-            const std::string m_name;
-    };
+            Signal(int msr_size);
+            Signal(int msr_size, int lshift, int rshift, uint64_t mask, double multiplier);
+            virtual ~Signal();
+            double value(void);
+            void raw_value(uint64_t msr_val);
+            void msr_size(int size);
+            void left_shift(int shift_size);
+            void right_shift(int shift_size);
+            void mask(uint64_t bitmask);
+            void multiplier(double factor);
+        protected:
+            double m_value;
+            int m_lshift;
+            int m_rshift;
+            uint64_t m_mask;
+            double m_multiplier;
+            int m_msr_size;
+            uint64_t m_raw_value_last;
+            uint64_t m_msr_overflow_offset;
+    }
 }
 
 #endif

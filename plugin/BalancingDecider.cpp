@@ -113,17 +113,9 @@ namespace geopm
         return m_name;
     }
 
-    void BalancingDecider::bound(std::map<int, std::pair<double, double> > &bound)
+    void BalancingDecider::requires(int level, TelemetryConfig &config)
     {
-        auto rapl_bound = bound.find(GEOPM_CONTROL_TYPE_POWER);
-        if (rapl_bound != bound.end()) {
-            m_lower_bound = (*rapl_bound).second.first * M_GUARD_BAND;
-            m_upper_bound = (*rapl_bound).second.second / M_GUARD_BAND;
-        }
-        else {
-            throw Exception("BalancingDecider::bound(): Platform and Decider are not compatable, Power controls not found",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
+        config.get_bounds(level, GEOPM_CONTROL_TYPE_POWER, m_lower_bound, m_upper_bound);
     }
 
     bool BalancingDecider::update_policy(const struct geopm_policy_message_s &policy_msg, Policy &curr_policy)
@@ -131,7 +123,7 @@ namespace geopm
         bool result = false;
         if (policy_msg.power_budget != m_last_power_budget) {
             curr_policy.is_converged(GEOPM_REGION_ID_EPOCH, false);
-            int num_domain = curr_policy.num_domain();
+            int num_domain = curr_policy.num_control_domain();
             if (m_last_power_budget != DBL_MIN) {
                 // Split the budget up by the same ratio we split the old budget.
                 for (int i = 0; i < num_domain; ++i) {
@@ -160,7 +152,7 @@ namespace geopm
 
         // Don't do anything if we have already converged.
         if (curr_region.num_sample(0, GEOPM_SAMPLE_TYPE_RUNTIME) >= m_num_sample) {
-            int num_domain = curr_policy.num_domain();
+            int num_domain = curr_policy.num_control_domain();
             std::vector<std::pair<int,double> > runtime(num_domain);
             double sum = 0.0;
             double sum_sqr = 0.0;

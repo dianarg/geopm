@@ -34,6 +34,7 @@
 #define DECIDER_HPP_INCLUDE
 
 #include "Region.hpp"
+#include "TelemetryConfig.hpp"
 
 namespace geopm
 {
@@ -55,16 +56,6 @@ namespace geopm
             virtual ~Decider();
             /// @brief return a pointer of the derived class, virtual.
             virtual Decider *clone() const = 0;
-            ///@brief Return the list of upper and lower control bounds for all controls.
-            /// For a power based control, this will be the upper and lower
-            /// power bounds of a single tree node below the current one. For
-            /// a frequency based control this will be the p-state bounds of
-            /// a single leaf node.
-            ///
-            /// @param [in] bound Map from control domain to the lower and upper
-            ///             bounds for the control.
-            ///
-            virtual void bound(std::map<int, std::pair<double, double> > &bound) = 0;
             /// @brief Updates the power split among power control domains when
             /// recieving a new global budget, vitual.
             virtual bool update_policy(const struct geopm_policy_message_s &policy_msg, Policy &curr_policy);
@@ -74,6 +65,7 @@ namespace geopm
             virtual bool decider_supported(const std::string &descripton) = 0;
             /// @brief Return the name of the decider, virtual.
             virtual const std::string& name(void) const = 0;
+            virtual void requires(int level, TelemetryConfig &config) = 0;
         protected:
             /// @brief Save the last known power budget
             double m_last_power_budget;

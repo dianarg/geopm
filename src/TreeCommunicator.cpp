@@ -427,6 +427,11 @@ namespace geopm
         return result;
     }
 
+    void TreeCommunicator::fan_out(std::vector<int> &fanout)
+    {
+        fanout = m_fan_out;
+    }
+
     /////////////////////////////////
     // TreeCommunicatorLevel API's //
     /////////////////////////////////

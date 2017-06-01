@@ -32,6 +32,7 @@
 
 #include <cmath>
 #include <sstream>
+#include <set>
 #include <unistd.h>
 
 #include "geopm_message.h"
@@ -45,7 +46,7 @@ namespace geopm
     static const std::map<std::string, std::pair<off_t, unsigned long> > &hsx_msr_map(void);
 
     XeonPlatformImp::XeonPlatformImp(int platform_id, const std::string &model_name, const std::map<std::string, std::pair<off_t, unsigned long> > *msr_map)
-        : PlatformImp(2, 5, {{GEOPM_CONTROL_TYPE_POWER, 50.0},{GEOPM_CONTROL_TYPE_FREQUENCY, 1.0}}, msr_map)
+        : PlatformImp(2, 5, {{GEOPM_DOMAIN_CONTROL_POWER, 50.0},{GEOPM_DOMAIN_CONTROL_FREQUENCY, 1.0}}, msr_map)
         , m_throttle_limit_mhz(0.5)
         , m_energy_units(0.0)
         , m_dram_energy_units(0.0)
@@ -148,8 +149,8 @@ namespace geopm
     {
         int result = -1;
         switch (control_type) {
-            case GEOPM_CONTROL_TYPE_POWER:
-            case GEOPM_CONTROL_TYPE_FREQUENCY:
+            case GEOPM_DOMAIN_CONTROL_POWER:
+            case GEOPM_DOMAIN_CONTROL_FREQUENCY:
                 result = GEOPM_DOMAIN_PACKAGE;
                 break;
             default:
@@ -165,8 +166,8 @@ namespace geopm
     {
         int result = -1;
         switch (counter_type) {
-            case GEOPM_COUNTER_TYPE_ENERGY:
-            case GEOPM_COUNTER_TYPE_PERF:
+            case GEOPM_DOMAIN_SIGNAL_ENERGY:
+            case GEOPM_DOMAIN_SIGNAL_PERF:
                 result = GEOPM_DOMAIN_PACKAGE;
                 break;
             default:
@@ -176,6 +177,40 @@ namespace geopm
                 break;
         }
         return result;
+    }
+
+    void SNBPlatformImp::create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map)
+    {
+        for (auto it = domain.begin(); it != domain.end(); ++it) {
+            if ((*it) == GEOPM_DOMAIN_SIGNAL_PERF) {
+                std::map<int, std::set<int> > tmp_map;
+                for (int i = 0; i < m_num_logical_cpu; ++i) {
+                    tmp_map.insert(std::pair<int, std::set<int> >(i, std::set<int>({i})));
+                }
+                domain_map.insert(std::pair<int, std::map<int, std::set<int> > >((*it), tmp_map));
+            }
+            else if ((*it) == GEOPM_DOMAIN_SIGNAL_ENERGY ||
+                     (*it) == GEOPM_DOMAIN_CONTROL_POWER  ||
+                     (*it) == GEOPM_DOMAIN_CONTROL_FREQUENCY) {
+                std::set<int> tmp_set;
+                std::map<int, std::set<int> > tmp_map;
+                for (int i = 0; i < m_num_package; ++i) {
+                    for (int j = i * m_num_hw_cpu; j < (i + 1) * m_num_hw_cpu; ++j) {
+                        for (int k = 0; k < m_num_cpu_per_core; ++k) {
+                            tmp_set.insert(m_num_hw_cpu * k + j);
+                        }
+                    }
+                    tmp_map.insert(std::pair<int, std::set<int> >(i, tmp_set));
+                    tmp_set.clear();
+                }
+                domain_map.insert(std::pair<int, std::map<int, std::set<int> > >((*it), tmp_map));
+            }
+            else {
+                throw Exception("KNLPlatformImp::create_domain_maps() unknown domain type:" +
+                                std::to_string(*it),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
     }
 
     int IVTPlatformImp::platform_id(void)
@@ -239,10 +274,10 @@ namespace geopm
     {
         int result = -1;
         switch (control_type) {
-            case GEOPM_CONTROL_TYPE_POWER:
+            case GEOPM_DOMAIN_CONTROL_POWER:
                 result = GEOPM_DOMAIN_PACKAGE;
                 break;
-            case GEOPM_CONTROL_TYPE_FREQUENCY:
+            case GEOPM_DOMAIN_CONTROL_FREQUENCY:
                 result = GEOPM_DOMAIN_CPU;
                 break;
             default:
@@ -258,10 +293,10 @@ namespace geopm
     {
         int result = -1;
         switch (counter_type) {
-            case GEOPM_COUNTER_TYPE_ENERGY:
+            case GEOPM_DOMAIN_SIGNAL_ENERGY:
                 result = GEOPM_DOMAIN_PACKAGE;
                 break;
-            case GEOPM_COUNTER_TYPE_PERF:
+            case GEOPM_DOMAIN_SIGNAL_PERF:
                 result = GEOPM_DOMAIN_CPU;
                 break;
             default:
@@ -276,6 +311,40 @@ namespace geopm
     int BDXPlatformImp::platform_id(void)
     {
         return 0x64F;
+    }
+
+    void HSXPlatformImp::create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map)
+    {
+        for (auto it = domain.begin(); it != domain.end(); ++it) {
+            if ((*it) == GEOPM_DOMAIN_SIGNAL_PERFi ||
+                (*it) == GEOPM_DOMAIN_CONTROL_FREQUENCY) {
+                std::map<int, std::set<int> > tmp_map;
+                for (int i = 0; i < m_num_logical_cpu; ++i) {
+                    tmp_map.insert(std::pair<int, std::set<int> >(i, std::set<int>({i})));
+                }
+                domain_map.insert(std::pair<int, std::map<int, std::set<int> > >((*it), tmp_map));
+            }
+            else if ((*it) == GEOPM_DOMAIN_SIGNAL_ENERGY ||
+                     (*it) == GEOPM_DOMAIN_CONTROL_POWER) {
+                std::set<int> tmp_set;
+                std::map<int, std::set<int> > tmp_map;
+                for (int i = 0; i < m_num_package; ++i) {
+                    for (int j = i * m_num_hw_cpu; j < (i + 1) * m_num_hw_cpu; ++j) {
+                        for (int k = 0; k < m_num_cpu_per_core; ++k) {
+                            tmp_set.insert(m_num_hw_cpu * k + j);
+                        }
+                    }
+                    tmp_map.insert(std::pair<int, std::set<int> >(i, tmp_set));
+                    tmp_set.clear();
+                }
+                domain_map.insert(std::pair<int, std::map<int, std::set<int> > >((*it), tmp_map));
+            }
+            else {
+                throw Exception("KNLPlatformImp::create_domain_maps() unknown domain type:" +
+                                std::to_string(*it),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
     }
 
     BDXPlatformImp::BDXPlatformImp()
@@ -308,9 +377,9 @@ namespace geopm
 
     void XeonPlatformImp::bound(std::map<int, std::pair<double, double> > &bound)
     {
-        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_CONTROL_TYPE_POWER,
+        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_DOMAIN_CONTROL_POWER,
                                std::pair<double, double>(m_min_pkg_watts + m_max_dram_watts, m_max_pkg_watts + m_max_dram_watts)));
-        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_CONTROL_TYPE_FREQUENCY,
+        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_DOMAIN_CONTROL_FREQUENCY,
                                std::pair<double, double>(m_min_freq_mhz, m_max_freq_mhz)));
     }
 

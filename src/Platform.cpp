@@ -211,19 +211,9 @@ namespace geopm
         }*/
     }
 
-    int Platform::num_domain(void)
+    int Platform::num_control_domain(int ctl_type)
     {
-        if (!m_num_domain && m_imp) {
-            // Of all available control methods, set m_num_domain to the
-            // finest granularity of control.
-            for (int ctl_type = 0; ctl_type < GEOPM_NUM_CONTROL_TYPE; ++ctl_type) {
-                int num_domain = m_imp->num_control_domain(ctl_type);
-                if (num_domain > m_num_domain) {
-                   m_num_domain = num_domain;
-                }
-            }
-        }
-        return m_num_domain;
+        return m_imp->num_control_domain(ctl_type);
     }
 
     void Platform::save_msr_state(const char *path) const

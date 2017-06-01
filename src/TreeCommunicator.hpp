@@ -73,6 +73,7 @@ namespace geopm
             virtual void get_sample(int level, std::vector<struct geopm_sample_message_s> &sample) = 0;
             virtual void get_policy(int level, struct geopm_policy_message_s &policy) = 0;
             virtual size_t overhead_send(void) = 0;
+            virtual void fan_out(std::vector<int> &fanout) = 0;
     };
 
     class TreeCommunicator : public TreeCommunicatorBase
@@ -211,6 +212,7 @@ namespace geopm
             ///        calling process at the given level.
             void get_policy(int level, struct geopm_policy_message_s &policy);
             size_t overhead_send(void);
+            void fan_out(std::vector<int> &fanout);
         protected:
             /// @brief Constructor helper to instantiate
             ///        sub-communicators.

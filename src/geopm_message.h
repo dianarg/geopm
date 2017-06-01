@@ -97,47 +97,14 @@ static inline uint64_t geopm_region_id_set_hint(uint64_t hint_type, uint64_t rid
 }
 
 enum geopm_invalid_type_e {
-    GEOPM_TARGET_INVALID = -1
+    GEOPM_TARGET_INVALID = -1,
 };
-
-enum geopm_control_type_e {
-    GEOPM_CONTROL_TYPE_POWER,
-    GEOPM_CONTROL_TYPE_FREQUENCY,
-    GEOPM_NUM_CONTROL_TYPE // Control counter, must be last
-};
-
-enum geopm_counter_type_e {
-    GEOPM_COUNTER_TYPE_ENERGY,
-    GEOPM_COUNTER_TYPE_PERF,
-    GEOPM_NUM_COUNTER_TYPE // Counter, must be last
-};
-
-enum geopm_sample_type_e {
-    GEOPM_SAMPLE_TYPE_RUNTIME,
-    GEOPM_SAMPLE_TYPE_ENERGY,
-    GEOPM_SAMPLE_TYPE_FREQUENCY_NUMER,
-    GEOPM_SAMPLE_TYPE_FREQUENCY_DENOM,
-    GEOPM_NUM_SAMPLE_TYPE // Sample counter, must be last
-};
-
-/// @brief Enum encompassing msr data types.
-enum geopm_telemetry_type_e {
-    GEOPM_TELEMETRY_TYPE_PKG_ENERGY,           // Energy
-    GEOPM_TELEMETRY_TYPE_DRAM_ENERGY,          // Energy
-    GEOPM_TELEMETRY_TYPE_FREQUENCY,            // Counter
-    GEOPM_TELEMETRY_TYPE_INST_RETIRED,         // Counter
-    GEOPM_TELEMETRY_TYPE_CLK_UNHALTED_CORE,    // Counter
-    GEOPM_TELEMETRY_TYPE_CLK_UNHALTED_REF,     // Counter
-    GEOPM_TELEMETRY_TYPE_READ_BANDWIDTH,       // Counter
-    GEOPM_TELEMETRY_TYPE_PROGRESS,             // Rank
-    GEOPM_TELEMETRY_TYPE_RUNTIME,              // Rank
-    GEOPM_NUM_TELEMETRY_TYPE // Signal counter, must be last
-};
-
-enum geopm_telemetry_count_e {
-    GEOPM_NUM_TELEMETRY_TYPE_ENERGY = 2,
-    GEOPM_NUM_TELEMETRY_TYPE_COUNTER = 5,
-    GEOPM_NUM_TELEMETRY_TYPE_RANK = 2,
+enum geopm_domain_e {
+    GEOPM_DOMAIN_CONTROL_POWER,
+    GEOPM_DOMAIN_CONTROL_FREQUENCY,
+    GEOPM_DOMAIN_SIGNAL_ENERGY,
+    GEOPM_DOMAIN_SIGNAL_PERF,
+    GEOPM_DOMAIN_SIGNAL_RANK,
 };
 
 /// @brief MPI message structure for sending
@@ -152,14 +119,6 @@ struct geopm_policy_message_s {
     int num_sample;
     /// @brief Power budget in Watts.
     double power_budget;
-};
-
-/// @brief MPI message structure for sending
-/// sample telemetry data up the tree.
-struct geopm_sample_message_s {
-    /// @brief 64-bit unique application region identifier.
-    uint64_t region_id;
-    double signal[GEOPM_NUM_SAMPLE_TYPE];
 };
 
 /// @brief Structure used to hold single profiling
@@ -190,28 +149,13 @@ struct geopm_msr_message_s {
     double signal;
 };
 
-/// @brief Structure used to hold aligned telemetry data from
-/// application profiling and msr data.
-struct geopm_telemetry_message_s {
-    uint64_t region_id;
-    struct geopm_time_s timestamp;
-    double signal[GEOPM_NUM_TELEMETRY_TYPE]; // see geopm_telemetry_type_e for ordering.
-};
-
 extern const struct geopm_policy_message_s GEOPM_POLICY_UNKNOWN;
-extern const struct geopm_sample_message_s GEOPM_SAMPLE_INVALID;
 
 /// @brief Check if two policy messages are equal.
 /// @param [in] a Pointer to a policy message.
 /// @param [in] b Pointer to a policy message.
 /// @return 1 if policies are equal, else 0
 int geopm_is_policy_equal(const struct geopm_policy_message_s *a, const struct geopm_policy_message_s *b);
-/// @brief Check if two sample messages are equal.
-/// @param [in] a Pointer to a sample message.
-/// @param [in] b Pointer to a sample message.
-/// @return 1 if samples are equal, else 0
-int geopm_is_sample_equal(const struct geopm_sample_message_s *a, const struct geopm_sample_message_s *b);
-
 #ifdef __cplusplus
 }
 #endif

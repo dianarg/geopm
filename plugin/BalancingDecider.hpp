@@ -55,11 +55,11 @@ namespace geopm
             /// @brief BalancinDecider destructor, virtual.
             virtual ~BalancingDecider();
             virtual Decider *clone(void) const;
-            virtual void bound(std::map<int, std::pair<double, double> > &bound);
             virtual bool update_policy(const struct geopm_policy_message_s &policy_msg, Policy &curr_policy);
             virtual bool update_policy(Region &curr_region, Policy &curr_policy);
             virtual bool decider_supported(const std::string &descripton);
             virtual const std::string& name(void) const;
+            virtual void requires(int level, TelemetryConfig &config);
         private:
             const std::string m_name;
             const double m_convergence_target;

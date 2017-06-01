@@ -75,12 +75,13 @@ namespace geopm
             virtual double throttle_limit_mhz(void) const;
             virtual int control_domain(int domain_type) const;
             virtual int counter_domain(int domain_type) const;
+            virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map);
             static int platform_id(void);
         protected:
             /// @brief Initialize Running Average Power Limiting (RAPL) controls.
             void rapl_init();
             /// @brief Initialize per-CPU counters.
-            void cbo_counters_init();
+            void cbo_counters_init(int counter_idx, uint32_t event);
             /// @brief Initialize free running counters.
             void fixed_counters_init();
             /// @brief Reset per-CPU counters to default state.

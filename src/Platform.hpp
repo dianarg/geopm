@@ -34,6 +34,7 @@
 #define PLATFORM_HPP_INCLUDE
 
 #include "Region.hpp"
+#include "TelemetryConfig.hpp"
 #include "Policy.hpp"
 #include "PlatformImp.hpp"
 #include "geopm_message.h"
@@ -58,8 +59,9 @@ namespace geopm
             ///        This also initialized the underlying PlatformImp.
             void set_implementation(PlatformImp* platform_imp, bool do_initialize);
             /// @brief Retrieve the number of power domains.
+            /// @param [in] ctl_domain The control domain of interest.
             /// @return Number of power domains.
-            int num_domain(void) const;
+            int num_control_domain(int ctl_domain);
             /// @brief Retrieve the string name of the hw platform.
             /// @return The hw platform name.
             void name(std::string &plat_name) const;
@@ -109,14 +111,8 @@ namespace geopm
             /// @param [in] policy A Policy object containing the policy information
             ///        to be enforced.
             virtual void enforce_policy(uint64_t region_id, Policy &policy) const = 0;
-            /// @brief Return the upper and lower bounds of all controls.
-            ///
-            /// For a RAPL domain this would be the package power limit,
-            /// for a frequency domain this would be the p-state bounds.
-            ///
-            /// @param [out] map from control domain to the lower and upper
-            ///        control bounds for each control.
-            virtual void bound(std::map<int, std::pair<double, double> > &bound) = 0;
+            virtual void provides(TelemetryConfig &config) const = 0;
+            virtual void init_telemetry(const TelemetryConfig &config) = 0;
             ////////////////////////////////////////
             /// signals are expected as follows: ///
             /// per socket signals               ///

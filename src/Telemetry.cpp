@@ -29,36 +29,3 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#ifndef STATICPOLICYDECIDER_HPP_INCLUDE
-#define STATICPOLICYDECIDER_HPP_INCLUDE
-
-#include "Decider.hpp"
-
-namespace geopm
-{
-    /// @brief Decider which does not update the policy.
-    ///
-    /// Useful for running geopm as a profile only tool.  When using
-    /// this decider at the leaf or tree level, policy will never be
-    /// updated and therefore never enforced.
-    class StaticPolicyDecider : public Decider
-    {
-        public:
-            /// @ brief StaticPolicyDecider default constructor.
-            StaticPolicyDecider();
-            StaticPolicyDecider(const StaticPolicyDecider &other);
-            /// @ brief StaticPolicyDecider destructor, virtual.
-            virtual ~StaticPolicyDecider();
-            virtual Decider *clone(void) const;
-            virtual bool update_policy(Region &curr_region, Policy &curr_policy);
-            virtual bool decider_supported(const std::string &descripton);
-            virtual const std::string& name(void) const;
-            virtual void requires(int level, TelemetryConfig &config);
-
-        private:
-            const std::string m_name;
-    };
-}
-
-#endif
