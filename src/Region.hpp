@@ -85,7 +85,7 @@ namespace geopm
             /// @param [out] Sample message structure to fill in.
             virtual void sample_message(struct geopm_sample_message_s &sample) = 0;
             /// @brief Returns the latest value
-            virtual double signal(int domain_idx, int signal_type) = 0;
+            virtual double signal(int domain, int domain_idx, int signal_type) = 0;
             /// @brief Retrieve the number of valid samples for a domain of control.
             ///
             /// Get the number of valid samples  for a given domain of control and
@@ -97,12 +97,12 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @return The number of valid samples.
-            virtual int num_sample(int domain_idx, int signal_type) const = 0;
+            virtual int num_sample(int domain, int domain_idx, int signal_type) const = 0;
             /// @brief Retrieve the mean signal value for a domain of control.
             ///
             /// Get the mean signal value for a given domain of control and
@@ -113,12 +113,12 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @return The mean signal value.
-            virtual double mean(int domain_idx, int signal_type) const = 0;
+            virtual double mean(int domain, int domain_idx, int signal_type) const = 0;
             /// @brief Retrieve the median signal value for a domain of control.
             ///
             /// Get the median signal value for a given domain of control and
@@ -129,12 +129,12 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @return The median signal value.
-            virtual double median(int domain_idx, int signal_type) const = 0;
+            virtual double median(int domain, int domain_idx, int signal_type) const = 0;
             /// @brief Retrieve the standard deviation of the signal values for a domain of control.
             ///
             /// Get the standard deviation of the signal values for a given domain of
@@ -145,12 +145,12 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @return The standard deviation of the signal values.
-            virtual double std_deviation(int domain_idx, int signal_type) const = 0;
+            virtual double std_deviation(int domain, int domain_idx, int signal_type) const = 0;
             /// @brief Retrieve the min signal value for a domain of control.
             ///
             /// Get the min signal value for a given domain of control and
@@ -161,12 +161,12 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @return The min signal value.
-            virtual double min(int domain_idx, int signal_type) const = 0;
+            virtual double min(int domain, int domain_idx, int signal_type) const = 0;
             /// @brief Retrieve the max signal value for a domain of control.
             ///
             /// Get the max signal value for a given domain of control and
@@ -177,12 +177,12 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @return The max signal value.
-            virtual double max(int domain_idx, int signal_type) const = 0;
+            virtual double max(int domain, int domain_idx, int signal_type) const = 0;
             /// @brief Retrieve the derivative of the signal values for a domain of control.
             ///
             /// Get the derivative of the signal values for a given domain of control and
@@ -193,13 +193,13 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @return If there are 2 valid samples then return he derivative of the
             /// signal values, else return NAN.
-            virtual double derivative(int domain_idx, int signal_type) = 0;
+            double derivative(int domain, int domain_idx, int signal_idx);
             /// @brief Integrate a signal over time.
             ///
             /// Computes the integral of the signal over the interval
@@ -211,8 +211,8 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             virtual double integral(int domain_idx, int signal_type, double &delta_time, double &integral) const = 0;
@@ -262,8 +262,8 @@ namespace geopm
             ///        control as ordered in the Platform and the
             ///        Policy.
             ///
-            /// @param [in] signal_type The signal type requested as
-            ///        enumerated in geopm_signal_type_e in
+            /// @param [in] signal_idx The signal type requested as
+            ///        enumerated in geopm_signal_idx_e in
             ///        geopm_message.h.
             ///
             /// @param [in] file Name of source file where exception
@@ -273,8 +273,8 @@ namespace geopm
             ///        exception was thrown, e.g. preprocessor
             ///        __LINE__.
             ///
-            void check_bounds(int domain_idx, int signal_type, const char *file, int line) const;
-            double domain_buffer_value(int buffer_idx, int domain_idx, int signal_type);
+            void check_bounds(int domain_idx, int signal_idx, const char *file, int line) const;
+            double domain_buffer_value(int buffer_idx, int domain_idx, int signal_idx);
             bool is_telemetry_entry(const struct geopm_telemetry_message_s &telemetry, int domain_idx);
             bool is_telemetry_exit(const struct geopm_telemetry_message_s &telemetry, int domain_idx);
             void update_domain_sample(const struct geopm_telemetry_message_s &telemetry, int domain_idx);
@@ -295,7 +295,7 @@ namespace geopm
             /// @brief Holder for telemerty state on region entry.
             std::vector<struct geopm_telemetry_message_s> m_entry_telemetry;
             /// @brief the current sample message to be sent up the tree.
-            struct geopm_sample_message_s m_curr_sample;
+            std::vector<double> m_curr_sample;
             /// @brief Holder for sample data calculated after a domain exits a region.
             std::vector<struct geopm_sample_message_s> m_domain_sample;
             /// @brief Circular buffer is over time, vector is indexed over both domains and signals.
@@ -313,7 +313,7 @@ namespace geopm
             /// @brief the current sum of squares of signal values per domain and signal type.
             std::vector<double> m_sum_squares;
             std::vector<double> m_derivative_last;
-            struct geopm_sample_message_s m_agg_stats;
+            std::vector<double> m_agg_stats;
             uint64_t m_num_entry;
             std::vector<bool> m_is_entered;
             int m_derivative_num_fit;

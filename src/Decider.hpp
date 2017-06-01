@@ -34,6 +34,7 @@
 #define DECIDER_HPP_INCLUDE
 
 #include "Region.hpp"
+#include "TelemetryConfig.hpp"
 
 namespace geopm
 {
@@ -87,6 +88,7 @@ namespace geopm
             virtual bool update_policy(IRegion &curr_region, IPolicy &curr_policy) = 0;
             virtual bool decider_supported(const std::string &descripton) = 0;
             virtual const std::string& name(void) const = 0;
+            virtual void requires(int level, TelemetryConfig &config) = 0;
         protected:
             /// @brief Save the last known power budget
             double m_last_power_budget;

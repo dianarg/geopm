@@ -29,22 +29,3 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-#include "geopm_message.h"
-#include "config.h"
-#include <stdlib.h>
-#include <stdio.h>
-
-const struct geopm_policy_message_s GEOPM_POLICY_UNKNOWN = {-1, -1, -1, -1.0};
-
-int geopm_is_policy_equal(const struct geopm_policy_message_s *a, const struct geopm_policy_message_s *b)
-{
-    int result = 1;
-    if (a->mode != b->mode ||
-        a->flags != b->flags ||
-        a->num_sample != b->num_sample ||
-        a->power_budget != b->power_budget) {
-        result = 0;
-    }
-    return result;
-}

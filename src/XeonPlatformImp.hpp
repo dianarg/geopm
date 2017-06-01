@@ -66,6 +66,7 @@ namespace geopm
             virtual void msr_reset(void);
             virtual int control_domain(int domain_type) const = 0;
             virtual int counter_domain(int domain_type) const = 0;
+            virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map) = 0;
             virtual double throttle_limit_mhz(void) const;
 
         protected:
@@ -169,6 +170,7 @@ namespace geopm
             virtual ~SNBPlatformImp();
             virtual int control_domain(int domain_type) const;
             virtual int counter_domain(int domain_type) const;
+            virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map);
             static int platform_id(void);
     };
 
@@ -199,6 +201,7 @@ namespace geopm
             virtual ~HSXPlatformImp();
             virtual int control_domain(int domain_type) const;
             virtual int counter_domain(int domain_type) const;
+            virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map);
             static int platform_id(void);
     };
 

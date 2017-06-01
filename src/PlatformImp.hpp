@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <vector>
+#include <set>
 #include <map>
 #include <utility>
 #include <string>
@@ -199,6 +200,7 @@ namespace geopm
             virtual double throttle_limit_mhz(void) const = 0;
             virtual int control_domain(int domain_type) const = 0;
             virtual int counter_domain(int domain_type) const = 0;
+            virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map) = 0;
             /// @brief Return the path used for the MSR default save file.
             std::string msr_save_file_path(void);
 
@@ -273,6 +275,15 @@ namespace geopm
                 struct m_msr_batch_op *ops;   /// @brief In: Array[numops] of operations
             };
 
+            struct m_msr_signal_entry {
+                off_t offset;
+                uint64_t write_mask;
+                int lshift_mod;
+                int rshift_mod;
+                uint64_t mask_mod;
+                double multiply_mod;
+            }
+
             /// @brief Holds the underlying hardware topology.
             PlatformTopology m_topology;
             /// @brief Holds the file descriptors for the per-cpu special files.
@@ -280,7 +291,8 @@ namespace geopm
             /// @brief Map of MSR string name to address offset and write mask.
             /// This is a map is keyed by a string of the MSR's name and maps a pair
             /// which contain the MSR's offset (first) and write mask (second).
-            const std::map<std::string, std::pair<off_t, unsigned long> > *m_msr_map_ptr;
+            const std::map<std::string, struct m_msr_signal_entry> *m_msr_signal_map_ptr;
+            const std::map<std::string, std::pair<off_t, uint64_t> > *m_msr_control_map_ptr;
             /// @brief Number of logical CPUs.
             int m_num_logical_cpu;
             /// @brief Number of hardware CPUs.

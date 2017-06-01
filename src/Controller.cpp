@@ -296,30 +296,21 @@ namespace geopm
 
             m_platform_factory = new PlatformFactory;
             m_platform = m_platform_factory->platform(plugin_desc.platform, true);
-            m_msr_sample.resize(m_platform->capacity());
-            m_platform->sample(m_msr_sample);
-            m_app_start_time = m_msr_sample[0].timestamp;
-            for (auto it = m_msr_sample.begin(); it != m_msr_sample.end(); ++it) {
-                if ((*it).domain_type == GEOPM_DOMAIN_PACKAGE &&
-                    ((*it).signal_type == GEOPM_TELEMETRY_TYPE_DRAM_ENERGY ||
-                     (*it).signal_type == GEOPM_TELEMETRY_TYPE_PKG_ENERGY)) {
-                    m_counter_energy_start += (*it).signal;
-                }
-            }
-            std::map<int, std::pair<double, double> > bound;
-            m_platform->bound(bound);
+            TelemetryConfig config;
+            m_platform->capabilities(config);
             m_throttle_limit_mhz = m_platform->throttle_limit_mhz();
 
             m_decider_factory = new DeciderFactory;
             m_leaf_decider = m_decider_factory->decider(std::string(plugin_desc.leaf_decider));
-            m_leaf_decider->bound(bound);
+            m_leaf_decider->enable_features(config);
 
             int num_control_domain;
             double lower_bound = DBL_MIN;
             double upper_bound = DBL_MAX;
+/// @fixme lower and upper bound should be set to min and max node power.
             for (int level = 0; level < num_level; ++level) {
                 if (level == 0) {
-                    num_control_domain = m_platform->_domain();
+                    num_control_domain = m_platform->num_control_domain(GEOPM_CONTROL_TYPE_POWER);
                     m_telemetry_sample.resize(num_control_domain, {0, {{0, 0}}, {0}});
                 }
                 else {
@@ -327,8 +318,8 @@ namespace geopm
                 }
                 m_policy[level] = new Policy(num_control_domain);
                 if (level == 1) {
-                    upper_bound *= m_platform->num_domain();
-                    lower_bound *= m_platform->num_domain();
+                    upper_bound *= m_platform->num_control_domain(GEOPM_CONTROL_TYPE_POWER);
+                    lower_bound *= m_platform->num_control_domain(GEOPM_CONTROL_TYPE_POWER);
                     if (level > 1) {
                         int i = level - 1;
                         while (i >= 0) {
@@ -341,7 +332,7 @@ namespace geopm
                 std::map<int, std::pair<double, double> > power_bound;
                 power_bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_CONTROL_TYPE_POWER,
                                        std::pair<double,double>(lower_bound, upper_bound)));
-                m_tree_decider[level]->bound(power_bound);
+                m_tree_decider[level]->enable_features(config);
                 m_region[level].insert(std::pair<uint64_t, Region *>
                                        (GEOPM_REGION_ID_EPOCH,
                                         new Region(GEOPM_REGION_ID_EPOCH,
@@ -349,6 +340,18 @@ namespace geopm
                                                    level)));
                 if (m_tree_comm->level_size(level) > m_max_fanout) {
                     m_max_fanout = m_tree_comm->level_size(level);
+                }
+            }
+
+            m_platform->init_features(config);
+            m_msr_sample.resize(m_platform->capacity());
+            m_platform->sample(m_msr_sample);
+            m_app_start_time = m_msr_sample[0].timestamp;
+            for (auto it = m_msr_sample.begin(); it != m_msr_sample.end(); ++it) {
+                if ((*it).domain_type == GEOPM_DOMAIN_PACKAGE &&
+                    ((*it).signal_type == GEOPM_TELEMETRY_TYPE_DRAM_ENERGY ||
+                     (*it).signal_type == GEOPM_TELEMETRY_TYPE_PKG_ENERGY)) {
+                    m_counter_energy_start += (*it).signal;
                 }
             }
 
@@ -635,7 +638,7 @@ namespace geopm
                         auto tmp_it = m_region[level].insert(
                                           std::pair<uint64_t, Region *> (map_id,
                                                   new Region(base_region_id,
-                                                             m_platform->num_control_domain(),
+                                                             m_platform->num_control_domain(GEOPM_CONTROL_TYPE_POWER),
                                                              level)));
                         region_it = tmp_it.first;
                     }
@@ -675,7 +678,7 @@ namespace geopm
                                 auto tmp_it = m_region[level].insert(
                                                   std::pair<uint64_t, Region *> (map_id,
                                                           new Region((*sample_it).second.region_id,
-                                                                     m_platform->num_control_domain(),
+                                                                     m_platform->num_control_domain(GEOPM_CONTROL_TYPE_POWER),
                                                                      level)));
                                 region_it = tmp_it.first;
                             }
@@ -850,7 +853,7 @@ namespace geopm
             auto tmp_it = m_region[level].insert(
                               std::pair<uint64_t, Region *> (map_id,
                                       new Region(m_region_id_all,
-                                                 m_platform->num_control_domain(),
+                                                 m_platform->num_control_domain(GEOPM_CONTROL_TYPE_POWER),
                                                  level)));
             it = tmp_it.first;
         }

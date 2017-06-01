@@ -30,21 +30,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "geopm_message.h"
-#include "config.h"
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef SIGNAL_HPP_INCLUDE
+#define SIGNAL_HPP_INCLUDE
 
-const struct geopm_policy_message_s GEOPM_POLICY_UNKNOWN = {-1, -1, -1, -1.0};
-
-int geopm_is_policy_equal(const struct geopm_policy_message_s *a, const struct geopm_policy_message_s *b)
+namespace geopm
 {
-    int result = 1;
-    if (a->mode != b->mode ||
-        a->flags != b->flags ||
-        a->num_sample != b->num_sample ||
-        a->power_budget != b->power_budget) {
-        result = 0;
+    class Signal
+    {
+        public:
+            Signal(int msr_size);
+            Signal(int msr_size, int lshift, int rshift, uint64_t mask, double multiplier);
+            virtual ~Signal();
+            double value(void);
+            void raw_value(uint64_t msr_val);
+            void msr_size(int size);
+            void left_shift(int shift_size);
+            void right_shift(int shift_size);
+            void mask(uint64_t bitmask);
+            void multiplier(double factor);
+        protected:
+            double m_value;
+            int m_lshift;
+            int m_rshift;
+            uint64_t m_mask;
+            double m_multiplier;
+            int m_msr_size;
+            uint64_t m_raw_value_last;
+            uint64_t m_msr_overflow_offset;
     }
-    return result;
 }
+
+#endif
