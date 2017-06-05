@@ -253,8 +253,8 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/SignalHandler.cpp \
                             src/StaticPolicyDecider.cpp \
                             src/StaticPolicyDecider.hpp \
-							src/TelemetryConfig.cpp \
-							src/TelemetryConfig.hpp \
+                            src/TelemetryConfig.cpp \
+                            src/TelemetryConfig.hpp \
                             src/Tracer.cpp \
                             src/Tracer.hpp \
                             src/XeonPlatformImp.cpp \

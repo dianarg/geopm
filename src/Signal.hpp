@@ -38,26 +38,12 @@ namespace geopm
     class Signal
     {
         public:
-            Signal(int msr_size);
-            Signal(int msr_size, int lshift, int rshift, uint64_t mask, double multiplier);
+            Signal();
             virtual ~Signal();
-            double value(void);
-            void raw_value(uint64_t msr_val);
-            void msr_size(int size);
-            void left_shift(int shift_size);
-            void right_shift(int shift_size);
-            void mask(uint64_t bitmask);
-            void multiplier(double factor);
-        protected:
-            double m_value;
-            int m_lshift;
-            int m_rshift;
-            uint64_t m_mask;
-            double m_multiplier;
-            int m_msr_size;
-            uint64_t m_raw_value_last;
-            uint64_t m_msr_overflow_offset;
-    }
+            virtual double sample(const std::vector<uint64_t> &encoded);
+            virtual void decode(const std::vector<uint64_t> &encoded, std::vector<double> &decoded) = 0;
+            virtual double reduce(const std::vector<double> &decoded);
+    };
 }
 
 #endif
