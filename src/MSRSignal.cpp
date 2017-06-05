@@ -34,7 +34,29 @@
 
 namespace geopm
 {
-    Signal::Signal()
+    /* NEEDS TO BE FIXED */
+    Signal::Signal(int msr_size)
+        : m_value(0.0)
+        , m_lshift(0)
+        , m_rshift(0)
+        , m_mask(0xFFFFFFFFFFFFFFFF)
+        , m_multiplier(1.0)
+        , m_msr_size(msr_size)
+        , m_raw_value_last(0)
+        , m_msr_overflow_offset(0)
+    {
+
+    }
+
+    Signal::Signal(int msr_size, int lshift, int rshift, uint64_t mask, double multiplier)
+        : m_value(0.0)
+        , m_lshift(lshift)
+        , m_rshift(rshift)
+        , m_mask(mask)
+        , m_multiplier(multiplier)
+        , m_msr_size(msr_size)
+        , m_raw_value_last(0)
+        , m_msr_overflow_offset(0)
     {
 
     }
@@ -44,15 +66,45 @@ namespace geopm
 
     }
 
-    double Signal::sample(const std::vector<uint64_t> &encoded)
+    double Signal::value(void)
     {
-        std::vector<double>decoded(encoded.size());
-        decode(encoded, decoded);
-        return reduce(decoded)
+        return m_value;
     }
 
-    double Signal::reduce(const std::vector<double> &decoded)
+    void Signal::raw_value(uint64_t msr_val)
     {
-        return std::accumulate(decoded.begin(), decoded.end(), 0.0);
+       // Mask off bits beyond msr_size
+        msr_value &= ((~0ULL) >> (64 - m_msr_size));
+        // Deal with register overflow
+        if (msr_value < m_raw_value_last) {
+            m_msr_overflow_offset += pow(2, m_msr_size);
+        }
+        m_raw_value_last = msr_value;
+        msr_value += m_msr_overflow_offset;
+        m_value = (double)((((msr_value << m_lshift) >> m_rshift) & m_mask) * m_multiplier);
     }
-}
+
+    void Signal::msr_size(int size)
+    {
+        m_msr_size = msr_size;
+    }
+
+    void Signal::left_shift(int shift_size)
+    {
+        m_lshift = shift_size;
+    }
+
+    void Signal::right_shift(int shift_size)
+    {
+        m_rshift = shift_size;
+    }
+
+    void Signal::mask(uint64_t bitmask)
+    {
+        m_mask = bitmask;
+    }
+
+    void Signal::multiplier(double factor)
+    {
+        m_multiplier = factor;
+    }
