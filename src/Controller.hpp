@@ -190,8 +190,14 @@ namespace geopm
             std::vector<std::pair<uint64_t, struct geopm_prof_message_s> > m_prof_sample;
             std::vector<struct geopm_msr_message_s> m_msr_sample;
             std::vector<struct geopm_telemetry_message_s> m_telemetry_sample;
-            // Per level vector of maps from region identifier to region object
-            std::vector<std::map <uint64_t, IRegion *> > m_region;
+            // Region object for non-leaf region (only the epoch
+            // region is used at the tree level). The vector is over
+            // levels: note that m_tree_region[i] corresponds to level
+            // (i + 1) of the tree since leaf is not included in vector.
+            std::vector<IRegion *> m_tree_region;
+            // Map from region identifier, signal domain pair to a
+            // region object pointer.
+            std::map <std::pair<uint64_t, int>,  IRegion *> m_leaf_region;
             std::vector<IPolicy *> m_policy;
             std::vector<struct geopm_policy_message_s> m_last_policy_msg;
             std::vector<struct geopm_sample_message_s> m_last_sample_msg;
