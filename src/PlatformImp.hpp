@@ -46,6 +46,8 @@
 #include <string>
 
 #include "PlatformTopology.hpp"
+#include "Signal.hpp"
+#include "MSRAccess.hpp"
 
 namespace geopm
 {
@@ -81,8 +83,7 @@ namespace geopm
         public:
             /// @brief default PlatformImp constructor
             PlatformImp();
-            PlatformImp(int num_energy_signal, int num_counter_signal,
-                        const std::map<int, double> &control_latency,
+            PlatformImp(const std::map<int, double> &control_latency,
                         const std::map<std::string, std::pair<off_t, unsigned long> > *msr_map);
             PlatformImp(const PlatformImp &other);
             /// @brief default PlatformImp destructor
@@ -91,16 +92,7 @@ namespace geopm
             ////////////////////////////////////////////////////////////////////
             //                     Topology Information                       //
             ////////////////////////////////////////////////////////////////////
-            virtual int num_energy_signal(void) const;
-            /// @brief Retrieve the number of per-cpu signals
-            /// @return number of per-cpu signals.
-            virtual int num_counter_signal(void) const;
-            virtual int num_control_domain(int control_type) const;
-            virtual int num_counter_domain(int counter_type) const;
             virtual double control_latency_ms(int control_type) const;
-            /// @brief Gives the domain type for specified control type.
-            /// @return The domain type.
-            virtual int domain_type(int control_type) const;
             /// @brief Return the TDP of a single package.
             double package_tdp(void) const;
             ////////////////////////////////////////////////////////////////////
@@ -144,6 +136,7 @@ namespace geopm
             ////////////////////////////////////////////////////////////////////
             //              Platform dependent implementations                //
             ////////////////////////////////////////////////////////////////////
+            virtual int num_domain(int domain_type) const = 0;
             /// @brief Does this PlatformImp support a specific platform.
             /// @param [in] platform_id Platform identifier specific to the
             ///        underlying hardware. On x86 platforms this can be obtained by
@@ -186,94 +179,29 @@ namespace geopm
             virtual void write_control(int device_type, int device_index, int signal_type, double value) = 0;
             /// @brief Reset MSRs to a default state.
             virtual void msr_reset(void) = 0;
-            /// @brief Return the upper and lower bounds for each control.
+            /// @brief Return the upper and lower bound of the controls.
             ///
             /// For a RAPL platform this would be the package power limit,
-            /// as well as the frequency p-state bounds.
+            /// and the p-state bounds.
             ///
-            /// @param [out] map from control domain to the lower and upper
-            ///        control bounds for each control.
+            /// @param [out] bound The lower and upper limits for each control.
             virtual void bound(std::map<int, std::pair<double, double> > &bound) = 0;
             /// @brief Return the frequency limit where throttling occurs.
             ///
             /// @return frequency limit where anything <= is considered throttling.
             virtual double throttle_limit_mhz(void) const = 0;
-            virtual int control_domain(int domain_type) const = 0;
-            virtual int counter_domain(int domain_type) const = 0;
+            virtual int domain_type(int domain) const = 0;
             virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map) = 0;
             /// @brief Return the path used for the MSR default save file.
             std::string msr_save_file_path(void);
 
         protected:
 
-            ////////////////////////////////////////////////////////////////////
-            //                     MSR read/write support                     //
-            ////////////////////////////////////////////////////////////////////
-            /// @brief Write a value to a Model Specific Register.
-            /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
-            /// @param [in] device_index Numbered index of the specified type.
-            /// @param [in] msr_offset Address offset of the requested MSR.
-            /// @param [in] msr_mask Write mask of the specified MSR.
-            /// @param [in] value Value to write to the specified MSR.
-            void msr_write(int device_type, int device_index, off_t msr_offset,
-                           unsigned long msr_mask, uint64_t value);
-            /// @brief Read a value from a Model Specific Register.
-            /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
-            /// @param [in] device_index Numbered index of the specified type.
-            /// @param [in] msr_offset Address offset of the requested MSR.
-            /// @return Value read from the specified MSR.
-            uint64_t msr_read(int device_type, int device_index, off_t msr_offset);
-            /// @brief Batch read values from multiple Model Specific Registers.
-            void batch_msr_read(void);
-            /// @brief Retrieve the address offset of a Model Specific Register.
-            /// @param [in] msr_name String name of the requested MSR.
-            /// @return Address offset of the requested MSR.
-            virtual off_t msr_offset(std::string msr_name);
-            /// @brief Retrieve the write mask of a Model Specific Register.
-            /// @param [in] msr_name String name of the requested MSR.
-            /// @return Write mask of the requested MSR.
-            unsigned long msr_mask(std::string msr_name);
-            /// @brief Set the path to the MSR special file. In Linux this path
-            /// is /dev/msr/cpu_num.
-            /// @param [in] cpu_num Logical cpu number to set the path for.
-            virtual void msr_path(int cpu_num);
-            /// @brief Open a MSR special file.
-            /// @param [in] cpu Number of logical cpu to open.
-            void msr_open(int cpu);
-            /// @brief Close a MSR special file.
-            /// @param [in] cpu Number of logical cpu to close.
-            void msr_close(int cpu);
             /// @brief Look up topology information to set member variables.
             virtual void parse_hw_topology(void);
             /// @brief Opens the per cpu special files, initializes the MSR offset
             /// map, initialize RAPL, CBO and fixed counter MSRs.
             virtual void msr_initialize() = 0;
-            int num_domain(int domain_type) const;
-            /// @brief Handles the overflow of fixed size counters.
-            /// @param [in] signal_idx The index into the overflow offset vector
-            ///        for this counter.
-            /// @param [in] The size of the counter.
-            /// @param [in] The value read from the counter.
-            /// @return The value corrected for overflow.
-            double msr_overflow(int signal_idx, uint32_t msr_size, uint64_t value);
-
-            struct m_msr_batch_op {
-                uint16_t cpu;      /// @brief In: CPU to execute {rd/wr}msr ins.
-                uint16_t isrdmsr;  /// @brief In: 0=wrmsr, non-zero=rdmsr
-                int32_t err;
-                uint32_t msr;      /// @brief In: MSR Address to perform op
-                uint64_t msrdata;  /// @brief In/Out: Input/Result to/from operation
-                uint64_t wmask;    /// @brief Out: Write mask applied to wrmsr
-            };
-
-            struct m_msr_batch_array {
-                uint32_t numops;            /// @brief In: # of operations in ops array
-                struct m_msr_batch_op *ops;   /// @brief In: Array[numops] of operations
-            };
 
             struct m_msr_signal_entry {
                 off_t offset;
@@ -282,12 +210,11 @@ namespace geopm
                 int rshift_mod;
                 uint64_t mask_mod;
                 double multiply_mod;
-            }
+            };
 
             /// @brief Holds the underlying hardware topology.
             PlatformTopology m_topology;
-            /// @brief Holds the file descriptors for the per-cpu special files.
-            std::vector<int> m_cpu_file_desc;
+            IMSRAccess *m_msr_access;
             /// @brief Map of MSR string name to address offset and write mask.
             /// This is a map is keyed by a string of the MSR's name and maps a pair
             /// which contain the MSR's offset (first) and write mask (second).
@@ -306,8 +233,6 @@ namespace geopm
             /// @brief Number of packages.
             int m_num_package;
             int m_num_core_per_tile;
-            /// @brief File path to MSR special files.
-            char m_msr_path[NAME_MAX];
             /// @brief The number of signals per package.
             int m_num_energy_signal;
             /// @brief The number of signals per CPU.
@@ -316,15 +241,9 @@ namespace geopm
             std::map<int, double> m_control_latency_ms;
             /// @brief TDP value for package (CPU) power read from RAPL.
             double m_tdp_pkg_watts;
-            /// @brief The last values read from all counters.
-            std::vector<uint64_t> m_msr_value_last;
-            /// @brief The current aggregated overflow for all the counters.
-            std::vector<double> m_msr_overflow_offset;
-            int m_msr_batch_desc;
-            bool m_is_batch_enabled;
-            struct m_msr_batch_array m_batch;
             uint64_t m_trigger_offset;
             uint64_t m_trigger_value;
+            std::vector<IMSRSignal*> signal;
 
         private:
             void build_msr_save_string(std::ofstream &save_file, int device_type, int device_index, std::string name);

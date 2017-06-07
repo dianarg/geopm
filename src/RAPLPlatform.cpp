@@ -79,8 +79,8 @@ namespace geopm
 
         int count = 0;
         int pmon_domain_per_energy_domain = m_num_pmon_ctr_domain / m_num_energy_ctr_domain;
-        int energy_domain = m_imp->counter_domain(GEOPM_COUNTER_TYPE_ENERGY);
-        int pmon_domain = m_imp->counter_domain(GEOPM_COUNTER_TYPE_PERF);
+        int energy_domain = m_imp->domain(GEOPM_COUNTER_TYPE_ENERGY);
+        int pmon_domain = m_imp->domain(GEOPM_COUNTER_TYPE_PERF);
         for (int i = 0; i < m_num_energy_ctr_domain; i++) {
             m_batch_desc[count].device_type = energy_domain;
             m_batch_desc[count].device_index = i;

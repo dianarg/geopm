@@ -48,7 +48,7 @@ namespace geopm
     }
 
     KNLPlatformImp::KNLPlatformImp()
-        : PlatformImp(2, 5, {{GEOPM_DOMAIN_CONTROL_POWER, 50.0},{GEOPM_DOMAIN_CONTROL_FREQUENCY, 1.0}}, &(knl_msr_map()))
+        : PlatformImp({{GEOPM_DOMAIN_CONTROL_POWER, 50.0},{GEOPM_DOMAIN_CONTROL_FREQUENCY, 1.0}}, &(knl_msr_map()))
         , m_throttle_limit_mhz(0.5)
         , m_energy_units(1.0)
         , m_power_units_inv(1.0)
@@ -141,6 +141,25 @@ namespace geopm
                                std::pair<double, double>(m_min_pkg_watts + m_max_dram_watts, m_max_pkg_watts + m_max_dram_watts)));
         bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_DOMAIN_CONTROL_FREQUENCY,
                                std::pair<double, double>(m_min_freq_mhz, m_max_freq_mhz)));
+    }
+
+    int KNLPlatformImp::num_domain(int domain_type) const
+    {
+        int count;
+        switch (domain_type) {
+            case GEOPM_DOMAIN_SIGNAL_ENERGY:
+            case GEOPM_DOMAIN_CONTROL_POWER:
+            case GEOPM_DOMAIN_CONTROL_FREQUENCY:
+                count = m_num_package;
+                break;
+            case GEOPM_DOMAIN_SIGNAL_PERF:
+                count = m_num_logical_cpu;
+                break;
+            default:
+                count = 0;
+                break;
+        }
+        return count;
     }
 
     void KNLPlatformImp::create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map)
@@ -440,83 +459,84 @@ namespace geopm
         fixed_counters_init();
     }
 
-    void KNLPlatform::init_telemetry(TelemetryConfig &config)
+    void KNLPlatformImp::init_telemetry(TelemetryConfig &config)
     {
         std::set<std::string> rapl_signals;
         std::set<std::string> cpu_signals;
         config.get_required(GEOPM_DOMAIN_SIGNAL_ENERGY, rapl_signals);
         config.get_required(GEOPM_DOMAIN_SIGNAL_PERF, cpu_signals);
+        std::vector<int> cpu;
+        cpu.reserve(rapl_signals.size() * m_num_package +
+                    cpu_signals.size() * m_num_logical_cpu);
+        std::vector<int> read_off;
+        read_off.reserve(rapl_signals.size() * m_num_package +
+                         cpu_signals.size() * m_num_logical_cpu);
         for (auto it = rapl_signals.begin(); it != rapl_signals.end(); ++it) {
             auto signal_name = signal_to_msr_map.find(*it);
             if (signal_name == signal_to_msr_map.end() {
-                //throw
+                throw Exception("KNLPlatformImp::init_telemetry(): Invalid signal string", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
             auto msr_entry = msr_signal_map.find(signal_name.second);
             if (msr_entry == msr_signal_map.end() {
-                //throw
+                throw Exception("KNLPlatformImp::init_telemetry(): Invalid MSR type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
-            for (int i = 0; i < m_num_package; i++) {
-                MSRSignal signal(msr_entry.second.size, 
-                                 msr_entry.second.lshift_mod,
-                                 msr_entry.second.rshift_mod,
-                                 msr_entry.second.mask_mod,
-                                 msr_entry.second.multiply_mod);
-                rapl_signals.push_back(signal);
-                struct m_msr_batch_op batch_op;
-                batch_op.cpu = i * m_num_cpu_per_package + 1;
-                batch_op.isrdmsr = 1;
-                batch_op.err = 0;
-                batch_op.msr = msr_entry.offset;
-                batch_op.msrdata = 0;
-                batch_op.wmask = 0;
-                batch.push_back(batch_op);
+            std::vector<off_t> off(1);
+            off.back() = msr_entry.second.offset;
+            signal.push_back(new MSRSignal(off, m_num_package));
+            signal.back()->num_bit(0, msr_entry.second.size);
+            signal.back()->left_shift(msr_entry.second.lshift_mod);
+            signal.back()->right_shift(msr_entry.second.rshift_mod);
+            signal.back()->mask(msr_entry.second.mask_mod);
+            signal.back()->scalar(msr_entry.second.multiply_mod);
+            for (int i = 0; i < m_num_package; ++i) {
+                cpu.push_back((m_num_package / m_num_hw_cpu) * i));
+                read_off.push_back(off.back());
             }
         }
         for (auto it = cpu_signals.begin(); it != cpu_signals.end(); ++it) {
             int counter_idx = 0;
-            std::vector<std::string> signame;
+            std::vector<off_t> off;
+            std::vector<string> signame;
             std::vector<struct m_msr_signal_entry> msr_entry;
+            std::string key;
+            std::map::<std::string, std::string>::iterator signal_name;
             if ((*it) == "bandwidth") {
-                signame.push_back("l2_cache_misses");
+                signame.push_back("llc_victims");
                 signame.push_back("l2_prefetches");
             }
             else {
-                signame.push_back((*it));
+                signame.push_back(*it);
             }
-            for (auto name = signame.begin(); name != signame.end; ++name) {
-                for (int i = 0; i < m_num_logical_cpu; i++) {
-                    auto signal_name = signal_to_msr_map.find(name);
-                    if (signal_name == signal_to_msr_map.end() {
-                        //throw
-                    }
-                    std::string key(signal_name.second);
-                    if (signal_name.second.find("event-0x") == 0) {
-                        uint32_t event = strtol(signal_name.second.substr("event-0x".size()).c_str(), NULL, 16);
-                        cbo_counters_init(counter_idx, event);
-                        counter_idx++;
-                        std::ostringstream buffer;
-                        buffer << "C" << i << "_MSR_PMON_CTR" << events.size() - 1;
-                        key = buffer.str();   
-                    }
-                    auto msr_entry = msr_signal_map.find(key);
-                    if (msr_entry == msr_signal_map.end() {
-                        //throw
-                    }
-                    MSRSignal signal(msr_entry.second.size, 
-                              msr_entry.second.lshift_mod,
-                              msr_entry.second.rshift_mod,
-                              msr_entry.second.mask_mod,
-                              msr_entry.second.multiply_mod);
-                    rapl_signals.push_back(signal);
-                    struct m_msr_batch_op batch_op;
-                    batch_op.cpu = i;
-                    batch_op.isrdmsr = 1;
-                    batch_op.err = 0;
-                    batch_op.msr = msr_entry.offset;
-                    batch_op.msrdata = 0;
-                    batch_op.wmask = 0;
-                    batch.push_back(batch_op);
+            for (auto name_it = signame.begin(); name_it != signame.end(); ++name_it) {
+                signal_name = signal_to_msr_map.find(*name_it);
+                if (signal_name == signal_to_msr_map.end() {
+                    throw Exception("KNLPlatformImp::init_telemetry(): Invalid signal string", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
                 }
+                key = signal_name.second;
+                if (signal_name.second.find("event-0x") == 0) {
+                    uint32_t event = strtol(signal_name.second.substr("event-0x".size()).c_str(), NULL, 16);
+                    cbo_counters_init(counter_idx, event);
+                    counter_idx++;
+                    std::ostringstream buffer;
+                    buffer << "C" << i << "_MSR_PMON_CTR" << counter_idx;
+                    counter_idx++;
+                    key = buffer.str();
+                }
+                auto msr_it = msr_signal_map.find(key);
+                if (msr_it == msr_signal_map.end() {
+                    throw Exception("KNLPlatformImp::init_telemetry(): Invalid MSR type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                }
+                msr_entry.push_back((*msr_it).second);
+                off.push_back(msr_entry.back().offset);
+            }
+            signal.push_back(new MSRSignal(off, m_num_logical_cpu));
+            int count = 0;
+            for (auto msr_entry_it = msr_entry.begin(); msr_entry_it != msr_entry.end(); ++msr_entry_it) {
+                signal.back()->num_bit(count, msr_entry_it->size);
+                signal.back()->left_shift(count, msr_entry_it->lshift_mod);
+                signal.back()->right_shift(count, msr_entry_it->rshift_mod);
+                signal.back()->mask(count, msr_entry_it->mask_mod);
+                signal.back()->scalar(count, msr_entry_it->multiply_mod);
             }
         }
 

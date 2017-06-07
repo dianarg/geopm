@@ -52,6 +52,7 @@ namespace geopm {
             bool is_required(int signal_domain, const std::string &enabled) const;
             void set_domain_cpu_map(int domain, const std::vector<std::set<int> > &domain_map);
             void get_domain_cpu_map(int domain, std::vector<std::set<int> > &domain_map) const;
+            int num_domain_entry(int domain);
             void set_bounds(int signal_domain, double lower, double upper);
             void get_bounds(int level, int ctl_domain, double &lower, double &upper) const;
             void supported_domain(const std::set<int> domain);
