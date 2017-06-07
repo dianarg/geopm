@@ -64,6 +64,7 @@ namespace geopm
             //////////////////////////////////////////////
             virtual bool is_model_supported(int platform_id);
             virtual std::string platform_name();
+            virtual int num_domain(int domain_type) const;
             virtual double read_signal(int device_type, int device_index, int signal_type);
             virtual void batch_read_signal(std::vector<struct geopm_signal_descriptor> &signal_desc, bool is_changed);
             virtual void write_control(int device_type, int device_index, int signal_type, double value);

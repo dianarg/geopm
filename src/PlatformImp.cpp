@@ -48,6 +48,9 @@
 
 #include "geopm_message.h"
 #include "Exception.hpp"
+#include "PlatformTopology.hpp"
+#include "MSRAccess.hpp"
+#include "MSRSignal.hpp"
 #include "PlatformImp.hpp"
 #include "config.h"
 
@@ -55,7 +58,8 @@ namespace geopm
 {
 
     PlatformImp::PlatformImp()
-        : m_num_logical_cpu(0)
+        : m_msr_access(NULL)
+        , m_num_logical_cpu(0)
         , m_num_hw_cpu(0)
         , m_num_tile(0)
         , m_num_tile_group(0)
@@ -74,23 +78,18 @@ namespace geopm
 
     }
 
-    PlatformImp::PlatformImp(int num_energy_signal, int num_counter_signal,
-                             const std::map<int, double> &control_latency,
+    PlatformImp::PlatformImp(const std::map<int, double> &control_latency,
                              const std::map<std::string, std::pair<off_t, unsigned long> > *msr_map_ptr)
-        : m_msr_map_ptr(msr_map_ptr)
+        : m_msr_access(NULL)
+        , m_msr_map_ptr(msr_map_ptr)
         , m_num_logical_cpu(0)
         , m_num_hw_cpu(0)
         , m_num_tile(0)
         , m_num_tile_group(0)
         , m_num_package(0)
         , m_num_core_per_tile(0)
-        , m_num_energy_signal(num_energy_signal)
-        , m_num_counter_signal(num_counter_signal)
         , m_control_latency_ms(control_latency)
         , m_tdp_pkg_watts(DBL_MIN)
-        , m_msr_batch_desc(-1)
-        , m_is_batch_enabled(false)
-        , m_batch({0, NULL})
         , m_trigger_offset(0)
         , m_trigger_value(0)
         , m_is_initialized(false)
@@ -100,8 +99,8 @@ namespace geopm
     }
 
     PlatformImp::PlatformImp(const PlatformImp &other)
-        : m_topology(other.m_topology)
-        , m_cpu_file_desc(other.m_cpu_file_desc)
+        : m_msr_access(other.m_msr_access)
+        , m_topology(other.m_topology)
         , m_msr_map_ptr(other.m_msr_map_ptr)
         , m_num_logical_cpu(other.m_num_logical_cpu)
         , m_num_hw_cpu(other.m_num_hw_cpu)
@@ -110,41 +109,21 @@ namespace geopm
         , m_num_tile_group(other.m_num_tile_group)
         , m_num_package(other.m_num_package)
         , m_num_core_per_tile(other.m_num_core_per_tile)
-        , m_num_energy_signal(other.m_num_energy_signal)
-        , m_num_counter_signal(other.m_num_counter_signal)
         , m_control_latency_ms(other.m_control_latency_ms)
         , m_tdp_pkg_watts(other.m_tdp_pkg_watts)
-        , m_msr_value_last(other.m_msr_value_last)
-        , m_msr_overflow_offset(other.m_msr_overflow_offset)
-        , m_msr_batch_desc(other.m_msr_batch_desc)
-        , m_is_batch_enabled(other.m_is_batch_enabled)
-        , m_batch(other.m_batch)
         , m_trigger_offset(other.m_trigger_offset)
         , m_trigger_value(other.m_trigger_value)
         , m_msr_save_file_path(other.m_msr_save_file_path)
         , m_is_initialized(other.m_is_initialized)
         , M_MSR_SAVE_FILE_PATH(other.M_MSR_SAVE_FILE_PATH)
     {
-        // Copy C string for m_msr_path
-        m_msr_path[NAME_MAX - 1] = '\0';
-        strncpy(m_msr_path, other.m_msr_path, NAME_MAX - 1);
+
     }
 
 
     PlatformImp::~PlatformImp()
     {
-        if (m_batch.numops) {
-            free(m_batch.ops);
-        }
-
-        for (int i = 0; i < m_num_logical_cpu; ++i) {
-            msr_close(i);
-        }
-
-        if (m_msr_batch_desc != -1) {
-            close(m_msr_batch_desc);
-        }
-
+        delete m_msr_access;
         remove(m_msr_save_file_path.c_str());
     }
 
@@ -152,61 +131,16 @@ namespace geopm
     {
         if (!m_is_initialized) {
             parse_hw_topology();
-            for (int i = 0; i < m_num_logical_cpu; i++) {
-                msr_open(i);
-            }
+            m_msr_access = new MSRAccess(m_msr_signal_map_ptr, m_msr_control_map_ptr, m_topology);
             save_msr_state(M_MSR_SAVE_FILE_PATH.c_str());
             msr_initialize();
             m_is_initialized = true;
         }
     }
 
-    int PlatformImp::num_energy_signal(void) const
-    {
-        return m_num_energy_signal;
-    }
-
-    int PlatformImp::num_counter_signal(void) const
-    {
-        return m_num_counter_signal;
-    }
-
     double PlatformImp::package_tdp(void) const
     {
         return m_tdp_pkg_watts;
-    }
-
-    int PlatformImp::num_control_domain(int control_type) const
-    {
-        return num_domain(control_domain(control_type));
-    }
-
-    int PlatformImp::num_counter_domain(int counter_type) const
-    {
-        return num_domain(counter_domain(counter_type));
-    }
-
-    int PlatformImp::num_domain(int domain_type) const
-    {
-        int count;
-        switch (domain_type) {
-            case GEOPM_DOMAIN_PACKAGE:
-                count = m_num_package;
-                break;
-            case GEOPM_DOMAIN_CPU:
-                count = m_num_hw_cpu;
-                break;
-            case GEOPM_DOMAIN_TILE:
-                count = m_num_tile;
-                break;
-            case GEOPM_DOMAIN_TILE_GROUP:
-                count = m_num_tile_group;
-                break;
-            default:
-                count = 0;
-                break;
-        }
-        return count;
     }
 
     double PlatformImp::control_latency_ms(int control_type) const
@@ -222,175 +156,29 @@ namespace geopm
 
     void PlatformImp::msr_write(int device_type, int device_index, const std::string &msr_name, uint64_t value)
     {
-        off_t offset = msr_offset(msr_name);
-        unsigned long mask = msr_mask(msr_name);
-        msr_write(device_type, device_index, offset, mask, value);
-    }
-
-    void PlatformImp::msr_write(int device_type, int device_index, off_t msr_offset, unsigned long msr_mask, uint64_t value)
-    {
-        uint64_t old_value;
-        uint64_t curr_value;
-
-        curr_value = msr_read(device_type, device_index, msr_offset);
-        curr_value &= ~msr_mask;
-
-        if (device_type == GEOPM_DOMAIN_PACKAGE)
-            device_index = (m_num_hw_cpu / m_num_package) * device_index;
-        else if (device_type == GEOPM_DOMAIN_TILE)
-            device_index = (m_num_hw_cpu / m_num_tile) * device_index;
-
-        if (m_cpu_file_desc.size() < (uint64_t)device_index) {
-            throw Exception("no file descriptor found for cpu device", GEOPM_ERROR_MSR_WRITE, __FILE__, __LINE__);
+        off_t offset = m_msr_access->offset(msr_name);
+        unsigned long mask = m_msr_offset->mask(msr_name);
+        int cpu_id = 1;
+        if (device_type == GEOPM_DOMAIN_PACKAGE) {
+            cpu_id = (m_num_hw_cpu / m_num_package) * device_index;
         }
-
-        old_value = value;
-        value &= msr_mask;
-        if (value != old_value) {
-            std::ostringstream message;
-            message << "MSR value to be written was modified by the mask! Desired = 0x" << std::hex << old_value
-                    << " After mask = 0x" << std::hex << value;
-            throw Exception(message.str(), GEOPM_ERROR_MSR_WRITE, __FILE__, __LINE__);
+        else if (device_type == GEOPM_DOMAIN_TILE) {
+            cpu_id = (m_num_hw_cpu / m_num_tile) * device_index;
         }
-
-        value |= curr_value;
-
-        int rv = pwrite(m_cpu_file_desc[device_index], &value, sizeof(value), msr_offset);
-        if (rv != sizeof(value)) {
-            std::ostringstream ex_str;
-            ex_str << "offset: " << msr_offset << " value: " << value;
-            throw Exception(ex_str.str(), GEOPM_ERROR_MSR_WRITE, __FILE__, __LINE__);
-        }
+        m_msr_access->write(cpu_id, offset, mask, value);
     }
 
     uint64_t PlatformImp::msr_read(int device_type, int device_index, const std::string &msr_name)
     {
-        off_t offset = msr_offset(msr_name);
-        return msr_read(device_type, device_index, offset);
-    }
-
-    uint64_t PlatformImp::msr_read(int device_type, int device_index, off_t msr_offset)
-    {
-        uint64_t value;
-        int index = device_index;
-
-        if (device_type == GEOPM_DOMAIN_PACKAGE)
-            index = (m_num_logical_cpu / m_num_package) * device_index;
-        else if (device_type == GEOPM_DOMAIN_TILE)
-            index = (m_num_logical_cpu / m_num_tile) * device_index;
-
-        if (m_cpu_file_desc.size() < (uint64_t)index) {
-            throw Exception("no file descriptor found for cpu device", GEOPM_ERROR_MSR_READ, __FILE__, __LINE__);
+        off_t offset = m_msr_access->offset(msr_name);
+        int cpu_id = 1;
+        if (device_type == GEOPM_DOMAIN_PACKAGE) {
+            cpu_id = (m_num_hw_cpu / m_num_package) * device_index;
         }
-        int rv = pread(m_cpu_file_desc[index], &value, sizeof(value), msr_offset);
-        if (rv != sizeof(value)) {
-            throw Exception(std::to_string(msr_offset), GEOPM_ERROR_MSR_READ, __FILE__, __LINE__);
+        else if (device_type == GEOPM_DOMAIN_TILE) {
+            cpu_id = (m_num_hw_cpu / m_num_tile) * device_index;
         }
-
-        return value;
-    }
-
-    void PlatformImp::batch_msr_read(void)
-    {
-        int rv = ioctl(m_msr_batch_desc, X86_IOC_MSR_BATCH, &m_batch);
-
-        if (rv) {
-            throw Exception("read from /dev/cpu/msr_batch failed", GEOPM_ERROR_MSR_READ, __FILE__, __LINE__);
-        }
-    }
-
-    off_t PlatformImp::msr_offset(std::string msr_name)
-    {
-        auto it = m_msr_map_ptr->find(msr_name);
-        if (it == m_msr_map_ptr->end()) {
-            throw Exception("MSR string not found in offset map", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        return (*it).second.first;
-    }
-
-    unsigned long PlatformImp::msr_mask(std::string msr_name)
-    {
-        auto it = m_msr_map_ptr->find(msr_name);
-        if (it == m_msr_map_ptr->end()) {
-            throw Exception("MSR string not found in offset map", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        return (*it).second.second;
-    }
-
-    void PlatformImp::msr_path(int cpu_num)
-    {
-        struct stat s;
-        int err;
-
-        // check for the msr-safe driver
-        err = stat("/dev/cpu/0/msr_safe", &s);
-        if (err == 0) {
-            snprintf(m_msr_path, NAME_MAX, "/dev/cpu/%d/msr_safe", cpu_num);
-            //check for batch support
-            m_msr_batch_desc = open("/dev/cpu/msr_batch", O_RDWR);
-            if (m_msr_batch_desc != -1) {
-                m_is_batch_enabled = true;
-            }
-            return;
-        }
-
-        // fallback to the default msr driver
-        err = stat("/dev/cpu/0/msr", &s);
-        if (err == 0) {
-            snprintf(m_msr_path, NAME_MAX, "/dev/cpu/%d/msr", cpu_num);
-            return;
-        }
-
-        throw Exception("checked /dev/cpu/0/msr and /dev/cpu/0/msr_safe", GEOPM_ERROR_MSR_OPEN, __FILE__, __LINE__);
-    }
-
-    void PlatformImp::msr_open(int cpu)
-    {
-        int fd;
-
-        msr_path(cpu);
-        fd = open(m_msr_path, O_RDWR);
-        //report errors
-        if (fd < 0) {
-            char error_string[NAME_MAX];
-            if (errno == ENXIO || errno == ENOENT) {
-                snprintf(error_string, NAME_MAX, "device %s does not exist", m_msr_path);
-            }
-            else if (errno == EPERM || errno == EACCES) {
-                snprintf(error_string, NAME_MAX, "permission denied opening device %s", m_msr_path);
-            }
-            else {
-                snprintf(error_string, NAME_MAX, "system error opening cpu device %s", m_msr_path);
-            }
-            throw Exception(error_string, GEOPM_ERROR_MSR_OPEN, __FILE__, __LINE__);
-
-            return;
-        }
-        //all is good, save handle
-        m_cpu_file_desc.push_back(fd);
-    }
-
-    void PlatformImp::msr_close(int cpu)
-    {
-        if (m_cpu_file_desc.size() > (size_t)cpu &&
-            m_cpu_file_desc[cpu] >= 0) {
-            int rv = close(m_cpu_file_desc[cpu]);
-            //mark as invalid
-            m_cpu_file_desc[cpu] = -1;
-
-            //check for errors
-            if (rv < 0) {
-                throw Exception("system error closing cpu device", errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-            }
-        }
-    }
-
-    void PlatformImp::whitelist(FILE *file_desc)
-    {
-        fprintf(file_desc, "# MSR      Write Mask         # Comment\n");
-        for (auto it : *m_msr_map_ptr) {
-            fprintf(file_desc, "0x%.8llx 0x%.16lx # %s\n", (long long)it.second.first, it.second.second, it.first.c_str());
-        }
+        return m_msr_access->read(cpu_id, offset);
     }
 
     void PlatformImp::parse_hw_topology(void)
@@ -401,18 +189,6 @@ namespace geopm
         m_num_cpu_per_core = m_num_logical_cpu / m_num_hw_cpu;
         m_num_tile = m_topology.num_domain(GEOPM_DOMAIN_TILE);
         m_num_core_per_tile = m_num_hw_cpu / m_num_tile;
-    }
-
-    double PlatformImp::msr_overflow(int signal_idx, uint32_t msr_size, uint64_t value)
-    {
-        // Mask off bits beyond msr_size
-        value &= ((~0ULL) >> (64 - msr_size));
-        // Deal with register overflow
-        if (value < m_msr_value_last[signal_idx]) {
-            m_msr_overflow_offset[signal_idx] += pow(2, msr_size);
-        }
-        m_msr_value_last[signal_idx] = value;
-        return value + m_msr_overflow_offset[signal_idx];
     }
 
     void PlatformImp::save_msr_state(const char *path)

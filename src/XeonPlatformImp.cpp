@@ -145,6 +145,25 @@ namespace geopm
 
     }
 
+    int SNBPlatformImp::num_domain(int domain_type) const
+    {
+        int count;
+        switch (domain_type) {
+            case GEOPM_DOMAIN_SIGNAL_ENERGY:
+            case GEOPM_DOMAIN_CONTROL_POWER:
+            case GEOPM_DOMAIN_CONTROL_FREQUENCY:
+                count = m_num_package;
+                break;
+            case GEOPM_DOMAIN_SIGNAL_PERF:
+                count = m_num_logical_cpu;
+                break;
+            default:
+                count = 0;
+                break;
+        }
+        return count;
+    }
+
     int SNBPlatformImp::control_domain(int control_type) const
     {
         int result = -1;
@@ -268,6 +287,25 @@ namespace geopm
     HSXPlatformImp::~HSXPlatformImp()
     {
 
+    }
+
+    int HSXPlatformImp::num_domain(int domain_type) const
+    {
+        int count;
+        switch (domain_type) {
+            case GEOPM_DOMAIN_SIGNAL_ENERGY:
+            case GEOPM_DOMAIN_CONTROL_POWER:
+                count = m_num_package;
+                break;
+            case GEOPM_DOMAIN_CONTROL_FREQUENCY:
+            case GEOPM_DOMAIN_SIGNAL_PERF:
+                count = m_num_logical_cpu;
+                break;
+            default:
+                count = 0;
+                break;
+        }
+        return count;
     }
 
     int HSXPlatformImp::control_domain(int control_type) const

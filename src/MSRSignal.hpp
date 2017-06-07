@@ -37,26 +37,12 @@
 
 namespace geopm
 {
-    struct geopm_msr_encode_s
-    {
-        off_t offset;
-        uint64_t mask;
-        int shift_left;
-        int shift_right;
-        double scalar;
-    };
-
-    const std::map<std::string, struct geopm_msr_encode_s> &msr_encode_map(void);
-
-
     class MSRSignal : public Signal
     {
         public:
             MSRSignal(std::vector<uint64_t> offset, int num_source);
             virtual ~MSRSignal();
-            virtual double sample(const std::vector<uint64_t> &encoded);
             virtual void decode(const std::vector<uint64_t> &encoded, std::vector<double> &decoded);
-            virtual double reduce(const std::vector<double> &decoded);
             int num_source(void) const;
             int num_encoded(void) const;
             void offset(std::vector<uint64_t> off) const;
@@ -75,20 +61,6 @@ namespace geopm
             std::vector<int> m_num_bit;
             std::vector<uint64_t> m_raw_last;
             std::vector<uint64_t> m_overflow_offset;
-    };
-
-    class MSRAccess
-    {
-        public:
-            MSRAccess(const std::map<std::string, struct geopm_msr_encode_s> &encode_map, const PlatformTopology &topo);
-            virtual ~MSRAccess();
-            uint64_t offset(const std::string &msr_name);
-            uint64_t read(uint64_t offset);
-            void write(uint64_t offset, uint64_t write_mask, uint64_t raw_value);
-            void config_batch_read(const std::vector<int> &cpu, const std::vector<uint64_t> &read_offset);
-            void config_batch_write(const std::vector<int> &cpu, const std::vector<uint64_t> &write_offset, const std::vector<uint64_t> &write_mask);
-            void read_batch(std::vector<uint64_t> &raw_value);
-            void write_batch(const std::vector<uint64_t> &raw_value);
     };
 
 #if 0

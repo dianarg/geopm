@@ -113,6 +113,17 @@ namespace geopm
         m_domain_map = domain_map;
     }
 
+    int TelemetryConfig::num_domain_entry(int domain)
+    {
+        auto map = m_domain_map.find(domain);
+        if (map == m_domain_map.end()) {
+            throw Exception("TelemetryConfig::domain_cpu_map(): unknown domain: " +
+                            std::to_string(domain),
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        return map.size();
+    }
+
     void TelemetryConfig::bounds(const std::map<int, std::pair<double, double> > &bound)
     {
         m_control_bound = bound;

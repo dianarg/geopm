@@ -59,6 +59,7 @@ namespace geopm
             virtual ~XeonPlatformImp();
             virtual bool is_model_supported(int platform_id);
             virtual std::string platform_name(void);
+            virtual int num_domain(int domain_type) const = 0;
             virtual double read_signal(int device_type, int device_index, int signal_type);
             virtual void batch_read_signal(std::vector<struct geopm_signal_descriptor> &signal_desc, bool is_changed);
             virtual void write_control(int device_type, int device_index, int signal_type, double value);
@@ -168,6 +169,7 @@ namespace geopm
             SNBPlatformImp(const SNBPlatformImp &other);
             /// @brief Default destructor.
             virtual ~SNBPlatformImp();
+            virtual int num_domain(int domain_type) const;
             virtual int control_domain(int domain_type) const;
             virtual int counter_domain(int domain_type) const;
             virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map);
@@ -199,6 +201,7 @@ namespace geopm
             HSXPlatformImp(int platform_id, const std::string &model_name);
             /// @brief Default destructor.
             virtual ~HSXPlatformImp();
+            virtual int num_domain(int domain_type) const;
             virtual int control_domain(int domain_type) const;
             virtual int counter_domain(int domain_type) const;
             virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map);
