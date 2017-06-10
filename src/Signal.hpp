@@ -40,6 +40,8 @@ namespace geopm
         public:
             ISignal(void) {}
             virtual ~ISignal(void) {}
+            virtual int num_source(void) const = 0;
+            virtual int num_encoded(void) const = 0;
             virtual double sample(const std::vector<uint64_t> &encoded) = 0;
             virtual void decode(const std::vector<uint64_t> &encoded, std::vector<double> &decoded) = 0;
             virtual double reduce(const std::vector<double> &decoded) = 0;
@@ -50,6 +52,8 @@ namespace geopm
         public:
             Signal();
             virtual ~Signal();
+            virtual int num_source(void) const = 0;
+            virtual int num_encoded(void) const = 0;
             virtual double sample(const std::vector<uint64_t> &encoded);
             virtual void decode(const std::vector<uint64_t> &encoded, std::vector<double> &decoded) = 0;
             virtual double reduce(const std::vector<double> &decoded);

@@ -46,23 +46,12 @@
 #include <string>
 
 #include "PlatformTopology.hpp"
-#include "Signal.hpp"
+#include "MSRSignal.hpp"
 #include "MSRAccess.hpp"
+#include "TelemetryConfig.hpp"
 
 namespace geopm
 {
-
-#ifndef X86_IOC_MSR_BATCH
-#define  X86_IOC_MSR_BATCH _IOWR('c', 0xA2, m_msr_batch_array)
-#endif
-
-    struct geopm_signal_descriptor {
-        int device_type;
-        int device_index;
-        int signal_type;
-        double value;
-    };
-
     /* Platform IDs
     ((family << 8) + model)
     0x62A - Sandy Bridge
@@ -84,14 +73,12 @@ namespace geopm
             /// @brief default PlatformImp constructor
             PlatformImp();
             PlatformImp(const std::map<int, double> &control_latency,
-                        const std::map<std::string, std::pair<off_t, unsigned long> > *msr_map);
+                        const std::map<std::string, struct m_msr_signal_entry> *msr_signal_map,
+                        const std::map<std::string, std::pair<off_t, unsigned long> > *msr_control_map);
             PlatformImp(const PlatformImp &other);
             /// @brief default PlatformImp destructor
             virtual ~PlatformImp();
 
-            ////////////////////////////////////////////////////////////////////
-            //                     Topology Information                       //
-            ////////////////////////////////////////////////////////////////////
             virtual double control_latency_ms(int control_type) const;
             /// @brief Return the TDP of a single package.
             double package_tdp(void) const;
@@ -114,6 +101,7 @@ namespace geopm
             /// @param [in] msr_name String name of the requested MSR.
             /// @return Value read from the specified MSR.
             uint64_t msr_read(int device_type, int device_index, const std::string &msr_name);
+            virtual void init_telemetry(TelemetryConfig &config);
             /// @brief Output a MSR whitelist for use with the Linux MSR driver.
             /// @param [in] file_desc File descriptor for output.
             void whitelist(FILE* file_desc);
@@ -132,6 +120,9 @@ namespace geopm
             void revert_msr_state(void);
             /// @brief Return if sample is updated.
             virtual bool is_updated(void);
+            /// @brief Return the path used for the MSR default save file.
+            std::string msr_save_file_path(void);
+            int capacity(void);
 
             ////////////////////////////////////////////////////////////////////
             //              Platform dependent implementations                //
@@ -147,24 +138,13 @@ namespace geopm
             /// @brief Retrieve the string name of the underlying platform.
             /// @return Underlying platform name.
             virtual std::string platform_name(void) = 0;
-            /// @brief Read and transform a signal.
-            /// Read a signal value from the hw platform and do any transformation
-            /// needed to convert it to the expected output format and units.
-            /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
-            /// @param [in] device_index Numbered index of the specified type.
-            /// @param [in] signal_type enum signal type of geopm_telemetry_type_e.
-            ///        The signal typr to return.
-            /// @return The read and transformed value.
-            virtual double read_signal(int device_type, int device_index, int signal_type) = 0;
             /// @brief Batch read multiple signal values.
             /// @param [in/out] signal_desc A vector of descriptors for each read operation.
             /// @param [in] is_changed Has the data in the signal_desc changed since the last call?
             ///             This enables the method to reuse the already created data structures
             ///             if the same data is being requested repeatedly. This must be set to
             ///             false the first time this method is called.
-            virtual void batch_read_signal(std::vector<struct geopm_signal_descriptor> &signal_desc, bool is_changed) = 0;
+            virtual void batch_read_signal(std::vector<double> &signal_value) = 0;
             /// @brief Transform and write a value to a hw platform control.
             /// Transform a given a control value from the given format to the format
             /// and units expected by the hw platform. Write the transformed value to
@@ -176,7 +156,7 @@ namespace geopm
             /// @param [in] signal_type enum signal type of geopm_telemetry_type_e.
             ///        The control type to write to.
             /// @param [in] value The value to be transformed and written.
-            virtual void write_control(int device_type, int device_index, int signal_type, double value) = 0;
+            virtual void write_control(int control_domain, int domain_index, double value) = 0;
             /// @brief Reset MSRs to a default state.
             virtual void msr_reset(void) = 0;
             /// @brief Return the upper and lower bound of the controls.
@@ -190,10 +170,7 @@ namespace geopm
             ///
             /// @return frequency limit where anything <= is considered throttling.
             virtual double throttle_limit_mhz(void) const = 0;
-            virtual int domain_type(int domain) const = 0;
             virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map) = 0;
-            /// @brief Return the path used for the MSR default save file.
-            std::string msr_save_file_path(void);
 
         protected:
 
@@ -206,6 +183,7 @@ namespace geopm
             struct m_msr_signal_entry {
                 off_t offset;
                 uint64_t write_mask;
+                int size;
                 int lshift_mod;
                 int rshift_mod;
                 uint64_t mask_mod;
@@ -243,7 +221,7 @@ namespace geopm
             double m_tdp_pkg_watts;
             uint64_t m_trigger_offset;
             uint64_t m_trigger_value;
-            std::vector<IMSRSignal*> signal;
+            std::vector<MSRSignal*> m_signal;
 
         private:
             void build_msr_save_string(std::ofstream &save_file, int device_type, int device_index, std::string name);

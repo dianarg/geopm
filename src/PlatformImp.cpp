@@ -79,9 +79,11 @@ namespace geopm
     }
 
     PlatformImp::PlatformImp(const std::map<int, double> &control_latency,
-                             const std::map<std::string, std::pair<off_t, unsigned long> > *msr_map_ptr)
+                             const std::map<std::string, struct m_msr_signal_entry> *msr_signal_map,
+                             const std::map<std::string, std::pair<off_t, unsigned long> > *msr_control_map)
         : m_msr_access(NULL)
-        , m_msr_map_ptr(msr_map_ptr)
+        , m_msr_signal_ptr(msr_signal_map_ptr)
+        , m_msr_control_map_ptr(msr_control_map_ptr)
         , m_num_logical_cpu(0)
         , m_num_hw_cpu(0)
         , m_num_tile(0)
@@ -101,7 +103,8 @@ namespace geopm
     PlatformImp::PlatformImp(const PlatformImp &other)
         : m_msr_access(other.m_msr_access)
         , m_topology(other.m_topology)
-        , m_msr_map_ptr(other.m_msr_map_ptr)
+        , m_msr_signal_map_ptr(other.m_msr_signal_map_ptr)
+        , m_msr_control_map_ptr(other.m_msr_control_map_ptr)
         , m_num_logical_cpu(other.m_num_logical_cpu)
         , m_num_hw_cpu(other.m_num_hw_cpu)
         , m_num_cpu_per_core(other.m_num_cpu_per_core)
@@ -265,7 +268,7 @@ namespace geopm
         uint64_t msr_val = msr_read(device_type, device_index, name);
         unsigned long mask = msr_mask(name);
         msr_val &= mask;
-        save_file << device_type << ":" << device_index << ":" << msr_offset(name) << ":" << msr_mask(name) << ":" << msr_val << std::endl;
+        save_file << device_type << ":" << device_index << ":" << m_msr_access->offset(name) << ":" << m_msr_access->write_mask(name) << ":" << msr_val << std::endl;
     }
 
     void PlatformImp::restore_msr_state(const char *path)
@@ -315,5 +318,9 @@ namespace geopm
     std::string PlatformImp::msr_save_file_path(void)
     {
         return m_msr_save_file_path;
+    }
+
+    int PlatformImp::capacity(void) {
+        return m_signal.size();
     }
 }

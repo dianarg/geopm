@@ -131,73 +131,13 @@ namespace geopm
 
     size_t RAPLPlatform::capacity(void)
     {
-        return m_num_energy_ctr_domain * m_imp->num_energy_signal() + m_num_pmon_ctr_domain * m_imp->num_counter_signal();
+        return m_imp->capacity();
     }
 
-    void RAPLPlatform::sample(std::vector<struct geopm_msr_message_s> &msr_values)
+    void RAPLPlatform::sample(struct geopm_time_s &sample_time, std::vector<double> &msr_values)
     {
-        int count = 0;
-        int signal_index = 0;
-        int energy_domain = m_imp->counter_domain(GEOPM_COUNTER_TYPE_ENERGY);
-        int pmon_domain = m_imp->counter_domain(GEOPM_COUNTER_TYPE_PERF);
-        int pmon_domain_per_energy_domain = m_num_pmon_ctr_domain / m_num_energy_ctr_domain;
-        struct geopm_time_s time;
-
-        m_imp->batch_read_signal(m_batch_desc, false);
-        geopm_time(&time);
-        //record per package energy readings
-        for (int i = 0; i < m_num_energy_ctr_domain; i++) {
-            msr_values[count].domain_type = energy_domain;
-            msr_values[count].domain_index = i;
-            msr_values[count].timestamp = time;
-            msr_values[count].signal_type = GEOPM_TELEMETRY_TYPE_PKG_ENERGY;
-            msr_values[count].signal = m_batch_desc[signal_index++].value;
-
-            count++;
-            msr_values[count].domain_type = energy_domain;
-            msr_values[count].domain_index = i;
-            msr_values[count].timestamp = time;
-            msr_values[count].signal_type = GEOPM_TELEMETRY_TYPE_DRAM_ENERGY;
-            msr_values[count].signal = m_batch_desc[signal_index++].value;
-            count++;
-
-            for (int j = i * pmon_domain_per_energy_domain; j < (i + 1) * pmon_domain_per_energy_domain; ++j) {
-                msr_values[count].domain_type = pmon_domain;
-                msr_values[count].domain_index = j;
-                msr_values[count].timestamp = time;
-                msr_values[count].signal_type = GEOPM_TELEMETRY_TYPE_FREQUENCY;
-                msr_values[count].signal = m_batch_desc[signal_index++].value;
-                count++;
-
-                msr_values[count].domain_type = pmon_domain;
-                msr_values[count].domain_index = j;
-                msr_values[count].timestamp = time;
-                msr_values[count].signal_type = GEOPM_TELEMETRY_TYPE_INST_RETIRED;
-                msr_values[count].signal = m_batch_desc[signal_index++].value;
-                count++;
-
-                msr_values[count].domain_type = pmon_domain;
-                msr_values[count].domain_index = j;
-                msr_values[count].timestamp = time;
-                msr_values[count].signal_type = GEOPM_TELEMETRY_TYPE_CLK_UNHALTED_CORE;
-                msr_values[count].signal = m_batch_desc[signal_index++].value;
-                count++;
-
-                msr_values[count].domain_type = pmon_domain;
-                msr_values[count].domain_index = j;
-                msr_values[count].timestamp = time;
-                msr_values[count].signal_type = GEOPM_TELEMETRY_TYPE_CLK_UNHALTED_REF;
-                msr_values[count].signal = m_batch_desc[signal_index++].value;
-                count++;
-
-                msr_values[count].domain_type = pmon_domain;
-                msr_values[count].domain_index = j;
-                msr_values[count].timestamp = time;
-                msr_values[count].signal_type = GEOPM_TELEMETRY_TYPE_READ_BANDWIDTH;
-                msr_values[count].signal = m_batch_desc[signal_index++].value;
-                count++;
-            }
-        }
+        m_imp->batch_read_signal(msr_values);
+        geopm_time(&sample_time);
     }
 
     void RAPLPlatform::enforce_policy(uint64_t region_id, IPolicy &policy) const
@@ -253,6 +193,6 @@ namespace geopm
 
     void RAPLPlatform::init_features(const TelemetryConfig &config)
     {
-
+        m_imp->init_telemetry(config);
     }
 } //geopm
