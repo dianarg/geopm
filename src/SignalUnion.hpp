@@ -35,56 +35,43 @@
 
 namespace geopm
 {
-    template <class etype, class dtype>
     class ISignal
     {
         public:
+            /// @todo Maybe this class should be a two parameter template.
+            // The union, enum pair is kind of dancing around the issue.
+            union m_signal_u {
+                double f;
+                uint64_t i;
+                void *p;
+            };
+            enum m_signal_e {
+                M_SIGNAL_FLOAT,
+                M_SIGNAL_INTEGER,
+                M_SIGNAL_POINTER,
+            };
             ISignal(void) {}
             virtual ~ISignal(void) {}
             virtual void name(std::string &signal_name) = 0;
-            virtual void sample(const std::vector<etype> &encoded, dtype &value) = 0;
-            virtual void decode(const std::vector<etype> &encoded, std::vector<dtype> &decoded) = 0;
-            virtual void reduce(const std::vector<dtype> &decoded, dtype &value) = 0;
+            virtual void sample(const std::vector<uint64_t> &encoded, m_signal_u &value) = 0;
+            virtual void decode(const std::vector<uint64_t> &encoded, std::vector<union m_signal_u> &decoded) = 0;
+            virtual void reduce(const std::vector<union m_signal_u> &decoded, union m_signal_u &value) = 0;
     };
 
-    template <class etype, class dtype>
     class Signal : public ISignal
     {
         public:
-            Signal(const std::string &signal_name, size_t num_encoded, size_t num_decoded)
-                : m_signal_name(signal_name)
-                , m_num_encoded(num_encoded)
-                , m_num_decoded(num_decoded)
-            {
-
-            }
-            virtual ~Signal()
-            {
-
-            }
-            virtual void name(std::string &signal_name)
-            {
-                signal_name = m_signal_name;
-            }
-            virtual void sample(const std::vector<etype> &encoded, dtype &value)
-            {
-                std::vector<dtype>decoded(m_num_decoded);
-                decode(encoded, decoded);
-                return reduce(decoded);
-            }
-            virtual void decode(const std::vector<etype> &encoded, std::vector<dtype> &decoded) = 0;
-            virtual void reduce(const std::vector<dtype> &decoded, dtype &value)
-            {
-                dtype result = decoded[0];
-                if (m_num_decoded > 1) {
-                    result = std::accumulate(decoded.begin() + 1, decoded.end(), result);
-                }
-                return result;
-            }
+            Signal(size_t num_encoded, ISignal::m_signale_e encoded_type, size_t num_decoded,  ISignal::m_signal_e decoded_type);
+            virtual ~Signal();
+            virtual void name(std::string &signal_name) = 0;
+            virtual void sample(const std::vector<uint64_t> &encoded, ISignal::m_signal_u &value);
+            virtual void decode(const std::vector<uint64_t> &encoded, std::vector<ISignal::m_signal_u> &decoded) = 0;
+            virtual void reduce(const std::vector<ISignal::m_signal_u> &decoded, ISignal::m_signal_u &value);
         protected:
-            std::string m_name;
             size_t m_num_encoded;
+            ISignal::m_signale_e m_encoded_type;
             size_t m_num_decoded;
+            ISignal::m_signal_e m_decoded_type);
     };
 
 }

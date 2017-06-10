@@ -53,6 +53,7 @@ enum geopm_region_id_e {
     GEOPM_REGION_ID_MPI =          1ULL << 62, // Execution of MPI calls
     GEOPM_REGION_ID_UNMARKED =     1ULL << 61, // Code executed outside of a region
     GEOPM_REGION_ID_UNDEFINED =    1ULL << 60, // Special value for an unset region id
+    GEOPM_REGION_ID_EXIT =         1ULL << 59, // Signal that the region is being exited
     GEOPM_NUM_REGION_ID_PRIVATE =  3,          // Number table entries reserved for GEOPM defined regions (ignoring UNMARKED)
 };
 
