@@ -45,6 +45,7 @@ namespace geopm
             virtual void sample(const std::vector<etype> &encoded, dtype &value) = 0;
             virtual void decode(const std::vector<etype> &encoded, std::vector<dtype> &decoded) = 0;
             virtual void reduce(const std::vector<dtype> &decoded, dtype &value) = 0;
+            virtual void reduce(const std::vector<dtype> &decoded, dtype &value, geopm_time_s target_time);
     };
 
     template <class etype, class dtype>
@@ -75,11 +76,14 @@ namespace geopm
             virtual void decode(const std::vector<etype> &encoded, std::vector<dtype> &decoded) = 0;
             virtual void reduce(const std::vector<dtype> &decoded, dtype &value)
             {
-                dtype result = decoded[0];
+                value = decoded[0];
                 if (m_num_decoded > 1) {
-                    result = std::accumulate(decoded.begin() + 1, decoded.end(), result);
+                    value = std::accumulate(decoded.begin() + 1, decoded.end(), value);
                 }
-                return result;
+            }
+            virtual void reduce(const std::vector<dtype> &decoded, dtype &value, geopm_time_s target_time)
+            {
+                reduce(decoded, value);
             }
         protected:
             std::string m_name;

@@ -37,7 +37,7 @@
 
 namespace geopm
 {
-    class MSRSignal : public Signal
+    class MSRSignal : public Signal<uint64_t, double>
     {
         public:
             MSRSignal(std::vector<uint64_t> offset, int num_source);
