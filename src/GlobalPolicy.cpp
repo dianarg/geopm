@@ -1000,13 +1000,13 @@ namespace geopm
 
         switch (m_mode) {
             case GEOPM_POLICY_MODE_TDP_BALANCE_STATIC:
-                platform->tdp_limit(tdp_percent());
+//                platform->tdp_limit(tdp_percent());
                 break;
             case GEOPM_POLICY_MODE_FREQ_UNIFORM_STATIC:
-                platform->manual_frequency(frequency_mhz(), 0, GEOPM_POLICY_AFFINITY_SCATTER);
+//                platform->manual_frequency(frequency_mhz(), 0, GEOPM_POLICY_AFFINITY_SCATTER);
                 break;
             case GEOPM_POLICY_MODE_FREQ_HYBRID_STATIC:
-                platform->manual_frequency(frequency_mhz(), num_max_perf(), affinity());
+//                platform->manual_frequency(frequency_mhz(), num_max_perf(), affinity());
                 break;
             default:
                 throw Exception("GlobalPolicy: invalid mode specified", GEOPM_ERROR_INVALID, __FILE__, __LINE__);

@@ -59,18 +59,6 @@ namespace geopm
             /// @brief Retrieve the string name of the hw platform.
             /// @return The hw platform name.
             virtual void name(std::string &plat_name) const = 0;
-            /// @brief Set the power limit of the CPUs to a percentage of
-            /// Thermal Design Power (TDP).
-            /// @param [in] percentage The percentage of TDP.
-            virtual void tdp_limit(double percentage) const = 0;
-            /// @brief Set the frequency to a fixed value for CPUs within an
-            /// affinity set.
-            /// @param [in] frequency Frequency in MHz to set the CPUs to.
-            /// @param [in] num_cpu_max_perf The number of cores to leave
-            ///        unconstrained.
-            /// @param [in] affinity The affinity of the cores for which the
-            ///        frequency will be set.
-            virtual void manual_frequency(int frequency, int num_cpu_max_perf, int affinity) const = 0;
             /// @brief Write to a file the current state of RAPL, per-CPU counters,
             /// and free running counters.
             /// @param [in] path The path of the file to write.
@@ -104,7 +92,6 @@ namespace geopm
             ///        to be enforced.
             virtual void enforce_policy(uint64_t region_id, IPolicy &policy) const = 0;
             virtual void provides(TelemetryConfig &config) const = 0;
-            virtual void init_telemetry(const TelemetryConfig &config) = 0;
             ////////////////////////////////////////
             /// signals are expected as follows: ///
             /// per socket signals               ///
@@ -120,19 +107,13 @@ namespace geopm
             ///     PROGRESS                     ///
             ///     RUNTIME                      ///
             ////////////////////////////////////////
-            /// @brief Retrieve the number of control domains
-            /// @return The number of control domains on the hw platform.
-            virtual int num_domain(void) = 0;
-            virtual double control_latency_ms(void) const = 0;
+            virtual double control_latency_ms(int control_type) const = 0;
             /// @brief Return the frequency limit where throttling occurs.
             ///
             /// @return frequency limit where anything <= is considered throttling.
             virtual double throttle_limit_mhz(void) const = 0;
             /// @brief Has the trigger msr of the platform changed value since last call.
             virtual bool is_updated(void) = 0;
-            virtual void transform_rank_data(uint64_t region_id, const struct geopm_time_s &aligned_time,
-                                             const std::vector<double> &aligned_data,
-                                             std::vector<struct geopm_telemetry_message_s> &telemetry) = 0;
     };
 
     class Platform : public IPlatform
@@ -148,33 +129,20 @@ namespace geopm
             void set_implementation(PlatformImp* platform_imp, bool do_initialize);
             int num_domain(void) const;
             void name(std::string &plat_name) const;
-            void tdp_limit(double percentage) const;
-            void manual_frequency(int frequency, int num_cpu_max_perf, int affinity) const;
             void save_msr_state(const char *path) const;
             void restore_msr_state(const char *path) const;
             void write_msr_whitelist(FILE *file_desc) const;
             void revert_msr_state(void) const;
-            virtual int control_domain(void) = 0;
-            virtual size_t capacity(void) = 0;
-            virtual void sample(std::vector<struct geopm_msr_message_s> &msr_values) = 0;
-            virtual bool model_supported(int platform_id, const std::string &description) const = 0;
+            virtual void sample(struct geopm_time_s &sample_time, std::vector<double> &msr_values) = 0;
+            virtual bool is_model_supported(int platform_id, const std::string &description) const = 0;
             virtual void enforce_policy(uint64_t region_id, IPolicy &policy) const = 0;
-            virtual void bound(double &upper_bound, double &lower_bound) = 0;
-            const PlatformTopology *topology(void) const;
-            void init_transform(const std::vector<int> &cpu_rank);
-            int num_control_domain(void) const;
-            double control_latency_ms(void) const;
+            double control_latency_ms(int control_type) const;
             double throttle_limit_mhz(void) const;
             virtual bool is_updated(void);
-            void transform_rank_data(uint64_t region_id, const struct geopm_time_s &aligned_time,
-                                     const std::vector<double> &aligned_data,
-                                     std::vector<struct geopm_telemetry_message_s> &telemetry);
         protected:
             /// @brief Pointer to a PlatformImp object that supports the target
             /// hardware platform.
             PlatformImp *m_imp;
-            /// @brief The number of control domains
-            int m_num_domain;
             /// @brief The matrix that transforms the per package,
             /// per-cpu, and per-rank signals into the domain of control.
             std::vector<std::vector<int> > m_rank_cpu;

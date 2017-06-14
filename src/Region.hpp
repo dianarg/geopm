@@ -215,12 +215,6 @@ namespace geopm
     class Region : public IRegion
     {
         public:
-            enum m_const_e {
-                // If number of samples stored is large, we need to
-                // modify the derivative method to just use the last
-                // few samples.
-                M_NUM_SAMPLE_HISTORY = 8,
-            };
             /// @brief Default constructor.
             /// @param [in] identifier Unique 64 bit region identifier.
             /// @param [in] num_domain Number of control domains.
