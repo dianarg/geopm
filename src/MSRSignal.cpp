@@ -30,11 +30,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <math.h>
+#include "Exception.hpp"
 #include "MSRSignal.hpp"
 
 namespace geopm
 {
-    MSRSignal::MSRSignal(std::vector<uint64_t> offset, int num_source)
+    MSRSignal::MSRSignal(std::vector<off_t> offset, int num_source)
         : m_num_source(num_source)
         , m_offset(offset)
         , m_lshift(offset.size())
@@ -53,12 +55,12 @@ namespace geopm
 
     }
 
-    int MSRSignal::num_source(void)
+    int MSRSignal::num_source(void) const
     {
         return m_num_source;
     }
 
-    int MSRSignal::num_encoded(void)
+    int MSRSignal::num_encoded(void) const
     {
         return m_offset.size();
     }
@@ -66,16 +68,16 @@ namespace geopm
     void MSRSignal::decode(const std::vector<uint64_t> &encoded, std::vector<double> &decoded)
     {
         for (int signal_idx = 0; signal_idx < decoded.size(); ++signal_idx) {
-            int msr_value = encoded[i];
+            int msr_value = encoded[signal_idx];
             // Mask off bits beyond msr_size
             msr_value &= ((~0ULL) >> (64 - m_num_bit[signal_idx]));
             // Deal with register overflow
-            if (msr_value < m_raw_last[i]) {
-                m_overflow_offset[i] += pow(2, m_num_bit[i]);
+            if (msr_value < m_raw_last[signal_idx]) {
+                m_overflow_offset[signal_idx] += pow(2, m_num_bit[signal_idx]);
             }
-            m_raw_last[i] = msr_value;
-            msr_value += m_overflow_offset[i];
-            decoded[i] = (double)((((msr_value << m_lshift[i]) >> m_rshift[i]) & m_mask[i]) * m_scalar[i]);
+            m_raw_last[signal_idx] = msr_value;
+            msr_value += m_overflow_offset[signal_idx];
+            decoded[signal_idx] = (double)((((msr_value << m_lshift[signal_idx]) >> m_rshift[signal_idx]) & m_mask[signal_idx]) * m_scalar[signal_idx]);
         }
     }
 
@@ -95,7 +97,7 @@ namespace geopm
         m_lshift[encoded_idx] = shift_size;
     }
 
-    void MSRSignal::right_shift(int shift_size)
+    void MSRSignal::right_shift(int encoded_idx, int shift_size)
     {
         if (m_rshift.size() <= encoded_idx) {
             throw Exception("MSRSignal::right_shift(): Index out of bounds", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
@@ -103,7 +105,7 @@ namespace geopm
         m_rshift[encoded_idx] = shift_size;
     }
 
-    void MSRSignal::mask(uint64_t bitmask)
+    void MSRSignal::mask(int encoded_idx, uint64_t bitmask)
     {
         if (m_mask.size() <= encoded_idx) {
             throw Exception("MSRSignal::mask(): Index out of bounds", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
@@ -111,10 +113,11 @@ namespace geopm
         m_mask[encoded_idx] = bitmask;
     }
 
-    void MSRSignal::scalar(double scalar)
+    void MSRSignal::scalar(int encoded_idx, double scalar)
     {
         if (m_scalar.size() <= encoded_idx) {
             throw Exception("MSRSignal::scalar(): Index out of bounds", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         m_scalar[encoded_idx] = scalar;
     }
+}

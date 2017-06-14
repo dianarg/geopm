@@ -64,27 +64,28 @@ namespace geopm
             //////////////////////////////////////////////
             virtual bool is_model_supported(int platform_id);
             virtual std::string platform_name(void);
-            virtual void bound(std::map<int, std::pair<double, double> > &bound);
             virtual int num_domain(int domain_type) const;
-            virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map);
+            virtual void create_domain_map(int domain, std::vector<std::set<int> > &domain_map) const;
             virtual double throttle_limit_mhz(void) const;
             virtual void batch_read_signal(std::vector<double> &signal_value);
             virtual void write_control(int control_domain, int domain_index, double value);
             virtual void msr_initialize(void);
-            virtual void init_telemetry(TelemetryConfig &config);
+            virtual void init_telemetry(const TelemetryConfig &config);
             virtual void msr_reset(void);
             static int platform_id(void);
+            void provides(TelemetryConfig &config) const;
         protected:
             /// @brief Initialize Running Average Power Limiting (RAPL) controls.
-            void rapl_init();
+            void rapl_init(void);
             /// @brief Initialize per-CPU counters.
             void cbo_counters_init(int counter_idx, uint32_t event);
             /// @brief Initialize free running counters.
-            void fixed_counters_init();
+            void fixed_counters_init(void);
             /// @brief Reset per-CPU counters to default state.
-            void cbo_counters_reset();
+            void cbo_counters_reset(void);
             /// @brief Reset free running counters to default state.
-            void fixed_counters_reset();
+            void fixed_counters_reset(void);
+
             /// @brief Frequency where anything <= is considered throttling.
             double m_throttle_limit_mhz;
             /// @brief Store the units of energy read from RAPL.

@@ -344,7 +344,7 @@ namespace geopm
             }
 
             m_platform->init_features(config);
-            m_msr_sample.resize(m_platform->capacity());
+            m_msr_sample.resize(m_platform->num_signal());
             m_platform->sample(m_msr_sample);
             m_app_start_time = m_msr_sample[0].timestamp;
             for (auto it = m_msr_sample.begin(); it != m_msr_sample.end(); ++it) {

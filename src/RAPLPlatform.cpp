@@ -40,10 +40,6 @@ namespace geopm
 {
     RAPLPlatform::RAPLPlatform()
         : Platform()
-        , m_num_freq_ctl_domain(0)
-        , m_num_power_ctl_domain(0)
-        , m_num_energy_ctr_domain(0)
-        , m_num_pmon_ctr_domain(0)
         , m_description("rapl")
         , M_HSX_ID(0x63F)
         , M_IVT_ID(0x63E)
@@ -69,71 +65,6 @@ namespace geopm
                 description == m_description);
     }
 
-    void RAPLPlatform::initialize(void)
-    {
-        m_num_freq_ctl_domain = m_imp->num_control_domain(GEOPM_CONTROL_TYPE_FREQUENCY);
-        m_num_power_ctl_domain = m_imp->num_control_domain(GEOPM_CONTROL_TYPE_POWER);
-        m_num_pmon_ctr_domain = m_imp->num_counter_domain(GEOPM_COUNTER_TYPE_PERF);
-        m_num_energy_ctr_domain = m_imp->num_counter_domain(GEOPM_COUNTER_TYPE_ENERGY);
-        m_batch_desc.resize(m_num_energy_ctr_domain * m_imp->num_energy_signal() + m_num_pmon_ctr_domain * m_imp->num_counter_signal());
-
-        int count = 0;
-        int pmon_domain_per_energy_domain = m_num_pmon_ctr_domain / m_num_energy_ctr_domain;
-        int energy_domain = m_imp->domain(GEOPM_COUNTER_TYPE_ENERGY);
-        int pmon_domain = m_imp->domain(GEOPM_COUNTER_TYPE_PERF);
-        for (int i = 0; i < m_num_energy_ctr_domain; i++) {
-            m_batch_desc[count].device_type = energy_domain;
-            m_batch_desc[count].device_index = i;
-            m_batch_desc[count].signal_type = GEOPM_TELEMETRY_TYPE_PKG_ENERGY;
-            m_batch_desc[count].value = 0;
-            ++count;
-
-            m_batch_desc[count].device_type = energy_domain;
-            m_batch_desc[count].device_index = i;
-            m_batch_desc[count].signal_type = GEOPM_TELEMETRY_TYPE_DRAM_ENERGY;
-            m_batch_desc[count].value = 0;
-            ++count;
-
-            for (int j = i * pmon_domain_per_energy_domain; j < (i + 1) * pmon_domain_per_energy_domain; ++j) {
-                m_batch_desc[count].device_type = pmon_domain;
-                m_batch_desc[count].device_index = j;
-                m_batch_desc[count].signal_type = GEOPM_TELEMETRY_TYPE_FREQUENCY;
-                m_batch_desc[count].value = 0;
-                ++count;
-
-                m_batch_desc[count].device_type = pmon_domain;
-                m_batch_desc[count].device_index = j;
-                m_batch_desc[count].signal_type = GEOPM_TELEMETRY_TYPE_INST_RETIRED;
-                m_batch_desc[count].value = 0;
-                ++count;
-
-                m_batch_desc[count].device_type = pmon_domain;
-                m_batch_desc[count].device_index = j;
-                m_batch_desc[count].signal_type = GEOPM_TELEMETRY_TYPE_CLK_UNHALTED_CORE;
-                m_batch_desc[count].value = 0;
-                ++count;
-
-                m_batch_desc[count].device_type = pmon_domain;
-                m_batch_desc[count].device_index = j;
-                m_batch_desc[count].signal_type = GEOPM_TELEMETRY_TYPE_CLK_UNHALTED_REF;
-                m_batch_desc[count].value = 0;
-                ++count;
-
-                m_batch_desc[count].device_type = pmon_domain;
-                m_batch_desc[count].device_index = j;
-                m_batch_desc[count].signal_type = GEOPM_TELEMETRY_TYPE_READ_BANDWIDTH;
-                m_batch_desc[count].value = 0;
-                ++count;
-            }
-        }
-        m_imp->batch_read_signal(m_batch_desc, true);
-    }
-
-    size_t RAPLPlatform::capacity(void)
-    {
-        return m_imp->capacity();
-    }
-
     void RAPLPlatform::sample(struct geopm_time_s &sample_time, std::vector<double> &msr_values)
     {
         m_imp->batch_read_signal(msr_values);
@@ -143,24 +74,24 @@ namespace geopm
     void RAPLPlatform::enforce_policy(uint64_t region_id, IPolicy &policy) const
     {
         int control_type;
-        std::vector<double> pwr_target(m_num_power_ctl_domain);
-        std::vector<double> freq_target(m_num_freq_ctl_domain);
-        policy.target(region_id, GEOPM_CONTROL_TYPE_POWER, pwr_target);
-        policy.target(region_id, GEOPM_CONTROL_TYPE_FREQUENCY, freq_target);
+        std::vector<double> pwr_target(m_imp->num_domain(GEOPM_DOMAIN_CONTROL_POWER));
+        std::vector<double> freq_target(m_imp->num_domain(GEOPM_DOMAIN_CONTROL_FREQUENCY));
+        policy.target(region_id, GEOPM_DOMAIN_CONTROL_POWER, pwr_target);
+        policy.target(region_id, GEOPM_DOMAIN_CONTROL_FREQUENCY, freq_target);
 
-        if ((m_num_power_ctl_domain == (int)pwr_target.size()) &&
-            (m_num_freq_ctl_domain == (int)freq_target.size())) {
+        if ((m_imp->num_domain(GEOPM_DOMAIN_CONTROL_POWER) == (int)pwr_target.size()) &&
+            (m_imp->num_domain(GEOPM_DOMAIN_CONTROL_FREQUENCY) == (int)freq_target.size())) {
             if (pwr_target[0] != GEOPM_TARGET_INVALID) {
                 int i = 0;
                 for (auto it = pwr_target.begin(); it != pwr_target.end(); ++it) {
-                    m_imp->write_control(m_imp->control_domain(GEOPM_CONTROL_TYPE_POWER), i, GEOPM_CONTROL_TYPE_POWER, (*it));
+                    m_imp->write_control(GEOPM_DOMAIN_CONTROL_POWER, i, (*it));
                     ++i;
                 }
             }
             if (freq_target[0] != GEOPM_TARGET_INVALID) {
                 int i = 0;
                 for (auto it = freq_target.begin(); it != freq_target.end(); ++it) {
-                    m_imp->write_control(m_imp->control_domain(GEOPM_CONTROL_TYPE_FREQUENCY), i, GEOPM_CONTROL_TYPE_FREQUENCY, (*it));
+                    m_imp->write_control(GEOPM_DOMAIN_CONTROL_FREQUENCY, i, (*it));
                     ++i;
                 }
             }
@@ -170,28 +101,12 @@ namespace geopm
         }
     }
 
-    void RAPLPlatform::capabilities(TelemetryConfig &config) const
+    void RAPLPlatform::provides(TelemetryConfig &config) const
     {
-        std::set<int> ctl_domain = {GEOPM_CONTROL_TYPE_POWER, GEOPM_CONTROL_TYPE_FREQUENCY};
-        std::set<int> ctr_domain = {GEOPM_COUNTER_TYPE_ENERGY, GEOPM_COUNTER_TYPE_PERF};
-        std::set<std::string> energy_signals = {"dram_energy", "pkg_energy"};
-        std::set<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
-        std::map<int, std::set<std::string> > signal;
-        signal.insert(std::pair<int, std::set<std::string> >(GEOPM_COUNTER_TYPE_ENERGY, energy_signals));
-        signal.insert(std::pair<int, std::set<std::string> >(GEOPM_COUNTER_TYPE_PERF, counter_signals));
-        std::map<int, std::pair<double, double> > bounds;
-        std::map<int, std::map<int, std::set<int> > > domain_map;
-        config.supported_counter_domain(ctr_domain);
-        config.supported_control_domain(ctl_domain);
-        config.signals(signal);
-        m_imp->bound(bounds);
-        config.bounds(bounds);
-        ctl_domain.insert(ctr_domain.begin(), ctr_domain.end());
-        m_imp->create_domain_maps(ctl_domain, domain_map);
-        config.domain_cpu_map(domain_map);
+        m_imp->provides(config);
     }
 
-    void RAPLPlatform::init_features(const TelemetryConfig &config)
+    void RAPLPlatform::init_telemetry(const TelemetryConfig &config)
     {
         m_imp->init_telemetry(config);
     }

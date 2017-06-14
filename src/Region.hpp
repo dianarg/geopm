@@ -60,14 +60,7 @@ namespace geopm
             /// level objects.
             ///
             /// @param [in] A vector of telemetry samples to be inserted.
-            virtual void insert(std::vector<struct geopm_telemetry_message_s> &telemetry) = 0;
-            /// @brief Insert signal data into internal buffers
-            ///
-            /// Inserts aggregated sample message and data into the internal buffers
-            /// for the region. This API is used by tree level objects.
-            ///
-            /// @param [in] A vector of sample messages to be inserted.
-            virtual void insert(const std::vector<struct geopm_sample_message_s> &sample) = 0;
+            virtual void insert(std::vector<double> &telemetry);
             /// @brief Clear data from internal buffers
             ///
             /// Clears aggregated data from the internal buffers.
@@ -102,7 +95,7 @@ namespace geopm
             ///        geopm_message.h.
             ///
             /// @return The number of valid samples.
-            virtual int num_sample(int domain, int domain_idx, int signal_type) const = 0;
+            virtual int num_sample(int domain, int signal_idx) const = 0;
             /// @brief Retrieve the mean signal value for a domain of control.
             ///
             /// Get the mean signal value for a given domain of control and
@@ -118,7 +111,7 @@ namespace geopm
             ///        geopm_message.h.
             ///
             /// @return The mean signal value.
-            virtual double mean(int domain, int domain_idx, int signal_type) const = 0;
+            virtual void mean(int domain, int signal_idx, std::vector<double> &value) const = 0;
             /// @brief Retrieve the median signal value for a domain of control.
             ///
             /// Get the median signal value for a given domain of control and
@@ -134,7 +127,7 @@ namespace geopm
             ///        geopm_message.h.
             ///
             /// @return The median signal value.
-            virtual double median(int domain, int domain_idx, int signal_type) const = 0;
+            virtual void median(int domain, int signal_idx, std::vector<double> &value) const = 0;
             /// @brief Retrieve the standard deviation of the signal values for a domain of control.
             ///
             /// Get the standard deviation of the signal values for a given domain of
@@ -150,7 +143,7 @@ namespace geopm
             ///        geopm_message.h.
             ///
             /// @return The standard deviation of the signal values.
-            virtual double std_deviation(int domain, int domain_idx, int signal_type) const = 0;
+            virtual void std_deviation(int domain, int signal_idx, std::vector<double> &value) const = 0;
             /// @brief Retrieve the min signal value for a domain of control.
             ///
             /// Get the min signal value for a given domain of control and
@@ -166,7 +159,7 @@ namespace geopm
             ///        geopm_message.h.
             ///
             /// @return The min signal value.
-            virtual double min(int domain, int domain_idx, int signal_type) const = 0;
+            virtual void min(int domain, int signal_idx, std::vector<double> &value) const = 0;
             /// @brief Retrieve the max signal value for a domain of control.
             ///
             /// Get the max signal value for a given domain of control and
@@ -182,7 +175,7 @@ namespace geopm
             ///        geopm_message.h.
             ///
             /// @return The max signal value.
-            virtual double max(int domain, int domain_idx, int signal_type) const = 0;
+            virtual void max(int domain, int signal_idx, std::vector<double> &value) const = 0;
             /// @brief Retrieve the derivative of the signal values for a domain of control.
             ///
             /// Get the derivative of the signal values for a given domain of control and
@@ -199,7 +192,7 @@ namespace geopm
             ///
             /// @return If there are 2 valid samples then return he derivative of the
             /// signal values, else return NAN.
-            double derivative(int domain, int domain_idx, int signal_idx);
+            virtual void derivative(int domain, int signal_idx, std::vector<double> &value) = 0;
             /// @brief Integrate a signal over time.
             ///
             /// Computes the integral of the signal over the interval
@@ -250,7 +243,7 @@ namespace geopm
             double min(int domain_idx, int signal_type) const;
             double max(int domain_idx, int signal_type) const;
             double derivative(int domain_idx, int signal_type);
-            double integral(int domain_idx, int signal_type, double &delta_time, double &integral) const;
+            double integral(int domain, int signal_idx, double &delta_time, std::vector<double> &value) const;
             void report(std::ostringstream &string_stream, const std::string &name, int rank_per_node) const;
         protected:
             /// @brief Bound testing of input parameters.
@@ -318,6 +311,13 @@ namespace geopm
             std::vector<bool> m_is_entered;
             int m_derivative_num_fit;
             double m_mpi_time;
+        private:
+            enum m_const_e {
+                // If number of samples stored is large, we need to
+                // modify the derivative method to just use the last
+                // few samples.
+                M_NUM_SAMPLE_HISTORY = 8,
+            };
     };
 }
 

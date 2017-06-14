@@ -40,7 +40,7 @@
 
 namespace geopm
 {
-    static const std::map<std::string, struct knl_msr_signal_entry> &knl_msr_signal_map(void);
+    static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> &knl_msr_signal_map(void);
     static const std::map<std::string, std::pair<off_t, unsigned long> > &knl_msr_control_map(void);
     static const std::map<std::string, std::string> signal_to_msr_map {
         {"pkg_energy", "PKG_ENERGY_STATUS"},
@@ -59,7 +59,9 @@ namespace geopm
     }
 
     KNLPlatformImp::KNLPlatformImp()
-        : PlatformImp({{GEOPM_DOMAIN_CONTROL_POWER, 50.0},{GEOPM_DOMAIN_CONTROL_FREQUENCY, 1.0}}, &(knl_msr_signal_map()), &(knl_msr_control_map()))
+        : PlatformImp({{GEOPM_DOMAIN_CONTROL_POWER, 50.0},{GEOPM_DOMAIN_CONTROL_FREQUENCY, 1.0}},
+          &(knl_msr_signal_map()), 
+          &(knl_msr_control_map()))
         , m_throttle_limit_mhz(0.5)
         , m_energy_units(1.0)
         , m_power_units_inv(1.0)
@@ -124,14 +126,6 @@ namespace geopm
         return M_MODEL_NAME;
     }
 
-    void KNLPlatformImp::bound(std::map<int, std::pair<double, double> > &bound)
-    {
-        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_DOMAIN_CONTROL_POWER,
-                               std::pair<double, double>(m_min_pkg_watts + m_max_dram_watts, m_max_pkg_watts + m_max_dram_watts)));
-        bound.insert(std::pair<int, std::pair<double, double> >(GEOPM_DOMAIN_CONTROL_FREQUENCY,
-                               std::pair<double, double>(m_min_freq_mhz, m_max_freq_mhz)));
-    }
-
     int KNLPlatformImp::num_domain(int domain_type) const
     {
         int count;
@@ -151,37 +145,34 @@ namespace geopm
         return count;
     }
 
-    void KNLPlatformImp::create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map)
+    void KNLPlatformImp::create_domain_map(int domain, std::vector<std::set<int> > &domain_map) const
     {
-        for (auto it = domain.begin(); it != domain.end(); ++it) {
-            if ((*it) == GEOPM_DOMAIN_SIGNAL_PERF) {
-                std::map<int, std::set<int> > tmp_map;
-                for (int i = 0; i < m_num_logical_cpu; ++i) {
-                    tmp_map.insert(std::pair<int, std::set<int> >(i, std::set<int>({i})));
-                }
-                domain_map.insert(std::pair<int, std::map<int, std::set<int> > >((*it), tmp_map));
+        if (domain == GEOPM_DOMAIN_SIGNAL_PERF) {
+            domain_map.reserve(m_num_logical_cpu);
+            std::set<int> cpus;
+            for (int i = 0; i < m_num_logical_cpu; ++i) {
+                domain_map.push_back(std::set<int>({i}));
             }
-            else if ((*it) == GEOPM_DOMAIN_SIGNAL_ENERGY ||
-                     (*it) == GEOPM_DOMAIN_CONTROL_POWER  ||
-                     (*it) == GEOPM_DOMAIN_CONTROL_FREQUENCY) {
-                std::set<int> tmp_set;
-                std::map<int, std::set<int> > tmp_map;
-                for (int i = 0; i < m_num_package; ++i) {
-                    for (int j = i * m_num_hw_cpu; j < (i + 1) * m_num_hw_cpu; ++j) {
-                        for (int k = 0; k < m_num_cpu_per_core; ++k) {
-                            tmp_set.insert(m_num_hw_cpu * k + j);
-                        }
+        }
+        else if (domain == GEOPM_DOMAIN_SIGNAL_ENERGY ||
+                 domain == GEOPM_DOMAIN_CONTROL_POWER  ||
+                 domain == GEOPM_DOMAIN_CONTROL_FREQUENCY) {
+            domain_map.reserve(m_num_package);
+            std::set<int> cpus;
+            for (int i = 0; i < m_num_package; ++i) {
+                for (int j = i * m_num_hw_cpu; j < (i + 1) * m_num_hw_cpu; ++j) {
+                    for (int k = 0; k < m_num_cpu_per_core; ++k) {
+                        cpus.insert(m_num_hw_cpu * k + j);
                     }
-                    tmp_map.insert(std::pair<int, std::set<int> >(i, tmp_set));
-                    tmp_set.clear();
                 }
-                domain_map.insert(std::pair<int, std::map<int, std::set<int> > >((*it), tmp_map));
+                domain_map.push_back(cpus);
+                cpus.clear();
             }
-            else {
-                throw Exception("KNLPlatformImp::create_domain_maps() unknown domain type:" +
-                                std::to_string(*it),
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-            }
+        }
+        else {
+            throw Exception("KNLPlatformImp::create_domain_maps() unknown domain type:" +
+                            std::to_string(domain),
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
     }
 
@@ -192,7 +183,7 @@ namespace geopm
 
     void KNLPlatformImp::batch_read_signal(std::vector<double> &signal_value)
     {
-        std::vector<uint64_t> raw_val(m_msr_access->capacity());
+        std::vector<uint64_t> raw_val(m_msr_access->num_raw_signal());
         m_msr_access->read_batch(raw_val);
         auto value_it = signal_value.begin();
         auto batch_it = raw_val.begin();
@@ -212,11 +203,10 @@ namespace geopm
     void KNLPlatformImp::write_control(int control_domain, int domain_index, double value)
     {
         uint64_t msr_val = 0;
-        int cpu_id = domain_index;
+        int cpu_id = (m_num_hw_cpu / m_num_package) * domain_index;;
 
         switch (control_domain) {
             case GEOPM_DOMAIN_CONTROL_POWER:
-                cpu_id = (m_num_hw_cpu / m_num_package) * domain_index;
                 if (value < m_min_pkg_watts) {
                     value = m_min_pkg_watts;
                 }
@@ -253,7 +243,7 @@ namespace geopm
         fixed_counters_init();
     }
 
-    void KNLPlatformImp::init_telemetry(TelemetryConfig &config)
+    void KNLPlatformImp::init_telemetry(const TelemetryConfig &config)
     {
         std::set<std::string> rapl_signals;
         std::set<std::string> cpu_signals;
@@ -291,7 +281,7 @@ namespace geopm
             int counter_idx = 0;
             std::vector<off_t> off;
             std::vector<std::string> signame;
-            std::vector<m_msr_signal_entry> msr_entry;
+            std::vector<struct IMSRAccess::m_msr_signal_entry> msr_entry;
             std::string key;
             std::vector<std::vector<off_t> > per_cpu_offsets;
             std::string signal_string;
@@ -367,7 +357,6 @@ namespace geopm
         m_control_msr_pair[M_RAPL_PKG_LIMIT] = std::make_pair(m_msr_access->offset("PKG_POWER_LIMIT"), m_msr_access->write_mask("PKG_POWER_LIMIT") );
         m_control_msr_pair[M_RAPL_DRAM_LIMIT] = std::make_pair(m_msr_access->offset("DRAM_POWER_LIMIT"), m_msr_access->write_mask("DRAM_POWER_LIMIT") );
         m_control_msr_pair[M_IA32_PERF_CTL] = std::make_pair(m_msr_access->offset("IA32_PERF_CTL"), m_msr_access->write_mask("IA32_PERF_CTL") );
-
     }
 
     void KNLPlatformImp::msr_reset()
@@ -467,13 +456,10 @@ namespace geopm
         for (int i = 0; i < m_num_tile; i++) {
             std::string ctl_msr_name("_MSR_PMON_CTL" + std::to_string(counter_idx));
             std::string box_msr_name("_MSR_PMON_BOX_CTL");
-            std::string filter_msr_name("_MSR_PMON_BOX_FILTER");
             box_msr_name.insert(0, std::to_string(i));
             box_msr_name.insert(0, "C");
             ctl_msr_name.insert(0, std::to_string(i));
             ctl_msr_name.insert(0, "C");
-            filter_msr_name.insert(0, std::to_string(i));
-            filter_msr_name.insert(0, "C");
 
             // enable freeze
             msr_write(GEOPM_DOMAIN_TILE, i, box_msr_name,
@@ -537,9 +523,34 @@ namespace geopm
         }
     }
 
-    static const std::map<std::string, struct m_msr_signal_entry> &knl_msr_signal_map(void)
+    void KNLPlatformImp::provides(TelemetryConfig &config) const
     {
-        static const std::map<std::string, struct m_msr_signal_entry> msr_signal_map({
+        std::set<int> domains = {GEOPM_DOMAIN_CONTROL_POWER, GEOPM_DOMAIN_CONTROL_FREQUENCY,
+                                 GEOPM_DOMAIN_SIGNAL_ENERGY, GEOPM_DOMAIN_SIGNAL_PERF};
+        std::set<std::string> energy_signals = {"dram_energy", "pkg_energy"};
+        std::set<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
+        std::vector<std::set<int> > domain_map;
+        config.supported_domain(domains);
+        config.set_provided(GEOPM_DOMAIN_SIGNAL_ENERGY, energy_signals);
+        config.set_provided(GEOPM_DOMAIN_SIGNAL_PERF, counter_signals);
+        config.set_bounds(GEOPM_DOMAIN_CONTROL_POWER, m_min_pkg_watts + m_max_dram_watts, m_max_pkg_watts + m_max_dram_watts);
+        config.set_bounds(GEOPM_DOMAIN_CONTROL_FREQUENCY, m_min_freq_mhz, m_max_freq_mhz);
+        create_domain_map(GEOPM_DOMAIN_CONTROL_POWER, domain_map);
+        config.set_domain_cpu_map(GEOPM_DOMAIN_CONTROL_POWER, domain_map);
+        domain_map.clear();
+        create_domain_map(GEOPM_DOMAIN_CONTROL_FREQUENCY, domain_map);
+        config.set_domain_cpu_map(GEOPM_DOMAIN_CONTROL_FREQUENCY, domain_map);
+        domain_map.clear();
+        create_domain_map(GEOPM_DOMAIN_SIGNAL_ENERGY, domain_map);
+        config.set_domain_cpu_map(GEOPM_DOMAIN_SIGNAL_ENERGY, domain_map);
+        domain_map.clear();
+        create_domain_map(GEOPM_DOMAIN_SIGNAL_PERF, domain_map);
+        config.set_domain_cpu_map(GEOPM_DOMAIN_SIGNAL_PERF, domain_map);
+    }
+
+    static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> &knl_msr_signal_map(void)
+    {
+        static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> msr_signal_map({
             {"IA32_PERF_STATUS",        {0x0198, 0x0000000000000000, 32, 0, 8, 0x0ff, 0.1}},
             {"PKG_ENERGY_STATUS",       {0x0611, 0x0000000000000000, 32, 0, 0, 0xffffffffffffffff, 1.0}},
             {"DRAM_ENERGY_STATUS",      {0x0619, 0x0000000000000000, 32, 0, 0, 0xffffffffffffffff, 1.0}},

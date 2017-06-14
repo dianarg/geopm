@@ -33,6 +33,9 @@
 #ifndef SIGNAL_HPP_INCLUDE
 #define SIGNAL_HPP_INCLUDE
 
+#include <stdint.h>
+#include <vector>
+
 namespace geopm
 {
     class ISignal

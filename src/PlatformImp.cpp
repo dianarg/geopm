@@ -65,11 +65,8 @@ namespace geopm
         , m_num_tile_group(0)
         , m_num_package(0)
         , m_num_core_per_tile(0)
-        , m_control_latency_ms({{GEOPM_CONTROL_TYPE_POWER,10.0}})
+        , m_control_latency_ms({{GEOPM_DOMAIN_CONTROL_POWER,10.0}})
         , m_tdp_pkg_watts(DBL_MIN)
-        , m_msr_batch_desc(-1)
-        , m_is_batch_enabled(false)
-        , m_batch({0, NULL})
         , m_trigger_offset(0)
         , m_trigger_value(0)
         , m_is_initialized(false)
@@ -79,11 +76,11 @@ namespace geopm
     }
 
     PlatformImp::PlatformImp(const std::map<int, double> &control_latency,
-                             const std::map<std::string, struct m_msr_signal_entry> *msr_signal_map,
-                             const std::map<std::string, std::pair<off_t, unsigned long> > *msr_control_map)
+                             const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> *msr_signal_map,
+                             const std::map<std::string, std::pair<off_t, uint64_t> > *msr_control_map)
         : m_msr_access(NULL)
-        , m_msr_signal_ptr(msr_signal_map_ptr)
-        , m_msr_control_map_ptr(msr_control_map_ptr)
+        , m_msr_signal_map_ptr(msr_signal_map)
+        , m_msr_control_map_ptr(msr_control_map)
         , m_num_logical_cpu(0)
         , m_num_hw_cpu(0)
         , m_num_tile(0)
@@ -160,7 +157,7 @@ namespace geopm
     void PlatformImp::msr_write(int device_type, int device_index, const std::string &msr_name, uint64_t value)
     {
         off_t offset = m_msr_access->offset(msr_name);
-        unsigned long mask = m_msr_offset->mask(msr_name);
+        unsigned long mask = m_msr_access->write_mask(msr_name);
         int cpu_id = 1;
         if (device_type == GEOPM_DOMAIN_PACKAGE) {
             cpu_id = (m_num_hw_cpu / m_num_package) * device_index;
@@ -266,16 +263,16 @@ namespace geopm
     void PlatformImp::build_msr_save_string(std::ofstream &save_file, int device_type, int device_index, std::string name)
     {
         uint64_t msr_val = msr_read(device_type, device_index, name);
-        unsigned long mask = msr_mask(name);
+        uint64_t mask = m_msr_access->write_mask(name);
         msr_val &= mask;
-        save_file << device_type << ":" << device_index << ":" << m_msr_access->offset(name) << ":" << m_msr_access->write_mask(name) << ":" << msr_val << std::endl;
+        save_file << device_type << " " << device_index << " " << name << " " << msr_val << std::endl;
     }
 
     void PlatformImp::restore_msr_state(const char *path)
     {
         std::ifstream restore_file;
         std::string line;
-        std::vector<uint64_t> vals;
+        std::vector<uint64_t> vals(3);
         std::string item;
 
         if (path == NULL) {
@@ -285,17 +282,10 @@ namespace geopm
         restore_file.open(path, std::ios_base::in);
 
         while (std::getline(restore_file,line)) {
-            std::stringstream ss(line);
-            while (std::getline(ss, item, ':')) {
-                vals.push_back((uint64_t)strtoul(item.c_str(), NULL, 0));
-            }
-            if (vals.size() == 5) {
-                msr_write(vals[0], vals[1], vals[2], vals[3], vals[4]);
-            }
-            else {
-                throw Exception("error detected in restore file. Could not restore msr states", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-            }
-            vals.clear();
+            std::istringstream ss(line);
+            std::string name;
+            ss >> vals[0] >> vals[1] >> name >> vals[2];
+            msr_write(vals[0], vals[1], name, vals[2]);
         }
         restore_file.close();
         remove(path);
@@ -308,7 +298,7 @@ namespace geopm
 
     bool PlatformImp::is_updated(void)
     {
-        uint64_t curr_value = msr_read(GEOPM_DOMAIN_PACKAGE, 0, m_trigger_offset);
+        uint64_t curr_value = m_msr_access->read(0, m_trigger_offset);
         bool result = (m_trigger_value && curr_value != m_trigger_value);
         m_trigger_value = curr_value;
         return result;
@@ -320,7 +310,7 @@ namespace geopm
         return m_msr_save_file_path;
     }
 
-    int PlatformImp::capacity(void) {
+    size_t PlatformImp::num_signal(void) {
         return m_signal.size();
     }
 }

@@ -73,8 +73,8 @@ namespace geopm
             /// @brief default PlatformImp constructor
             PlatformImp();
             PlatformImp(const std::map<int, double> &control_latency,
-                        const std::map<std::string, struct m_msr_signal_entry> *msr_signal_map,
-                        const std::map<std::string, std::pair<off_t, unsigned long> > *msr_control_map);
+                        const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> *msr_signal_map,
+                        const std::map<std::string, std::pair<off_t, uint64_t> > *msr_control_map);
             PlatformImp(const PlatformImp &other);
             /// @brief default PlatformImp destructor
             virtual ~PlatformImp();
@@ -101,7 +101,7 @@ namespace geopm
             /// @param [in] msr_name String name of the requested MSR.
             /// @return Value read from the specified MSR.
             uint64_t msr_read(int device_type, int device_index, const std::string &msr_name);
-            virtual void init_telemetry(TelemetryConfig &config);
+            virtual void init_telemetry(const TelemetryConfig &config);
             /// @brief Output a MSR whitelist for use with the Linux MSR driver.
             /// @param [in] file_desc File descriptor for output.
             void whitelist(FILE* file_desc);
@@ -122,7 +122,7 @@ namespace geopm
             virtual bool is_updated(void);
             /// @brief Return the path used for the MSR default save file.
             std::string msr_save_file_path(void);
-            int capacity(void);
+            size_t num_signal(void);
 
             ////////////////////////////////////////////////////////////////////
             //              Platform dependent implementations                //
@@ -159,18 +159,12 @@ namespace geopm
             virtual void write_control(int control_domain, int domain_index, double value) = 0;
             /// @brief Reset MSRs to a default state.
             virtual void msr_reset(void) = 0;
-            /// @brief Return the upper and lower bound of the controls.
-            ///
-            /// For a RAPL platform this would be the package power limit,
-            /// and the p-state bounds.
-            ///
-            /// @param [out] bound The lower and upper limits for each control.
-            virtual void bound(std::map<int, std::pair<double, double> > &bound) = 0;
             /// @brief Return the frequency limit where throttling occurs.
             ///
             /// @return frequency limit where anything <= is considered throttling.
             virtual double throttle_limit_mhz(void) const = 0;
-            virtual void create_domain_maps(std::set<int> &domain, std::map<int, std::map<int, std::set<int> > > &domain_map) = 0;
+            virtual void create_domain_map(int domain, std::vector<std::set<int> > &domain_map) const = 0;
+            virtual void provides(TelemetryConfig &config) const = 0;
 
         protected:
 
@@ -180,23 +174,13 @@ namespace geopm
             /// map, initialize RAPL, CBO and fixed counter MSRs.
             virtual void msr_initialize() = 0;
 
-            struct m_msr_signal_entry {
-                off_t offset;
-                uint64_t write_mask;
-                int size;
-                int lshift_mod;
-                int rshift_mod;
-                uint64_t mask_mod;
-                double multiply_mod;
-            };
-
             /// @brief Holds the underlying hardware topology.
             PlatformTopology m_topology;
             IMSRAccess *m_msr_access;
             /// @brief Map of MSR string name to address offset and write mask.
             /// This is a map is keyed by a string of the MSR's name and maps a pair
             /// which contain the MSR's offset (first) and write mask (second).
-            const std::map<std::string, struct m_msr_signal_entry> *m_msr_signal_map_ptr;
+            const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> *m_msr_signal_map_ptr;
             const std::map<std::string, std::pair<off_t, uint64_t> > *m_msr_control_map_ptr;
             /// @brief Number of logical CPUs.
             int m_num_logical_cpu;
@@ -219,7 +203,7 @@ namespace geopm
             std::map<int, double> m_control_latency_ms;
             /// @brief TDP value for package (CPU) power read from RAPL.
             double m_tdp_pkg_watts;
-            uint64_t m_trigger_offset;
+            off_t m_trigger_offset;
             uint64_t m_trigger_value;
             std::vector<MSRSignal*> m_signal;
 

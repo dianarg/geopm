@@ -42,31 +42,29 @@
 
 namespace geopm
 {
-    Region::Region(uint64_t identifier, int num_control_domain, int level)
+    Region::Region(uint64_t identifier, int level, TelemetryConfig &config)
         : m_identifier(identifier)
-        , m_num_control_domain(num_control_domain)
         , m_level(level)
-        , m_num_signal(m_level == 0 ? (int)GEOPM_NUM_TELEMETRY_TYPE : (int)GEOPM_NUM_SAMPLE_TYPE)
-        , m_signal_matrix(m_num_signal * m_num_control_domain)
-        , m_entry_telemetry(m_num_control_domain, {GEOPM_REGION_ID_UNDEFINED, {{0, 0}}, {0}})
-        , m_curr_sample({m_identifier, {0.0, 0.0, 0.0, 0.0}})
-        , m_domain_sample(m_num_domain, m_curr_sample)
-        , m_domain_buffer(NULL)
-        , m_time_buffer(NULL)
-        , m_valid_entries(m_num_signal * m_num_domain, 0)
-        , m_min(m_num_signal * m_num_domain, DBL_MAX)
-        , m_max(m_num_signal * m_num_domain, -DBL_MAX)
-        , m_sum(m_num_signal * m_num_domain, 0.0)
-        , m_sum_squares(m_num_signal * m_num_domain, 0.0)
-        , m_derivative_last(m_num_signal * m_num_domain, NAN)
+        , m_num_signal(num_signal)
+        , m_signal_matrix(m_num_signal)
+        , m_entry_timestamp({{0},{0}})
+        , m_entry_telemetry(num_signal)
+        , m_curr_sample()
+        , m_domain_sample(m_num_control_domain, m_curr_sample)
+        , m_domain_buffer(M_NUM_SAMPLE_HISTORY)
+        , m_time_buffer(M_NUM_SAMPLE_HISTORY)
+        , m_min(m_num_signal * m_num_control_domain, DBL_MAX)
+        , m_max(m_num_signal * m_num_control_domain, -DBL_MAX)
+        , m_sum(m_num_signal * m_num_control_domain, 0.0)
+        , m_sum_squares(m_num_signal * m_num_control_domain, 0.0)
+        , m_derivative_last(m_num_signal * m_num_control_domain, NAN)
         , m_agg_stats({m_identifier, {0.0, 0.0, 0.0, 0.0}})
         , m_num_entry(0)
         , m_is_entered(m_num_control_domain, false)
         , m_derivative_num_fit(0)
         , m_mpi_time(0.0)
     {
-        m_domain_buffer = new CircularBuffer<std::vector<double> >(M_NUM_SAMPLE_HISTORY);
-        m_time_buffer = new CircularBuffer<struct geopm_time_s>(M_NUM_SAMPLE_HISTORY);
+        std::fill(m_entry_telemetry.begin(), m_entry_telemetry.end(), -1.0);
     }
 
     Region::~Region()

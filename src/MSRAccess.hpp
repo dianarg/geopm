@@ -37,11 +37,33 @@
 #define  X86_IOC_MSR_BATCH _IOWR('c', 0xA2, m_msr_batch_array)
 #endif
 
+#include <sys/types.h>
+#include <stdint.h>
+#include <string>
+#include <vector>
+#include <map>
+#include <limits.h>
+#ifndef NAME_MAX
+#define NAME_MAX 1024
+#endif
+
+#include "PlatformTopology.hpp"
+
 namespace geopm
 {
     class IMSRAccess
     {
         public:
+            struct m_msr_signal_entry {
+                off_t offset;
+                uint64_t write_mask;
+                int size;
+                int lshift_mod;
+                int rshift_mod;
+                uint64_t mask_mod;
+                double multiply_mod;
+            };
+
             IMSRAccess() {}
             virtual ~IMSRAccess() {};
             virtual off_t offset(const std::string &msr_name) = 0;
@@ -52,13 +74,15 @@ namespace geopm
             virtual void config_batch_write(const std::vector<int> &cpu, const std::vector<uint64_t> &write_offset, const std::vector<uint64_t> &write_mask) = 0;
             virtual void read_batch(std::vector<uint64_t> &raw_value) = 0;
             virtual void write_batch(const std::vector<uint64_t> &raw_value) = 0;
-            virtual int capacity(void) = 0;
+            virtual size_t num_raw_signal(void) = 0;
     };
 
     class MSRAccess : public IMSRAccess
     {
         public:
-            MSRAccess(const std::map<std::string, struct geopm_msr_encode_s> &encode_map, const PlatformTopology &topo);
+            MSRAccess(const std::map<std::string, struct m_msr_signal_entry> *signal_map,
+                      const std::map<std::string, std::pair<off_t, uint64_t> > *control_map,
+                      const PlatformTopology &topo);
             virtual ~MSRAccess();
             off_t offset(const std::string &msr_name);
             uint64_t write_mask(const std::string &msr_name);
@@ -68,7 +92,7 @@ namespace geopm
             void config_batch_write(const std::vector<int> &cpu, const std::vector<uint64_t> &write_offset, const std::vector<uint64_t> &write_mask);
             void read_batch(std::vector<uint64_t> &raw_value);
             void write_batch(const std::vector<uint64_t> &raw_value);
-            int capacity(void);
+            size_t num_raw_signal(void);
 
         protected:
             virtual void descriptor_path(int cpu_num);
@@ -96,7 +120,7 @@ namespace geopm
             struct m_msr_batch_array m_write_batch;
             std::vector<struct m_msr_batch_op> m_read_batch_op;
             std::vector<struct m_msr_batch_op> m_write_batch_op;
-            int m_num_cpu;
+            int m_num_logical_cpu;
             int m_num_package;
             const std::map<std::string, struct m_msr_signal_entry> *m_msr_signal_map_ptr;
             const std::map<std::string, std::pair<off_t, uint64_t> > *m_msr_control_map_ptr;

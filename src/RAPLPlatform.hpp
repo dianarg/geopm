@@ -49,35 +49,12 @@ namespace geopm
             RAPLPlatform();
             /// @brief Default destructor
             virtual ~RAPLPlatform();
-            virtual void initialize(void);
             virtual bool is_model_supported(int platform_id, const std::string &description) const;
-            virtual size_t capacity(void);
-            virtual void sample(std::vector<struct geopm_msr_message_s> &msr_values);
+            virtual void sample(struct geopm_time_s &sample_time, std::vector<double> &msr_values);
             virtual void enforce_policy(uint64_t region_id, IPolicy &policy) const;
-            virtual void capabilities(TelemetryConfig &config) const;
-            virtual void init_features(const TelemetryConfig &config);
+            virtual void provides(TelemetryConfig &config) const;
+            virtual void init_telemetry(const TelemetryConfig &config);
         protected:
-            /// @brief structure to hold buffer indicies for platform signals.
-            struct m_buffer_index_s {
-                int package0_pkg_energy;
-                int package1_pkg_energy;
-                int package0_dram_energy;
-                int package1_dram_energy;
-                int inst_retired_any_base;
-                int clk_unhalted_core_base;
-                int clk_unhalted_ref_base;
-                int llc_victims_base;
-                int num_slot;
-            };
-            int m_num_freq_ctl_domain;
-            int m_num_power_ctl_domain;
-            int m_num_energy_ctr_domain;
-            int m_num_pmon_ctr_domain;
-            /// @brief Structure of buffer indices to store data into to
-            /// avoid map look-ups.
-            struct m_buffer_index_s m_buffer_index;
-            /// @brief Vector of signal read operations.
-            std::vector<struct geopm_signal_descriptor> m_batch_desc;
             /// @brief platform capability description string.
             const std::string m_description;
             const int M_HSX_ID;

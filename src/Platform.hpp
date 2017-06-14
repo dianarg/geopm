@@ -56,10 +56,6 @@ namespace geopm
             /// @param [in] do_initialize Choose whether or not to initialize the Platform.
             ///        This also initialized the underlying PlatformImp.
             virtual void set_implementation(PlatformImp* platform_imp, bool do_initialize) = 0;
-            /// @brief Retrieve the number of power domains.
-            /// @param [in] ctl_domain The control domain of interest.
-            /// @return Number of power domains.
-            virtual int num_control_domain(int ctl_domain) =0;
             /// @brief Retrieve the string name of the hw platform.
             /// @return The hw platform name.
             virtual void name(std::string &plat_name) const = 0;
@@ -89,11 +85,9 @@ namespace geopm
             virtual void write_msr_whitelist(FILE *file_desc) const = 0;
             /// @brief Revert the MSR values to their initial state.
             virtual void revert_msr_state(void) const = 0;
-            /// @brief Number of MSR values returned from sample().
-            virtual size_t capacity(void) = 0;
             /// @brief Record telemetry from counters and RAPL MSRs.
             /// @param [in] msr_values MSR structures in which to save values.
-            virtual void sample(std::vector<struct geopm_msr_message_s> &msr_values) = 0;
+            virtual void sample(struct geopm_time_s &sample_time, std::vector<double> &msr_values) = 0;
             /// @brief Does this Platform support a specific platform.
             /// @param [in] platform_id Platform identifier specific to the
             ///        underlying hardware. On x86 platforms this can be obtained by
@@ -176,8 +170,6 @@ namespace geopm
                                      const std::vector<double> &aligned_data,
                                      std::vector<struct geopm_telemetry_message_s> &telemetry);
         protected:
-            /// @brief Platform specific initialization code.
-            virtual void initialize(void) = 0;
             /// @brief Pointer to a PlatformImp object that supports the target
             /// hardware platform.
             PlatformImp *m_imp;

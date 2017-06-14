@@ -104,8 +104,8 @@ namespace geopm
             m_region_policy.insert(std::pair<uint64_t, RegionPolicy *>(region_id, result));
             // Give the new region the global power targets
             std::vector<double> budget(m_num_control_domain);
-            target(GEOPM_REGION_ID_EPOCH, GEOPM_CONTROL_TYPE_POWER, budget);
-            update(region_id, GEOPM_CONTROL_TYPE_POWER, budget);
+            target(GEOPM_REGION_ID_EPOCH, GEOPM_DOMAIN_CONTROL_POWER, budget);
+            update(region_id, GEOPM_DOMAIN_CONTROL_POWER, budget);
         }
         else {
             result = (*result_it).second;
@@ -274,7 +274,7 @@ namespace geopm
     {
         if ((int)child_msg.size() >= m_num_control_domain) {
             std::fill(child_msg.begin(), child_msg.begin() + m_num_control_domain, parent_msg);
-            auto it = m_target.find(GEOPM_CONTROL_TYPE_POWER);
+            auto it = m_target.find(GEOPM_DOMAIN_CONTROL_POWER);
             if (it != m_target.end()) {
                 for (int domain_idx = 0; domain_idx != m_num_control_domain; ++domain_idx) {
                     child_msg[domain_idx].power_budget = (*it).second[domain_idx];

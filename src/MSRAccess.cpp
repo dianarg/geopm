@@ -30,7 +30,14 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sstream>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "MSRAccess.hpp"
+#include "Exception.hpp"
 
 namespace geopm
 {
@@ -45,13 +52,13 @@ namespace geopm
     , m_write_batch({0,NULL})
     , m_read_batch_op(0)
     , m_write_batch_op(0)
-    , m_num_cpu(0)
+    , m_num_logical_cpu(0)
     , m_num_package(0)
     , m_msr_signal_map_ptr(signal_map)
     , m_msr_control_map_ptr(control_map)
     {
-        m_num_cpu = topo.num_domain(GEOPM_DOMAIN_CPU);
-        m_num_package = m_topology.num_domain(GEOPM_DOMAIN_PACKAGE);
+        m_num_logical_cpu = topo.num_domain(GEOPM_DOMAIN_CPU);
+        m_num_package = topo.num_domain(GEOPM_DOMAIN_PACKAGE);
         for (int i = 0; i < m_num_logical_cpu; i++) {
             msr_open(i);
         }
@@ -65,13 +72,13 @@ namespace geopm
     off_t MSRAccess::offset(const std::string &msr_name)
     {
         off_t off = 0;
-        auto control_it = m_msr_control_map_ptr.find(msr_name);
-        if (control_it != m_msr_control_map_ptr.end()) {
+        auto control_it = m_msr_control_map_ptr->find(msr_name);
+        if (control_it != m_msr_control_map_ptr->end()) {
             off =  (*control_it).second.first;
         }
         else {
-            auto signal_it = m_msr_signal_map_ptr.find(msr_name);
-            if (signal_it != m_msr_signal_map_ptr.end()) {
+            auto signal_it = m_msr_signal_map_ptr->find(msr_name);
+            if (signal_it != m_msr_signal_map_ptr->end()) {
                 off = (*signal_it).second.offset;
             }
             else {
@@ -84,13 +91,13 @@ namespace geopm
     uint64_t MSRAccess::write_mask(const std::string &msr_name)
     {
         uint64_t mask = 0;
-        auto control_it = m_msr_control_map_ptr.find(msr_name);
-        if (control_it != m_msr_control_map_ptr.end()) {
+        auto control_it = m_msr_control_map_ptr->find(msr_name);
+        if (control_it != m_msr_control_map_ptr->end()) {
             mask =  (*control_it).second.second;
         }
         else {
-            auto signal_it = m_msr_signal_map_ptr.find(msr_name);
-            if (signal_it != m_msr_signal_map_ptr.end()) {
+            auto signal_it = m_msr_signal_map_ptr->find(msr_name);
+            if (signal_it != m_msr_signal_map_ptr->end()) {
                 mask = (*signal_it).second.write_mask;
             }
             else {
@@ -109,7 +116,7 @@ namespace geopm
         }
         int rv = pread(m_cpu_file_desc[cpu_id], &raw_value, sizeof(raw_value), offset);
         if (rv != sizeof(raw_value)) {
-            throw Exception(std::to_string(msr_offset), GEOPM_ERROR_MSR_READ, __FILE__, __LINE__);
+            throw Exception(std::to_string(offset), GEOPM_ERROR_MSR_READ, __FILE__, __LINE__);
         }
 
         return raw_value;
@@ -120,17 +127,17 @@ namespace geopm
         uint64_t old_value;
         uint64_t curr_value;
 
-        curr_val = msr_read(cpuid, offset);
-        curr_value &= ~write_mask
+        curr_value = read(cpu_id, offset);
+        curr_value &= ~write_mask;
         if (m_cpu_file_desc.size() < (uint64_t)cpu_id) {
-            throw Exception("MSRAccess::write(): No file descriptor found for cpu device", GEOPM_ERROR_MSR_WRITE, __FILE__, __LINE
+            throw Exception("MSRAccess::write(): No file descriptor found for cpu device", GEOPM_ERROR_MSR_WRITE, __FILE__, __LINE__);
         }
         old_value = raw_value;
-        value &= msr_mask;
-        if (value != old_value) {
+        curr_value &= write_mask;
+        if (curr_value != old_value) {
             std::ostringstream message;
             message << "MSR value to be written was modified by the mask! Desired = 0x" << std::hex << old_value
-                    << " After mask = 0x" << std::hex << value;
+                    << " After mask = 0x" << std::hex << curr_value;
             throw Exception(message.str(), GEOPM_ERROR_MSR_WRITE, __FILE__, __LINE__);
         }
         raw_value |= curr_value;
@@ -146,7 +153,7 @@ namespace geopm
     void MSRAccess::config_batch_read(const std::vector<int> &cpu, const std::vector<uint64_t> &read_offset)
     {
         if (cpu.size() != read_offset.size()) {
-            throw Exception("MSRAccess::config_batch_read(): Number of CPUs != Number of offsets", GEOPM_ERROR_INVALID, __FILE__, __LINE
+            throw Exception("MSRAccess::config_batch_read(): Number of CPUs != Number of offsets", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         m_read_batch_op.resize(cpu.size());
         auto cpu_it = cpu.begin();
@@ -165,9 +172,9 @@ namespace geopm
 
     void MSRAccess::config_batch_write(const std::vector<int> &cpu, const std::vector<uint64_t> &write_offset, const std::vector<uint64_t> &write_mask)
     {
-        if (cpu.size() != read_offset.size() ||
+        if (cpu.size() != write_offset.size() ||
             cpu.size() != write_mask.size()) {
-            throw Exception("MSRAccess::config_batch_write(): Number of CPUs, number of offsets, and number of masks do not match", GEOPM_ERROR_INVALID, __FILE__, __LINE
+            throw Exception("MSRAccess::config_batch_write(): Number of CPUs, number of offsets, and number of masks do not match", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         m_write_batch_op.resize(cpu.size());
         auto cpu_it = cpu.begin();
@@ -196,7 +203,7 @@ namespace geopm
         else {
             for (int i = 0; i < m_read_batch.numops; ++i) {
                 m_read_batch.ops[i].msrdata = 
-                    msr_read(m_read_batch.ops[i].cpu, m_read_batch.ops[i].msr);
+                    read(m_read_batch.ops[i].cpu, m_read_batch.ops[i].msr);
             }
         }
         raw_value.clear();
@@ -204,19 +211,19 @@ namespace geopm
             raw_value.resize(m_read_batch.numops);
         }
         int batch_idx = 0;
-        for (auto raw_it = raw_value.begin(); raw_it != raw_value.end; ++raw_it) {
-            (*raw_it) = m_read_batch.ops[batch_idx++];
+        for (auto raw_it = raw_value.begin(); raw_it != raw_value.end(); ++raw_it) {
+            (*raw_it) = m_read_batch.ops[batch_idx++].msrdata;
         }
     }
 
     void MSRAccess::write_batch(const std::vector<uint64_t> &raw_value)
     {
-        if (raw_value.size != m_write_batch.numops) {
+        if (raw_value.size() != m_write_batch.numops) {
             throw Exception("MSRAccess::write_batch(): Number of values does not equal number of controls", GEOPM_ERROR_MSR_WRITE, __FILE__, __LINE__);
         }
         int batch_idx = 0;
-        for (auto raw_it = raw_value.begin(); raw_it != raw_value.end; ++raw_it) {
-            m_write_batch.ops[batch_idx++] = (*raw_it);
+        for (auto raw_it = raw_value.begin(); raw_it != raw_value.end(); ++raw_it) {
+            m_write_batch.ops[batch_idx++].msrdata = (*raw_it);
         }
         if (m_is_batch_enabled) {
             int rv = ioctl(m_msr_batch_desc, X86_IOC_MSR_BATCH, &m_write_batch);
@@ -226,7 +233,7 @@ namespace geopm
         }
         else {
             for (int i = 0; i < m_write_batch.numops; ++i) {
-                msr_write(m_write_batch.ops[i].cpu, m_write_batch.ops[i].msr,
+                write(m_write_batch.ops[i].cpu, m_write_batch.ops[i].msr,
                           m_write_batch.ops[i].wmask, m_write_batch.ops[i].msrdata);
             }
         }
@@ -300,8 +307,8 @@ namespace geopm
         }
     }
 
-    void MSRAccess::capacity(void)
+    size_t MSRAccess::num_raw_signal(void)
     {
-        return m_batch.numops;
+        return m_read_batch.numops;
     }
 }

@@ -33,6 +33,7 @@
 #ifndef MSRSIGNAL_HPP_INCLUDE
 #define MSRSIGNAL_HPP_INCLUDE
 
+#include <sys/types.h>
 #include "Signal.hpp"
 
 namespace geopm
@@ -53,7 +54,7 @@ namespace geopm
             void scalar(int encoded_idx, double scalar);
         protected:
             int m_num_source;
-            std::vector<uint64_t> m_offset;
+            std::vector<off_t> m_offset;
             std::vector<int> m_lshift;
             std::vector<int> m_rshift;
             std::vector<uint64_t> m_mask;
@@ -61,6 +62,8 @@ namespace geopm
             std::vector<int> m_num_bit;
             std::vector<uint64_t> m_raw_last;
             std::vector<uint64_t> m_overflow_offset;
+            uint64_t m_raw_value_last;
+            off_t m_msr_overflow_offset;
     };
 
 #if 0
