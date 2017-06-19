@@ -65,7 +65,7 @@ namespace geopm
             virtual bool is_model_supported(int platform_id);
             virtual std::string platform_name(void);
             virtual int num_domain(int domain_type) const;
-            virtual void create_domain_map(int domain, std::vector<std::set<int> > &domain_map) const;
+            virtual void create_domain_map(int domain, std::vector<std::vector<int> > &domain_map) const;
             virtual double throttle_limit_mhz(void) const;
             virtual void batch_read_signal(std::vector<double> &signal_value);
             virtual void write_control(int control_domain, int domain_index, double value);

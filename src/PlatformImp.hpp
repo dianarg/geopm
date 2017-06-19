@@ -40,7 +40,6 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <vector>
-#include <set>
 #include <map>
 #include <utility>
 #include <string>
@@ -163,7 +162,7 @@ namespace geopm
             ///
             /// @return frequency limit where anything <= is considered throttling.
             virtual double throttle_limit_mhz(void) const = 0;
-            virtual void create_domain_map(int domain, std::vector<std::set<int> > &domain_map) const = 0;
+            virtual void create_domain_map(int domain, std::vector<std::vector<int> > &domain_map) const = 0;
             virtual void provides(TelemetryConfig &config) const = 0;
 
         protected:

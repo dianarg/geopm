@@ -105,6 +105,7 @@ enum geopm_domain_e {
     GEOPM_DOMAIN_SIGNAL_ENERGY,
     GEOPM_DOMAIN_SIGNAL_PERF,
     GEOPM_DOMAIN_SIGNAL_RANK,
+    GEOPM_DOMAIN_SIGNAL_NODE,
 };
 
 /// @brief MPI message structure for sending

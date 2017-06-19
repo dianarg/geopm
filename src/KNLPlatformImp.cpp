@@ -145,24 +145,24 @@ namespace geopm
         return count;
     }
 
-    void KNLPlatformImp::create_domain_map(int domain, std::vector<std::set<int> > &domain_map) const
+    void KNLPlatformImp::create_domain_map(int domain, std::vector<std::vector<int> > &domain_map) const
     {
         if (domain == GEOPM_DOMAIN_SIGNAL_PERF) {
             domain_map.reserve(m_num_logical_cpu);
-            std::set<int> cpus;
+            std::vector<int> cpus;
             for (int i = 0; i < m_num_logical_cpu; ++i) {
-                domain_map.push_back(std::set<int>({i}));
+                domain_map.push_back(std::vector<int>({i}));
             }
         }
         else if (domain == GEOPM_DOMAIN_SIGNAL_ENERGY ||
                  domain == GEOPM_DOMAIN_CONTROL_POWER  ||
                  domain == GEOPM_DOMAIN_CONTROL_FREQUENCY) {
             domain_map.reserve(m_num_package);
-            std::set<int> cpus;
+            std::vector<int> cpus(m_num_logical_cpu / m_num_package);
             for (int i = 0; i < m_num_package; ++i) {
                 for (int j = i * m_num_hw_cpu; j < (i + 1) * m_num_hw_cpu; ++j) {
                     for (int k = 0; k < m_num_cpu_per_core; ++k) {
-                        cpus.insert(m_num_hw_cpu * k + j);
+                        cpus.push_back(m_num_hw_cpu * k + j);
                     }
                 }
                 domain_map.push_back(cpus);
@@ -245,8 +245,8 @@ namespace geopm
 
     void KNLPlatformImp::init_telemetry(const TelemetryConfig &config)
     {
-        std::set<std::string> rapl_signals;
-        std::set<std::string> cpu_signals;
+        std::vector<std::string> rapl_signals;
+        std::vector<std::string> cpu_signals;
         config.get_required(GEOPM_DOMAIN_SIGNAL_ENERGY, rapl_signals);
         config.get_required(GEOPM_DOMAIN_SIGNAL_PERF, cpu_signals);
         std::vector<int> cpu;
@@ -525,11 +525,11 @@ namespace geopm
 
     void KNLPlatformImp::provides(TelemetryConfig &config) const
     {
-        std::set<int> domains = {GEOPM_DOMAIN_CONTROL_POWER, GEOPM_DOMAIN_CONTROL_FREQUENCY,
-                                 GEOPM_DOMAIN_SIGNAL_ENERGY, GEOPM_DOMAIN_SIGNAL_PERF};
-        std::set<std::string> energy_signals = {"dram_energy", "pkg_energy"};
-        std::set<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
-        std::vector<std::set<int> > domain_map;
+        std::vector<int> domains = {GEOPM_DOMAIN_CONTROL_POWER, GEOPM_DOMAIN_CONTROL_FREQUENCY,
+                                    GEOPM_DOMAIN_SIGNAL_ENERGY, GEOPM_DOMAIN_SIGNAL_PERF};
+        std::vector<std::string> energy_signals = {"dram_energy", "pkg_energy"};
+        std::vector<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
+        std::vector<std::vector<int> > domain_map;
         config.supported_domain(domains);
         config.set_provided(GEOPM_DOMAIN_SIGNAL_ENERGY, energy_signals);
         config.set_provided(GEOPM_DOMAIN_SIGNAL_PERF, counter_signals);

@@ -33,40 +33,52 @@
 #ifndef TELEMETRYCONFIG_HPP_INCLUDE
 #define TELEMETRYCONFIG_HPP_INCLUDE
 
-#include <set>
+#include <vector>
 #include <map>
 #include <string>
 
 namespace geopm {
+
+    enum aggregation_op_type_e {
+        AGGREGATION_OP_SUM,
+        AGGREGATION_OP_AVG,
+        AGGREGATION_OP_MIN,
+        AGGREGATION_OP_MAX,
+    };
+
     class TelemetryConfig {
         public:
             TelemetryConfig(std::vector<int> fan_out);
             TelemetryConfig(const TelemetryConfig &other);
             virtual ~TelemetryConfig();
-            void set_provided(int signal_domain, const std::set<std::string> &available);
-            void get_provided(int signal_domain, std::set<std::string> &available) const;
+            void set_provided(int signal_domain, const std::vector<std::string> &available);
+            void get_provided(int signal_domain, std::vector<std::string> &available) const;
             bool is_provided(int signal_domain, const std::string &available) const;
-            void set_required(int signal_domain, const std::set<std::string> &enable);
+            void set_required(int signal_domain, const std::vector<std::string> &enable);
             void set_required(int signal_domain, const std::string &enable);
-            void get_required(int signal_domain, std::set<std::string> &enabled) const;
+            void get_required(int signal_domain, std::vector<std::string> &enabled) const;
+            void get_required(std::map<int, std::vector<std::string> > &enabled) const;
             bool is_required(int signal_domain, const std::string &enabled) const;
-            void set_domain_cpu_map(int domain, const std::vector<std::set<int> > &domain_map);
-            void get_domain_cpu_map(int domain, std::vector<std::set<int> > &domain_map) const;
+            void set_domain_cpu_map(int domain, const std::vector<std::vector<int> > &domain_map);
+            void get_domain_cpu_map(int domain, std::vector<std::vector<int> > &domain_map) const;
             int num_domain_entry(int domain);
+            void num_signal_per_domain(std::vector<int> &num_signal) const;
+            int num_signal_per_domain(int domain) const;
             void set_bounds(int signal_domain, double lower, double upper);
             void get_bounds(int level, int ctl_domain, double &lower, double &upper) const;
-            void supported_domain(const std::set<int> domain);
+            void supported_domain(const std::vector<int> domain);
             bool is_supported_domain(int domain) const;
-            void set_aggregate(const std::vector<std::string> &agg);
-            void get_aggregate(std::vector<std::string> &agg) const;
+            void set_aggregate(const std::vector<std::pair<std::string, std::pair<int, int> > > &agg);
+            void set_aggregate(std::string signal, int spacial_op_type, int temporal_op_type);
+            void get_aggregate(std::vector<std::pair<std::string, std::pair<int, int> > > &agg) const;
         private:
             int num_children(int level);
-            std::map<int, std::set<std::string> > m_available_signal;
-            std::map<int, std::set<std::string> > m_enabled_signal;
-            std::map<int, std::set<std::string> > m_aggregate_signal;
+            std::map<int, std::vector<std::string> > m_available_signal;
+            std::map<int, std::vector<std::string> > m_enabled_signal;
+            std::vector<std::pair<std::string, std::pair<int, int> > > m_aggregate_signal;
             std::map<int, std::pair<double, double> > m_control_bound;
-            std::map<int, std::vector<std::set<int> > > m_domain_map;
-            std::set<int> m_supported_domain;
+            std::map<int, std::vector<std::vector<int> > > m_domain_map;
+            std::vector<int> m_supported_domain;
             std::vector<int> m_fan_out;
     };
 }

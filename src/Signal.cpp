@@ -32,6 +32,8 @@
 
 #include "Signal.hpp"
 
+#include <algorithm>
+
 namespace geopm
 {
     Signal::Signal()
@@ -48,7 +50,7 @@ namespace geopm
     {
         std::vector<double>decoded(encoded.size());
         decode(encoded, decoded);
-        return reduce(decoded)
+        return reduce(decoded);
     }
 
     double Signal::reduce(const std::vector<double> &decoded)
