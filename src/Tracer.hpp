@@ -39,7 +39,8 @@
 #include <sstream>
 
 #include <geopm_message.h>
-#include <GlobalPolicy.hpp>
+#include "GlobalPolicy.hpp"
+#include "TelemetryConfig.hpp"
 
 namespace geopm
 {
@@ -58,16 +59,14 @@ namespace geopm
     {
         public:
             /// @brief Tracer constructor.
-            Tracer(std::string header);
+            Tracer(const std::string header, const TelemetryConfig &config);
             /// @brief Tracer destructor, virtual.
             virtual ~Tracer();
-            void update(const std::vector <struct geopm_telemetry_message_s> &telemetry);
+            void update(uint64_t region_id, struct geopm_time_s, const std::vector <double> &telemetry);
             void update(const struct geopm_policy_message_s &policy);
         protected:
-            std::string m_header;
             std::string m_hostname;
             bool m_is_trace_enabled;
-            bool m_do_header;
             std::ofstream m_stream;
             std::ostringstream m_buffer;
             off_t m_buffer_limit;

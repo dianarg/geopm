@@ -42,9 +42,9 @@
 
 namespace geopm
 {
-    static const std::map<std::string, std::pair<off_t, unsigned long> > &snb_msr_control_map(void);
+    static const std::map<std::string, std::pair<off_t, uint64_t> > &snb_msr_control_map(void);
     static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> &snb_msr_signal_map(void);
-    static const std::map<std::string, std::pair<off_t, unsigned long> > &hsx_msr_control_map(void);
+    static const std::map<std::string, std::pair<off_t, uint64_t> > &hsx_msr_control_map(void);
     static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> &hsx_msr_signal_map(void);
     static const std::map<std::string, std::string> signal_to_msr_map {
         {"pkg_energy", "PKG_ENERGY_STATUS"},
@@ -58,7 +58,7 @@ namespace geopm
 
     XeonPlatformImp::XeonPlatformImp(int platform_id, const std::string &model_name,
                                      const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> *msr_signal_map,
-                                     const std::map<std::string, std::pair<off_t, unsigned long> > *msr_control_map)
+                                     const std::map<std::string, std::pair<off_t, uint64_t> > *msr_control_map)
         : PlatformImp({{GEOPM_DOMAIN_CONTROL_POWER, 50.0},{GEOPM_DOMAIN_CONTROL_FREQUENCY, 1.0}}, msr_signal_map, msr_control_map)
         , m_throttle_limit_mhz(0.5)
         , m_energy_units(0.0)
@@ -123,16 +123,16 @@ namespace geopm
     }
 
     SNBPlatformImp::SNBPlatformImp()
-        : XeonPlatformImp(platform_id(), "Sandybridge E", &(snb_msr_map()))
+        : XeonPlatformImp(platform_id(), "Sandybridge E", &(snb_msr_signal_map()), &(snb_msr_control_map()))
     {
         // Get supported p-state bounds
-        uint64_t tmp = m_msr_access->read(0, "IA32_PLATFORM_INFO");
+        uint64_t tmp = m_msr_access->read(0, m_msr_access->offset("IA32_PLATFORM_INFO"));
         m_min_freq_mhz = ((tmp >> 40) | 0xFF) * 100.0;
         m_max_freq_mhz = (tmp | 0xFF) * 100.0;
     }
 
     SNBPlatformImp::SNBPlatformImp(int platform_id, const std::string &model_name)
-        : XeonPlatformImp(platform_id, model_name, &(snb_msr_map()))
+        : XeonPlatformImp(platform_id, model_name, &(snb_msr_signal_map()), &(snb_msr_control_map()))
     {
 
     }
@@ -172,9 +172,9 @@ namespace geopm
     {
         if (domain == GEOPM_DOMAIN_SIGNAL_PERF) {
             domain_map.reserve(m_num_logical_cpu);
-            std::set<int> cpus;
+            std::vector<int> cpus;
             for (int i = 0; i < m_num_logical_cpu; ++i) {
-                domin_map.push_back(std::vector<int>({i}));
+                domain_map.push_back(std::vector<int>({i}));
             }
         }
         else if (domain == GEOPM_DOMAIN_SIGNAL_ENERGY ||
@@ -194,18 +194,18 @@ namespace geopm
         }
         else {
             throw Exception("SNBPlatformImp::create_domain_maps() unknown domain type:" +
-                            std::to_string(*it),
+                            std::to_string(domain),
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
     }
 
     void SNBPlatformImp::provides(TelemetryConfig &config) const
     {
-        std::set<int> domains = {GEOPM_DOMAIN_CONTROL_POWER, GEOPM_DOMAIN_CONTROL_FREQUENCY,
+        std::vector<int> domains = {GEOPM_DOMAIN_CONTROL_POWER, GEOPM_DOMAIN_CONTROL_FREQUENCY,
                                  GEOPM_DOMAIN_SIGNAL_ENERGY, GEOPM_DOMAIN_SIGNAL_PERF};
-        std::set<std::string> energy_signals = {"dram_energy", "pkg_energy"};
-        std::set<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
-        std::vector<std::set<int> > domain_map;
+        std::vector<std::string> energy_signals = {"dram_energy", "pkg_energy"};
+        std::vector<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
+        std::vector<std::vector<int> > domain_map;
         config.supported_domain(domains);
         config.set_provided(GEOPM_DOMAIN_SIGNAL_ENERGY, energy_signals);
         config.set_provided(GEOPM_DOMAIN_SIGNAL_PERF, counter_signals);
@@ -252,20 +252,20 @@ namespace geopm
     }
 
     HSXPlatformImp::HSXPlatformImp()
-        : XeonPlatformImp(platform_id(), "Haswell E", &(hsx_msr_map()))
+        : XeonPlatformImp(platform_id(), "Haswell E", &(hsx_msr_signal_map()), &(hsx_msr_control_map()))
     {
         XeonPlatformImp::m_dram_energy_units = 1.5258789063E-5;
     }
 
     HSXPlatformImp::HSXPlatformImp(int platform_id, const std::string &model_name)
-        : XeonPlatformImp(platform_id, model_name, &(hsx_msr_map()))
+        : XeonPlatformImp(platform_id, model_name, &(hsx_msr_signal_map()), &(hsx_msr_control_map()))
     {
         XeonPlatformImp::m_dram_energy_units = 1.5258789063E-5;
 
         // Get supported p-state bounds
-        uint64_t tmp = m_msr_access->read(0, "IA32_PLATFORM_INFO");
+        uint64_t tmp = m_msr_access->read(0, m_msr_access->offset("IA32_PLATFORM_INFO"));
         m_min_freq_mhz = (tmp >> 40) | 0xFF;
-        tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "TURBO_RATIO_LIMIT");
+        tmp = m_msr_access->read(0, m_msr_access->offset("TURBO_RATIO_LIMIT"));
         // This value is single core turbo
         m_max_freq_mhz = (tmp | 0xFF) * 100.0;
     }
@@ -305,24 +305,24 @@ namespace geopm
         return 0x64F;
     }
 
-    void HSXPlatformImp::create_domain_map(int domain, std::vector<std::set<int> > &domain_map) const
+    void HSXPlatformImp::create_domain_map(int domain, std::vector<std::vector<int> > &domain_map) const
     {
         if (domain == GEOPM_DOMAIN_SIGNAL_PERF ||
             domain == GEOPM_DOMAIN_CONTROL_FREQUENCY) {
             domain_map.reserve(m_num_logical_cpu);
-            std::set<int> cpus;
+            std::vector<int> cpus;
             for (int i = 0; i < m_num_logical_cpu; ++i) {
-                domin_map.push_back(std::set<int>({i}));
+                domain_map.push_back(std::vector<int>({i}));
             }
         }
         else if (domain == GEOPM_DOMAIN_SIGNAL_ENERGY ||
                  domain == GEOPM_DOMAIN_CONTROL_POWER) {
             domain_map.reserve(m_num_package);
-            std::set<int> cpus;
+            std::vector<int> cpus;
             for (int i = 0; i < m_num_package; ++i) {
                 for (int j = i * m_num_hw_cpu; j < (i + 1) * m_num_hw_cpu; ++j) {
                     for (int k = 0; k < m_num_cpu_per_core; ++k) {
-                        cpus.insert(m_num_hw_cpu * k + j);
+                        cpus.push_back(m_num_hw_cpu * k + j);
                     }
                 }
                 domain_map.push_back(cpus);
@@ -331,18 +331,18 @@ namespace geopm
         }
         else {
             throw Exception("HSXPlatformImp::create_domain_maps() unknown domain type:" +
-                            std::to_string(*it),
+                            std::to_string(domain),
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
     }
 
     void HSXPlatformImp::provides(TelemetryConfig &config) const
     {
-        std::set<int> domains = {GEOPM_DOMAIN_CONTROL_POWER, GEOPM_DOMAIN_CONTROL_FREQUENCY,
+        std::vector<int> domains = {GEOPM_DOMAIN_CONTROL_POWER, GEOPM_DOMAIN_CONTROL_FREQUENCY,
                                  GEOPM_DOMAIN_SIGNAL_ENERGY, GEOPM_DOMAIN_SIGNAL_PERF};
-        std::set<std::string> energy_signals = {"dram_energy", "pkg_energy"};
-        std::set<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
-        std::vector<std::set<int> > domain_map;
+        std::vector<std::string> energy_signals = {"dram_energy", "pkg_energy"};
+        std::vector<std::string> counter_signals = {"frequency", "instructions_retired", "clock_unhalted_core", "clock_unhalted_ref", "read_bandwidth"};
+        std::vector<std::vector<int> > domain_map;
         config.supported_domain(domains);
         config.set_provided(GEOPM_DOMAIN_SIGNAL_ENERGY, energy_signals);
         config.set_provided(GEOPM_DOMAIN_SIGNAL_PERF, counter_signals);
@@ -446,7 +446,7 @@ namespace geopm
     void XeonPlatformImp::msr_initialize()
     {
         rapl_init();
-        m_trigger_offset = msr_offset(M_TRIGGER_NAME);
+        m_trigger_offset = m_msr_access->offset(M_TRIGGER_NAME);
         fixed_counters_init();
     }
 
@@ -555,9 +555,12 @@ namespace geopm
         }
 
         //Save off the msr offsets and masks for the controls we want to write to avoid a map lookup
-        m_control_msr_pair[M_RAPL_PKG_LIMIT] = std::make_pair(msr_offset("PKG_POWER_LIMIT"), msr_mask("PKG_POWER_LIMIT") );
-        m_control_msr_pair[M_RAPL_DRAM_LIMIT] = std::make_pair(msr_offset("DRAM_POWER_LIMIT"), msr_mask("DRAM_POWER_LIMIT") );
-        m_control_msr_pair[M_IA32_PERF_CTL] = std::make_pair(msr_offset("IA32_PERF_CTL"), msr_mask("IA32_PERF_CTL") );
+        m_control_msr_pair[M_RAPL_PKG_LIMIT] = std::make_pair(m_msr_access->offset("PKG_POWER_LIMIT"),
+                                                              m_msr_access->write_mask("PKG_POWER_LIMIT"));
+        m_control_msr_pair[M_RAPL_DRAM_LIMIT] = std::make_pair(m_msr_access->offset("DRAM_POWER_LIMIT"), 
+                                                               m_msr_access->write_mask("DRAM_POWER_LIMIT"));
+        m_control_msr_pair[M_IA32_PERF_CTL] = std::make_pair(m_msr_access->offset("IA32_PERF_CTL"),
+                                                             m_msr_access->write_mask("IA32_PERF_CTL"));
     }
 
     void XeonPlatformImp::msr_reset()
@@ -756,9 +759,9 @@ namespace geopm
         return msr_signal_map;
     }
 
-    static const std::map<std::string, std::pair<off_t, unsigned long> > &snb_msr_control_map(void)
+    static const std::map<std::string, std::pair<off_t, uint64_t> > &snb_msr_control_map(void)
     {
-        static const std::map<std::string, std::pair<off_t, unsigned long> > msr_control_map({
+        static const std::map<std::string, std::pair<off_t, uint64_t> > msr_control_map({
             {"IA32_PLATFORM_INFO",      {0x00CE, 0x0000000000000000}},
             {"IA32_PERF_CTL",           {0x0199, 0x000000010000ffff}},
             {"RAPL_POWER_UNIT",         {0x0606, 0x0000000000000000}},
@@ -849,7 +852,7 @@ namespace geopm
         return msr_control_map;
     }
 
-    static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> &snb_msr_signal_map(void)
+    static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> &hsx_msr_signal_map(void)
     {
         static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> msr_signal_map({
             {"IA32_PERF_STATUS",        {0x0198, 0x0000000000000000, 32, 0, 8, 0x0ff, 0.1}},
@@ -906,9 +909,9 @@ namespace geopm
         return msr_signal_map;
     }
 
-    static const std::map<std::string, std::pair<off_t, unsigned long> > &hsx_msr_control_map(void)
+    static const std::map<std::string, std::pair<off_t, uint64_t> > &hsx_msr_control_map(void)
     {
-        static const std::map<std::string, std::pair<off_t, unsigned long> > msr_control_map({
+        static const std::map<std::string, std::pair<off_t, uint64_t> > msr_control_map({
             {"IA32_PLATFORM_INFO",      {0x00CE, 0x0000000000000000}},
             {"IA32_PERF_CTL",           {0x0199, 0x000000010000ffff}},
             {"TURBO_RATIO_LIMIT",       {0x01AD, 0x0000000000000000}},

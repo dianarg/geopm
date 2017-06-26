@@ -41,7 +41,7 @@
 namespace geopm
 {
     static const std::map<std::string, struct IMSRAccess::m_msr_signal_entry> &knl_msr_signal_map(void);
-    static const std::map<std::string, std::pair<off_t, unsigned long> > &knl_msr_control_map(void);
+    static const std::map<std::string, std::pair<off_t, uint64_t> > &knl_msr_control_map(void);
     static const std::map<std::string, std::string> signal_to_msr_map {
         {"pkg_energy", "PKG_ENERGY_STATUS"},
         {"dram_energy", "DRAM_ENERGY_STATUS"},
