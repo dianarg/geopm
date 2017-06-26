@@ -36,15 +36,20 @@
 namespace geopm
 {
 
-    TelemetryConfig::TelemetryConfig()
+    TelemetryConfig::TelemetryConfig(const std::vector<int> &fanout)
+        : m_fan_out(fanout)
     {
 
     }
 
     TelemetryConfig::TelemetryConfig(const TelemetryConfig &other)
-        : m_available_signal(other.m_available_signal)
-        , m_enabled_signal(other.m_enabled_signal)
+        : m_provided_signal(other.m_provided_signal)
+        , m_required_signal(other.m_required_signal)
+        , m_aggregate_signal(other.m_aggregate_signal)
         , m_control_bound(other.m_control_bound)
+        , m_domain_map(other.m_domain_map)
+        , m_supported_domain(other.m_supported_domain)
+        , m_fan_out(other.m_fan_out)
     {
 
     }
@@ -54,82 +59,148 @@ namespace geopm
 
     }
 
-    void TelemetryConfig::available(const std::map<int, std::set<std::string> > &available)
+    void TelemetryConfig::set_provided(int signal_domain, const std::vector<std::string> &provided)
     {
-        m_available_signal = available;
-    }
-
-    void TelemetryConfig::available(int ctr_domain, std::set<std::string> &available) const
-    {
-        auto it = m_available_signal.find(ctr_domain);
-        if (it == m_available_signal.end()) {
-        }
-        available = (*it).second;
-    }
-
-    void TelemetryConfig::enabled(int ctr_domain, std::set<std::string> &enabled) const
-    {
-        auto it = m_enabled_signal.find(ctr_domain);
-        if (it == m_enabled_signal.end()) {
-        }
-        enabled = (*it).second;;
-    }
-
-    void TelemetryConfig::enable(int ctr_domain, std::set<std::string> &enable)
-    {
-        auto entry = m_enabled_signal.find(ctr_domain);
-        if (entry != m_enabled_signal.end()) {
-            (*entry).second.insert(enable.begin(), enable.end());
+        auto entry = m_provided_signal.find(signal_domain);
+        if (entry != m_provided_signal.end()) {
+            entry->second.insert(entry->second.end(), provided.begin(), provided.end());
         }
         else {
-            m_enabled_signal.insert(std::pair<int, std::set<std::string> >(ctr_domain, enable);
+            m_provided_signal.insert(std::pair<int, std::vector<std::string> >(signal_domain, {provided}));
         }
     }
 
-    void TelemetryConfig::enable(int ctr_domain, std::string &enable)
+    void TelemetryConfig::get_provided(int signal_domain, std::vector<std::string> &provided) const
     {
-        auto entry = m_enabled_signal.find(ctr_domain);
-        if (entry != m_enabled_signal.end()) {
-            (*entry).second.insert(enable);
+        auto it = m_provided_signal.find(signal_domain);
+        if (it == m_provided_signal.end()) {
+            provided.clear();
+        }
+        provided = (*it).second;
+    }
+
+    bool TelemetryConfig::is_provided(int signal_domain, const std::string &signal) const
+    {
+        bool rval = false;
+        auto it = m_provided_signal.find(signal_domain);
+        if (it != m_provided_signal.end()) {
+            for (auto sig_it = it->second.begin(); sig_it != it->second.end(); ++sig_it) {
+                if ((*sig_it) == signal) {
+                    rval = true;
+                    break;
+                }
+            }
+        }
+        return rval;
+    }
+
+    void TelemetryConfig::get_required(int signal_domain, std::vector<std::string> &required) const
+    {
+        auto it = m_required_signal.find(signal_domain);
+        if (it == m_required_signal.end()) {
+            required.clear();
+        }
+        required = (*it).second;;
+    }
+
+    void TelemetryConfig::get_required(std::map<int, std::vector<std::string> > &required) const
+    {
+        required = m_required_signal;
+    }
+
+    void TelemetryConfig::set_required(int signal_domain, const std::vector<std::string> &required)
+    {
+        auto entry = m_required_signal.find(signal_domain);
+        if (entry != m_required_signal.end()) {
+            (*entry).second.insert((*entry).second.end(), required.begin(), required.end());
         }
         else {
-            m_enabled_signal.insert(std::pair<int, std::set<std::string> >(ctr_domain, {enable});
+            m_required_signal.insert(std::pair<int, std::vector<std::string> >(signal_domain, required));
         }
     }
 
-    void TelemetryConfig::domain_cpu_map(int domain, std::map<int, std::vector<int> > &domain_map) const
+    void TelemetryConfig::set_required(int signal_domain, const std::string &required)
+    {
+        auto entry = m_required_signal.find(signal_domain);
+        if (entry != m_required_signal.end()) {
+            (*entry).second.push_back(required);
+        }
+        else {
+            m_required_signal.insert(std::pair<int, std::vector<std::string> >(signal_domain, {required}));
+        }
+    }
+
+    bool TelemetryConfig::is_required(int signal_domain, const std::string &signal) const
+    {
+        bool rval = false;
+        auto entry = m_required_signal.find(signal_domain);
+        if (entry != m_required_signal.end()) {
+            for (auto sig_it = entry->second.begin(); sig_it != entry->second.end(); ++sig_it) {
+                if ((*sig_it) == signal) {
+                    rval = true;
+                    break;
+                }
+            }
+        }
+        return rval;
+    }
+
+    void TelemetryConfig::get_domain_cpu_map(int domain, std::vector<std::vector<int> > &domain_map) const
     {
         auto map = m_domain_map.find(domain);
         if (map == m_domain_map.end()) {
-            throw Exception("TelemetryConfig::domain_cpu_map(): unknown domain: " +
+            throw Exception("TelemetryConfig::get_domain_cpu_map(): unknown domain: " +
                             std::to_string(domain),
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         domain_map = (*map).second;
     }
 
-    void TelemetryConfig::domain_cpu_map(const std::map<int, std::vector<int, std::set<int> > > &domain_map)
-    {
-        m_domain_map = domain_map;
-    }
-
-    int TelemetryConfig::num_domain_entry(int domain)
+    void TelemetryConfig::set_domain_cpu_map(int domain, const std::vector<std::vector<int> > &domain_map)
     {
         auto map = m_domain_map.find(domain);
         if (map == m_domain_map.end()) {
-            throw Exception("TelemetryConfig::domain_cpu_map(): unknown domain: " +
-                            std::to_string(domain),
+            m_domain_map.insert(std::pair<int, std::vector<std::vector<int> > >(domain,  domain_map));
+        }
+        else{
+            throw Exception("TelemetryConfig::set_domain_cpu_map(): domain map already exists: ",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        return map.size();
     }
 
-    void TelemetryConfig::bounds(const std::map<int, std::pair<double, double> > &bound)
+    int TelemetryConfig::num_signal_per_domain(int signal_domain) const
     {
-        m_control_bound = bound;
+        auto map = m_domain_map.find(signal_domain);
+        if (map == m_domain_map.end()) {
+            throw Exception("TelemetryConfig::num_signal_per_domain(): unknown domain: " +
+                            std::to_string(signal_domain),
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        return map->second.size();
     }
 
-    void TelemetryConfig::bounds(int control_type, double &lower, double &upper) const
+    void TelemetryConfig::num_signal_per_domain(std::vector<int>  &num_signal) const
+    {
+        num_signal.clear();
+        for (auto req_it = m_required_signal.begin(); req_it != m_required_signal.end(); ++req_it) {
+            num_signal.push_back(num_signal_per_domain(req_it->first));
+        }
+    }
+
+    void TelemetryConfig::set_bounds(int control_domain, double lower, double upper)
+    {
+        auto bounds = m_control_bound.find(control_domain);
+        if (bounds == m_control_bound.end()) {
+            bounds->second.first = lower;
+            bounds->second.second = upper;
+        }
+        else {
+            std::pair<int, int> bound(lower, upper);
+            m_control_bound.insert(std::pair<int, std::pair<int, int> >(control_domain, bound));
+        }
+    }
+
+    void TelemetryConfig::get_bounds(int level, int control_type, double &lower, double &upper) const
     {
         auto bounds = m_control_bound.find(control_type);
         if (bounds == m_control_bound.end()) {
@@ -139,35 +210,22 @@ namespace geopm
         }
         lower = (*bounds).second.first;
         upper = (*bounds).second.second;
-    }
-
-    void TelemetryConfig::supported_counter_domain(const std::set<int> counter_domain)
-    {
-        m_counter_domain = counter_domain;
-    }
-
-    void TelemetryConfig::supported_control_domain(const std::set<int> control_domain)
-    {
-        m_control_domain = control_domain;
-    }
-
-    bool TelemetryConfig::is_counter_domain_supported(int counter_domain) const
-    {
-        bool rval= false;
-        for (auto it = m_counter_domain.begin(); it != m_counter_domain.end(); ++it) {
-            if ((*it) == counter_domain) {
-                rval = true;
-                break;
-            }
+        for (int i = 0; i < level; ++i) {
+            lower *= m_fan_out[i];
+            upper *= m_fan_out[i];
         }
-        return rval;
     }
 
-    bool TelemetryConfig::is_control_domain_supported(int control_domain) const
+    void TelemetryConfig::supported_domain(const std::vector<int> domain)
+    {
+        m_supported_domain = domain;
+    }
+
+    bool TelemetryConfig::is_supported_domain(int domain) const
     {
         bool rval= false;
-        for (auto it = m_control_domain.begin(); it != m_control_domain.end(); ++it) {
-            if ((*it) == control_domain) {
+        for (auto it = m_supported_domain.begin(); it != m_supported_domain.end(); ++it) {
+            if ((*it) == domain) {
                 rval = true;
                 break;
             }

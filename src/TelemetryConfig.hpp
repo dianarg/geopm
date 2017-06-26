@@ -48,20 +48,19 @@ namespace geopm {
 
     class TelemetryConfig {
         public:
-            TelemetryConfig(std::vector<int> fan_out);
+            TelemetryConfig(const std::vector<int> &fan_out);
             TelemetryConfig(const TelemetryConfig &other);
             virtual ~TelemetryConfig();
-            void set_provided(int signal_domain, const std::vector<std::string> &available);
-            void get_provided(int signal_domain, std::vector<std::string> &available) const;
-            bool is_provided(int signal_domain, const std::string &available) const;
-            void set_required(int signal_domain, const std::vector<std::string> &enable);
-            void set_required(int signal_domain, const std::string &enable);
-            void get_required(int signal_domain, std::vector<std::string> &enabled) const;
-            void get_required(std::map<int, std::vector<std::string> > &enabled) const;
-            bool is_required(int signal_domain, const std::string &enabled) const;
+            void set_provided(int signal_domain, const std::vector<std::string> &provided);
+            void get_provided(int signal_domain, std::vector<std::string> &provided) const;
+            bool is_provided(int signal_domain, const std::string &signal) const;
+            void set_required(int signal_domain, const std::vector<std::string> &required);
+            void set_required(int signal_domain, const std::string &required);
+            void get_required(int signal_domain, std::vector<std::string> &required) const;
+            void get_required(std::map<int, std::vector<std::string> > &required) const;
+            bool is_required(int signal_domain, const std::string &signal) const;
             void set_domain_cpu_map(int domain, const std::vector<std::vector<int> > &domain_map);
             void get_domain_cpu_map(int domain, std::vector<std::vector<int> > &domain_map) const;
-            int num_domain_entry(int domain);
             void num_signal_per_domain(std::vector<int> &num_signal) const;
             int num_signal_per_domain(int domain) const;
             void set_bounds(int signal_domain, double lower, double upper);
@@ -73,8 +72,8 @@ namespace geopm {
             void get_aggregate(std::vector<std::pair<std::string, std::pair<int, int> > > &agg) const;
         private:
             int num_children(int level);
-            std::map<int, std::vector<std::string> > m_available_signal;
-            std::map<int, std::vector<std::string> > m_enabled_signal;
+            std::map<int, std::vector<std::string> > m_provided_signal;
+            std::map<int, std::vector<std::string> > m_required_signal;
             std::vector<std::pair<std::string, std::pair<int, int> > > m_aggregate_signal;
             std::map<int, std::pair<double, double> > m_control_bound;
             std::map<int, std::vector<std::vector<int> > > m_domain_map;

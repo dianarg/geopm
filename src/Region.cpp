@@ -149,7 +149,7 @@ namespace geopm
         if (m_time_buffer != NULL) {
             delete m_time_buffer;
         }
-        for (auto it = m_domain_buffer.begin(); it != m_domain_buffer.end(); ++it) {
+        for (auto it = m_domain_buffer.rbegin(); it != m_domain_buffer.rend(); ++it) {
             if ((*it) != NULL) {
                 delete (*it);
             }
@@ -168,7 +168,7 @@ namespace geopm
 
     void Region::insert(const struct geopm_time_s timestamp, std::vector<double> &telemetry, int status)
     {
-        if (telemetry.size()!= m_num_total_signal) {
+        if (telemetry.size() != m_num_total_signal) {
             throw Exception("Region::insert(): telemetry not properly sized", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
 
@@ -188,7 +188,7 @@ namespace geopm
                     (*sample_it) = m_last_runtime;
                 }
                 else {
-                    (*sample_it) = 0;
+                    (*sample_it) = 0.0;
                     //spatial reduction
                     for (int i = agg_desc_it->offset; i < (agg_desc_it->offset + agg_desc_it->range); ++i) {
                         double min = DBL_MAX;
@@ -216,7 +216,7 @@ namespace geopm
                         }
                     }
                     if (agg_desc_it->spatial_op == AGGREGATION_OP_AVG) {
-                        (*sample_it) /= (agg_desc_it->offset + agg_desc_it->range);
+                        (*sample_it) /= agg_desc_it->range;
                     }
                 }
                 (*agg_stat_it) += (*sample_it);
@@ -249,10 +249,10 @@ namespace geopm
         m_time_buffer->clear();
         for (int i = 0; i < m_domain_buffer.size(); ++i) {
             m_domain_buffer[i]->clear();
-        std::fill(m_min[i].begin(), m_min[i].end(), DBL_MAX);
-        std::fill(m_max[i].begin(), m_max[i].end(), -DBL_MAX);
-        std::fill(m_sum[i].begin(), m_sum[i].end(), 0.0);
-        std::fill(m_sum_squares[i].begin(), m_sum_squares[i].end(), 0.0);
+            std::fill(m_min[i].begin(), m_min[i].end(), DBL_MAX);
+            std::fill(m_max[i].begin(), m_max[i].end(), -DBL_MAX);
+            std::fill(m_sum[i].begin(), m_sum[i].end(), 0.0);
+            std::fill(m_sum_squares[i].begin(), m_sum_squares[i].end(), 0.0);
         }
     }
 
@@ -398,6 +398,7 @@ namespace geopm
         if (!m_level) {
             string_stream << "Region " << name << " (" << m_identifier << "):" << std::endl;
             string_stream << "\truntime (sec): " << m_agg_runtime << std::endl;
+            string_stream << "\tmpi-runtime (sec): " << m_mpi_time << std::endl;
             auto signal_it = m_aggregate_signal.begin();
             for (auto it = m_agg_stat.begin(); it != m_agg_stat.end(); ++it) {
                 string_stream << "\t" << signal_it->first << ": " << (*it) << std::endl;
