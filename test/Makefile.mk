@@ -135,6 +135,13 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/SharedMemoryTest.share_data \
               test/gtest_links/EnvironmentTest.construction0 \
               test/gtest_links/EnvironmentTest.construction1 \
+              test/gtest_links/CommAbTest.mpi_comm_rank \
+              test/gtest_links/CommAbTest.mpi_broadcast \
+              test/gtest_links/CommAbTest.mpi_cart_create \
+              test/gtest_links/CommAbTest.mpi_cart_rank \
+              test/gtest_links/CommAbTest.mpi_dims_create \
+              test/gtest_links/CommAbTest.mpi_alloc_mem \
+              test/gtest_links/CommAbTest.mpi_comm_dup \
               # end
 
 if ENABLE_MPI
@@ -189,6 +196,7 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/MockPlatformTopology.hpp \
                           test/SharedMemoryTest.cpp \
                           test/EnvironmentTest.cpp \
+                          test/CommAbTest.cpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \

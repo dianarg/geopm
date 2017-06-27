@@ -257,6 +257,7 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/Tracer.hpp \
                             src/XeonPlatformImp.cpp \
                             src/XeonPlatformImp.hpp \
+                            src/geopm_ctl.h \
                             src/geopm_env.h \
                             src/geopm_error.h \
                             src/geopm_hash.c \
@@ -286,6 +287,10 @@ if ENABLE_MPI
     libgeopm_la_SOURCES = src/CircularBuffer.hpp \
                           src/Controller.cpp \
                           src/Controller.hpp \
+                          src/Comm.hpp \
+                          src/Comm.cpp \
+                          src/MPIComm.hpp \
+                          src/MPIComm.cpp \
                           src/Decider.cpp \
                           src/Decider.hpp \
                           src/DeciderFactory.cpp \
@@ -337,6 +342,7 @@ if ENABLE_MPI
                           src/TreeCommunicator.hpp \
                           src/XeonPlatformImp.cpp \
                           src/XeonPlatformImp.hpp \
+                          src/geopm_comm.h \
                           src/geopm_ctl_spawn.c \
                           src/geopm_error.h \
                           src/geopm_hash.c \

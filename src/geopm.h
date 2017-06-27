@@ -50,15 +50,6 @@ struct geopm_ctl_c;
 /* Opaque structure which is a handle for a geopm::ProfileThread object. */
 struct geopm_tprof_c;
 
-/************************/
-/* OBJECT INSTANTIATION */
-/************************/
-int geopm_ctl_create(struct geopm_policy_c *policy,
-                     MPI_Comm comm,
-                     struct geopm_ctl_c **ctl);
-
-int geopm_ctl_destroy(struct geopm_ctl_c *ctl);
-
 /********************/
 /* POWER MANAGEMENT */
 /********************/
@@ -116,15 +107,6 @@ enum geopm_region_hint_e {
     GEOPM_REGION_HINT_PARALLEL =  1ULL << 38, // Region is threaded
     GEOPM_REGION_HINT_IGNORE =    1ULL << 39, // Do not add region time to epoch
 };
-
-/*****************/
-/* MPI COMM APIS */
-/*****************/
-int geopm_comm_split(MPI_Comm comm, const char *tag, MPI_Comm *split_comm, int *is_ctl_comm);
-
-int geopm_comm_split_ppn1(MPI_Comm comm, const char *tag, MPI_Comm *ppn1_comm);
-
-int geopm_comm_split_shared(MPI_Comm comm, const char *tag, MPI_Comm *split_comm);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,516 @@
+/*
+ * Copyright (c) 2015, 2016, 2017, Intel Corporation
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in
+ *       the documentation and/or other materials provided with the
+ *       distribution.
+ *
+ *     * Neither the name of Intel Corporation nor the names of its
+ *       contributors may be used to endorse or promote products derived
+ *       from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+#include <sys/types.h>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <vector>
+
+typedef int MPI_Op;
+#define MPI_MAX     (MPI_Op)(0x58000001)
+#define MPI_LAND    (MPI_Op)(0x58000005)
+typedef int MPI_Comm;
+typedef int MPI_Datatype;
+#define MPI_COMM_WORLD ((MPI_Comm)0x44000000)
+#define MPI_COMM_NULL      ((MPI_Comm)0x04000000)
+#define MPI_LOCK_EXCLUSIVE  234
+#define MPI_LOCK_SHARED     235
+#define MPI_CHAR           ((MPI_Datatype)0x4c000101)
+#define MPI_BYTE           ((MPI_Datatype)0x4c00010d)
+#define MPI_INT            ((MPI_Datatype)0x4c000405)
+#define MPI_DOUBLE         ((MPI_Datatype)0x4c00080b)
+typedef long MPI_Aint;
+typedef int MPI_Info;
+#define MPI_INFO_NULL         ((MPI_Info)0x1c000000)
+typedef int MPI_Win;
+#define MPI_WIN_NULL ((MPI_Win)0x20000000)
+#define MPI_MAX_ERROR_STRING   512
+
+extern "C"
+{
+    std::vector<void *> g_params;
+    std::vector<size_t> g_sizes;
+
+    void reset()
+    {
+        for(auto it = g_params.begin(); it != g_params.end(); ++it) {
+            if (*it) {
+                free(*it);
+                *it = NULL;
+                //g_params.erase(it);
+            }
+        }
+        g_params.clear();
+        g_sizes.clear();
+    }
+
+    int mock_error_string(int param0, char *param1, int *param2)
+    {
+        *param2 = 0;
+        return 0;
+    }
+
+    #define MPI_Error_string(p0, p1, p2) mock_error_string(p0, p1, p2)
+
+    int mock_comm_dup(MPI_Comm param0, MPI_Comm *param1)
+    {
+        memcpy(g_params[0], &param0, g_sizes[0]);
+        memcpy(g_params[1], param1, g_sizes[1]);
+        return 0;
+    }
+
+    #define MPI_Comm_dup(p0, p1) mock_comm_dup(p0, p1)
+    #define PMPI_Comm_dup(p0, p1) mock_comm_dup(p0, p1)
+
+    int mock_cart_create(MPI_Comm param0, int param1, const int param2[], const int param3[], int param4,
+            MPI_Comm *param5)
+    {
+        if (g_params.size() < 6) return 0;          //cart rank test does not properly set up these params
+        memcpy(g_params[0], &param0, g_sizes[0]);
+        memcpy(g_params[1], &param1, g_sizes[1]);
+        memcpy(g_params[2], param2, g_sizes[2]);
+        memcpy(g_params[3], param3, g_sizes[3]);
+        memcpy(g_params[4], &param4, g_sizes[4]);
+        memcpy(g_params[5], param5, g_sizes[5]);
+        return 0;
+    }
+
+    #define MPI_Cart_create(p0, p1, p2, p3, p4, p5) mock_cart_create(p0, p1, p2, p3, p4, p5)
+    #define PMPI_Cart_create(p0, p1, p2, p3, p4, p5) mock_cart_create(p0, p1, p2, p3, p4, p5)
+
+    int mock_cart_rank(MPI_Comm param0, int param1[], int *param2)
+    {
+        memcpy(g_params[0], &param0, g_sizes[0]);
+        memcpy(g_params[1], param1, g_sizes[1]);
+        //param2 is output, stored on stack beneath API
+        return 0;
+    }
+
+    #define MPI_Cart_rank(p0, p1, p2) mock_cart_rank(p0, p1, p2)
+    #define PMPI_Cart_rank(p0, p1, p2) mock_cart_rank(p0, p1, p2)
+
+    int mock_dims_create(int param0, int param1, int param2[])
+    {
+        memcpy(g_params[0], &param0, g_sizes[0]);
+        memcpy(g_params[1], &param1, g_sizes[1]);
+        memcpy(g_params[2], param2, g_sizes[2]);
+        return 0;
+    }
+
+    #define MPI_Dims_create(p0, p1, p2) mock_dims_create(p0, p1, p2)
+    #define PMPI_Dims_create(p0, p1, p2) mock_dims_create(p0, p1, p2)
+
+    int mock_alloc_mem(MPI_Aint param0, MPI_Info param1, void **param2)
+    {
+        memcpy(g_params[0], &param0, g_sizes[0]);
+        memcpy(g_params[1], &param1, g_sizes[1]);
+        memcpy(g_params[2], param2, g_sizes[2]);
+        return 0;
+    }
+
+    #define MPI_Alloc_mem(p0, p1, p2) mock_alloc_mem(p0, p1, p2)
+    #define PMPI_Alloc_mem(p0, p1, p2) mock_alloc_mem(p0, p1, p2)
+
+    int mock_free_mem(void *param0)
+    {
+        return 0;
+    }
+
+    #define MPI_Free_mem(p0) mock_free_mem(p0)
+    #define PMPI_Free_mem(p0) mock_free_mem(p0)
+
+    int mock_cart_coords(MPI_Comm param0, int param1, int param2, int param3[])
+    {
+        return 0;
+    }
+
+    #define MPI_Cart_coords(p0, p1, p2, p3) mock_cart_coords(p0, p1, p2, p3)
+    #define PMPI_Cart_coords(p0, p1, p2, p3) mock_cart_coords(p0, p1, p2, p3)
+
+    int mock_reduce(void *param0, void *param1, int param2, MPI_Datatype param3, MPI_Op param4, int param5, MPI_Comm param6)
+    {
+        return 0;
+    }
+
+    #define MPI_Reduce(p0, p1, p2, p3, p4, p5, p6) mock_reduce(p0, p1, p2, p3, p4, p5, p6)
+    #define PMPI_Reduce(p0, p1, p2, p3, p4, p5, p6) mock_reduce(p0, p1, p2, p3, p4, p5, p6)
+
+    int mock_allreduce(const void *param0, void *param1, int param2, MPI_Datatype param3, MPI_Op param4, MPI_Comm param6)
+    {
+        return 0;
+    }
+
+    #define MPI_Allreduce(p0, p1, p2, p3, p4, p5) mock_allreduce(p0, p1, p2, p3, p4, p5)
+    #define PMPI_Allreduce(p0, p1, p2, p3, p4, p5) mock_allreduce(p0, p1, p2, p3, p4, p5)
+
+    int mock_gather(const void *param0, int param1, MPI_Datatype param2, void *param3, int param4, MPI_Datatype param5, int param6, MPI_Comm param7)
+    {
+        return 0;
+    }
+
+    #define MPI_Gather(p0, p1, p2, p3, p4, p5, p6, p7) mock_gather(p0, p1, p2, p3, p4, p5, p6, p7)
+    #define PMPI_Gather(p0, p1, p2, p3, p4, p5, p6, p7) mock_gather(p0, p1, p2, p3, p4, p5, p6, p7)
+
+    int mock_gatherv(const void *param0, int param1, MPI_Datatype param2, void *param3, const int *param4, const int *param5, MPI_Datatype param6, int param7, MPI_Comm param8)
+    {
+        return 0;
+    }
+
+    #define MPI_Gatherv(p0, p1, p2, p3, p4, p5, p6, p7, p8) mock_gatherv(p0, p1, p2, p3, p4, p5, p6, p7, p8)
+    #define PMPI_Gatherv(p0, p1, p2, p3, p4, p5, p6, p7, p8) mock_gatherv(p0, p1, p2, p3, p4, p5, p6, p7, p8)
+
+    int mock_win_create(void *param0, MPI_Aint param1, int param2, MPI_Info param3, MPI_Comm param4, MPI_Win *param5)
+    {
+        return 5;
+    }
+
+    #define MPI_Win_create(p0, p1, p2, p3, p4, p5) mock_win_create(p0, p1, p2, p3, p4, p5)
+    #define PMPI_Win_create(p0, p1, p2, p3, p4, p5) mock_win_create(p0, p1, p2, p3, p4, p5)
+
+    int mock_win_free(MPI_Win *param0)
+    {
+        return 0;
+    }
+
+    #define MPI_Win_free(p0) mock_win_free(p0)
+    #define PMPI_Win_free(p0) mock_win_free(p0)
+
+    int mock_win_lock(int param0, int param1, int param2, MPI_Win param3)
+    {
+        return 0;
+    }
+
+    #define MPI_Win_lock(p0, p1, p2, p3) mock_win_lock(p0, p1, p2, p3)
+    #define PMPI_Win_lock(p0, p1, p2, p3) mock_win_lock(p0, p1, p2, p3)
+
+    int mock_win_unlock(int param0, MPI_Win param1)
+    {
+        return 0;
+    }
+
+    #define MPI_Win_unlock(p0, p1) mock_win_unlock(p0, p1)
+    #define PMPI_Win_unlock(p0, p1) mock_win_unlock(p0, p1)
+
+    int mock_put(const void *param0, int param1, MPI_Datatype param2, int param3, MPI_Aint param4,
+            int param5, MPI_Datatype param6, MPI_Win param7)
+    {
+        return 0;
+    }
+
+    #define MPI_Put(p0, p1, p2, p3, p4, p5, p6, p7) mock_put(p0, p1, p2, p3, p4, p5, p6, p7)
+    #define PMPI_Put(p0, p1, p2, p3, p4, p5, p6, p7) mock_put(p0, p1, p2, p3, p4, p5, p6, p7)
+
+    int mock_rank(MPI_Comm param0, int *param1)
+    {
+        memcpy(g_params[0], &param0, g_sizes[0]);
+        memcpy(g_params[1], param1, g_sizes[1]);
+        return 0;
+    }
+
+    #define MPI_Comm_rank(p0, p1) mock_rank(p0, p1)
+    #define PMPI_Comm_rank(p0, p1) mock_rank(p0, p1)
+
+    int mock_free(MPI_Comm *param0)
+    {
+        return 0;
+    }
+
+    #define MPI_Comm_free(p0) mock_free(p0)
+    #define PMPI_Comm_free(p0) mock_free(p0)
+
+    int mock_barrier(MPI_Comm param0)
+    {
+        return 0;
+    }
+
+    #define MPI_Barrier(p0) mock_barrier(p0)
+    #define PMPI_Barrier(p0) mock_barrier(p0)
+
+    int mock_comm_split(MPI_Comm param0, int param1, int param2, MPI_Comm *param3)
+    {
+        return 0;
+    }
+
+    #define MPI_Comm_split(p0, p1, p2, p3) mock_comm_split(p0, p1, p2, p3)
+    #define PMPI_Comm_split(p0, p1, p2, p3) mock_comm_split(p0, p1, p2, p3)
+
+    int mock_comm_size(MPI_Comm param0, int *param1)
+    {
+        return 0;
+    }
+    
+    #define MPI_Comm_size(p0, p1) mock_comm_size(p0, p1)
+    #define PMPI_Comm_size(p0, p1) mock_comm_size(p0, p1)
+
+    int mock_bcast(void *param0, int param1, MPI_Datatype param2, int param3, MPI_Comm param4)
+    {
+        memcpy(g_params[0], param0, g_sizes[0]);
+        memcpy(g_params[1], &param1, g_sizes[1]);
+        memcpy(g_params[2], &param2, g_sizes[2]);
+        memcpy(g_params[3], &param3, g_sizes[3]);
+        memcpy(g_params[4], &param4, g_sizes[4]);
+        return 0;
+    }
+
+
+    #define MPI_Bcast(p0, p1, p2, p3, p4) mock_bcast(p0, p1, p2, p3, p4)
+    #define PMPI_Bcast(p0, p1, p2, p3, p4) mock_bcast(p0, p1, p2, p3, p4)
+}
+
+#include "gtest/gtest.h"
+#define GEOPM_TEST
+#include "MPIComm.cpp"
+
+namespace geopm
+{
+class MPICommTestHelper : public MPIComm
+{
+    public:
+    MPICommTestHelper()
+        : MPIComm()
+    {}
+    MPICommTestHelper(const MPIComm *in_comm)
+        : MPIComm(in_comm)
+    {}
+    MPICommTestHelper(const MPIComm *in_comm, std::vector<int> dimension, std::vector<int> periods, bool is_reorder)
+        : MPIComm(in_comm, dimension, periods, is_reorder)
+    {}
+    MPI_Comm * get_comm_ref() { return &m_comm; }
+};
+
+class CommAbTest: public :: testing :: Test
+{
+    protected:
+        std::vector<void *> m_params;
+        void SetUp();
+        void TearDown();
+        void check_params();
+};
+
+void CommAbTest::SetUp()
+{
+    reset();
+}
+
+void CommAbTest::TearDown()
+{
+    reset();
+}
+
+void CommAbTest::check_params()
+{
+    ASSERT_EQ(g_params.size(), m_params.size()) <<
+        "Parameter checking failed at vector size comparison.";
+    for (int x = 0; x < g_params.size(); x++) {
+        int res = memcmp(g_params[x], m_params[x], g_sizes[x]);
+        if (res) {
+            printf("x is %d", x);
+        }
+        EXPECT_EQ(0, res) <<
+            "Parameter checking failed at parameter " << x << ".";
+    }
+}
+
+TEST_F(CommAbTest, mpi_comm_rank)
+{
+    MPICommTestHelper tmp_comm;//no param constructor uses MPI_COMM_WORLD, others will dup causing failure
+    int test_rank = 0; // interally MPIComm.rank init's tmp var to 0 which is passed to [P]MPI_Comm_rank
+
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(test_rank));
+    g_params.push_back(malloc(g_sizes[1]));
+
+    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    m_params.push_back((void *) &test_rank);
+    
+    tmp_comm.rank();
+
+    check_params();
+}
+
+TEST_F(CommAbTest, mpi_broadcast)
+{
+    size_t val = 0xDEADBEEF;
+    int size = sizeof(val);
+    MPI_Datatype dt = MPI_BYTE;  // used internally in MPIComm.broadcast
+    int root_rank = 0;
+
+    g_sizes.push_back(size);
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(size));
+    g_params.push_back(malloc(g_sizes[1]));
+    g_sizes.push_back(sizeof(dt));
+    g_params.push_back(malloc(g_sizes[2]));
+    g_sizes.push_back(sizeof(root_rank));
+    g_params.push_back(malloc(g_sizes[3]));
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[4]));
+    
+    MPICommTestHelper tmp_comm;
+
+    m_params.push_back((void *) &val);
+    m_params.push_back((void *) &size);
+    m_params.push_back((void *) &dt);
+    m_params.push_back((void *) &root_rank);
+    m_params.push_back((void *) tmp_comm.get_comm_ref());
+
+    tmp_comm.broadcast(&val, size, root_rank);
+
+    check_params();
+}
+
+TEST_F(CommAbTest, mpi_cart_create)
+{
+    MPICommTestHelper old_comm;
+    int dims = 2;
+    std::vector<int> vdims(dims, 16);
+    std::vector<int> vpers(dims, 8);
+    int reorder = 1;
+
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(dims));
+    g_params.push_back(malloc(g_sizes[1]));
+    g_sizes.push_back(sizeof(int) * dims);
+    g_params.push_back(malloc(g_sizes[2]));
+    g_sizes.push_back(sizeof(int) * dims);
+    g_params.push_back(malloc(g_sizes[3]));
+    g_sizes.push_back(sizeof(reorder));
+    g_params.push_back(malloc(g_sizes[4]));
+    g_sizes.push_back(sizeof(MPI_Comm*));
+    g_params.push_back(malloc(g_sizes[1]));
+
+    MPICommTestHelper tmp_comm(&old_comm, vdims, vpers, reorder);
+
+    m_params.push_back((void *) old_comm.get_comm_ref());
+    m_params.push_back((void *) &dims);
+    m_params.push_back((void *) vdims.data());
+    m_params.push_back((void *) vpers.data());
+    m_params.push_back((void *) &reorder);
+    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    check_params();
+}
+
+TEST_F(CommAbTest, mpi_cart_rank)
+{
+    MPIComm old_comm;
+    int dims = 2;
+    std::vector<int> vdims(dims, 16);
+    std::vector<int> vpers(dims, 8);
+    std::vector<int> vcoords(dims, 4);
+    int reorder = 1;
+
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(int) * dims);
+    g_params.push_back(malloc(g_sizes[1]));
+
+    MPICommTestHelper tmp_comm(&old_comm, vdims, vpers, reorder);
+
+    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    m_params.push_back((void *) vcoords.data());
+
+    tmp_comm.cart_rank(vcoords);
+
+    check_params();
+}
+
+TEST_F(CommAbTest, mpi_dims_create)
+{
+    MPIComm comm;
+    int nnodes = 9;
+    int dims = 2;
+    std::vector<int> vdims(dims, 16);
+
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[1]));
+    g_sizes.push_back(sizeof(int) * dims);
+    g_params.push_back(malloc(g_sizes[2]));
+
+    m_params.push_back(&nnodes);
+    m_params.push_back(&dims);
+    m_params.push_back(vdims.data());
+
+    comm.dimension_create(nnodes, vdims);
+
+    check_params();
+}
+
+TEST_F(CommAbTest, mpi_alloc_mem)
+{
+    MPIComm comm;
+    MPI_Aint size = 16;
+    MPI_Info info = MPI_INFO_NULL;
+    void *base = NULL;
+
+    g_sizes.push_back(sizeof(MPI_Aint));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(MPI_Info));
+    g_params.push_back(malloc(g_sizes[1]));
+    g_sizes.push_back(sizeof(void *));
+    g_params.push_back(malloc(g_sizes[2]));
+
+    m_params.push_back(&size);
+    m_params.push_back(&info);
+    m_params.push_back(&base);
+
+    comm.alloc_mem((size_t) size, &base);
+
+    check_params();
+}
+
+TEST_F(CommAbTest, mpi_comm_dup)
+{
+    MPIComm old_comm;
+    MPI_Comm test_comm = MPI_COMM_WORLD;
+
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(MPI_Comm*));
+    g_params.push_back(malloc(g_sizes[1]));
+
+    MPICommTestHelper tmp_comm(&old_comm);
+
+    m_params.push_back(&test_comm);
+    m_params.push_back(tmp_comm.get_comm_ref());
+    check_params();
+}
+}
+

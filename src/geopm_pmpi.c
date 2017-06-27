@@ -40,6 +40,8 @@
 #include "geopm_error.h"
 #include "geopm_message.h"
 #include "geopm_env.h"
+#include "geopm_comm.h"
+#include "geopm_ctl.h"
 #include "geopm_pmpi.h"
 #include "config.h"
 
@@ -58,33 +60,16 @@ void geopm_pmpi_prof_enable(int do_profile)
     g_is_geopm_pmpi_prof_enabled = do_profile;
 }
 
-#ifndef GEOPM_PORTABLE_MPI_COMM_COMPARE_ENABLE
-/*
- * Since MPI_COMM_WORLD should not be accessed or modified in this use
- * case, a simple == comparison will do and will be much more
- * performant than MPI_Comm_compare().
- */
 static inline MPI_Comm geopm_swap_comm_world(MPI_Comm comm)
 {
-    return comm != MPI_COMM_WORLD ?
-           comm : g_geopm_comm_world_swap;
-}
-#else
-/*
- * The code below is more portable, but slower.  Define
- * GEOPM_ENABLE_PORTABLE_MPI_COMM_COMPARE if there are issues with the
- * direct comparison code above.
- */
-static MPI_Comm geopm_swap_comm_world(MPI_Comm comm)
-{
-    int is_comm_world = 0;
-    (void)PMPI_Comm_compare(MPI_COMM_WORLD, comm, &is_comm_world);
-    if (is_comm_world != MPI_UNEQUAL) {
-        comm = g_geopm_comm_world_swap;
+    static int comm_world_size = -1;
+    if (comm_world_size == -1) {
+        PMPI_Comm_size(MPI_COMM_WORLD, &comm_world_size);
     }
-    return comm;
+    int this_size;
+    PMPI_Comm_size(comm, &this_size);
+    return this_size == comm_world_size ? g_geopm_comm_world_swap : comm;
 }
-#endif
 
 MPI_Fint geopm_swap_comm_world_f(MPI_Fint comm)
 {
