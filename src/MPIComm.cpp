@@ -236,14 +236,6 @@ namespace geopm
         }
     }
 
-    MPIComm::MPIComm(const MPIComm *in_comm, std::vector<bool> is_remain)
-        : m_comm(MPI_COMM_NULL)
-        , m_maxdims(1)
-        , m_description(in_comm->m_description)
-    {
-        // TODO:  not needed?
-    }
-
     MPIComm::MPIComm(const MPIComm *in_comm, int color, int key)
         : m_comm(MPI_COMM_NULL)
         , m_maxdims(1)
@@ -261,7 +253,7 @@ namespace geopm
     {
         // TODO possibly remove.
         int err = 0;
-        if (in_comm->is_valid()) {
+        if (!in_comm->is_valid()) {
             throw Exception("in_comm is invalid", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         switch (split_type) {
@@ -336,7 +328,7 @@ namespace geopm
     {
         return description == m_description;
     }
-    
+
     int MPIComm::cart_rank(std::vector<int> coords) const
     {
         int rank;
@@ -382,10 +374,7 @@ namespace geopm
 
     bool MPIComm::is_valid() const
     {
-        bool valid = (m_comm != MPI_COMM_NULL);
-        if (!valid) {
-        }
-        return valid;
+        return m_comm != MPI_COMM_NULL;
     }
 
     void MPIComm::alloc_mem(size_t size, void **base)
@@ -462,7 +451,7 @@ namespace geopm
         return is_all_true;
     }
 
-    void MPIComm::gather(const void *send_buf, size_t send_size, void *recv_buf, 
+    void MPIComm::gather(const void *send_buf, size_t send_size, void *recv_buf,
             size_t recv_size, int root) const
     {
         if (is_valid()) {

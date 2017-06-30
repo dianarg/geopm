@@ -50,7 +50,6 @@ namespace geopm
             MPIComm(MPI_Comm comm);
             MPIComm(const MPIComm *in_comm);
             MPIComm(const MPIComm *in_comm, std::vector<int> dimension, std::vector<int> periods, bool is_reorder);
-            MPIComm(const MPIComm *in_comm, std::vector<bool> is_remain);
             MPIComm(const MPIComm *in_comm, int color, int key);
             MPIComm(const MPIComm *in_comm, std::string tag,  bool &is_ctl);
             MPIComm(const MPIComm *in_comm, std::string tag);
@@ -84,7 +83,7 @@ namespace geopm
         protected:
             MPI_Comm m_comm;
             void check_window(size_t window_id) const;
-            bool is_valid() const; 
+            bool is_valid() const;
             int m_maxdims;
             std::set<size_t> m_windows;
             const std::string m_description;
