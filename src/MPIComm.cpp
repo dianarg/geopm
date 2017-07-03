@@ -34,6 +34,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <iostream>
+
 #include "Comm.hpp"
 #include "MPIComm.hpp"
 #include "Exception.hpp"
@@ -390,12 +392,14 @@ namespace geopm
     size_t MPIComm::create_window(size_t size, void *base)
     {
         CommWindow *win_handle = new CommWindow(m_comm, base, size);
+std::cerr << "MPIComm::create_window(): win_hanle = 0x" << win_handle << "(size_t): " << (size_t)win_handle << std::endl;
         m_windows.insert((size_t) win_handle);
         return (size_t ) win_handle;
     }
 
     void MPIComm::destroy_window(size_t win_handle)
     {
+std::cerr << "MPIComm::destroy_window(): win_hanle = 0x" << (void *)win_handle << "(size_t): " << win_handle << std::endl;
         check_window(win_handle);
         m_windows.erase(win_handle);
         delete (CommWindow *) win_handle;
@@ -403,12 +407,14 @@ namespace geopm
 
     void MPIComm::lock_window(size_t window_id, bool isExclusive, int rank, int assert) const
     {
+std::cerr << "MPIComm::lock_window(): win_hanle = 0x" << (void *)window_id << "(size_t): " << window_id << std::endl;
         check_window(window_id);
         ((CommWindow *) window_id)->lock(isExclusive, rank, assert);
     }
 
     void MPIComm::unlock_window(size_t window_id, int rank) const
     {
+std::cerr << "MPIComm::unlock_window(): win_hanle = 0x" << (void *)window_id << "(size_t): " << window_id << std::endl;
         check_window(window_id);
         ((CommWindow *) window_id)->unlock(rank);
     }
