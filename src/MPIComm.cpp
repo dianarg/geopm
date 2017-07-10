@@ -484,7 +484,7 @@ std::cerr << "MPIComm::unlock_window(): win_hanle = 0x" << (void *)window_id << 
             *out_off_it = *in_off_it;
         }
         if (is_valid()) {
-            check_mpi(PMPI_Gatherv(send_buf, send_size, MPI_CHAR, recv_buf, sizes.data(),
+            check_mpi(PMPI_Gatherv(send_buf, send_size, MPI_BYTE, recv_buf, sizes.data(),
                                    offset.data(), MPI_BYTE, root, m_comm));
         }
     }
