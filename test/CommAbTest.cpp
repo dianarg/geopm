@@ -449,8 +449,8 @@ TEST_F(CommAbTest, mpi_comm_rank)
     g_sizes.push_back(sizeof(test_rank));
     g_params.push_back(malloc(g_sizes[1]));
 
-    m_params.push_back((void *) tmp_comm.get_comm_ref());
-    m_params.push_back((void *) &test_rank);
+    m_params.push_back(tmp_comm.get_comm_ref());
+    m_params.push_back(&test_rank);
     
     tmp_comm.rank();
 
@@ -491,7 +491,7 @@ TEST_F(CommAbTest, mpi_reduce)
     m_params.push_back(&dt);
     m_params.push_back(&op);
     m_params.push_back(&root);
-    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    m_params.push_back(tmp_comm.get_comm_ref());
     
     tmp_comm.reduce_sum((double *) send, (double *) recv, count, root);
 
@@ -534,7 +534,7 @@ TEST_F(CommAbTest, mpi_gather)
     m_params.push_back(&count);
     m_params.push_back(&dt);
     m_params.push_back(&root);
-    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    m_params.push_back(tmp_comm.get_comm_ref());
     
     tmp_comm.gather(send, count, recv, count, root);
 
@@ -579,7 +579,7 @@ TEST_F(CommAbTest, mpi_gatherv)
     m_params.push_back(&count);
     m_params.push_back(&dt);
     m_params.push_back(&root);
-    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    m_params.push_back(tmp_comm.get_comm_ref());
     
     tmp_comm.gatherv(send, count, recv, rsizes, offsets, root);
 
@@ -607,11 +607,11 @@ TEST_F(CommAbTest, mpi_broadcast)
     
     MPICommTestHelper tmp_comm;
 
-    m_params.push_back((void *) &val);
-    m_params.push_back((void *) &size);
-    m_params.push_back((void *) &dt);
-    m_params.push_back((void *) &root_rank);
-    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    m_params.push_back(&val);
+    m_params.push_back(&size);
+    m_params.push_back(&dt);
+    m_params.push_back(&root_rank);
+    m_params.push_back(tmp_comm.get_comm_ref());
 
     tmp_comm.broadcast(&val, size, root_rank);
 
@@ -641,13 +641,13 @@ TEST_F(CommAbTest, mpi_cart_create)
 
     MPICommTestHelper tmp_comm(&old_comm, vdims, vpers, reorder);
 
-    m_params.push_back((void *) old_comm.get_comm_ref());
-    m_params.push_back((void *) &dims);
-    m_params.push_back((void *) vdims.data());
-    m_params.push_back((void *) vpers.data());
-    m_params.push_back((void *) &reorder);
+    m_params.push_back(old_comm.get_comm_ref());
+    m_params.push_back(&dims);
+    m_params.push_back(vdims.data());
+    m_params.push_back(vpers.data());
+    m_params.push_back(&reorder);
     size_t tmp = (size_t) tmp_comm.get_comm_ref();
-    m_params.push_back((void *) &tmp);
+    m_params.push_back(&tmp);
     check_params();
 }
 
@@ -667,8 +667,8 @@ TEST_F(CommAbTest, mpi_cart_rank)
 
     MPICommTestHelper tmp_comm(&old_comm, vdims, vpers, reorder);
 
-    m_params.push_back((void *) tmp_comm.get_comm_ref());
-    m_params.push_back((void *) vcoords.data());
+    m_params.push_back(tmp_comm.get_comm_ref());
+    m_params.push_back(vcoords.data());
 
     tmp_comm.cart_rank(vcoords);
 
@@ -696,11 +696,11 @@ TEST_F(CommAbTest, mpi_cart_coord)
     g_sizes.push_back(sizeof(size_t));
     g_params.push_back(malloc(g_sizes[3]));
 
-    m_params.push_back((void *) tmp_comm.get_comm_ref());
-    m_params.push_back((void *) &rank);
-    m_params.push_back((void *) &dims);
+    m_params.push_back(tmp_comm.get_comm_ref());
+    m_params.push_back(&rank);
+    m_params.push_back(&dims);
     size_t tmp = (size_t) vcoords.data();
-    m_params.push_back((void *) &tmp);
+    m_params.push_back(&tmp);
 
     tmp_comm.coordinate(rank, vcoords);
 
@@ -870,7 +870,7 @@ TEST_F(CommAbTest, mpi_win_ops)
     m_params.push_back(&input_size);
     m_params.push_back(&disp);
     m_params.push_back(&info);
-    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    m_params.push_back(tmp_comm.get_comm_ref());
     size_t tmp2 = (size_t) tmp_comm.get_win_ref(win_handle);
     m_params.push_back(&tmp2);
     
@@ -878,34 +878,34 @@ TEST_F(CommAbTest, mpi_win_ops)
     reset();
     m_params.clear();
 
-    // lock !exclusive !assert
-    int exclusive = (int) false;
     int rank = 0;
-    int assert = 0;
+    int ex;
+    for (int exclusive = 0; exclusive < 2; exclusive++) {
+        for (int assert = 0; assert < 2; assert++) {
+            g_sizes.push_back(sizeof(int));
+            g_params.push_back(malloc(g_sizes[0]));
+            g_sizes.push_back(sizeof(int));
+            g_params.push_back(malloc(g_sizes[1]));
+            g_sizes.push_back(sizeof(int));
+            g_params.push_back(malloc(g_sizes[2]));
+            g_sizes.push_back(sizeof(MPI_Win));
+            g_params.push_back(malloc(g_sizes[3]));
 
-    g_sizes.push_back(sizeof(int));
-    g_params.push_back(malloc(g_sizes[0]));
-    g_sizes.push_back(sizeof(int));
-    g_params.push_back(malloc(g_sizes[1]));
-    g_sizes.push_back(sizeof(int));
-    g_params.push_back(malloc(g_sizes[2]));
-    g_sizes.push_back(sizeof(MPI_Win));
-    g_params.push_back(malloc(g_sizes[3]));
+            tmp_comm.lock_window(win_handle, exclusive, rank, assert);
 
-    tmp_comm.lock_window(win_handle, exclusive, rank, assert);
+            ex = exclusive ? MPI_LOCK_EXCLUSIVE : MPI_LOCK_SHARED;
+            m_params.push_back(&ex);
+            m_params.push_back(&rank);
+            m_params.push_back(&assert);
+            m_params.push_back((void *) tmp2);
 
-    exclusive = MPI_LOCK_SHARED;
-    m_params.push_back(&exclusive);
-    m_params.push_back(&rank);
-    m_params.push_back(&assert);
-    m_params.push_back((void *) tmp2);
-
-    check_params();
-    reset();
-    m_params.clear();
+            check_params();
+            reset();
+            m_params.clear();
+        }
+    }
 
     // put
-
     MPI_Datatype dt = MPI_BYTE;  // used beneath API
     g_sizes.push_back(sizeof(size_t));
     g_params.push_back(malloc(g_sizes[0]));
