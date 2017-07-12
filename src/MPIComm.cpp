@@ -42,6 +42,7 @@
 #include "SharedMemory.hpp"
 #include "geopm_env.h"
 #include "geopm_comm.h"
+#include "config.h"
 
 extern "C"
 {
@@ -463,7 +464,7 @@ std::cerr << "MPIComm::unlock_window(): win_hanle = 0x" << (void *)window_id << 
             size_t recv_size, int root) const
     {
         if (is_valid()) {
-            check_mpi(PMPI_Gather(send_buf, send_size, MPI_INT, recv_buf, recv_size, MPI_INT, root, m_comm));
+            check_mpi(PMPI_Gather(GEOPM_MPI_CONST_CAST(void *)(send_buf), send_size, MPI_INT, recv_buf, recv_size, MPI_INT, root, m_comm));
         }
     }
 
@@ -486,7 +487,7 @@ std::cerr << "MPIComm::unlock_window(): win_hanle = 0x" << (void *)window_id << 
             *out_off_it = *in_off_it;
         }
         if (is_valid()) {
-            check_mpi(PMPI_Gatherv(send_buf, send_size, MPI_BYTE, recv_buf, sizes.data(),
+            check_mpi(PMPI_Gatherv(GEOPM_MPI_CONST_CAST(void *)(send_buf), send_size, MPI_BYTE, recv_buf, sizes.data(),
                                    offset.data(), MPI_BYTE, root, m_comm));
         }
     }
@@ -519,13 +520,7 @@ std::cerr << "MPIComm::unlock_window(): win_hanle = 0x" << (void *)window_id << 
 
     void CommWindow::put(const void *send_buf, size_t send_size, int rank, int disp)
     {
-        // ifdef switch not needed here any more...?
-#ifdef GEOPM_ENABLE_MPI3
-        check_mpi(PMPI_Put(send_buf, send_size, MPI_BYTE, rank, disp,
+        check_mpi(PMPI_Put(GEOPM_MPI_CONST_CAST(void *)(send_buf), send_size, MPI_BYTE, rank, disp,
                     send_size, MPI_BYTE, m_window));
-#else
-        check_mpi(PMPI_Put(send_buf, send_size, MPI_BYTE, rank, disp,
-                    send_size, MPI_BYTE, m_window));
-#endif
     }
 }

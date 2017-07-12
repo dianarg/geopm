@@ -427,10 +427,10 @@ void CommAbTest::check_params()
 {
     ASSERT_EQ(g_params.size(), m_params.size()) <<
         "Parameter checking failed at vector size comparison.";
-    for (int x = 0; x < g_params.size(); x++) {
+    for (size_t x = 0; x < g_params.size(); x++) {
         int res = memcmp(g_params[x], m_params[x], g_sizes[x]);
         if (res) {
-            printf("x is %d", x);
+            printf("x is %lu", x);
         }
         EXPECT_EQ(0, res) <<
             "Parameter checking failed at parameter " << x << ".";
