@@ -201,6 +201,7 @@ namespace geopm
             /// @return If there are 2 valid samples then return he derivative of the
             /// signal values, else return NAN.
             virtual double derivative(int domain_idx, int signal_type) = 0;
+            virtual double derivative(int domain_idx, int signal_type, double &epsilon) = 0;
             /// @brief Integrate a signal over time.
             ///
             /// Computes the integral of the signal over the interval
@@ -252,6 +253,7 @@ namespace geopm
             double min(int domain_idx, int signal_type) const;
             double max(int domain_idx, int signal_type) const;
             double derivative(int domain_idx, int signal_type);
+            double derivative(int domain_idx, int signal_type, double &epsilon);
             double integral(int domain_idx, int signal_type, double &delta_time, double &integral) const;
             void report(std::ostringstream &string_stream, const std::string &name, int rank_per_node) const;
             void thread_progress(std::vector<double> &progress);

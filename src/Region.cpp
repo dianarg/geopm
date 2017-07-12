@@ -254,7 +254,14 @@ namespace geopm
         return m_max[domain_idx * m_num_signal + signal_type];
     }
 
+
     double Region::derivative(int domain_idx, int signal_type)
+    {
+        double epsilon = 0.0;
+        return derivative(domain_idx, signal_type, epsilon);
+    }
+
+    double Region::derivative(int domain_idx, int signal_type, double &epsilon)
     {
         check_bounds(domain_idx, signal_type, __FILE__, __LINE__);
         if (m_level) {
@@ -265,10 +272,11 @@ namespace geopm
         // derivative with noisy data.
         size_t sig_off = domain_idx * m_num_signal + signal_type;
         double result = m_derivative_last[sig_off];
+        epsilon = NAN;
         if (m_derivative_num_fit >= 2) {
             size_t buf_size = m_time_buffer->size();
-            double A = 0.0, B = 0.0, C = 0.0, D = 0.0;
-            double E = 1.0 / m_derivative_num_fit;
+            double A = 0.0, B = 0.0, C = 0.0, D = 0.0, E = 0.0;
+            double F = 1.0 / m_derivative_num_fit;
             const struct geopm_time_s &time_0 = m_time_buffer->value(buf_size - m_derivative_num_fit);
             const double sig_0 = m_domain_buffer->value(buf_size - m_derivative_num_fit)[sig_off];
             for (size_t buf_off = buf_size - m_derivative_num_fit;
@@ -280,11 +288,15 @@ namespace geopm
                 B += time;
                 C += sig;
                 D += time * time;
+                E += sig * sig;
             }
-            double ssxx = D - B * B * E;
-            double ssxy = A - B * C * E;
+            double ssxx = D - B * B * F;
+            double ssxy = A - B * C * F;
             result = ssxy / ssxx;
             m_derivative_last[sig_off] = result;
+            double ssyy = E - C * C * F;
+            double ss = (ssyy - ssxy * ssxy / ssxx) / (m_derivative_num_fit - 2);
+            epsilon = ss / ssxx;
         }
         return result ? result : NAN;
     }
