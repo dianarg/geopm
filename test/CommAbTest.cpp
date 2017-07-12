@@ -249,7 +249,16 @@ extern "C"
 
     int mock_win_create(void *param0, MPI_Aint param1, int param2, MPI_Info param3, MPI_Comm param4, MPI_Win *param5)
     {
-        return 5;
+        size_t tmp;
+        tmp = (size_t) param0;
+        memcpy(g_params[0], &tmp, g_sizes[0]);
+        memcpy(g_params[1], &param1, g_sizes[1]);
+        memcpy(g_params[2], &param2, g_sizes[2]);
+        memcpy(g_params[3], &param3, g_sizes[3]);
+        memcpy(g_params[4], &param4, g_sizes[4]);
+        tmp = (size_t) param5;
+        memcpy(g_params[5], &tmp, g_sizes[5]);
+        return 0;
     }
 
     #define MPI_Win_create(p0, p1, p2, p3, p4, p5) mock_win_create(p0, p1, p2, p3, p4, p5)
@@ -257,6 +266,8 @@ extern "C"
 
     int mock_win_free(MPI_Win *param0)
     {
+        size_t tmp = (size_t) param0;
+        memcpy(g_params[0], &tmp, g_sizes[0]);
         return 0;
     }
 
@@ -265,6 +276,10 @@ extern "C"
 
     int mock_win_lock(int param0, int param1, int param2, MPI_Win param3)
     {
+        memcpy(g_params[0], &param0, g_sizes[0]);
+        memcpy(g_params[1], &param1, g_sizes[1]);
+        memcpy(g_params[2], &param2, g_sizes[2]);
+        memcpy(g_params[3], &param3, g_sizes[3]);
         return 0;
     }
 
@@ -273,6 +288,8 @@ extern "C"
 
     int mock_win_unlock(int param0, MPI_Win param1)
     {
+        memcpy(g_params[0], &param0, g_sizes[0]);
+        memcpy(g_params[1], &param1, g_sizes[1]);
         return 0;
     }
 
@@ -282,6 +299,15 @@ extern "C"
     int mock_put(const void *param0, int param1, MPI_Datatype param2, int param3, MPI_Aint param4,
             int param5, MPI_Datatype param6, MPI_Win param7)
     {
+        size_t tmp = (size_t) param0;
+        memcpy(g_params[0], &tmp, g_sizes[0]);
+        memcpy(g_params[1], &param1, g_sizes[1]);
+        memcpy(g_params[2], &param2, g_sizes[2]);
+        memcpy(g_params[3], &param3, g_sizes[3]);
+        memcpy(g_params[4], &param4, g_sizes[4]);
+        memcpy(g_params[5], &param5, g_sizes[5]);
+        memcpy(g_params[6], &param6, g_sizes[6]);
+        memcpy(g_params[7], &param7, g_sizes[7]);
         return 0;
     }
 
@@ -375,6 +401,7 @@ class MPICommTestHelper : public MPIComm
         : MPIComm(in_comm, dimension, periods, is_reorder)
     { m_comm = MPI_COMM_WORLD; } // so is_valid() calls work as expected
     MPI_Comm * get_comm_ref() { return &m_comm; }
+    MPI_Win * get_win_ref(size_t win_handle) { return &((CommWindow *) win_handle)->m_window; }
 };
 
 class CommAbTest: public :: testing :: Test
@@ -411,6 +438,7 @@ void CommAbTest::check_params()
 }
 
 // TODO remove void * in m_params.push_back calls... not needed...
+// TODO do not reused size_t tmp in test fixtures, explicitly enumerate (tmp1, 2, etc.), why isn't gather failing?
 TEST_F(CommAbTest, mpi_comm_rank)
 {
     MPICommTestHelper tmp_comm;//no param constructor uses MPI_COMM_WORLD, others will dup causing failure
@@ -514,6 +542,7 @@ TEST_F(CommAbTest, mpi_gather)
 }
 
 /*
+// TODO
 TEST_F(CommAbTest, mpi_gatherv)
 {
     MPICommTestHelper tmp_comm;
@@ -811,5 +840,128 @@ TEST_F(CommAbTest, mpi_comm_split)
 
     check_params();
 }
+
+TEST_F(CommAbTest, mpi_win_ops)
+{
+    MPICommTestHelper tmp_comm;
+
+    // win create
+    g_sizes.push_back(sizeof(size_t));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(MPI_Aint));
+    g_params.push_back(malloc(g_sizes[1]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[2]));
+    g_sizes.push_back(sizeof(MPI_Info));
+    g_params.push_back(malloc(g_sizes[3]));
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[4]));
+    g_sizes.push_back(sizeof(size_t));
+    g_params.push_back(malloc(g_sizes[5]));
+
+    int input  = 0;
+    size_t tmp = (size_t) &input;
+    size_t input_size = sizeof(input);
+    MPI_Info info = MPI_INFO_NULL; // used beneath API
+    MPI_Aint disp = 1; // used beneath API
+    size_t win_handle = tmp_comm.create_window(input_size, &input);
+
+    m_params.push_back(&tmp);
+    m_params.push_back(&input_size);
+    m_params.push_back(&disp);
+    m_params.push_back(&info);
+    m_params.push_back((void *) tmp_comm.get_comm_ref());
+    size_t tmp2 = (size_t) tmp_comm.get_win_ref(win_handle);
+    m_params.push_back(&tmp2);
+    
+    check_params();
+    reset();
+    m_params.clear();
+
+    // lock !exclusive !assert
+    int exclusive = (int) false;
+    int rank = 0;
+    int assert = 0;
+
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[1]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[2]));
+    g_sizes.push_back(sizeof(MPI_Win));
+    g_params.push_back(malloc(g_sizes[3]));
+
+    tmp_comm.lock_window(win_handle, exclusive, rank, assert);
+
+    exclusive = MPI_LOCK_SHARED;
+    m_params.push_back(&exclusive);
+    m_params.push_back(&rank);
+    m_params.push_back(&assert);
+    m_params.push_back((void *) tmp2);
+
+    check_params();
+    reset();
+    m_params.clear();
+
+    // put
+
+    MPI_Datatype dt = MPI_BYTE;  // used beneath API
+    g_sizes.push_back(sizeof(size_t));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[1]));
+    g_sizes.push_back(sizeof(dt));
+    g_params.push_back(malloc(g_sizes[2]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[3]));
+    g_sizes.push_back(sizeof(MPI_Aint));
+    g_params.push_back(malloc(g_sizes[4]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[5]));
+    g_sizes.push_back(sizeof(dt));
+    g_params.push_back(malloc(g_sizes[6]));
+    g_sizes.push_back(sizeof(MPI_Win));
+    g_params.push_back(malloc(g_sizes[7]));
+
+    tmp_comm.window_put(&input, input_size, rank, disp, win_handle);
+
+    m_params.push_back(&tmp);
+    m_params.push_back(&input_size);
+    m_params.push_back(&dt);
+    m_params.push_back(&rank);
+    m_params.push_back(&disp);
+    m_params.push_back(&input_size);
+    m_params.push_back(&dt);
+    m_params.push_back(tmp_comm.get_win_ref(win_handle));
+
+    check_params();
+    reset();
+    m_params.clear();
+
+    // unlock
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(MPI_Win));
+    g_params.push_back(malloc(g_sizes[3]));
+
+    m_params.push_back(&rank);
+    m_params.push_back((void *) tmp2);
+
+    tmp_comm.unlock_window(win_handle, rank);
+
+    check_params();
+    reset();
+    m_params.clear();
+
+    // win destroy
+    g_sizes.push_back(sizeof(size_t));
+    g_params.push_back(malloc(g_sizes[0]));
+
+    m_params.push_back(&tmp2);
+
+    tmp_comm.destroy_window(win_handle);
+
+    check_params(); }
 }
 

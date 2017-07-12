@@ -181,7 +181,9 @@ namespace geopm
             void lock(bool isExclusive, int rank, int assert);
             void unlock(int rank);
             void put(const void *send_buf, size_t send_size, int rank, int disp);
+#ifndef GEOPM_TEST
         protected:
+#endif
             MPI_Win m_window;
     };
     ///////////////////////////////

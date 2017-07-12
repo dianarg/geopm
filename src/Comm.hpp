@@ -70,6 +70,7 @@ namespace geopm
 
             // Introspection
             /// @brief Process rank within communicator
+            // TODO const std::vector<int> &coords
             virtual int cart_rank(std::vector<int> coords) const = 0;
             virtual int rank(void) const = 0;
             /// @brief Number of ranks in the communicator
