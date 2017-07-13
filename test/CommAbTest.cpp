@@ -439,11 +439,12 @@ void CommAbTest::check_params()
 
 // TODO remove void * in m_params.push_back calls... not needed...
 // TODO do not reused size_t tmp in test fixtures, explicitly enumerate (tmp1, 2, etc.), why isn't gather failing?
-TEST_F(CommAbTest, mpi_comm_rank)
+TEST_F(CommAbTest, mpi_comm_ops)
 {
     MPICommTestHelper tmp_comm;//no param constructor uses MPI_COMM_WORLD, others will dup causing failure
     int test_rank = 0; // interally MPIComm.rank init's tmp var to 0 which is passed to [P]MPI_Comm_rank
 
+    // comm rank
     g_sizes.push_back(sizeof(MPI_Comm));
     g_params.push_back(malloc(g_sizes[0]));
     g_sizes.push_back(sizeof(test_rank));
@@ -453,6 +454,58 @@ TEST_F(CommAbTest, mpi_comm_rank)
     m_params.push_back(&test_rank);
     
     tmp_comm.rank();
+
+    check_params();
+    reset();
+    m_params.clear();
+
+    // comm dup
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(MPI_Comm*));
+    g_params.push_back(malloc(g_sizes[1]));
+
+    MPICommTestHelper *dup_comm = new MPICommTestHelper(&tmp_comm);
+
+    m_params.push_back(tmp_comm.get_comm_ref());
+    m_params.push_back(dup_comm->get_comm_ref());
+
+    check_params();
+    reset();
+    m_params.clear();
+
+    // comm free
+    g_sizes.push_back(sizeof(MPI_Comm *));
+    g_params.push_back(malloc(g_sizes[0]));
+
+    size_t tmp = (size_t) dup_comm->get_comm_ref();
+    m_params.push_back(&tmp);
+
+    delete dup_comm;
+
+    check_params();
+    reset();
+    m_params.clear();
+
+    // comm split
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[1]));
+    g_sizes.push_back(sizeof(int));
+    g_params.push_back(malloc(g_sizes[2]));
+    g_sizes.push_back(sizeof(size_t));
+    g_params.push_back(malloc(g_sizes[3]));
+
+
+    int color = 128;
+    int key = 256;
+    MPICommTestHelper split_comm(&tmp_comm, color, key);
+    m_params.push_back(tmp_comm.get_comm_ref());
+    m_params.push_back(&color);
+    m_params.push_back(&key);
+    tmp = (size_t) split_comm.get_comm_ref();
+    m_params.push_back(&tmp);
 
     check_params();
 }
@@ -542,7 +595,6 @@ TEST_F(CommAbTest, mpi_gather)
 }
 
 /*
-// TODO
 TEST_F(CommAbTest, mpi_gatherv)
 {
     MPICommTestHelper tmp_comm;
@@ -560,15 +612,17 @@ TEST_F(CommAbTest, mpi_gatherv)
     g_sizes.push_back(sizeof(MPI_Datatype));
     g_params.push_back(malloc(g_sizes[2]));
     g_sizes.push_back(sizeof(size_t));
-    g_params.push_back(malloc(g_sizes[3]));
-    g_sizes.push_back(sizeof(int));
-    g_params.push_back(malloc(g_sizes[4]));
+    g_parms.push_back(malloc(g_sizes[3]));
+    g_sizes.push_back(sizeof(size_t));
+    g_parms.push_back(malloc(g_sizes[4]));
+    g_sizes.push_back(sizeof(size_t));
+    g_parms.push_back(malloc(g_sizes[5]));
     g_sizes.push_back(sizeof(MPI_Datatype));
-    g_params.push_back(malloc(g_sizes[5]));
-    g_sizes.push_back(sizeof(int));
     g_params.push_back(malloc(g_sizes[6]));
-    g_sizes.push_back(sizeof(MPI_Comm));
+    g_sizes.push_back(sizeof(int));
     g_params.push_back(malloc(g_sizes[7]));
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[8]));
 
     tmp = (size_t) send;
     m_params.push_back(&tmp);
@@ -576,7 +630,8 @@ TEST_F(CommAbTest, mpi_gatherv)
     m_params.push_back(&dt);
     tmp = (size_t) recv;
     m_params.push_back(&tmp);
-    m_params.push_back(&count);
+    //sizes
+    //offeset
     m_params.push_back(&dt);
     m_params.push_back(&root);
     m_params.push_back(tmp_comm.get_comm_ref());
@@ -618,14 +673,17 @@ TEST_F(CommAbTest, mpi_broadcast)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_cart_create)
+TEST_F(CommAbTest, mpi_cart_ops)
 {
     MPICommTestHelper old_comm;
     int dims = 2;
     std::vector<int> vdims(dims, 16);
     std::vector<int> vpers(dims, 8);
+    std::vector<int> vcoords(dims, 4);
     int reorder = 1;
+    int rank = 0;
 
+    // cart create
     g_sizes.push_back(sizeof(MPI_Comm));
     g_params.push_back(malloc(g_sizes[0]));
     g_sizes.push_back(sizeof(dims));
@@ -648,24 +706,16 @@ TEST_F(CommAbTest, mpi_cart_create)
     m_params.push_back(&reorder);
     size_t tmp = (size_t) tmp_comm.get_comm_ref();
     m_params.push_back(&tmp);
+
     check_params();
-}
+    reset();
+    m_params.clear();
 
-TEST_F(CommAbTest, mpi_cart_rank)
-{
-    MPIComm old_comm;
-    int dims = 2;
-    std::vector<int> vdims(dims, 16);
-    std::vector<int> vpers(dims, 8);
-    std::vector<int> vcoords(dims, 4);
-    int reorder = 1;
-
+    // cart rank
     g_sizes.push_back(sizeof(MPI_Comm));
     g_params.push_back(malloc(g_sizes[0]));
     g_sizes.push_back(sizeof(int) * dims);
     g_params.push_back(malloc(g_sizes[1]));
-
-    MPICommTestHelper tmp_comm(&old_comm, vdims, vpers, reorder);
 
     m_params.push_back(tmp_comm.get_comm_ref());
     m_params.push_back(vcoords.data());
@@ -673,20 +723,10 @@ TEST_F(CommAbTest, mpi_cart_rank)
     tmp_comm.cart_rank(vcoords);
 
     check_params();
-}
+    reset();
+    m_params.clear();
 
-TEST_F(CommAbTest, mpi_cart_coord)
-{
-    MPIComm old_comm;
-    int dims = 2;
-    int rank = 0;
-    std::vector<int> vdims(dims, 16);
-    std::vector<int> vpers(dims, 8);
-    std::vector<int> vcoords(dims, 4);
-    int reorder = 1;
-
-    MPICommTestHelper tmp_comm(&old_comm, vdims, vpers, reorder);
-
+    // cart coord
     g_sizes.push_back(sizeof(MPI_Comm));
     g_params.push_back(malloc(g_sizes[0]));
     g_sizes.push_back(sizeof(int));
@@ -699,7 +739,7 @@ TEST_F(CommAbTest, mpi_cart_coord)
     m_params.push_back(tmp_comm.get_comm_ref());
     m_params.push_back(&rank);
     m_params.push_back(&dims);
-    size_t tmp = (size_t) vcoords.data();
+    tmp = (size_t) vcoords.data();
     m_params.push_back(&tmp);
 
     tmp_comm.coordinate(rank, vcoords);
@@ -730,13 +770,14 @@ TEST_F(CommAbTest, mpi_dims_create)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_alloc_mem)
+TEST_F(CommAbTest, mpi_mem_ops)
 {
     MPIComm comm;
     MPI_Aint size = 16;
     MPI_Info info = MPI_INFO_NULL;
     void *base = NULL;
 
+    // allock mem
     g_sizes.push_back(sizeof(MPI_Aint));
     g_params.push_back(malloc(g_sizes[0]));
     g_sizes.push_back(sizeof(MPI_Info));
@@ -751,52 +792,16 @@ TEST_F(CommAbTest, mpi_alloc_mem)
     comm.alloc_mem((size_t) size, &base);
 
     check_params();
-}
+    reset();
+    m_params.clear();
 
-TEST_F(CommAbTest, mpi_free_mem)
-{
-    MPIComm comm;
-    void *base = NULL;
-
+    // free mem
     g_sizes.push_back(sizeof(size_t));
     g_params.push_back(malloc(g_sizes[0]));
 
     m_params.push_back(&base);
 
     comm.free_mem(base);
-
-    check_params();
-}
-
-TEST_F(CommAbTest, mpi_comm_dup)
-{
-    MPICommTestHelper old_comm;
-
-    g_sizes.push_back(sizeof(MPI_Comm));
-    g_params.push_back(malloc(g_sizes[0]));
-    g_sizes.push_back(sizeof(MPI_Comm*));
-    g_params.push_back(malloc(g_sizes[1]));
-
-    MPICommTestHelper tmp_comm(&old_comm);
-
-    m_params.push_back(old_comm.get_comm_ref());
-    m_params.push_back(tmp_comm.get_comm_ref());
-    check_params();
-}
-
-TEST_F(CommAbTest, mpi_comm_free)
-{
-    MPICommTestHelper old_comm;
-
-    MPICommTestHelper *tmp_comm = new MPICommTestHelper(&old_comm);
-
-    g_sizes.push_back(sizeof(MPI_Comm *));
-    g_params.push_back(malloc(g_sizes[0]));
-
-    size_t tmp = (size_t) tmp_comm->get_comm_ref();
-    m_params.push_back(&tmp);
-
-    delete tmp_comm;
 
     check_params();
 }
@@ -811,32 +816,6 @@ TEST_F(CommAbTest, mpi_barrier)
     m_params.push_back(comm.get_comm_ref());
 
     comm.barrier();
-
-    check_params();
-}
-
-TEST_F(CommAbTest, mpi_comm_split)
-{
-    MPICommTestHelper comm;
-
-    g_sizes.push_back(sizeof(MPI_Comm));
-    g_params.push_back(malloc(g_sizes[0]));
-    g_sizes.push_back(sizeof(int));
-    g_params.push_back(malloc(g_sizes[1]));
-    g_sizes.push_back(sizeof(int));
-    g_params.push_back(malloc(g_sizes[2]));
-    g_sizes.push_back(sizeof(size_t));
-    g_params.push_back(malloc(g_sizes[3]));
-
-
-    int color = 128;
-    int key = 256;
-    MPICommTestHelper test_comm(&comm, color, key);
-    m_params.push_back(comm.get_comm_ref());
-    m_params.push_back(&color);
-    m_params.push_back(&key);
-    size_t tmp = (size_t) test_comm.get_comm_ref();
-    m_params.push_back(&tmp);
 
     check_params();
 }
