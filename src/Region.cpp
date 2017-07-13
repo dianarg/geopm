@@ -296,7 +296,7 @@ namespace geopm
             m_derivative_last[sig_off] = result;
             double ssyy = E - C * C * F;
             double ss = (ssyy - ssxy * ssxy / ssxx) / (m_derivative_num_fit - 2);
-            epsilon = ss / ssxx;
+            epsilon = std::sqrt(ss / ssxx);
         }
         return result ? result : NAN;
     }

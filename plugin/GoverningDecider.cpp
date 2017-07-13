@@ -131,6 +131,7 @@ namespace geopm
 
     bool GoverningDecider::update_policy(IRegion &curr_region, IPolicy &curr_policy)
     {
+        static const double GUARD_BAND = 0.02;
         bool is_target_updated = false;
         const uint64_t region_id = curr_region.identifier();
 
@@ -148,17 +149,15 @@ namespace geopm
             // Sum package and dram power over all domains to get total_power
             double dram_power = 0.0;
             double limit_total = 0.0;
-            double dram_epsilon = 0.0;
-            double this_epsilon = 0.0;
+            double epsilon = 0.0;
             for (int domain_idx = 0; domain_idx < num_domain; ++domain_idx) {
-                domain_dram_power[domain_idx] = curr_region.derivative(domain_idx, GEOPM_TELEMETRY_TYPE_DRAM_ENERGY, this_epsilon);
+                domain_dram_power[domain_idx] = curr_region.derivative(domain_idx, GEOPM_TELEMETRY_TYPE_DRAM_ENERGY, epsilon);
+                domain_dram_power[domain_idx] += 3 * epsilon;
                 dram_power += domain_dram_power[domain_idx];
-                dram_epsilon += this_epsilon;
                 limit_total += limit[domain_idx];
             }
-            dram_epsilon = std::sqrt(dram_epsilon);
-            double upper_limit = m_last_dram_power + dram_epsilon + limit_total;
-            double lower_limit = m_last_dram_power - dram_epsilon + limit_total;
+            double upper_limit = m_last_dram_power + (GUARD_BAND * limit_total);
+            double lower_limit = m_last_dram_power - (GUARD_BAND * limit_total);
 
             // If we have enough energy samples to accurately
             // calculate power: derivative function did not return NaN.

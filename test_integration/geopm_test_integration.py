@@ -472,14 +472,16 @@ class TestIntegration(unittest.TestCase):
         loop_count = 500
         app_conf = geopmpy.io.AppConf(name + '_app.config')
         self._tmp_files.append(app_conf.get_path())
-        app_conf.append_region('dgemm', 8.0)
+        app_conf.append_region('dgemm', 0.1)
+        app_conf.append_region('stream', 0.01)
         app_conf.set_loop_count(loop_count)
         self._options['power_budget'] = 150
         ctl_conf = geopmpy.io.CtlConf(name + '_ctl.config', self._mode, self._options)
         self._tmp_files.append(ctl_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path, time_limit=900)
+        launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path, time_limit=900, region_barrier=True)
         launcher.set_num_node(num_node)
         launcher.set_num_rank(num_rank)
+        launcher.set_pmpi_ctl('pthread')
         launcher.write_log(name, 'Power cap = {}W'.format(self._options['power_budget']))
         launcher.run(name)
 

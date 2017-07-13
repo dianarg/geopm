@@ -955,7 +955,12 @@ class AprunLauncher(Launcher):
         """
         Returns 'aprun', the name of the ALPS MPI job launch application.
         """
-        return 'aprun'
+        ddt = os.getenv('DDT')
+        if self.num_rank > 1 and ddt:
+            result = '{} aprun'.format(ddt)
+        else:
+            result = 'aprun'
+        return result
 
     def num_node_option(self):
         """
