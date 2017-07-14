@@ -473,11 +473,11 @@ std::cerr << "MPIComm::unlock_window(): win_hanle = 0x" << (void *)window_id << 
     {
         // TODO:  create new vectors of correct types, do data copy (assignment using it loop) of input vector
         // to newly created vector (while checking for overflow at copy time)
-        std::vector<int> sizes, offset;
+        std::vector<int> sizes(recv_sizes.size(), 0), offsets(rank_offset.size(), 0);
         auto in_size_it = recv_sizes.begin();
         auto out_size_it = sizes.begin();
         auto in_off_it = rank_offset.begin();
-        auto out_off_it = offset.begin();
+        auto out_off_it = offsets.begin();
 
         for (;in_size_it != recv_sizes.end();
              ++in_size_it, ++out_size_it,
@@ -488,7 +488,7 @@ std::cerr << "MPIComm::unlock_window(): win_hanle = 0x" << (void *)window_id << 
         }
         if (is_valid()) {
             check_mpi(PMPI_Gatherv(GEOPM_MPI_CONST_CAST(void *)(send_buf), send_size, MPI_BYTE, recv_buf, sizes.data(),
-                                   offset.data(), MPI_BYTE, root, m_comm));
+                                   offsets.data(), MPI_BYTE, root, m_comm));
         }
     }
 

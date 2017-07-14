@@ -594,7 +594,6 @@ TEST_F(CommAbTest, mpi_gather)
     check_params();
 }
 
-/*
 TEST_F(CommAbTest, mpi_gatherv)
 {
     MPICommTestHelper tmp_comm;
@@ -604,6 +603,8 @@ TEST_F(CommAbTest, mpi_gatherv)
     size_t count = 1;
     MPI_Datatype dt = MPI_BYTE; // used beneath API
     int root = 0;
+    std::vector<size_t> rsizes(1, 8);
+    std::vector<off_t> offsets(1, 8);
 
     g_sizes.push_back(sizeof(size_t));
     g_params.push_back(malloc(g_sizes[0]));
@@ -612,11 +613,11 @@ TEST_F(CommAbTest, mpi_gatherv)
     g_sizes.push_back(sizeof(MPI_Datatype));
     g_params.push_back(malloc(g_sizes[2]));
     g_sizes.push_back(sizeof(size_t));
-    g_parms.push_back(malloc(g_sizes[3]));
+    g_params.push_back(malloc(g_sizes[3]));
     g_sizes.push_back(sizeof(size_t));
-    g_parms.push_back(malloc(g_sizes[4]));
+    g_params.push_back(malloc(g_sizes[4]));
     g_sizes.push_back(sizeof(size_t));
-    g_parms.push_back(malloc(g_sizes[5]));
+    g_params.push_back(malloc(g_sizes[5]));
     g_sizes.push_back(sizeof(MPI_Datatype));
     g_params.push_back(malloc(g_sizes[6]));
     g_sizes.push_back(sizeof(int));
@@ -630,8 +631,8 @@ TEST_F(CommAbTest, mpi_gatherv)
     m_params.push_back(&dt);
     tmp = (size_t) recv;
     m_params.push_back(&tmp);
-    //sizes
-    //offeset
+    m_params.push_back(rsizes.data());
+    m_params.push_back(offsets.data());
     m_params.push_back(&dt);
     m_params.push_back(&root);
     m_params.push_back(tmp_comm.get_comm_ref());
@@ -640,7 +641,6 @@ TEST_F(CommAbTest, mpi_gatherv)
 
     check_params();
 }
-*/
 
 TEST_F(CommAbTest, mpi_broadcast)
 {
