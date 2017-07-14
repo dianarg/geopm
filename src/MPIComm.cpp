@@ -320,12 +320,11 @@ namespace geopm
 
     MPIComm::~MPIComm()
     {
+        for (auto it = m_windows.begin(); it != m_windows.end(); ++it) {
+            delete (CommWindow *) *it;
+        }
         if (m_comm != MPI_COMM_WORLD) {
             MPI_Comm_free(&m_comm);
-        }
-        for (auto it = m_windows.begin(); it != m_windows.end(); ++it) {
-            m_windows.erase(it);
-            delete (CommWindow *) *it;
         }
     }
 
@@ -389,7 +388,9 @@ namespace geopm
 
     void MPIComm::free_mem(void *base)
     {
-        check_mpi(PMPI_Free_mem(base));
+        if (base) {
+            check_mpi(PMPI_Free_mem(base));
+        }
     }
 
     size_t MPIComm::create_window(size_t size, void *base)
