@@ -443,8 +443,8 @@ namespace geopm
         // Create sample window
         if (!m_rank) {
             msg_size = sizeof(struct geopm_sample_message_s);
-            m_comm->alloc_mem(msg_size, (void **)(&m_sample_mailbox));
-            m_sample_window = m_comm->create_window(m_size * msg_size, (void *)(&m_sample_mailbox));
+            m_comm->alloc_mem(m_size * msg_size, (void **)(&m_sample_mailbox));
+            m_sample_window = m_comm->create_window(m_size * msg_size, (void *)(m_sample_mailbox));
             std::fill(m_sample_mailbox, m_sample_mailbox + m_size, GEOPM_SAMPLE_INVALID);
         }
         else {
