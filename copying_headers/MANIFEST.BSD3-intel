@@ -167,7 +167,7 @@ test/BalancingDeciderTest.cpp
 test/GoverningDeciderTest.cpp
 test/SharedMemoryTest.cpp
 test/EnvironmentTest.cpp
-test/CommAbTest.cpp
+test/CommMPIImpTest.cpp
 test/fortran/Makefile.mk
 test/fortran/geopm_fortran_test.sh
 test_integration/Makefile.mk

@@ -234,10 +234,12 @@ extern "C"
         memcpy(g_params[2], &param2, g_sizes[2]);
         tmp = (size_t) param3;
         memcpy(g_params[3], &tmp, g_sizes[3]);
-        tmp = (size_t) param4;
-        memcpy(g_params[4], &tmp, g_sizes[4]);
-        tmp = (size_t) param5;
-        memcpy(g_params[5], &tmp, g_sizes[5]);
+        //tmp = (size_t) param4;
+        //memcpy(g_params[4], &tmp, g_sizes[4]);
+        memcpy(g_params[4], param4, g_sizes[4]);
+        //tmp = (size_t) param5;
+        //memcpy(g_params[5], &tmp, g_sizes[5]);
+        memcpy(g_params[5], param5, g_sizes[5]);
         memcpy(g_params[6], &param6, g_sizes[6]);
         memcpy(g_params[7], &param7, g_sizes[7]);
         memcpy(g_params[8], &param8, g_sizes[8]);
@@ -404,7 +406,7 @@ class MPICommTestHelper : public MPIComm
     MPI_Win * get_win_ref(size_t win_handle) { return &((CommWindow *) win_handle)->m_window; }
 };
 
-class CommAbTest: public :: testing :: Test
+class CommMPIImpTest: public :: testing :: Test
 {
     protected:
         std::vector<void *> m_params;
@@ -413,17 +415,17 @@ class CommAbTest: public :: testing :: Test
         void check_params();
 };
 
-void CommAbTest::SetUp()
+void CommMPIImpTest::SetUp()
 {
     reset();
 }
 
-void CommAbTest::TearDown()
+void CommMPIImpTest::TearDown()
 {
     reset();
 }
 
-void CommAbTest::check_params()
+void CommMPIImpTest::check_params()
 {
     ASSERT_EQ(g_params.size(), m_params.size()) <<
         "Parameter checking failed at vector size comparison.";
@@ -439,7 +441,7 @@ void CommAbTest::check_params()
 
 // TODO remove void * in m_params.push_back calls... not needed...
 // TODO do not reused size_t tmp in test fixtures, explicitly enumerate (tmp1, 2, etc.), why isn't gather failing?
-TEST_F(CommAbTest, mpi_comm_ops)
+TEST_F(CommMPIImpTest, mpi_comm_ops)
 {
     MPICommTestHelper tmp_comm;//no param constructor uses MPI_COMM_WORLD, others will dup causing failure
     int test_rank = 0; // interally MPIComm.rank init's tmp var to 0 which is passed to [P]MPI_Comm_rank
@@ -510,7 +512,7 @@ TEST_F(CommAbTest, mpi_comm_ops)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_reduce)
+TEST_F(CommMPIImpTest, mpi_reduce)
 {
     MPICommTestHelper tmp_comm;
     size_t tmp;
@@ -551,7 +553,7 @@ TEST_F(CommAbTest, mpi_reduce)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_gather)
+TEST_F(CommMPIImpTest, mpi_gather)
 {
     MPICommTestHelper tmp_comm;
     size_t tmp;
@@ -594,7 +596,7 @@ TEST_F(CommAbTest, mpi_gather)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_gatherv)
+TEST_F(CommMPIImpTest, mpi_gatherv)
 {
     MPICommTestHelper tmp_comm;
     size_t tmp;
@@ -603,8 +605,9 @@ TEST_F(CommAbTest, mpi_gatherv)
     size_t count = 1;
     MPI_Datatype dt = MPI_BYTE; // used beneath API
     int root = 0;
-    std::vector<size_t> rsizes(1, 8);
-    std::vector<off_t> offsets(1, 8);
+    int test_val = 8;
+    std::vector<size_t> rsizes(1, test_val);
+    std::vector<off_t> offsets(1, test_val);
 
     g_sizes.push_back(sizeof(size_t));
     g_params.push_back(malloc(g_sizes[0]));
@@ -614,9 +617,9 @@ TEST_F(CommAbTest, mpi_gatherv)
     g_params.push_back(malloc(g_sizes[2]));
     g_sizes.push_back(sizeof(size_t));
     g_params.push_back(malloc(g_sizes[3]));
-    g_sizes.push_back(sizeof(size_t));
+    g_sizes.push_back(sizeof(int));
     g_params.push_back(malloc(g_sizes[4]));
-    g_sizes.push_back(sizeof(size_t));
+    g_sizes.push_back(sizeof(int));
     g_params.push_back(malloc(g_sizes[5]));
     g_sizes.push_back(sizeof(MPI_Datatype));
     g_params.push_back(malloc(g_sizes[6]));
@@ -631,8 +634,8 @@ TEST_F(CommAbTest, mpi_gatherv)
     m_params.push_back(&dt);
     tmp = (size_t) recv;
     m_params.push_back(&tmp);
-    m_params.push_back(rsizes.data());
-    m_params.push_back(offsets.data());
+    m_params.push_back(&test_val);
+    m_params.push_back(&test_val);
     m_params.push_back(&dt);
     m_params.push_back(&root);
     m_params.push_back(tmp_comm.get_comm_ref());
@@ -642,7 +645,7 @@ TEST_F(CommAbTest, mpi_gatherv)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_broadcast)
+TEST_F(CommMPIImpTest, mpi_broadcast)
 {
     size_t val = 0xDEADBEEF;
     int size = sizeof(val);
@@ -673,7 +676,7 @@ TEST_F(CommAbTest, mpi_broadcast)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_cart_ops)
+TEST_F(CommMPIImpTest, mpi_cart_ops)
 {
     MPICommTestHelper old_comm;
     int dims = 2;
@@ -747,7 +750,7 @@ TEST_F(CommAbTest, mpi_cart_ops)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_dims_create)
+TEST_F(CommMPIImpTest, mpi_dims_create)
 {
     MPIComm comm;
     int nnodes = 9;
@@ -770,7 +773,7 @@ TEST_F(CommAbTest, mpi_dims_create)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_mem_ops)
+TEST_F(CommMPIImpTest, mpi_mem_ops)
 {
     MPIComm comm;
     MPI_Aint size = 16;
@@ -806,7 +809,7 @@ TEST_F(CommAbTest, mpi_mem_ops)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_barrier)
+TEST_F(CommMPIImpTest, mpi_barrier)
 {
     MPICommTestHelper comm;
 
@@ -820,7 +823,7 @@ TEST_F(CommAbTest, mpi_barrier)
     check_params();
 }
 
-TEST_F(CommAbTest, mpi_win_ops)
+TEST_F(CommMPIImpTest, mpi_win_ops)
 {
     MPICommTestHelper tmp_comm;
 
