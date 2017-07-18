@@ -61,13 +61,13 @@ namespace geopm
     IComm* CommFactory::comm(const std::string &description)
     {
         IComm *result = NULL;
-        if (description.compare(MPICOMM_DESCRIPTION)) {
+        if (!description.compare(MPICOMM_DESCRIPTION)) {
             result = new MPIComm();
         }
         if (!result) {
             // If we get here, no acceptable comm was found
             std::ostringstream ex_str;
-            ex_str << "Failure to instaciate Comm type: " << description;
+            ex_str << "Failure to instantiate Comm type: " << description;
             throw Exception(ex_str.str(), GEOPM_ERROR_COMM_UNSUPPORTED, __FILE__, __LINE__);
         }
 
