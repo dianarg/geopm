@@ -51,7 +51,6 @@
 #include "geopm_env.h"
 #include "config.h"
 #include "Comm.hpp"
-#include "mpi.h" // TODO remove once we remove MPI color
 
 namespace geopm
 {
@@ -119,7 +118,7 @@ namespace geopm
 
         m_num_node = comm->num_rank();
 
-        CommFactory comm_fact;
+        CommFactory comm_fact = CommFactory::getInstance();
         comm_cart = comm_fact.comm(comm, m_fan_out, flags, 1);
         rank_cart = comm_cart->rank();
         comm_cart->coordinate(rank_cart, coords);
@@ -141,11 +140,10 @@ namespace geopm
                 key = rank_cart;
             }
             else {
-                color = MPI_UNDEFINED;//TODO how to address?
+                color = IComm::M_SPLIT_COLOR_UNDEFINED;
                 key = 0;
             }
 
-            // TODO null comm check gone, make sure properly address intended logic
             level_comm = comm_fact.comm(comm_cart, color, key);
             if (level_comm->num_rank()) {
                 ++m_num_level;
@@ -314,7 +312,7 @@ namespace geopm
         m_policy_mailbox.flags = other.m_policy_mailbox.flags;
         m_policy_mailbox.num_sample = other.m_policy_mailbox.num_sample;
         m_policy_mailbox.power_budget = other.m_policy_mailbox.power_budget;
-        CommFactory comm_fact;
+        CommFactory comm_fact = CommFactory::getInstance();
         m_comm = comm_fact.comm(other.m_comm);
         create_window();
         std::copy(other.m_sample_mailbox, other.m_sample_mailbox + m_size, m_sample_mailbox);

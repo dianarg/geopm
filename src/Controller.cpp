@@ -84,7 +84,7 @@ extern "C"
     int geopmctl_main(const char *policy_config)
     {
         int err = 0;
-        geopm::CommFactory comm_fact;
+        geopm::CommFactory comm_fact = geopm::CommFactory::getInstance();
         try {
             if (policy_config) {
                 std::string policy_config_str(policy_config);
@@ -115,7 +115,7 @@ extern "C"
         int err = 0;
         try {
             geopm::IGlobalPolicy *global_policy = (geopm::IGlobalPolicy *)policy;
-            geopm::CommFactory comm_fact;
+            geopm::CommFactory comm_fact = geopm::CommFactory::getInstance();
             geopm::IComm *tmp_comm = comm_fact.comm(geopm::MPICOMM_DESCRIPTION);
             *ctl = (struct geopm_ctl_c *)(new geopm::Controller(global_policy, tmp_comm));
             delete tmp_comm;
@@ -224,7 +224,7 @@ namespace geopm
         // this logic has to change.  constructor will return valid instance or throw.
         // so... if it doesn't throw we execute the first part of this branch
         // else we eat the thrown exception, ensure m_ppn1_comm is NULL and continue.
-        CommFactory comm_fact;
+        CommFactory comm_fact = CommFactory::getInstance();
         m_ppn1_comm = comm_fact.comm(comm, "ctl", IComm::M_COMM_SPLIT_TYPE_PPN1);
         // Only the root rank on each node will have a fully initialized controller
         if (m_ppn1_comm->num_rank()) {

@@ -35,6 +35,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <map>
 
 #include "Comm.hpp"
 #include "MPIComm.hpp"
@@ -246,8 +247,13 @@ namespace geopm
         , m_maxdims(1)
         , m_description(in_comm->m_description)
     {
+        static std::map<int, int> color_map = {{M_SPLIT_COLOR_UNDEFINED, MPI_UNDEFINED}};
+        auto it = color_map.find(color);
+        if (it == color_map.end()) {
+            throw Exception("received invalid color", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
         if (in_comm->is_valid()) {
-            check_mpi(PMPI_Comm_split(in_comm->m_comm, color, key, &m_comm));
+            check_mpi(PMPI_Comm_split(in_comm->m_comm, it->second, key, &m_comm));
         }
     }
 
@@ -256,7 +262,6 @@ namespace geopm
         , m_maxdims(1)
         , m_description(in_comm->m_description)
     {
-        // TODO possibly remove.
         int err = 0;
         if (!in_comm->is_valid()) {
             throw Exception("in_comm is invalid", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
@@ -354,12 +359,6 @@ namespace geopm
             check_mpi(PMPI_Comm_size(m_comm, &tmp_size));
         }
         return tmp_size;
-    }
-
-    int MPIComm::num_dimension(void) const
-    {
-        // TODO never used...
-        return 0;
     }
 
     void MPIComm::dimension_create(int num_nodes, std::vector<int> &dimension) const
@@ -466,8 +465,6 @@ namespace geopm
     void MPIComm::gatherv(const void *send_buf, size_t send_size, void *recv_buf,
                     const std::vector<size_t> &recv_sizes, const std::vector<off_t> rank_offset, int root) const
     {
-        // TODO:  create new vectors of correct types, do data copy (assignment using it loop) of input vector
-        // to newly created vector (while checking for overflow at copy time)
         std::vector<int> sizes(recv_sizes.size(), 0), offsets(rank_offset.size(), 0);
         auto in_size_it = recv_sizes.begin();
         auto out_size_it = sizes.begin();

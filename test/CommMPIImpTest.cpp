@@ -45,6 +45,7 @@ typedef int MPI_Op;
 #define MPI_LAND    (MPI_Op)(0x58000005)
 typedef int MPI_Comm;
 typedef int MPI_Datatype;
+#define MPI_UNDEFINED       1 // TODO mr-fusion down to retrieve actual value
 #define MPI_COMM_WORLD ((MPI_Comm)0x44000000)
 #define MPI_COMM_NULL      ((MPI_Comm)0x04000000)
 #define MPI_LOCK_EXCLUSIVE  234
@@ -106,8 +107,8 @@ extern "C"
         memcpy(g_params[2], param2, g_sizes[2]);
         memcpy(g_params[3], param3, g_sizes[3]);
         memcpy(g_params[4], &param4, g_sizes[4]);
-        size_t tmp = (size_t) param5;
-        memcpy(g_params[5], &tmp, g_sizes[5]);
+        size_t tmp5 = (size_t) param5;
+        memcpy(g_params[5], &tmp5, g_sizes[5]);
         return 0;
     }
 
@@ -149,8 +150,8 @@ extern "C"
 
     int mock_free_mem(void *param0)
     {
-        size_t tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
+        size_t tmp0 = (size_t) param0;
+        memcpy(g_params[0], &tmp0, g_sizes[0]);
         return 0;
     }
 
@@ -162,8 +163,8 @@ extern "C"
         memcpy(g_params[0], &param0, g_sizes[0]);
         memcpy(g_params[1], &param1, g_sizes[1]);
         memcpy(g_params[2], &param2, g_sizes[2]);
-        size_t tmp = (size_t) param3;
-        memcpy(g_params[3], &tmp, g_sizes[3]);
+        size_t tmp3 = (size_t) param3;
+        memcpy(g_params[3], &tmp3, g_sizes[3]);
         return 0;
     }
 
@@ -172,11 +173,10 @@ extern "C"
 
     int mock_reduce(void *param0, void *param1, int param2, MPI_Datatype param3, MPI_Op param4, int param5, MPI_Comm param6)
     {
-        size_t tmp;
-        tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
-        tmp = (size_t) param1;
-        memcpy(g_params[1], &tmp, g_sizes[1]);
+        size_t tmp0 = (size_t) param0;
+        memcpy(g_params[0], &tmp0, g_sizes[0]);
+        size_t tmp1 = (size_t) param1;
+        memcpy(g_params[1], &tmp1, g_sizes[1]);
         memcpy(g_params[2], &param2, g_sizes[2]);
         memcpy(g_params[3], &param3, g_sizes[3]);
         memcpy(g_params[4], &param4, g_sizes[4]);
@@ -190,16 +190,9 @@ extern "C"
 
     int mock_allreduce(const void *param0, void *param1, int param2, MPI_Datatype param3, MPI_Op param4, MPI_Comm param5)
     {
-        // TODO, create test fixture.  abandoned for now because MPIComm.test takes away so much...
-        size_t tmp;
-        tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
-        tmp = (size_t) param1;
-        memcpy(g_params[1], &tmp, g_sizes[1]);
-        memcpy(g_params[2], &param2, g_sizes[2]);
-        memcpy(g_params[3], &param3, g_sizes[3]);
-        memcpy(g_params[4], &param4, g_sizes[4]);
-        memcpy(g_params[5], &param5, g_sizes[5]);
+        // all other params are stack vars beneath exposed API
+        memcpy(g_params[0], param0, g_sizes[0]);
+        memcpy(g_params[1], &param5, g_sizes[1]);
         return 0;
     }
 
@@ -208,13 +201,12 @@ extern "C"
 
     int mock_gather(const void *param0, int param1, MPI_Datatype param2, void *param3, int param4, MPI_Datatype param5, int param6, MPI_Comm param7)
     {
-        size_t tmp;
-        tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
+        size_t tmp0 = (size_t) param0;
+        memcpy(g_params[0], &tmp0, g_sizes[0]);
         memcpy(g_params[1], &param1, g_sizes[1]);
         memcpy(g_params[2], &param2, g_sizes[2]);
-        tmp = (size_t) param3;
-        memcpy(g_params[3], &tmp, g_sizes[3]);
+        size_t tmp3 = (size_t) param3;
+        memcpy(g_params[3], &tmp3, g_sizes[3]);
         memcpy(g_params[4], &param4, g_sizes[4]);
         memcpy(g_params[5], &param5, g_sizes[5]);
         memcpy(g_params[6], &param6, g_sizes[6]);
@@ -227,18 +219,13 @@ extern "C"
 
     int mock_gatherv(const void *param0, int param1, MPI_Datatype param2, void *param3, const int *param4, const int *param5, MPI_Datatype param6, int param7, MPI_Comm param8)
     {
-        size_t tmp;
-        tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
+        size_t tmp0 = (size_t) param0;
+        memcpy(g_params[0], &tmp0, g_sizes[0]);
         memcpy(g_params[1], &param1, g_sizes[1]);
         memcpy(g_params[2], &param2, g_sizes[2]);
-        tmp = (size_t) param3;
-        memcpy(g_params[3], &tmp, g_sizes[3]);
-        //tmp = (size_t) param4;
-        //memcpy(g_params[4], &tmp, g_sizes[4]);
+        size_t tmp3 = (size_t) param3;
+        memcpy(g_params[3], &tmp3, g_sizes[3]);
         memcpy(g_params[4], param4, g_sizes[4]);
-        //tmp = (size_t) param5;
-        //memcpy(g_params[5], &tmp, g_sizes[5]);
         memcpy(g_params[5], param5, g_sizes[5]);
         memcpy(g_params[6], &param6, g_sizes[6]);
         memcpy(g_params[7], &param7, g_sizes[7]);
@@ -251,15 +238,14 @@ extern "C"
 
     int mock_win_create(void *param0, MPI_Aint param1, int param2, MPI_Info param3, MPI_Comm param4, MPI_Win *param5)
     {
-        size_t tmp;
-        tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
+        size_t tmp0 = (size_t) param0;
+        memcpy(g_params[0], &tmp0, g_sizes[0]);
         memcpy(g_params[1], &param1, g_sizes[1]);
         memcpy(g_params[2], &param2, g_sizes[2]);
         memcpy(g_params[3], &param3, g_sizes[3]);
         memcpy(g_params[4], &param4, g_sizes[4]);
-        tmp = (size_t) param5;
-        memcpy(g_params[5], &tmp, g_sizes[5]);
+        size_t tmp5 = (size_t) param5;
+        memcpy(g_params[5], &tmp5, g_sizes[5]);
         return 0;
     }
 
@@ -268,8 +254,8 @@ extern "C"
 
     int mock_win_free(MPI_Win *param0)
     {
-        size_t tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
+        size_t tmp0 = (size_t) param0;
+        memcpy(g_params[0], &tmp0, g_sizes[0]);
         return 0;
     }
 
@@ -301,8 +287,8 @@ extern "C"
     int mock_put(const void *param0, int param1, MPI_Datatype param2, int param3, MPI_Aint param4,
             int param5, MPI_Datatype param6, MPI_Win param7)
     {
-        size_t tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
+        size_t tmp0 = (size_t) param0;
+        memcpy(g_params[0], &tmp0, g_sizes[0]);
         memcpy(g_params[1], &param1, g_sizes[1]);
         memcpy(g_params[2], &param2, g_sizes[2]);
         memcpy(g_params[3], &param3, g_sizes[3]);
@@ -328,8 +314,8 @@ extern "C"
 
     int mock_free(MPI_Comm *param0)
     {
-        size_t tmp = (size_t) param0;
-        memcpy(g_params[0], &tmp, g_sizes[0]);
+        size_t tmp0 = (size_t) param0;
+        memcpy(g_params[0], &tmp0, g_sizes[0]);
         return 0;
     }
 
@@ -350,8 +336,8 @@ extern "C"
         memcpy(g_params[0], &param0, g_sizes[0]);
         memcpy(g_params[1], &param1, g_sizes[1]);
         memcpy(g_params[2], &param2, g_sizes[2]);
-        size_t tmp = (size_t) param3;
-        memcpy(g_params[3], &tmp, g_sizes[3]);
+        size_t tmp3 = (size_t) param3;
+        memcpy(g_params[3], &tmp3, g_sizes[3]);
         return 0;
     }
 
@@ -439,8 +425,6 @@ void CommMPIImpTest::check_params()
     }
 }
 
-// TODO remove void * in m_params.push_back calls... not needed...
-// TODO do not reused size_t tmp in test fixtures, explicitly enumerate (tmp1, 2, etc.), why isn't gather failing?
 TEST_F(CommMPIImpTest, mpi_comm_ops)
 {
     MPICommTestHelper tmp_comm;//no param constructor uses MPI_COMM_WORLD, others will dup causing failure
@@ -449,7 +433,7 @@ TEST_F(CommMPIImpTest, mpi_comm_ops)
     // comm rank
     g_sizes.push_back(sizeof(MPI_Comm));
     g_params.push_back(malloc(g_sizes[0]));
-    g_sizes.push_back(sizeof(test_rank));
+    g_sizes.push_back(sizeof(int));
     g_params.push_back(malloc(g_sizes[1]));
 
     m_params.push_back(tmp_comm.get_comm_ref());
@@ -500,9 +484,9 @@ TEST_F(CommMPIImpTest, mpi_comm_ops)
     g_params.push_back(malloc(g_sizes[3]));
 
 
-    int color = 128;
+    int color = MPI_UNDEFINED;
     int key = 256;
-    MPICommTestHelper split_comm(&tmp_comm, color, key);
+    MPICommTestHelper split_comm(&tmp_comm, IComm::M_SPLIT_COLOR_UNDEFINED,key);
     m_params.push_back(tmp_comm.get_comm_ref());
     m_params.push_back(&color);
     m_params.push_back(&key);
@@ -515,7 +499,6 @@ TEST_F(CommMPIImpTest, mpi_comm_ops)
 TEST_F(CommMPIImpTest, mpi_reduce)
 {
     MPICommTestHelper tmp_comm;
-    size_t tmp;
     void *send = NULL;
     void *recv = NULL;
     size_t count = 1;
@@ -538,10 +521,10 @@ TEST_F(CommMPIImpTest, mpi_reduce)
     g_sizes.push_back(sizeof(MPI_Comm));
     g_params.push_back(malloc(g_sizes[6]));
 
-    tmp = (size_t) send;
-    m_params.push_back(&tmp);
-    tmp = (size_t) recv;
-    m_params.push_back(&tmp);
+    size_t tmp_send = (size_t) send;
+    m_params.push_back(&tmp_send);
+    size_t tmp_recv = (size_t) recv;
+    m_params.push_back(&tmp_recv);
     m_params.push_back(&count);
     m_params.push_back(&dt);
     m_params.push_back(&op);
@@ -553,10 +536,27 @@ TEST_F(CommMPIImpTest, mpi_reduce)
     check_params();
 }
 
+TEST_F(CommMPIImpTest, mpi_allreduce)
+{
+    MPICommTestHelper tmp_comm;
+
+    g_sizes.push_back(sizeof(bool));
+    g_params.push_back(malloc(g_sizes[0]));
+    g_sizes.push_back(sizeof(MPI_Comm));
+    g_params.push_back(malloc(g_sizes[1]));
+
+    bool test_var = true;
+    m_params.push_back(&test_var);
+    m_params.push_back(tmp_comm.get_comm_ref());
+    
+    tmp_comm.test(test_var);
+
+    check_params();
+}
+
 TEST_F(CommMPIImpTest, mpi_gather)
 {
     MPICommTestHelper tmp_comm;
-    size_t tmp;
     void *send = NULL;
     void *recv = NULL;
     size_t count = 1;
@@ -580,12 +580,12 @@ TEST_F(CommMPIImpTest, mpi_gather)
     g_sizes.push_back(sizeof(MPI_Comm));
     g_params.push_back(malloc(g_sizes[7]));
 
-    tmp = (size_t) send;
-    m_params.push_back(&tmp);
+    size_t tmp_send = (size_t) send;
+    m_params.push_back(&tmp_send);
     m_params.push_back(&count);
     m_params.push_back(&dt);
-    tmp = (size_t) recv;
-    m_params.push_back(&tmp);
+    size_t tmp_recv = (size_t) recv;
+    m_params.push_back(&tmp_recv);
     m_params.push_back(&count);
     m_params.push_back(&dt);
     m_params.push_back(&root);
@@ -599,7 +599,6 @@ TEST_F(CommMPIImpTest, mpi_gather)
 TEST_F(CommMPIImpTest, mpi_gatherv)
 {
     MPICommTestHelper tmp_comm;
-    size_t tmp;
     void *send = NULL;
     void *recv = NULL;
     size_t count = 1;
@@ -628,12 +627,12 @@ TEST_F(CommMPIImpTest, mpi_gatherv)
     g_sizes.push_back(sizeof(MPI_Comm));
     g_params.push_back(malloc(g_sizes[8]));
 
-    tmp = (size_t) send;
-    m_params.push_back(&tmp);
+    size_t tmp_send = (size_t) send;
+    m_params.push_back(&tmp_send);
     m_params.push_back(&count);
     m_params.push_back(&dt);
-    tmp = (size_t) recv;
-    m_params.push_back(&tmp);
+    size_t tmp_recv = (size_t) recv;
+    m_params.push_back(&tmp_recv);
     m_params.push_back(&test_val);
     m_params.push_back(&test_val);
     m_params.push_back(&dt);

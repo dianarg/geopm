@@ -62,7 +62,6 @@ namespace geopm
             virtual int cart_rank(std::vector<int> coords) const;
             virtual int rank(void) const;
             virtual int num_rank(void) const;
-            virtual int num_dimension(void) const;
             virtual void dimension_create(int num_nodes, std::vector<int> &dimension) const;
             virtual void alloc_mem(size_t size, void **base);
             virtual void free_mem(void *base);
@@ -87,9 +86,7 @@ namespace geopm
             int m_maxdims;
             std::set<size_t> m_windows;
             const std::string m_description;
-            // TODO std::map M_SPLIT_COLOR to MPI_COLOR_UNDEFINED
     };
-
 }
 
 #endif

@@ -42,69 +42,33 @@
 #include "MPIComm.hpp"
 #include "config.h"
 
-
-/*
-void geopm_factory_register(struct geopm_factory_c *factory, geopm::IDecider *decider, void *dl_ptr)
-{
-    geopm::DeciderFactory *fact_obj = (geopm::DeciderFactory *)(factory);
-    if (fact_obj == NULL) {
-        throw geopm::Exception(GEOPM_ERROR_FACTORY_NULL, __FILE__, __LINE__);
-    }
-    fact_obj->register_decider(decider, dl_ptr);
-}
-*/
-
 namespace geopm
 {
+    CommFactory& CommFactory::getInstance()
+    {
+        static CommFactory instance;
+        return instance;
+    }
 
     CommFactory::CommFactory()
     {
-        // register all the deciders we know about
-        //geopm_plugin_load(GEOPM_PLUGIN_TYPE_COMM, (struct geopm_factory_c *)this);
-        //register_comm(new Comm(), NULL);
     }
-
-    /*
-    CommFactory::CommFactory(IComm *comm)
-    {
-        register_decider(decider, NULL);
-    }
-    */
 
     CommFactory::~CommFactory()
     {
-        /*
-        for (auto it = m_comm_list.rbegin(); it != m_comm_list.rend(); ++it) {
-            delete *it;
-        }
-
-        for (auto it = m_dl_ptr_list.rbegin(); it != m_dl_ptr_list.rend(); ++it) {
-            dlclose(*it);
-        }
-        */
     }
 
     IComm* CommFactory::comm(const std::string &description)
     {
-        // TODO: help.
         IComm *result = NULL;
-        /*
-        for (auto it = m_comm_list.begin(); it != m_comm_list.end(); ++it) {
-            if (*it != NULL &&
-                (*it)->decider_supported(description)) {
-                result = (*it)->clone();
-                break;
-            }
-        }
-        */
-        //if (description.compare(MPICOMM_DESCRIPTION)) {
+        if (description.compare(MPICOMM_DESCRIPTION)) {
             result = new MPIComm();
-        //}
+        }
         if (!result) {
             // If we get here, no acceptable comm was found
             std::ostringstream ex_str;
             ex_str << "Failure to instaciate Comm type: " << description;
-            //throw Exception(ex_str.str(), GEOPM_ERROR_COMM_UNSUPPORTED, __FILE__, __LINE__);
+            throw Exception(ex_str.str(), GEOPM_ERROR_COMM_UNSUPPORTED, __FILE__, __LINE__);
         }
 
         return result;
@@ -112,32 +76,65 @@ namespace geopm
 
     IComm *CommFactory::comm(const IComm *in_comm)
     {
-        // TODO, use description string to determine casting target
-        return new MPIComm(static_cast<const MPIComm *>(in_comm));
+        IComm *result = NULL;
+        if (in_comm->comm_supported(MPICOMM_DESCRIPTION)) {
+            result = new MPIComm(static_cast<const MPIComm *>(in_comm));
+        }
+        if (!result) {
+            // If we get here, no acceptable comm was found
+            std::ostringstream ex_str;
+            ex_str << "Failure to duplicate Comm";
+            throw Exception(ex_str.str(), GEOPM_ERROR_COMM_UNSUPPORTED, __FILE__, __LINE__);
+        }
+
+        return result;
     }
 
     IComm *CommFactory::comm(const IComm *in_comm, int color, int key)
     {
-        return new MPIComm(static_cast<const MPIComm *>(in_comm), color, key);
+        IComm *result = NULL;
+        if (in_comm->comm_supported(MPICOMM_DESCRIPTION)) {
+            result = new MPIComm(static_cast<const MPIComm *>(in_comm), color, key);
+        }
+        if (!result) {
+            // If we get here, no acceptable comm was found
+            std::ostringstream ex_str;
+            ex_str << "Failure to split Comm";
+            throw Exception(ex_str.str(), GEOPM_ERROR_COMM_UNSUPPORTED, __FILE__, __LINE__);
+        }
+
+        return result;
     }
     
     IComm *CommFactory::comm(const IComm *in_comm, std::string tag, int split_type)
     {
-        return new MPIComm(static_cast<const MPIComm *>(in_comm), tag, split_type);
+        IComm *result = NULL;
+        if (in_comm->comm_supported(MPICOMM_DESCRIPTION)) {
+            result = new MPIComm(static_cast<const MPIComm *>(in_comm), tag, split_type);
+        }
+        if (!result) {
+            // If we get here, no acceptable comm was found
+            std::ostringstream ex_str;
+            ex_str << "Failure to tag split Comm";
+            throw Exception(ex_str.str(), GEOPM_ERROR_COMM_UNSUPPORTED, __FILE__, __LINE__);
+        }
+
+        return result;
     }
 
     IComm *CommFactory::comm(const IComm *in_comm, std::vector<int> dimension, std::vector<int> periods, bool is_reorder)
     {
-        return new MPIComm(static_cast<const MPIComm *>(in_comm), dimension, periods, is_reorder);
-    }
-
-    /*
-    void CommFactory::register_comm(IComm *comm, void *dl_ptr)
-    {
-        m_comm_list.push_back(decider);
-        if (dl_ptr) {
-            m_dl_ptr_list.push_back(dl_ptr);
+        IComm *result = NULL;
+        if (in_comm->comm_supported(MPICOMM_DESCRIPTION)) {
+            result = new MPIComm(static_cast<const MPIComm *>(in_comm), dimension, periods, is_reorder);
         }
+        if (!result) {
+            // If we get here, no acceptable comm was found
+            std::ostringstream ex_str;
+            ex_str << "Failure to cart split Comm";
+            throw Exception(ex_str.str(), GEOPM_ERROR_COMM_UNSUPPORTED, __FILE__, __LINE__);
+        }
+
+        return result;
     }
-    */
 }

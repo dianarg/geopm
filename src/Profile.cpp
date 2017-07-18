@@ -66,7 +66,7 @@ static bool geopm_prof_compare(const std::pair<uint64_t, struct geopm_prof_messa
 
 static geopm::Profile &geopm_default_prof(void)
 {
-    geopm::CommFactory comm_fact;
+    geopm::CommFactory comm_fact = geopm::CommFactory::getInstance();
     geopm::IComm *tmp_comm = comm_fact.comm(geopm::MPICOMM_DESCRIPTION);
     static geopm::Profile default_prof(geopm_env_profile(), tmp_comm);
     delete tmp_comm;
@@ -255,7 +255,7 @@ namespace geopm
 
         m_scheduler = new SampleScheduler(M_OVERHEAD_FRAC);
         m_rank = comm->rank();
-        CommFactory comm_fact;
+        CommFactory comm_fact = CommFactory::getInstance();
         m_shm_comm = comm_fact.comm(comm, "prof", IComm::M_COMM_SPLIT_TYPE_SHARED);
         m_shm_rank = m_shm_comm->rank();
         shm_num_rank = m_shm_comm->num_rank();
@@ -693,8 +693,6 @@ namespace geopm
         CommFactory comm_fact;
         IComm *tmp_comm = comm_fact.comm(geopm::MPICOMM_DESCRIPTION);
         tmp_comm->reduce_sum(overhead_buffer, max_overhead, 3, 0);
-        // TODO!!!! delete tmp_comm, better abstraction for this API that doesn't actually
-        // need a comm object...
         if (!m_rank) {
             std::cout << "GEOPM startup (seconds):  " << max_overhead[0] << std::endl;
             std::cout << "GEOPM runtime (seconds):  " << max_overhead[1] << std::endl;

@@ -70,14 +70,11 @@ namespace geopm
 
             // Introspection
             /// @brief Process rank within communicator
-            // TODO const std::vector<int> &coords
             virtual int cart_rank(std::vector<int> coords) const = 0;
             virtual int rank(void) const = 0;
             /// @brief Number of ranks in the communicator
             virtual int num_rank(void) const = 0;
             /// @brief Dimension of Cartesian grid (returns 1 for non-Cartesian communicators
-            /// TODO: help, not used?
-            virtual int num_dimension(void) const = 0;
             /// @brief Populate vector of optimal dimensions given the number of ranks the communicator
             virtual void dimension_create(int num_nodes, std::vector<int> &dimension) const = 0;
             /// @brief Allocate memory for message passing and RMA
@@ -128,35 +125,15 @@ namespace geopm
     /// themselves with the factory. The factory returns an appropriate Decider object
     /// when queried with a description string. The factory deletes all Decider objects
     /// on destruction.
-    class ICommFactory
+    class CommFactory
     {
         public:
-            ICommFactory() {}
-            ICommFactory(const ICommFactory &other) {}
-            virtual ~ICommFactory() {}
-            /// @brief Returns an abstract Decider pointer to a concrete decider.
-            ///
-            /// The concrete Decider is specific to the description string
-            /// passed in to select it.
-            /// throws a std::invalid_argument if no acceptable
-            /// Decider is found.
-            ///
-            /// @param [in] description The descrition string corresponding
-            /// to the desired Decider.
-            virtual IComm *comm(const std::string &description) = 0;
-            /// @brief Concrete Deciders register with the factory through this API.
-            ///
-            /// @param [in] decider The unique_ptr to a Decider object
-            /// assures that the object cannot be destroyed before it
-            /// is copied.
-            //virtual void register_comm(IComm *comm, void *dl_ptr) = 0;
-    };
-
-    class CommFactory : public ICommFactory
-    {
-        public:
-            /// @brief DeciderFactory default constructor.
-            CommFactory();
+            static CommFactory& getInstance();
+            /*
+            //https://stackoverflow.com/questions/1008019/c-singleton-design-pattern
+            CommFactory(CommFactory const&) = delete;
+            void operator=(CommFactory const&) = delete;
+            */
             /// @brief DeciderFactory Testing constructor.
             ///
             /// This constructor takes in
@@ -174,10 +151,9 @@ namespace geopm
             IComm *comm(const IComm *in_comm, std::string tag, int split_type);
             IComm *comm(const IComm *in_comm, std::vector<int> dimension, std::vector<int> periods, bool is_reorder);
             //void register_comm(IComm *comm, void *dl_ptr);
-        private:
-            // @brief Holds all registered concrete Decider instances
-            //std::list<IComm *> m_comm_list;
-            //std::list<void *> m_dl_ptr_list;
+        protected:
+            /// @brief CommFactory default constructor.
+            CommFactory();
     };
 }
 
