@@ -380,6 +380,8 @@ namespace geopm
     void KNLPlatformImp::write_control(int device_type, int device_index, int signal_type, double value)
     {
         uint64_t msr_val = 0;
+        uint64_t msr_pl1_val = 0;
+        uint64_t msr_pl2_val = 0;
 
         switch (signal_type) {
             case GEOPM_TELEMETRY_TYPE_PKG_ENERGY:
@@ -389,8 +391,15 @@ namespace geopm
                 if (value > m_max_pkg_watts) {
                     value = m_max_pkg_watts;
                 }
-                msr_val = (uint64_t)(value * m_power_units_inv);
-                msr_val = msr_val | m_pkg_power_limit_static;
+                msr_pl1_val = (uint64_t)(value * m_power_units_inv);
+
+                value = (uint64_t)(value * 1.2);
+                if (value > m_max_pkg_watts) {
+                    value = m_max_pkg_watts;
+                }
+                msr_pl2_val = ((uint64_t)(value * m_power_units_inv)) << 32;
+
+                msr_val = msr_pl1_val | msr_pl2_val | m_pkg_power_limit_static;
                 msr_write(device_type, device_index, m_control_msr_pair[M_RAPL_PKG_LIMIT].first,
                           m_control_msr_pair[M_RAPL_PKG_LIMIT].second,  msr_val);
                 break;
@@ -547,9 +556,9 @@ namespace geopm
 
         pkg_time_window_y = pkg_time_window_y << 17;
         pkg_time_window_z = pkg_time_window_z << 22;
-        m_pkg_power_limit_static = (tmp & 0xFFFFFFFFFF000000) | pkg_time_window_y | pkg_time_window_z;
-        // enable pl1 limits
-        m_pkg_power_limit_static = m_pkg_power_limit_static | (0x3 << 15);
+        m_pkg_power_limit_static = (tmp & 0xFFFE0000FF000000) | pkg_time_window_y | pkg_time_window_z;
+        // enable pl1 and pl2 limits
+        m_pkg_power_limit_static |= (0x3ULL << 47) | (0x3ULL << 15);
 
         for (int i = 1; i < m_num_package; i++) {
             tmp = msr_read(GEOPM_DOMAIN_PACKAGE, i, "PKG_POWER_INFO");
