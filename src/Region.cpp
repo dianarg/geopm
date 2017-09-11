@@ -291,7 +291,7 @@ namespace geopm
             result = ssxy / ssxx;
             m_derivative_last[sig_off] = result;
         }
-        return result ? result : NAN;
+        return result;
     }
 
     double Region::integral(int domain_idx, int signal_type, double &delta_time, double &integral) const

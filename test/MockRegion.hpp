@@ -30,42 +30,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GOVERNING_DECIDER_HPP_INCLUDE
-#define GOVERNING_DECIDER_HPP_INCLUDE
+#include "Region.hpp"
 
-#include "Decider.hpp"
-#include "geopm_plugin.h"
-#include <map>
-
-namespace geopm
-{
-    /// @brief Simple implementation of a power governing leaf decider.
-    ///
-    /// The governing decider uses the RAPL energy readings for each RAPL domain
-    /// of control to distribute the given per-node power budget while staying under
-    /// a given power cap. Each domain (ex: socket) subtracts the used DRAM power
-    /// from the total power budget and gives the remainder to the package (cores).
-    class GoverningDecider : public Decider
-    {
-        public:
-            /// @ brief GoverningDecider default constructor.
-            GoverningDecider();
-            GoverningDecider(const GoverningDecider &other);
-            /// @ brief GoverningDecider destructor, virtual.
-            virtual ~GoverningDecider();
-            virtual IDecider *clone(void) const;
-            virtual bool update_policy(const struct geopm_policy_message_s &policy_msg, IPolicy &curr_policy);
-            virtual bool update_policy(IRegion &curr_region, IPolicy &curr_policy);
-            virtual bool decider_supported(const std::string &descripton);
-            virtual const std::string& name(void) const;
-        protected:
-            std::string m_name;
-            const unsigned m_min_num_converged;
-            double m_last_power_budget;
-            double m_last_dram_power;
-            const int m_num_sample;
-            std::map<uint64_t, unsigned> m_num_converged;
-    };
-}
-
-#endif
+class MockRegion : public geopm::Region {
+    public:
+        MOCK_METHOD1(hint,
+                void(int));//int(void));
+//        MOCK_CONST_METHOD2()
+};
