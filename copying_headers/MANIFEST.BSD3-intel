@@ -148,6 +148,7 @@ test/GlobalPolicyTest.cpp
 test/googletest.mk
 test/ProfileTableTest.cpp
 test/Makefile.mk
+test/MockMSRIO.hpp
 test/MockPlatform.hpp
 test/MockPlatformImp.hpp
 test/MockPlatformTopology.hpp
@@ -158,6 +159,7 @@ test/MPIProfileTest.cpp
 test/MPISharedMemoryTest.cpp
 test/MPITreeCommunicatorTest.cpp
 test/MSRIOTest.cpp
+test/MSRTest.cpp
 test/no_omp_cpu.c
 test/PlatformFactoryTest.cpp
 test/PlatformIOTest.cpp

@@ -154,6 +154,8 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/ControlMessageTest.loop_begin_0 \
               test/gtest_links/ControlMessageTest.loop_begin_1 \
               test/gtest_links/PlatformIOTest.freq_ctl \
+              test/gtest_links/MSRTest.bang1 \
+              test/gtest_links/MSRTest.bang2 \
               # end
 
 if ENABLE_MPI
@@ -206,12 +208,14 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/MockPlatform.hpp \
                           test/MockPlatformImp.hpp \
                           test/MockPlatformTopology.hpp \
+                          test/MockMSRIO.hpp \
                           test/SharedMemoryTest.cpp \
                           test/EnvironmentTest.cpp \
                           test/SchedTest.cpp \
                           test/ControlMessageTest.cpp \
                           test/PlatformIOTest.cpp \
                           test/MSRIOTest.cpp \
+                          test/MSRTest.cpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \

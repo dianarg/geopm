@@ -39,6 +39,7 @@
 #include "gtest/gtest.h"
 
 #include "MSRIO.hpp"
+#include "Exception.hpp"
 #include "geopm_sched.h"
 
 // Class derived from MSRIO used to test MSRIO w/o accessing the msr
@@ -78,7 +79,7 @@ TestMSRIO::TestMSRIO()
         int fd = open(path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         int err = ftruncate(fd, M_MAX_OFFSET);
         if (err) {
-            throw Exception("TestMSRIO: ftruncate failed", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            throw geopm::Exception("TestMSRIO: ftruncate failed", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
         char *msr_space_ptr = (char *)mmap(NULL, M_MAX_OFFSET, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         close(fd);
