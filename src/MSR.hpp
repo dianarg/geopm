@@ -80,17 +80,12 @@ namespace geopm
             /// @brief Query the name of the MSR.
             /// @param msr_name [out] The name of the MSR.
             virtual std::string name(void) const = 0;
-            /// @brief Program a counter to provide the MSR.
-            /// @param [in] offset The offset to the programmable
-            ///        counter MSR that will be read after programming
-            ///        is complete (the value returned by the offest()
-            ///        API).
+            /// @brief Program a counter for the event specified by the name.
             /// @param [in] cpu_idx Logical Linux CPU index to be
             ///        programmed.
             /// @param [in] msrio The IMSRIO object that will be used
             ///        to program the counter.
-            virtual void program(uint64_t offset,
-                                 int cpu_idx,
+            virtual void program(int cpu_idx,
                                  IMSRIO *msrio) = 0;
             /// @brief The byte offset for the MSR.
             /// @return The 64-bit offset to the register.
@@ -261,8 +256,7 @@ namespace geopm
             /// @brief MSR class destructor.
             virtual ~MSR();
             std::string name(void) const;
-            void program(uint64_t offset,
-                         int cpu_idx,
+            void program(int cpu_idx,
                          IMSRIO *msrio);
             uint64_t offset(void) const;
             int num_signal(void) const;

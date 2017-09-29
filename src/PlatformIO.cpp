@@ -98,27 +98,32 @@ namespace geopm
             throw Exception("PlatformIO: non-CPU domain_type not implemented.",
                             GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
-        int cpu_idx = domain_idx;
-        auto ncsm_it = m_name_cpu_signal_map.find(signal_name);
-        if (ncsm_it != m_name_cpu_signal_map.end()) {
-            result = m_active_signal.size();
-            m_active_signal.push_back((*ncsm_it).second[cpu_idx]);
-            IMSRSignal *msr_sig = dynamic_cast<IMSRSignal *>(m_active_signal.back());
-            if (msr_sig) {
-                std::vector<uint64_t> offset;
-                msr_sig->offset(offset);
-                for (int i = 0; i < msr_sig->num_msr(); ++i) {
-                    m_msr_read_signal_idx.push_back(result);
-                    m_msr_read_cpu_idx.push_back(cpu_idx);
-                    m_msr_read_offset.push_back(offset[i]);
-                }
-            }
+        if (signal_name.substr(0, strlen("MSR_PROG_EVENT:")) == "MSR_PROG_EVENT:") {
+            m_msr_read_offset.push_back(msr_program_event(signal_name.substr(strlen("MSR_PROG_EVENT:"))));
         }
         else {
-            std::ostringstream err_str;
-            err_str << "PlatformIO::push_signal(): signal name \""
-                    << signal_name << "\" not found";
-            throw Exception(err_str.str(), GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            int cpu_idx = domain_idx;
+            auto ncsm_it = m_name_cpu_signal_map.find(signal_name);
+            if (ncsm_it != m_name_cpu_signal_map.end()) {
+                result = m_active_signal.size();
+                m_active_signal.push_back((*ncsm_it).second[cpu_idx]);
+                IMSRSignal *msr_sig = dynamic_cast<IMSRSignal *>(m_active_signal.back());
+                if (msr_sig) {
+                    std::vector<uint64_t> offset;
+                    msr_sig->offset(offset);
+                    for (int i = 0; i < msr_sig->num_msr(); ++i) {
+                        m_msr_read_signal_idx.push_back(result);
+                        m_msr_read_cpu_idx.push_back(cpu_idx);
+                        m_msr_read_offset.push_back(offset[i]);
+                    }
+                }
+            }
+            else {
+                std::ostringstream err_str;
+                err_str << "PlatformIO::push_signal(): signal name \""
+                        << signal_name << "\" not found";
+                throw Exception(err_str.str(), GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
         }
         return result;
     }

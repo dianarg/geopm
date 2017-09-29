@@ -197,6 +197,16 @@ namespace geopm
         }
     }
 
+    MSR::MSR(const std::string &event_name,
+             uint64_t event_code,
+             uint64_t umask,
+             std::vector<uint64_t> prog_msr_offset,
+             std::vector<uint64_t> prog_msr_value,
+             std::vector<uint64_t> prog_msr_umask)
+    {
+
+    }
+             
 
     MSR::~MSR()
     {
@@ -236,20 +246,11 @@ namespace geopm
         return m_name;
     }
 
-    void MSR::program(uint64_t offset,
-                      int cpu_idx,
+    void MSR::program(int cpu_idx,
                       IMSRIO *msrio)
     {
-        auto msr_it = m_prog_msr.begin();
-        auto field_it = m_prog_field_name.begin();
-        auto value_it = m_prog_value.begin();
-        for (; msr_it != m_prog_msr.end(); ++msr_it, ++field_it, ++value_it) {
-            int control_idx = (*msr_it)->control_index(*field_it);
-            uint64_t field = 0, mask = 0;
-            (*msr_it)->control(control_idx, *value_it, field, mask);
-            msrio->write_msr(cpu_idx, (*msr_it)->offset(), mask, field);
-        }
-        m_offset = offset;
+        throw Exception("MSR::program() not yet implemented",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     uint64_t MSR::offset(void) const
