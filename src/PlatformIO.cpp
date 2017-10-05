@@ -104,7 +104,12 @@ namespace geopm
         auto ncsm_it = m_name_cpu_signal_map.find(signal_name);
         if (ncsm_it != m_name_cpu_signal_map.end()) {
             result = m_active_signal.size();
-            m_active_signal.push_back((*ncsm_it).second[cpu_idx]);
+            if ((*ncsm_it).second.size() == 1) {
+                m_active_signal.push_back((*ncsm_it).second[0]);
+            }
+            else {
+                m_active_signal.push_back((*ncsm_it).second[cpu_idx]);
+            }
             IMSRSignal *msr_sig = dynamic_cast<IMSRSignal *>(m_active_signal.back());
             if (msr_sig) {
                 std::vector<uint64_t> offset;
@@ -187,6 +192,7 @@ namespace geopm
 
     void PlatformIO::init(void)
     {
+        init_time();
         init_msr();
         m_is_init = true;
     }
@@ -334,6 +340,22 @@ namespace geopm
                 register_msr_control(msr_ptr->name() + ":" + msr_ptr->control_name(idx));
             }
         }
+    }
+
+    void PlatformIO::init_time(void)
+    {
+        // Insert the signal name with an empty vector into the map
+        auto ins_ret = m_name_cpu_signal_map.insert(std::pair<std::string, std::vector<ISignal *> >("TIME", {}));
+        // Get reference to the per-cpu signal vector
+        std::vector <ISignal *> &cpu_signal = (*(ins_ret.first)).second;
+        // Check to see if the signal name has already been registered
+        if (!ins_ret.second) {
+            /* delete previous signals */
+            for (auto &cs : cpu_signal) {
+                delete cs;
+            }
+        }
+        cpu_signal.push_back(new TimeSignal());
     }
 
     void PlatformIO::register_msr_signal(const std::string &signal_name)
@@ -531,6 +553,24 @@ namespace geopm
         }
         return whitelist.str();
     }
+
+    class TimeSignal : public ISignal
+    {
+        public:
+            TimeSignal() {geopm_time(&m_time_zero);}
+            virtual ~TimeSignal() {}
+            std::string name(void) {return "time";}
+            int domain_type(void) {return M_DOMAIN_BOARD;}
+            int domain_idx(void) {return 0;}
+            double sample(void) {struct geopm_time_s tt;
+                                 geopm_time(&tt);
+                                 return geopm_time_diff(m_time_zero, tt);}
+            std::string log(double sample) {throw Exception("TimeSignal::log() not yet implemented",
+                                            GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__)};
+        protected:
+            struct geopm_time_s m_time_zero;
+    };
+
 
     static const MSR *knl_msr(size_t &num_msr)
     {
