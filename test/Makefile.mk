@@ -314,4 +314,3 @@ CLEAN_LOCAL_TARGETS += clean-local-gtest-script-links
 
 include test/googletest.mk
 include test/plugin/Makefile.mk
-include test/fortran/Makefile.mk
