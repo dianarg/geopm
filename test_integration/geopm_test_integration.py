@@ -44,6 +44,40 @@ from natsort import natsorted
 import geopm_test_launcher
 import geopmpy.io
 
+def skip_unless_run_long_tests():
+    if 'GEOPM_RUN_LONG_TESTS' not in os.environ:
+        unittest.skip("Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+
+def skip_unless_cpu_freq():
+    try:
+        os.stat("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq")
+        os.stat("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
+    except OSError:
+        unittest.skip("Could not determine min and max frequency, enable cpufreq driver to run this test.")
+
+def skip_unless_platform_bdx():
+    with open('/proc/cpuinfo') as fid:
+        for line in fid.readlines():
+            if line.startswith('cpu family\t:'):
+                fam = int(line.split(':')[1])
+            if line.startswith('model\t\t:'):
+                mod = int(line.split(':')[1])
+    if fam != 6 or mod != 45:
+        unittest.skip("Performance test is tuned for BDX server, The family {}, model {} is not supported.".format(fam, mod))
+
+def skip_unless_config_enable(feature):
+    path = os.path.join(
+           os.path.dirname(
+           os.path.dirname(
+           os.path.realpath(__file__))),
+           'config.log')
+    with fid as open(path):
+        for line in fid.readlines():
+            if line.startswith "enable_{}='0'".format(feature):
+                unittest.skip("Feature: {feature} is not enabled, configure with --enable-{feature} to run this test.".format(feature=feature))
+            elif line.startswith("enable_{}='1'".format(fetaure)):
+                break
+
 class TestIntegration(unittest.TestCase):
     def setUp(self):
         self.longMessage = True
@@ -284,8 +318,7 @@ class TestIntegration(unittest.TestCase):
                     trace_elapsed_time = trace_data.iloc[-1]['seconds'] - trace_data.iloc[0]['seconds']
                     self.assertNear(trace_elapsed_time, region_data.get_runtime())
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_region_runtimes(self):
         name = 'test_region_runtime'
         report_path = name + '.report'
@@ -412,8 +445,7 @@ class TestIntegration(unittest.TestCase):
 
         # TODO Trace file parsing + analysis
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_scaling(self):
         """
         This test will start at ${num_node} nodes and ranks.  It will then calls check_run() to
@@ -465,8 +497,7 @@ class TestIntegration(unittest.TestCase):
                 num_node *= 2
                 self._output.remove_files()
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_power_consumption(self):
         name = 'test_power_consumption'
         report_path = name + '.report'
@@ -568,8 +599,7 @@ class TestIntegration(unittest.TestCase):
                     launcher.write_log(name, '{}'.format(negative_progress))
                     self.assertEqual(0, len(negative_progress))
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_sample_rate(self):
         """
         Check that sample rate is regular and fast.
@@ -673,14 +703,7 @@ class TestIntegration(unittest.TestCase):
             rr = self._output.get_report(nn)
             self.assertEqual(rr['ignore'].get_runtime(), rr.get_ignore_runtime())
 
-    @unittest.skipUnless([True for line in
-                          open(os.path.join(
-                               os.path.dirname(
-                               os.path.dirname(
-                               os.path.realpath(__file__))),
-                               'config.h'))
-                          if line.startswith('#define GEOPM_ENABLE_OMPT')],
-                          "Configure with --enable-ompt to enable this test.")
+    @skip_unless_config_enable('ompt')
     def test_unmarked_ompt(self):
         name = 'test_unmarked_ompt'
         report_path = name + '.report'
@@ -719,8 +742,7 @@ class TestIntegration(unittest.TestCase):
             gemm_region = [key for key in region_names if key.lower().find('gemm') != -1]
             self.assertLessEqual(1, len(gemm_region))
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_plugin_simple_freq(self):
         """
         """
@@ -837,8 +859,17 @@ class TestIntegration(unittest.TestCase):
 
         # Setup the static policy run
         step_freq = 100e6
-        min_freq = 1.2e9
-        max_freq = 2.3e9
+        try:
+            with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq") as fid:
+                min_freq = 1e3 * float(fid.readline())
+        except IOError:
+            min_freq = 1.2e9
+        try:
+            with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq") as fid:
+                max_freq = 1e3 * float(fid.readline())
+        except IOError:
+            max_freq = 2.3e9
+
         num_step = 1 + int((max_freq - min_freq) / step_freq)
         freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
         freq_sweep.reverse()
@@ -930,7 +961,7 @@ class TestIntegration(unittest.TestCase):
             self.assertLess(0.0, energy_savings_epoch)
             self.assertLess(-0.05, runtime_savings_epoch)
 
-    @unittest.skipUnless(False, 'Not implemented')
+    @unittest.skip('Not implemented')
     def test_variable_end_time(self):
         """
         Check that two ranks on the same node can shutdown at
@@ -938,7 +969,7 @@ class TestIntegration(unittest.TestCase):
         """
         raise NotImplementedError
 
-    @unittest.skipUnless(False, 'Not implemented')
+    @unittest.skip('Not implemented')
     def test_power_excursion(self):
         """
         When a low power region is followed by a high power region, check
@@ -947,7 +978,7 @@ class TestIntegration(unittest.TestCase):
         """
         raise NotImplementedError
 
-    @unittest.skipUnless(False, 'Not implemented')
+    @unittest.skip('Not implemented')
     def test_short_region_control(self):
         """
         Check that power limit is maintained when an application has many
@@ -955,7 +986,7 @@ class TestIntegration(unittest.TestCase):
         """
         raise NotImplementedError
 
-    @unittest.skipUnless(False, 'Not implemented')
+    @unittest.skip('Not implemented')
     def test_mean_power_against_integration(self):
         """
         Check that the average of the per sample power is close to the
