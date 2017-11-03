@@ -34,6 +34,9 @@
 
 #include <cassert>
 
+// FIXME REMOVE WITH PRINTS
+#include <iostream>
+
 namespace geopm
 {
 
@@ -90,6 +93,7 @@ namespace geopm
 
             if (m_num_sample[m_curr_idx] > 0) {
                 double average_perf = m_perf_total[m_curr_idx] / m_num_sample[m_curr_idx];
+std::cerr << "Region ID: " << m_region->identifier() << " Current freq: " << freq() << " Perf metric: " << average_perf << std::endl;
                 if (m_num_sample[m_curr_idx] >= m_min_base_sample &&
                     m_target == 0.0 &&
                     m_curr_idx == m_num_freq-1) {

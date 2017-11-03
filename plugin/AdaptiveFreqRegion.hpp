@@ -57,7 +57,7 @@ namespace geopm
             const size_t m_num_freq;
             size_t m_curr_idx;
             double m_target = 0.0;
-            const double m_target_ratio = 0.1;  // up to 10% degradation allowed
+            const double m_target_ratio = 0.05;  // up to 10% degradation allowed
             const size_t m_min_base_sample = 4;
 
             size_t m_num_increase = 0;

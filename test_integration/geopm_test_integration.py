@@ -829,32 +829,30 @@ class TestIntegration(unittest.TestCase):
         name = 'test_plugin_simple_freq_adaptive'
         num_node = 1
         num_rank = 4
-        loop_count = 1 #10
+        loop_count = 60
         app_conf = geopmpy.io.AppConf(name + '_app.config')
         self._tmp_files.append(app_conf.get_path())
         app_conf.set_loop_count(loop_count)
-        app_conf.append_region('dgemm', 1.0)  #20.25)
-        app_conf.append_region('stream', 1.0)  #1.449)
-        app_conf.append_region('all2all', 1.0) #1.0
+        app_conf.append_region('dgemm', 20.25)
+        app_conf.append_region('stream', 1.449)
+        app_conf.append_region('all2all', 1.0)
 
         # Setup the static policy run
         step_freq = 100e6
-        try:
-            with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq") as fid:
-                min_freq = 1e3 * float(fid.readline())
-        except IOError:
-            min_freq = 1.2e9
-        try:
-            with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq") as fid:
-                max_freq = 1e3 * float(fid.readline())
-        except IOError:
-            max_freq = 2.3e9
+        with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq") as fid:
+            min_freq = 1e3 * float(fid.readline())
+        with open('/proc/cpuinfo') as fid:
+            for line in fid.readlines():
+                if line.startswith('model name\t:'):
+                    sticker_freq = float(line.split('@')[1].split('GHz')[0]) * 1e9
+                    break
+            max_freq = sticker_freq + step_freq
 
         num_step = 1 + int((max_freq - min_freq) / step_freq)
         freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
         freq_sweep.reverse()
 
-        self._options['power_budget'] = 250 # Run at TDP to ensure RAPL does not win.
+        self._options['power_budget'] = 400 # Run at TDP to ensure RAPL does not win.
         self._options['tree_decider'] = 'static_policy'
         self._options['leaf_decider'] = 'simple_freq'
 
@@ -927,7 +925,7 @@ class TestIntegration(unittest.TestCase):
         launcher.write_log(name, 'Runtime savings ratio = {}'.format(runtime_savings_epoch))
 
         self.assertLess(0.0, energy_savings_epoch)
-        self.assertLess(-0.05, runtime_savings_epoch)
+        self.assertLess(-0.1, runtime_savings_epoch)
 
     @unittest.skipUnless(False, 'Not implemented')
     def test_variable_end_time(self):

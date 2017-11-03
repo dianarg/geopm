@@ -51,6 +51,9 @@
 
 #include <stdlib.h>
 
+// FIXME REMOVE WITH PRINTS
+#include <iostream>
+
 int geopm_plugin_register(int plugin_type, struct geopm_factory_c *factory, void *dl_ptr)
 {
     int err = 0;
@@ -155,6 +158,7 @@ namespace geopm
     bool SimpleFreqDecider::update_policy(IRegion &curr_region, IPolicy &curr_policy)
     {
         // Never receiving a new policy power budget via geopm_policy_message_s, since we set according to frequencies, not policy.
+        bool is_new_region = false;
         bool is_updated = false;
         is_updated = GoverningDecider::update_policy(curr_region, curr_policy);
         uint64_t rid = curr_region.identifier() & 0x00000000FFFFFFFF;
@@ -167,6 +171,8 @@ namespace geopm
             // detect region boundaries
             if (m_region_last != nullptr &&
                 m_region_last->identifier() != curr_region.identifier()) {
+
+                is_new_region = true;
 
                 auto last_region_id = m_region_last->identifier();
                 auto curr_region_id = curr_region.identifier();
@@ -181,7 +187,7 @@ namespace geopm
                         region_it = tmp.first;
                     }
 
-                    // update freq for this region
+                    // update freq for last region
                     region_it->second->update();
                 }
 
@@ -225,6 +231,7 @@ namespace geopm
 
         if (freq != m_last_freq) {
             std::vector<double> freq_vec(m_num_cores, freq);
+std::cerr << "Region ID: " <<  curr_region.identifier() << " Freq: " << freq << " is_new_region: " << is_new_region << std::endl;
 
             curr_policy.ctl_cpu_freq(freq_vec);
             m_last_freq = freq;
