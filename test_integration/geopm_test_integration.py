@@ -839,7 +839,7 @@ class TestIntegration(unittest.TestCase):
         # Setup the static policy run
         step_freq = 100e6
         min_freq = 1.2e9
-        max_freq = 2.3e9
+        max_freq = 2.2e9
         num_step = 1 + int((max_freq - min_freq) / step_freq)
         freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
         freq_sweep.reverse()
@@ -862,15 +862,15 @@ class TestIntegration(unittest.TestCase):
 
             for freq in freq_sweep:
                 report_path = '{}_freq_{}_mix_{}.report'.format(name, freq, ratio_idx)
-                trace_path = '{}_freq_{}_mix_{}.trace'.format(name, freq, ratio_idx)
                 os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(freq)
                 os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(freq)
-                try:
+                if 'GEOPM_SIMPLE_FREQ_RID_MAP' in os.environ:
                     del os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']
-                except KeyError:
-                    pass
-                launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path,
-                                                            time_limit=900, region_barrier=True, performance=True)
+                if 'GEOPM_SIMPLE_FREQ_ADAPTIVE' in os.environ:
+                    del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
+
+                launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path,
+                                                            time_limit=900, region_barrier=True)
                 launcher.write_log(name, 79 * '-')
                 launcher.write_log(name, 'Mix ratio index {}\nDGEMM:STREAM = {}:{}'.format(ratio_idx, ratio[0], ratio[1]))
 
@@ -878,6 +878,7 @@ class TestIntegration(unittest.TestCase):
                 launcher.write_log(name, '\nFrequency: {}'.format(freq))
                 launcher.set_num_node(num_node)
                 launcher.set_num_rank(num_rank)
+                launcher.set_pmpi_ctl('application')
                 launcher.run('{}_{}_{}'.format(name, freq, ratio_idx))
                 region_mean_runtime = geopmpy.io.AppOutput(report_path).get_report_df().groupby('region')['runtime'].mean()
                 for region in ['dgemm', 'stream', 'epoch']:
@@ -891,19 +892,34 @@ class TestIntegration(unittest.TestCase):
                         optimal_freq[region] = freq
                 is_once = False
 
-            report_path = '{}_optimal_mix_{}.report'.format(name, ratio_idx)
-            trace_path = '{}_optimal_mix_{}.trace'.format(name, ratio_idx)
-            os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(1.8e9)
-            os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(2.3e9)
-            os.environ['GEOPM_SIMPLE_FREQ_RID_MAP'] = 'stream:{},dgemm:{}'.format(optimal_freq['stream'],
-                                                                                  optimal_freq['dgemm'])
-            launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path,
-                                                        time_limit=900, region_barrier=True, performance=True)
+            os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(1.3e9)
+            os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(2.2e9)
+            os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE'] = "true"
+
+            report_path = '{}_adaptive_mix_{}.report'.format(name, ratio_idx)
+            launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path,
+                                                        time_limit=900, region_barrier=True)
             launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
             launcher.write_log(name, '\nBaseline frequency: {}'.format(optimal_freq['epoch']))
             launcher.write_log(name, '\nFrequency map: {}'.format(os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']))
             launcher.set_num_node(num_node)
             launcher.set_num_rank(num_rank)
+            launcher.set_pmpi_ctl('application')
+            launcher.run('{}_adaptive_{}'.format(name, ratio_idx))
+
+            report_path = '{}_optimal_mix_{}.report'.format(name, ratio_idx)
+            if 'GEOPM_SIMPLE_FREQ_ADAPTIVE' in os.environ:
+                del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
+            os.environ['GEOPM_SIMPLE_FREQ_RID_MAP'] = 'stream:{},dgemm:{}'.format(optimal_freq['stream'],
+                                                                                  optimal_freq['dgemm'])
+            launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path,
+                                                        time_limit=900, region_barrier=True)
+            launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
+            launcher.write_log(name, '\nBaseline frequency: {}'.format(optimal_freq['epoch']))
+            launcher.write_log(name, '\nFrequency map: {}'.format(os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']))
+            launcher.set_num_node(num_node)
+            launcher.set_num_rank(num_rank)
+            launcher.set_pmpi_ctl('application')
             launcher.run('{}_optimal_{}'.format(name, ratio_idx))
 
             # Gather the output from all runs
@@ -975,16 +991,15 @@ class TestIntegration(unittest.TestCase):
         is_once = True
         for freq in freq_sweep:
             report_path = '{}_freq_{}.report'.format(name, freq)
-            trace_path = '{}_freq_{}.trace'.format(name, freq)
             os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(freq)
             os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(freq)
-            launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path,
-                                                        time_limit=900, region_barrier=True, performance=True)
+            launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path,
+                                                        time_limit=900, region_barrier=True)
             launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
             launcher.write_log(name, '\nFrequency: {}'.format(freq))
             launcher.set_num_node(num_node)
             launcher.set_num_rank(num_rank)
-
+            launcher.set_pmpi_ctl('application')
             launcher.run('{}_{}'.format(name, freq))
             report = geopmpy.io.Report(report_path)
             for region in ['dgemm', 'stream', 'all2all', 'epoch']:
@@ -999,23 +1014,22 @@ class TestIntegration(unittest.TestCase):
             is_once = False
 
         report_path = '{}_optimal.report'.format(name)
-        trace_path = '{}_optimal.trace'.format(name)
         os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(min_freq)
         os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(max_freq)
         os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE'] = "yes"
-        launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path,
-                                                    time_limit=900, region_barrier=True, performance=True)
+        launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path,
+                                                    time_limit=900, region_barrier=True)
         launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
         launcher.write_log(name, '\nBaseline frequency: {}'.format(optimal_freq['epoch']))
         launcher.set_num_node(num_node)
         launcher.set_num_rank(num_rank)
+        launcher.set_pmpi_ctl('application')
         launcher.run('{}_optimal'.format(name))
 
         # Gather the output from all runs
-        self._output = geopmpy.io.AppOutput('{}*.report'.format(name), '{}*.trace*'.format(name))
+        self._output = geopmpy.io.AppOutput('{}*.report'.format(name))
         idx = pandas.IndexSlice
         report_df = self._output.get_report_df()
-        trace_df = self._output.get_trace_df()
 
         epoch_optimal_name = '{}_{}'.format(name, optimal_freq['epoch'])
         dynamic_optimal_name = '{}_optimal'.format(name)
