@@ -727,13 +727,12 @@ class TestIntegration(unittest.TestCase):
         name = 'test_plugin_simple_freq'
         num_node = 1
         num_rank = 4
-        loop_count = 10
+        loop_count = 60
         app_conf = geopmpy.io.AppConf(name + '_app.config')
         self._tmp_files.append(app_conf.get_path())
         app_conf.set_loop_count(loop_count)
         app_conf.append_region('dgemm', 20.25)
         app_conf.append_region('stream', 1.449)
-        app_conf.append_region('all2all', 1.0)
 
         # Setup the static policy run
         step_freq = 100e6
@@ -743,7 +742,7 @@ class TestIntegration(unittest.TestCase):
         freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
         freq_sweep.reverse()
 
-        self._options['power_budget'] = 250 # Run at TDP to ensure RAPL does not win.
+        self._options['power_budget'] = 400 # Run at TDP to ensure RAPL does not win.
         self._options['tree_decider'] = 'static_policy'
         self._options['leaf_decider'] = 'simple_freq'
 
@@ -768,7 +767,7 @@ class TestIntegration(unittest.TestCase):
 
             launcher.run('{}_{}'.format(name, freq))
             report = geopmpy.io.Report(report_path)
-            for region in ['dgemm', 'stream', 'all2all', 'epoch']:
+            for region in ['dgemm', 'stream', 'epoch']:
                 if is_once:
                     min_runtime[region] = report[region].get_runtime()
                     optimal_freq[region] = freq
@@ -783,9 +782,8 @@ class TestIntegration(unittest.TestCase):
         trace_path = '{}_optimal.trace'.format(name, freq)
         os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(1.8e9)
         os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(2.3e9)
-        os.environ['GEOPM_SIMPLE_FREQ_RID_MAP'] = 'stream:{},dgemm:{},all2all:{}'.format(optimal_freq['stream'],
-                                                                                         optimal_freq['dgemm'],
-                                                                                         optimal_freq['all2all'])
+        os.environ['GEOPM_SIMPLE_FREQ_RID_MAP'] = 'stream:{},dgemm:{}'.format(optimal_freq['stream'],
+                                                                              optimal_freq['dgemm'])
         launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path,
                                                     time_limit=900, region_barrier=True, performance=True)
         launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
@@ -820,6 +818,118 @@ class TestIntegration(unittest.TestCase):
 
         self.assertLess(0.0, energy_savings_epoch)
         self.assertLess(-0.05, runtime_savings_epoch)
+
+    def test_plugin_simple_freq_multi_node(self):
+        """
+        """
+        name = 'test_plugin_simple_freq_multi_node'
+        num_node = 4
+        num_rank = 16
+        loop_count = 60
+        dgemm_bigo_jlse = 20.25
+        stream_bigo_jlse = 1.449
+
+        self._options['power_budget'] = 400 # Run at TDP to ensure RAPL does not win.
+        self._options['tree_decider'] = 'static_policy'
+        self._options['leaf_decider'] = 'simple_freq'
+
+        ctl_conf = geopmpy.io.CtlConf(name + '.config', self._mode, self._options)
+        self._tmp_files.append(ctl_conf.get_path())
+
+        # Setup the static policy run
+        step_freq = 100e6
+        min_freq = 1.2e9
+        max_freq = 2.3e9
+        num_step = 1 + int((max_freq - min_freq) / step_freq)
+        freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
+        freq_sweep.reverse()
+
+        perf_margin = 0.1
+
+        mix_ratios = [(1.0, 0.25), (1.0, 0.5), (1.0, 0.75), (1.0, 1.0),
+                      (0.25, 1.0), (0.5, 1.0), (0.75, 1.0)]
+        for (ratio_idx, ratio) in enumerate(mix_ratios):
+            app_conf = geopmpy.io.AppConf(name + '_mix_{}.config'.format(ratio_idx))
+            self._tmp_files.append(app_conf.get_path())
+            app_conf.set_loop_count(loop_count)
+
+            app_conf.append_region('dgemm',  ratio[0] * dgemm_bigo_jlse)
+            app_conf.append_region('stream', ratio[1] * stream_bigo_jlse)
+
+            optimal_freq = dict()
+            min_runtime = dict()
+            is_once = True
+
+            for freq in freq_sweep:
+                report_path = '{}_freq_{}_mix_{}.report'.format(name, freq, ratio_idx)
+                trace_path = '{}_freq_{}_mix_{}.trace'.format(name, freq, ratio_idx)
+                os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(freq)
+                os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(freq)
+                try:
+                    del os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']
+                except KeyError:
+                    pass
+                launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path,
+                                                            time_limit=900, region_barrier=True, performance=True)
+                launcher.write_log(name, 79 * '-')
+                launcher.write_log(name, 'Mix ratio index {}\nDGEMM:STREAM = {}:{}'.format(ratio_idx, ratio[0], ratio[1]))
+
+                launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
+                launcher.write_log(name, '\nFrequency: {}'.format(freq))
+                launcher.set_num_node(num_node)
+                launcher.set_num_rank(num_rank)
+                launcher.run('{}_{}_{}'.format(name, freq, ratio_idx))
+                region_mean_runtime = geopmpy.io.AppOutput(report_path).get_report_df().groupby('region')['runtime'].mean()
+                for region in ['dgemm', 'stream', 'epoch']:
+                    if is_once:
+                        min_runtime[region] = region_mean_runtime[region]
+                        optimal_freq[region] = freq
+                    elif min_runtime[region] > region_mean_runtime[region]:
+                        min_runtime[region] = region_mean_runtime[region]
+                        optimal_freq[region] = freq
+                    elif min_runtime[region] * (1 + perf_margin) > region_mean_runtime[region]:
+                        optimal_freq[region] = freq
+                is_once = False
+
+            report_path = '{}_optimal_mix_{}.report'.format(name, ratio_idx)
+            trace_path = '{}_optimal_mix_{}.trace'.format(name, ratio_idx)
+            os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(1.8e9)
+            os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(2.3e9)
+            os.environ['GEOPM_SIMPLE_FREQ_RID_MAP'] = 'stream:{},dgemm:{}'.format(optimal_freq['stream'],
+                                                                                  optimal_freq['dgemm'])
+            launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path, trace_path,
+                                                        time_limit=900, region_barrier=True, performance=True)
+            launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
+            launcher.write_log(name, '\nBaseline frequency: {}'.format(optimal_freq['epoch']))
+            launcher.write_log(name, '\nFrequency map: {}'.format(os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']))
+            launcher.set_num_node(num_node)
+            launcher.set_num_rank(num_rank)
+            launcher.run('{}_optimal_{}'.format(name, ratio_idx))
+
+            # Gather the output from all runs
+            idx = pandas.IndexSlice
+            report_glob = '{}_*_mix_{}.report'.format(name, ratio_idx)
+            report_df = geopmpy.io.AppOutput(report_glob).get_report_df()
+
+            epoch_optimal_name = '{}_{}_{}'.format(name, optimal_freq['epoch'], ratio_idx)
+            dynamic_optimal_name = '{}_optimal_{}'.format(name, ratio_idx)
+
+            epoch_optimal_df = report_df.loc[idx[:, epoch_optimal_name, :, :, :, :, :, :], ]
+            dynamic_optimal_df = report_df.loc[idx[:, dynamic_optimal_name, :, :, :, :, :, :], ]
+
+            epoch_optimal_df = epoch_optimal_df.reset_index('name', drop=True)
+            dynamic_optimal_df = dynamic_optimal_df.reset_index('name', drop=True)
+            energy_savings = (epoch_optimal_df['energy'] - dynamic_optimal_df['energy']) / epoch_optimal_df['energy']
+            runtime_savings = (epoch_optimal_df['runtime'] - dynamic_optimal_df['runtime']) / epoch_optimal_df['runtime']
+
+            energy_savings_epoch = energy_savings.loc[idx[:, :, :, :, :, :, 'epoch'], ].mean()
+            runtime_savings_epoch = runtime_savings.loc[idx[:, :, :, :, :, :, 'epoch'], ].mean()
+
+            launcher.write_log(name, 'Energy savings ratio = {}'.format(energy_savings_epoch))
+            launcher.write_log(name, 'Runtime savings ratio = {}'.format(runtime_savings_epoch))
+
+            self.assertLess(0.0, energy_savings_epoch)
+            self.assertLess(-0.05, runtime_savings_epoch)
 
     @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
                          "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
