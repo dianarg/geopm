@@ -861,7 +861,9 @@ class TestIntegration(unittest.TestCase):
         num_rank = 16
         loop_count = 60
         dgemm_bigo_jlse = 20.25
+        dgemm_bigo_quartz = 29.12
         stream_bigo_jlse = 1.449
+        stream_bigo_quartz = 1.7941
         is_baseline_sticker = True
 
         self._options['power_budget'] = 400 # Run at TDP to ensure RAPL does not win.
@@ -898,8 +900,8 @@ class TestIntegration(unittest.TestCase):
             self._tmp_files.append(app_conf.get_path())
             app_conf.set_loop_count(loop_count)
 
-            app_conf.append_region('dgemm',  ratio[0] * dgemm_bigo_jlse)
-            app_conf.append_region('stream', ratio[1] * stream_bigo_jlse)
+            app_conf.append_region('dgemm',  ratio[0] * dgemm_bigo_quartz)
+            app_conf.append_region('stream', ratio[1] * stream_bigo_quartz)
 
             optimal_freq = dict()
             min_runtime = dict()
