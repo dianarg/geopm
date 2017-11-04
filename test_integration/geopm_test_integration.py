@@ -862,6 +862,7 @@ class TestIntegration(unittest.TestCase):
         loop_count = 60
         dgemm_bigo_jlse = 20.25
         stream_bigo_jlse = 1.449
+        is_baseline_sticker = True
 
         self._options['power_budget'] = 400 # Run at TDP to ensure RAPL does not win.
         self._options['tree_decider'] = 'static_policy'
@@ -872,12 +873,17 @@ class TestIntegration(unittest.TestCase):
 
         # Setup the static policy run
         step_freq = 100e6
-        min_freq = 1.8e9
-        max_freq = 2.3e9
-        if 'GEOPM_SIMPLE_FREQ_MIN' in os.environ:
-            min_freq = float(os.environ['GEOPM_SIMPLE_FREQ_MIN'])
-        if 'GEOPM_SIMPLE_FREQ_MAX' in os.environ:
-            max_freq = float(os.environ['GEOPM_SIMPLE_FREQ_MAX'])
+        with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq") as fid:
+            min_freq = 1e3 * float(fid.readline())
+        with open('/proc/cpuinfo') as fid:
+            for line in fid.readlines():
+                if line.startswith('model name\t:'):
+                    sticker_freq = float(line.split('@')[1].split('GHz')[0]) * 1e9
+                    break
+            max_freq = sticker_freq + step_freq
+        default_freq = sticker_freq - 4 * step_freq
+        if default_freq < min_freq:
+            default_freq = min_freq
 
         num_step = 1 + int((max_freq - min_freq) / step_freq)
         freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
@@ -936,6 +942,12 @@ class TestIntegration(unittest.TestCase):
                 is_once = False
 
             freq_map_str = 'stream:{},dgemm:{}'.format(optimal_freq['stream'], optimal_freq['dgemm'])
+            if is_baseline_sticker:
+                baseline_freq = sticker_freq
+            else:
+                baseline_freq = optimal_freq['epoch']
+                if baseline_freq < default_freq:
+                    baseline_freq = default_freq
 
             report_path = '{}_adaptive_mix_{}.report'.format(name, ratio_idx)
             try:
@@ -950,7 +962,7 @@ class TestIntegration(unittest.TestCase):
                 launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path,
                                                             time_limit=900, region_barrier=True)
                 launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
-                launcher.write_log(name, '\nBaseline frequency: {}'.format(optimal_freq['epoch']))
+                launcher.write_log(name, '\nBaseline frequency: {}'.format(baseline_freq))
                 launcher.write_log(name, '\nAdaptive run')
                 launcher.set_num_node(num_node)
                 launcher.set_num_rank(num_rank)
@@ -961,7 +973,7 @@ class TestIntegration(unittest.TestCase):
             try:
                 os.stat(report_path)
             except OSError:
-                os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(min_freq)
+                os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(default_freq)
                 os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(max_freq)
                 if 'GEOPM_SIMPLE_FREQ_ADAPTIVE' in os.environ:
                     del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
@@ -969,7 +981,7 @@ class TestIntegration(unittest.TestCase):
                 launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path,
                                                             time_limit=900, region_barrier=True)
                 launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
-                launcher.write_log(name, '\nBaseline frequency: {}'.format(optimal_freq['epoch']))
+                launcher.write_log(name, '\nBaseline frequency: {}'.format(baseline_freq))
                 launcher.write_log(name, '\nFrequency map: {}'.format(os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']))
                 launcher.write_log(name, '\nRID map run')
                 launcher.set_num_node(num_node)
@@ -982,7 +994,7 @@ class TestIntegration(unittest.TestCase):
             report_glob = '{}_*_mix_{}.report'.format(name, ratio_idx)
             report_df = geopmpy.io.AppOutput(report_glob).get_report_df()
 
-            baseline_name = '{}_{}_{}'.format(name, optimal_freq['epoch'], ratio_idx)
+            baseline_name = '{}_{}_{}'.format(name, baseline_freq, ratio_idx)
             dynamic_optimal_name = '{}_optimal_{}'.format(name, ratio_idx)
             adaptive_optimal_name = '{}_adaptive_{}'.format(name, ratio_idx)
 
@@ -1008,7 +1020,7 @@ class TestIntegration(unittest.TestCase):
 
             sys.stderr.write('\nMix ratio index: {}\n'.format(ratio_idx))
             sys.stderr.write('DGEMM-STREAM: {}-{}\n'.format(ratio[0], ratio[1]))
-            sys.stderr.write('Baseline frequency: {}\n'.format(optimal_freq['epoch']))
+            sys.stderr.write('Baseline frequency: {}\n'.format(baseline_freq))
             sys.stderr.write('Frequency map dynamic: {}\n'.format(freq_map_str))
             sys.stderr.write('Energy savings ratio (dynamic): {}\n'.format(dynamic_energy_savings))
             sys.stderr.write('Energy savings ratio (adaptive): {}\n'.format(adaptive_energy_savings))
