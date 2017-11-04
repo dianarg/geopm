@@ -872,8 +872,13 @@ class TestIntegration(unittest.TestCase):
 
         # Setup the static policy run
         step_freq = 100e6
-        min_freq = 1.2e9
-        max_freq = 2.2e9
+        min_freq = 1.8e9
+        max_freq = 2.3e9
+        if 'GEOPM_SIMPLE_FREQ_MIN' in os.environ:
+            min_freq = float(os.environ['GEOPM_SIMPLE_FREQ_MIN'])
+        if 'GEOPM_SIMPLE_FREQ_MAX' in os.environ:
+            max_freq = float(os.environ['GEOPM_SIMPLE_FREQ_MAX'])
+
         num_step = 1 + int((max_freq - min_freq) / step_freq)
         freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
         freq_sweep.reverse()
@@ -936,8 +941,8 @@ class TestIntegration(unittest.TestCase):
             try:
                 os.stat(report_path)
             except OSError:
-                os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(1.3e9)
-                os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(2.2e9)
+                os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(min_freq)
+                os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(max_freq)
                 os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE'] = "true"
                 if 'GEOPM_SIMPLE_FREQ_RID_MAP' in os.environ:
                     del os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']
@@ -956,6 +961,8 @@ class TestIntegration(unittest.TestCase):
             try:
                 os.stat(report_path)
             except OSError:
+                os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(min_freq)
+                os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(max_freq)
                 if 'GEOPM_SIMPLE_FREQ_ADAPTIVE' in os.environ:
                     del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
                 os.environ['GEOPM_SIMPLE_FREQ_RID_MAP'] = freq_map_str
