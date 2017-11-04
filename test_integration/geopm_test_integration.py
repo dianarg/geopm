@@ -927,6 +927,7 @@ class TestIntegration(unittest.TestCase):
                     launcher.set_num_node(num_node)
                     launcher.set_num_rank(num_rank)
                     #launcher.set_pmpi_ctl('application')
+                    time.sleep(2)
                     launcher.run('{}_{}_{}'.format(name, freq, ratio_idx))
 
                 region_mean_runtime = geopmpy.io.AppOutput(report_path).get_report_df().groupby('region')['runtime'].mean()
@@ -967,6 +968,7 @@ class TestIntegration(unittest.TestCase):
                 launcher.set_num_node(num_node)
                 launcher.set_num_rank(num_rank)
                 #launcher.set_pmpi_ctl('application')
+                time.sleep(2)
                 launcher.run('{}_adaptive_{}'.format(name, ratio_idx))
 
             report_path = '{}_optimal_mix_{}.report'.format(name, ratio_idx)
@@ -987,6 +989,7 @@ class TestIntegration(unittest.TestCase):
                 launcher.set_num_node(num_node)
                 launcher.set_num_rank(num_rank)
                 #launcher.set_pmpi_ctl('application')
+                time.sleep(2)
                 launcher.run('{}_optimal_{}'.format(name, ratio_idx))
 
             # Gather the output from all runs for this mix ratio
