@@ -860,9 +860,9 @@ class TestIntegration(unittest.TestCase):
         num_node = 4
         num_rank = 16
         loop_count = 60
-        dgemm_bigo_jlse = 37.6957
+        dgemm_bigo_jlse = 35.647
         dgemm_bigo_quartz = 29.12
-        stream_bigo_jlse = 1.449
+        stream_bigo_jlse = 1.6225
         stream_bigo_quartz = 1.7941
         is_baseline_sticker = False
 
