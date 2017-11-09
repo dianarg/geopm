@@ -957,7 +957,7 @@ class TestIntegration(unittest.TestCase):
                 os.stat(report_path)
             except OSError:
                 os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(min_freq)
-                os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(max_freq)
+                os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(sticker_freq)
                 os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE'] = "true"
                 if 'GEOPM_SIMPLE_FREQ_RID_MAP' in os.environ:
                     del os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']

@@ -47,7 +47,7 @@ namespace geopm
           M_NUM_FREQ(1 + (size_t)(ceil((freq_max-freq_min)/freq_step))),
           m_curr_idx(M_NUM_FREQ - 1),
           m_allowed_freq(M_NUM_FREQ),
-          m_perf_total(M_NUM_FREQ, 0),
+          m_perf_max(M_NUM_FREQ, 0),
           m_num_sample(M_NUM_FREQ, 0),
           m_start_time({0, 0})
     {
@@ -91,28 +91,31 @@ namespace geopm
         if (m_is_learning) {
             double perf = perf_metric();
             if (!isnan(perf)) {
-                m_perf_total[m_curr_idx] += perf;
+                if (m_num_sample[m_curr_idx] == 0 ||
+                    m_perf_max[m_curr_idx] < perf) {
+                    m_perf_max[m_curr_idx] = perf;
+                }
                 m_num_sample[m_curr_idx] += 1;
             }
 
             if (m_num_sample[m_curr_idx] > 0) {
-                double average_perf = m_perf_total[m_curr_idx] / m_num_sample[m_curr_idx];
+                double average_perf = m_perf_max[m_curr_idx];
 std::cerr << "Region ID: " << m_region->identifier() << " Current freq: " << freq()
-          << " Perf metric: " << average_perf << std::endl;
+          << " Perf metric: " << m_perf_max[m_curr_idx] << std::endl;
                 if (m_num_sample[m_curr_idx] >= M_MIN_BASE_SAMPLE &&
                     m_target == 0.0 &&
                     m_curr_idx == M_NUM_FREQ-1) {
 
-                    if (average_perf > 0.0) {
-                        m_target = (1.0 - M_TARGET_RATIO) * average_perf;
+                    if (m_perf_max[m_curr_idx] > 0.0) {
+                        m_target = (1.0 - M_TARGET_RATIO) * m_perf_max[m_curr_idx];
                     }
                     else {
-                        m_target = (1.0 + M_TARGET_RATIO) * average_perf;
+                        m_target = (1.0 + M_TARGET_RATIO) * m_perf_max[m_curr_idx];
                     }
                 }
 
                 if (m_target != 0.0) {
-                    if (average_perf > m_target) {
+                    if (m_perf_max[m_curr_idx] > m_target) {
                         if (m_curr_idx > 0) {
                             // Performance is in range; lower frequency
                             --m_curr_idx;

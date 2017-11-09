@@ -66,7 +66,7 @@ namespace geopm
             bool m_is_learning = true;
 
             std::vector<double> m_allowed_freq;
-            std::vector<double> m_perf_total;
+            std::vector<double> m_perf_max;
             std::vector<size_t> m_num_sample;
             //double m_start_time = 0.0; // used for runtime diff
             struct geopm_time_s m_start_time;
