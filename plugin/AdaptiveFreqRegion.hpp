@@ -45,7 +45,7 @@ namespace geopm
     {
         public:
             AdaptiveFreqRegion(geopm::IRegion *region, double freq_min,
-                               double freq_max, double freq_step);
+                               double freq_max, double freq_step, int num_domain);
             virtual ~AdaptiveFreqRegion() = default;
             double freq(void) const;
             void update_entry(void);
@@ -54,6 +54,7 @@ namespace geopm
             // Used to determine whether performance degraded or not.
             // Higher is better.
             virtual double perf_metric();
+            virtual double energy_metric();
             geopm::IRegion *m_region;
             const size_t M_NUM_FREQ;
             size_t m_curr_idx;
@@ -67,9 +68,11 @@ namespace geopm
 
             std::vector<double> m_allowed_freq;
             std::vector<double> m_perf_max;
+            std::vector<double> m_energy_min;
             std::vector<size_t> m_num_sample;
-            //double m_start_time = 0.0; // used for runtime diff
             struct geopm_time_s m_start_time;
+            double m_start_energy = 0.0;
+            int m_num_domain;
     };
 
 } // namespace geopm

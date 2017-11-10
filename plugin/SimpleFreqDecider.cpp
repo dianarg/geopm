@@ -168,6 +168,7 @@ namespace geopm
             freq = it->second;
         }
         else if (m_is_adaptive) {
+            int num_domain = curr_policy.num_domain();
             // detect region boundaries
             if (m_region_last != nullptr &&
                 m_region_last->identifier() != curr_region.identifier()) {
@@ -183,7 +184,7 @@ namespace geopm
                     auto region_it = m_region_map.find(last_region_id);
                     if (region_it == m_region_map.end()) {
                         auto tmp = m_region_map.emplace(last_region_id,
-                                                        new AdaptiveFreqRegion(m_region_last, m_freq_min, m_freq_max, m_freq_step));
+                                                        new AdaptiveFreqRegion(m_region_last, m_freq_min, m_freq_max, m_freq_step, num_domain));
                         region_it = tmp.first;
                     }
 
@@ -196,7 +197,7 @@ namespace geopm
                     auto region_it = m_region_map.find(curr_region_id);
                     if (region_it == m_region_map.end()) {
                         auto tmp = m_region_map.emplace(curr_region_id,
-                                                        new AdaptiveFreqRegion(&curr_region, m_freq_min, m_freq_max, m_freq_step));
+                                                        new AdaptiveFreqRegion(&curr_region, m_freq_min, m_freq_max, m_freq_step, num_domain));
                         region_it = tmp.first;
                     }
                     // update region entry time

@@ -42,14 +42,16 @@ namespace geopm
 
     AdaptiveFreqRegion::AdaptiveFreqRegion(geopm::IRegion *region,
                                            double freq_min, double freq_max,
-                                           double freq_step)
-        : m_region(region),
-          M_NUM_FREQ(1 + (size_t)(ceil((freq_max-freq_min)/freq_step))),
-          m_curr_idx(M_NUM_FREQ - 1),
-          m_allowed_freq(M_NUM_FREQ),
-          m_perf_max(M_NUM_FREQ, 0),
-          m_num_sample(M_NUM_FREQ, 0),
-          m_start_time({0, 0})
+                                           double freq_step, int num_domain)
+        : m_region(region)
+        , M_NUM_FREQ(1 + (size_t)(ceil((freq_max-freq_min)/freq_step)))
+        , m_curr_idx(M_NUM_FREQ - 1)
+        , m_allowed_freq(M_NUM_FREQ)
+        , m_perf_max(M_NUM_FREQ, 0)
+        , m_energy_min(M_NUM_FREQ, 0)
+        , m_num_sample(M_NUM_FREQ, 0)
+        , m_start_time({0, 0})
+        , m_num_domain(num_domain)
     {
         if (nullptr == region) {
             throw Exception("AdaptiveFreqRegion(): region cannot be NULL",
@@ -75,6 +77,16 @@ namespace geopm
         return elapsed;
     }
 
+    double AdaptiveFreqRegion::energy_metric()
+    {
+         double total_energy = 0.0;
+         for (int domain_idx = 0; domain_idx != m_num_domain; ++domain_idx) {
+             total_energy += m_region->signal(domain_idx, GEOPM_TELEMETRY_TYPE_PKG_ENERGY);
+             total_energy += m_region->signal(domain_idx, GEOPM_TELEMETRY_TYPE_DRAM_ENERGY);
+         }
+         return total_energy;
+    }
+
     double AdaptiveFreqRegion::freq(void) const
     {
         return m_allowed_freq[m_curr_idx];
@@ -84,24 +96,31 @@ namespace geopm
     {
         struct geopm_time_s current_time = m_region->telemetry_timestamp(-1);
         m_start_time = current_time;
+        m_start_energy = energy_metric();
     }
 
     void AdaptiveFreqRegion::update_exit()
     {
         if (m_is_learning) {
             double perf = perf_metric();
-            if (!isnan(perf)) {
+            double energy = energy_metric() - m_start_energy;
+            if (!isnan(perf) && !isnan(energy)) {
                 if (m_num_sample[m_curr_idx] == 0 ||
                     m_perf_max[m_curr_idx] < perf) {
                     m_perf_max[m_curr_idx] = perf;
+                }
+                if (m_num_sample[m_curr_idx] == 0 ||
+                    m_energy_min[m_curr_idx] > energy) {
+                    m_energy_min[m_curr_idx] = energy;
                 }
                 m_num_sample[m_curr_idx] += 1;
             }
 
             if (m_num_sample[m_curr_idx] > 0) {
-                double average_perf = m_perf_max[m_curr_idx];
 std::cerr << "Region ID: " << m_region->identifier() << " Current freq: " << freq()
-          << " Perf metric: " << m_perf_max[m_curr_idx] << std::endl;
+          << " Perf metric: " << m_perf_max[m_curr_idx]
+          << " Energy metric: " << m_energy_min[m_curr_idx] << std::endl;
+
                 if (m_num_sample[m_curr_idx] >= M_MIN_BASE_SAMPLE &&
                     m_target == 0.0 &&
                     m_curr_idx == M_NUM_FREQ-1) {
@@ -114,28 +133,35 @@ std::cerr << "Region ID: " << m_region->identifier() << " Current freq: " << fre
                     }
                 }
 
-                if (m_target != 0.0) {
+                bool do_increase = false;
+                if (m_curr_idx != M_NUM_FREQ - 1 &&
+                    m_energy_min[m_curr_idx + 1] < m_energy_min[m_curr_idx]) {
+                    do_increase = true;
+                }
+                else if (m_target != 0.0) {
                     if (m_perf_max[m_curr_idx] > m_target) {
                         if (m_curr_idx > 0) {
                             // Performance is in range; lower frequency
                             --m_curr_idx;
                         }
-                    } else {
-                        if (m_curr_idx < M_NUM_FREQ - 1) {
-                            // Performance degraded too far; increase freq
-                            ++m_curr_idx;
+                    }
+                    else {
+                        if (m_curr_idx != M_NUM_FREQ - 1) {
+                            do_increase = true;
                         }
-                        ++m_num_increase;
-                        // If the frequency has been lowered too far too
-                        // many times, stop learning
-                        if (m_num_increase == M_MAX_INCREASE) {
-                            m_is_learning = false;
-                        }
+                    }
+                }
+                if (do_increase) {
+                    // Performance degraded too far; increase freq
+                    ++m_curr_idx;
+                    ++m_num_increase;
+                    // If the frequency has been lowered too far too
+                    // many times, stop learning
+                    if (m_num_increase == M_MAX_INCREASE) {
+                        m_is_learning = false;
                     }
                 }
             }
         }
-
     }
-
 }
