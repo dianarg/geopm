@@ -53,6 +53,17 @@
 
 // FIXME REMOVE WITH PRINTS
 #include <iostream>
+#include <unistd.h>
+static const char *my_hostname(void) {
+    static char hostname[NAME_MAX] = {0};
+    static bool is_once = true;
+
+    if (is_once) {
+        gethostname(hostname, NAME_MAX);
+        is_once = false;
+    }
+    return hostname;
+}
 
 int geopm_plugin_register(int plugin_type, struct geopm_factory_c *factory, void *dl_ptr)
 {
@@ -235,7 +246,7 @@ namespace geopm
 
         if (freq != m_last_freq) {
             std::vector<double> freq_vec(m_num_cores, freq);
-std::cerr << "Region ID: " <<  curr_region.identifier() << " Freq: " << freq
+std::cerr << "Hostname: " << my_hostname() << " Region ID: " <<  curr_region.identifier() << " Freq: " << freq
           << " is_new_region: " << is_new_region << std::endl;
 
             curr_policy.ctl_cpu_freq(freq_vec);

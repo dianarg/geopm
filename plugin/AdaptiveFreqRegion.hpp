@@ -59,10 +59,11 @@ namespace geopm
             const size_t M_NUM_FREQ;
             size_t m_curr_idx;
             double m_target = 0.0;
-            const double M_TARGET_RATIO = 0.10;  // up to 10% degradation allowed
+            const double M_PERF_MARGIN = 0.10;  // up to 10% degradation allowed
             const size_t M_MIN_BASE_SAMPLE = 4;
+            const double M_ENERGY_MARGIN = 0.025;
 
-            size_t m_num_increase = 0;
+            std::vector<size_t> m_num_increase;
             const size_t M_MAX_INCREASE = 4;
             bool m_is_learning = true;
 

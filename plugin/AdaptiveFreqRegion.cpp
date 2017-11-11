@@ -36,6 +36,17 @@
 
 // FIXME REMOVE WITH PRINTS
 #include <iostream>
+#include <unistd.h>
+static const char *my_hostname(void) {
+    static char hostname[NAME_MAX] = {0};
+    static bool is_once = true;
+
+    if (is_once) {
+        gethostname(hostname, NAME_MAX);
+        is_once = false;
+    }
+    return hostname;
+}
 
 namespace geopm
 {
@@ -46,6 +57,7 @@ namespace geopm
         : m_region(region)
         , M_NUM_FREQ(1 + (size_t)(ceil((freq_max-freq_min)/freq_step)))
         , m_curr_idx(M_NUM_FREQ - 1)
+        , m_num_increase(M_NUM_FREQ, 0)
         , m_allowed_freq(M_NUM_FREQ)
         , m_perf_max(M_NUM_FREQ, 0)
         , m_energy_min(M_NUM_FREQ, 0)
@@ -117,7 +129,7 @@ namespace geopm
             }
 
             if (m_num_sample[m_curr_idx] > 0) {
-std::cerr << "Region ID: " << m_region->identifier() << " Current freq: " << freq()
+std::cerr << "Hostname: " << my_hostname() << " Region ID: " << m_region->identifier() << " Current freq: " << freq()
           << " Perf metric: " << m_perf_max[m_curr_idx]
           << " Energy metric: " << m_energy_min[m_curr_idx] << std::endl;
 
@@ -126,16 +138,16 @@ std::cerr << "Region ID: " << m_region->identifier() << " Current freq: " << fre
                     m_curr_idx == M_NUM_FREQ-1) {
 
                     if (m_perf_max[m_curr_idx] > 0.0) {
-                        m_target = (1.0 - M_TARGET_RATIO) * m_perf_max[m_curr_idx];
+                        m_target = (1.0 - M_PERF_MARGIN) * m_perf_max[m_curr_idx];
                     }
                     else {
-                        m_target = (1.0 + M_TARGET_RATIO) * m_perf_max[m_curr_idx];
+                        m_target = (1.0 + M_PERF_MARGIN) * m_perf_max[m_curr_idx];
                     }
                 }
 
                 bool do_increase = false;
                 if (m_curr_idx != M_NUM_FREQ - 1 &&
-                    m_energy_min[m_curr_idx + 1] < m_energy_min[m_curr_idx]) {
+                    m_energy_min[m_curr_idx + 1] < (1.0 - M_ENERGY_MARGIN) * m_energy_min[m_curr_idx]) {
                     do_increase = true;
                 }
                 else if (m_target != 0.0) {
@@ -153,13 +165,13 @@ std::cerr << "Region ID: " << m_region->identifier() << " Current freq: " << fre
                 }
                 if (do_increase) {
                     // Performance degraded too far; increase freq
-                    ++m_curr_idx;
-                    ++m_num_increase;
+                    ++m_num_increase[m_curr_idx];
                     // If the frequency has been lowered too far too
                     // many times, stop learning
-                    if (m_num_increase == M_MAX_INCREASE) {
+                    if (m_num_increase[m_curr_idx] == M_MAX_INCREASE) {
                         m_is_learning = false;
                     }
+                    ++m_curr_idx;
                 }
             }
         }
