@@ -34,11 +34,13 @@ exec_prefix ?= $(prefix)
 bindir ?= $(prefix)/bin
 libexecdir ?= $(exec_prefix)/libexec
 
-EXTRA_DIST += scripts/geopmpy/launcher.py \
+EXTRA_DIST += scripts/geopmpy/analysis.py \
+              scripts/geopmpy/launcher.py \
               scripts/geopmpy/plotter.py \
               scripts/geopmpy/io.py \
               scripts/geopmpy/version.py \
               scripts/geopmpy/__init__.py \
+              scripts/geopmanalysis \
               scripts/geopmaprun \
               scripts/geopmsrun \
               scripts/geopmplotter \
