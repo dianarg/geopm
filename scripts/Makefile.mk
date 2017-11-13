@@ -47,6 +47,7 @@ EXTRA_DIST += scripts/geopmpy/analysis.py \
               scripts/setup.py \
               scripts/MANIFEST.in \
               scripts/test/TestAffinity.py \
+              scripts/test/TestAnalysis.py \
               scripts/test/TestSubsetOptionParser.py \
               scripts/test/geopm_context.py \
               scripts/test/__init__.py \
@@ -72,7 +73,7 @@ PYTEST_TESTS = scripts/test/pytest_links/TestAffinity.test_affinity_0 \
                scripts/test/pytest_links/TestSubsetOptionParser.test_geopm_srun_mix_no_arg_overlap \
                scripts/test/pytest_links/TestSubsetOptionParser.test_geopm_srun_mix_no_arg \
                # end
-
+# TODO: list of test names for links
 TESTS += $(PYTEST_TESTS)
 
 pytest-checkprogs: $(PYTEST_TESTS)

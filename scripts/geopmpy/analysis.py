@@ -59,6 +59,7 @@ def sys_freq_avail():
     result = [step_freq * ss + min_freq for ss in range(num_step)]
     return result
 
+
 class Analysis(object):
     def __init__(self, name, output_dir, num_rank, num_node, app_argv):
         self._name = name
@@ -108,6 +109,7 @@ class MockAnalysis(Analysis):
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         with open(self._output_path, 'w') as fid:
             fid.write("This is the mock analysis output.\n")
+
     def parse(self):
         with open(self._output_path) as fid:
             result = fid.read()
@@ -128,6 +130,7 @@ class MockAnalysis(Analysis):
 
 class BalancerAnalysis(Analysis):
     pass
+
 
 class FreqSweepAnalysis(Analysis):
     def __init__(self, name, output_dir, num_rank, num_node, app_argv):
@@ -219,8 +222,154 @@ class FreqSweepAnalysis(Analysis):
         result = ','.join(result)
         return result
 
+
+class Sc17Analysis(Analysis):
+    ''' Used to compare runs of an auto frequency plugin
+        to runs at a fixed frequency for the application.
+        Requires that the reports directory contains data for the baseline
+        frequency, as well as the runs to be compared to that baseline.
+    '''
+
+    def __init__(self, name, num_rank, num_node, app_argv):
+        super(Sc17Analysis, self).__init__(name, num_rank, num_node, app_argv)
+
+    def __del__(self):
+        pass
+
+    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+        pass
+
+    def parse(self):
+        pass
+
+    # TODO: can be static
+    def descending_sweep_freqs(self):
+        # TODO: some of these can be parameters
+        step_freq = 100e6
+        min_freq = 1.2e9
+        max_freq = 2.1e9
+        # sticker_freq = 2.1e9
+        # default_freq = sticker_freq - 4 * step_freq
+        # if default_freq < min_freq:
+        #     default_freq = min_freq
+
+        num_step = 1 + int((max_freq - min_freq) / step_freq)
+        freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
+        freq_sweep.reverse()
+        return freq_sweep
+
+    # TODO: can be static
+    def calculate_optimal_freq(self, df, name_prefix, ratio_idx):
+        perf_margin = 0.1
+        optimal_freq = dict()
+        min_runtime = dict()
+        is_once = True
+        freq_sweep = self.descending_sweep_freqs()
+        for freq in freq_sweep:
+            profile_name = name_prefix + '_{}_{}'.format(freq, ratio_idx)
+            # index:
+            # version, name, power_budget, tree_dec, leaf_dec, node_name, iteration, region
+            mix_df = df.loc[idx[:, profile_name, :, :, :, :, :, :], ]  # last comma is significant
+
+            region_mean_runtime = mix_df.groupby(level='region')['runtime'].mean()
+
+            for region in ['dgemm', 'stream', 'epoch']:
+                if is_once:
+                    min_runtime[region] = region_mean_runtime[region]
+                    optimal_freq[region] = freq
+                elif min_runtime[region] > region_mean_runtime[region]:
+                    min_runtime[region] = region_mean_runtime[region]
+                    optimal_freq[region] = freq
+                elif min_runtime[region] * (1 + perf_margin) > region_mean_runtime[region]:
+                    optimal_freq[region] = freq
+            is_once = False
+
+        return optimal_freq
+
+    def report_process(self, parse_output):
+        name_prefix = 'test_plugin_simple_freq_multi_node'
+        step_freq = 100e6
+        baseline_freq = 2.1e9
+        sticker_freq = 2.1e9
+        default_freq = sticker_freq - 4 * step_freq
+        is_baseline_sticker = True  # TODO: could be parameter? need one test for each
+
+        runtime_data = []
+        energy_data = []
+        series_names = ['offline application', 'offline per-phase', 'online per-phase']
+
+        # TODO: this would be easier to plot if these ratios were in order
+        mix_ratios = [(1.0, 0.25), (1.0, 0.5), (1.0, 0.75), (1.0, 1.0),
+                      (0.25, 1.0), (0.5, 1.0), (0.75, 1.0)]
+        for (ratio_idx, ratio) in enumerate(mix_ratios):
+            optimal_freq = self.calculate_optimal_freq(parse_output, name_prefix, ratio_idx)
+
+            # set baseline and best fit freqs
+            if is_baseline_sticker:
+                baseline_freq = sticker_freq
+                best_fit_freq = optimal_freq['epoch']
+            else:
+                baseline_freq = optimal_freq['epoch']
+                if baseline_freq < default_freq:
+                    baseline_freq = default_freq
+                best_fit_freq = baseline_freq
+
+            prof_name = {
+                'baseline': '{}_{}_{}'.format(name_prefix, baseline_freq, ratio_idx),
+                'offline application': '{}_{}_{}'.format(name_prefix, best_fit_freq, ratio_idx),
+                'offline per-phase': '{}_optimal_{}'.format(name_prefix, ratio_idx),
+                'online per-phase': '{}_adaptive_{}'.format(name_prefix, ratio_idx),
+            }
+            frame = {}
+            runtime = {}
+            energy = {}
+
+            drop_index = ['version', 'name', 'power_budget', 'tree_decider',
+                          'leaf_decider', 'node_name', 'iteration']
+            for prof, pname in prof_name.items():
+                frame[prof] = parse_output.loc[idx[:, pname, :, :, :, :, :, :], ]
+                frame[prof] = frame[prof].reset_index(drop_index, drop=True)
+                runtime[prof] = frame[prof]['runtime']
+                energy[prof] = frame[prof]['energy']
+
+            # calculate savings for each run, then get mean
+            runtime_temp = []
+            energy_temp = []
+            for sname in series_names:
+                runtime_savings = (runtime['baseline'] - runtime[sname]) / runtime['baseline']
+                # show runtime as positive percent
+                runtime_savings = runtime_savings.loc[idx['epoch'], ].mean() * -100.0
+                energy_savings = (energy['baseline'] - energy[sname]) / energy['baseline']
+                energy_savings = energy_savings.loc[idx['epoch'], ].mean()
+                runtime_temp.append(runtime_savings)
+                energy_temp.append(energy_savings)
+            runtime_data.append(runtime_temp)
+            energy_data.append(energy_temp)
+            # end mix ratio loop
+
+        # produce combined output
+        energy_result_df = pandas.DataFrame(energy_data, columns=series_names)
+        runtime_result_df = pandas.DataFrame(runtime_data, columns=series_names)
+
+        # fix for ordering of mixes
+        order = [0, 1, 2, 3, 6, 5, 4]
+        energy_result_df = energy_result_df.reindex(order)
+        runtime_result_df = runtime_result_df.reindex(order)
+
+        return energy_result_df, runtime_result_df
+
+    def plot_process(self, parse_output):
+        return None
+
+    def report(self, process_output):
+        sys.stdout.write('Report')
+
+    def plot(self, process_output):
+        sys.stdout.write('Plot')
+
+
 def main(argv):
-    help_str ="""
+    help_str = """
 Usage: {argv_0} [-h|--help] [--version]
        {argv_0} -t ANALYSIS_TYPE -n NUM_RANK -N NUM_NODE [-o OUTPUT_DIR] [-p PROFILE_PREFIX] [-l] -- EXEC [EXEC_ARGS]
 
@@ -255,9 +404,9 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
         sys.stdout.write(version_str)
         exit(0)
 
-    analysis_type_map = {'freq_sweep':FreqSweepAnalysis,
-                         'balancer':BalancerAnalysis,
-                         'test':MockAnalysis}
+    analysis_type_map = {'freq_sweep': FreqSweepAnalysis,
+                         'balancer': BalancerAnalysis,
+                         'test': MockAnalysis}
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=False)
 
