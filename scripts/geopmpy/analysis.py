@@ -29,8 +29,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-
-def sys_avail_freq():
+def sys_freq_avail():
     step_freq = 100e6
     with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq") as fid:
         min_freq = 1e3 * float(fid.readline())
@@ -45,49 +44,78 @@ def sys_avail_freq():
     result = [step_freq * ss + min_freq for ss in range(num_step)]
     return result
 
-def launch_freq_sweep(freq_sweep, app_argv, name_base):
-    report_paths = []
-    options = dict()
-    options['power_budget'] = 400 # Run at TDP to ensure RAPL does not win.
-    options['tree_decider'] = 'static_policy'
-    options['leaf_decider'] = 'simple_freq'
-    options['platform'] = 'rapl'
-    mode = 'dynamic'
-    ctl_conf = geopmpy.io.CtlConf(name_base + '_app.config', mode, options)
+class Analysis(object):
+    def __init__(self, name, app_argv, num_rank, num_node)
+        self._name = name
+        self._app_argv = app_argv
+        self._num_rank = num_rank
+        self._num_node = num_node
+        self._report_paths = []
+        self._trace_paths = []
+        self._app_output = None
 
-    for freq in freq_sweep:
-        profile_name = name_base + '_freq_{}'.format(freq)
-        report_path = profile_name + '.report'
-        report_paths.append(report_path)
-        try:
-            os.stat(report_path)
-        except OSError:
-            if ctl_conf._options['leaf_decider'] != 'simple_freq':
-                raise RuntimeError('Leaf decider must be "simple_freq"')
-            os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(freq)
-            os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(freq)
-            if 'GEOPM_SIMPLE_FREQ_RID_MAP' in os.environ:
-                del os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']
-            if 'GEOPM_SIMPLE_FREQ_ADAPTIVE' in os.environ:
-                del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
+    def launch(self):
+        raise NotImplementedError('Analysis base class does not implement the launch method()')
 
-            argv = ['dummy', '--geopm-ctl', geopm_ctl,
-                             '--geopm-policy', ctl_conf.get_path(),
-                             '--geopm-report', report_path,
-                             '--geopm-profile', profile_name]
-            if do_region_barrier:
-                argv.append('--geopm-barrier')
-            argv.append('--')
-            argv.extend(app_argv)
-            launcher = geopmpy.launcher.factory(argv, num_rank, num_node)
+    def set_output(self, report_paths, trace_paths=None):
+        if self._report_paths is None and self._trace_paths is None:
+            self._report_paths = report_paths
+            self._trace_paths = trace_paths
+        else:
+            raise RuntimeError('Analysis object already has report and trace paths populated.')
 
-            sys.stderr.write(79 * '-' + '\n')
-            sys.stderr.write('Mix ratio index {}\nDGEMM:STREAM = {}:{}\n'.format(ratio_idx, ratio[0], ratio[1]))
+    def parse(self):
+        self._app_output = geopmpy.io.AppOutput(self._report_paths, self._trace_paths)
 
-            sys.stderr.write('\nCtl config -\n{}\n'.format(ctl_conf))
-            sys.stderr.write('\nFrequency: {}\n'.format(freq))
-            launcher.run()
-    return report_paths
+    def report_df(self):
+        return self._app_output.report_df()
+
+    def get_report_paths(self):
+        return self._report_paths
+
+    def set_report_paths(self, paths):
+        self._report_paths = report_paths
+
+    def append_report_paths(self, path):
+        self._report_paths.append(path)
+
+    def extend_report_paths(self, paths):
+        self._report_paths.extend(paths)
+
+class FreqSweepAnalysis(Analysis):
+    def __init__(self, name, app_argv, num_rank, num_node):
+        super(FreqSweepAnalysis, self).__init__(name, app_argv, num_rank, num_node)
+
+    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+        ctl_conf = geopmpy.io.CtlConf(self._name + '_app.config',
+                                      'dynamic',
+                                      {'power_budget':400,
+                                       'tree_decider':'static_policy',
+                                       'leaf_decider':'simple_freq',
+                                       'platform':'rapl'})
+        if 'GEOPM_SIMPLE_FREQ_RID_MAP' in os.environ:
+            del os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']
+        if 'GEOPM_SIMPLE_FREQ_ADAPTIVE' in os.environ:
+            del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
+        for freq in sys_freq_avail():
+            profile_name = self._name + '_freq_{}'.format(freq)
+            report_path = profile_name + '.report'
+            self.append_report_paths(report_path)
+            if not os.path.exists(report_path):
+                os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(freq)
+                os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(freq)
+                argv = ['dummy', '--geopm-ctl', geopm_ctl,
+                                 '--geopm-policy', ctl_conf.get_path(),
+                                 '--geopm-report', report_path,
+                                 '--geopm-profile', profile_name]
+                if do_geopm_barrier:
+                    argv.append('--geopm-barrier')
+                argv.append('--')
+                argv.extend(app_argv)
+                launcher = geopmpy.launcher.factory(argv, num_rank, num_node)
+                launcher.run()
+            else:
+                sys.sterr.write('<geopmpy>: Warning: output file "{}" exists, skipping run.\n'.format(report_path)
 
 def ee_region_freq_map(report_paths):
     optimal_freq = dict()
