@@ -65,7 +65,6 @@ class Analysis(object):
         self._app_argv = app_argv
         self._report_paths = []
         self._trace_paths = []
-        self._app_output = None
 
     def launch(self):
         """Run experiment and set data paths corresponding to output.
@@ -79,33 +78,50 @@ class Analysis(object):
         else:
             raise RuntimeError('Analysis object already has report and trace paths populated.')
 
-    def _parse(self):
-        if self._app_output is None:
-            self._app_output = geopmpy.io.AppOutput(self._report_paths, self._trace_paths)
+    def parse(self):
+        return geopmpy.io.AppOutput(self._report_paths, self._trace_paths)
 
-    def get_report_df(self):
-        if self._app_output is not None:
-            return self._app_output.get_report_df()
+    def plot_process(self, parse_output):
+        raise NotImplementedError('Analysis base class does not implement the plot_process method()')
 
-    def get_trace_df(self):
-        if self._app_output is not None:
-            return self._app_output.get_trace_df()
+    def report_process(self, parse_output):
+        raise NotImplementedError('Analysis base class does not implement the report_process method()')
+
+    def report(self, process_output):
+        raise NotImplementedError('Analysis base class does not implement the report method()')
+
+    def plot(self, process_output):
+        raise NotImplementedError('Analysis base class does not implement the plot method()')
+
 
 class MockAnalysis(Analysis):
     def __init__(self, name, num_rank, num_node, app_argv):
         super(MockAnalysis, self).__init__(name, num_rank, num_node, app_argv)
         self._output_path = 'mock_analysis.out'
 
+    def __del__(self):
+        os.unlink(self._output_path)
+
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         with open(self._output_path, 'w') as fid:
             fid.write("This is the mock analysis output.\n")
     def parse(self):
         with open(self._output_path) as fid:
-            self._output = fid.read()
+            result = fid.read()
+        return result
 
-    def process(self):
-        sys.stdout.write(self._output)
-        os.unlink(self._output_path)
+    def report_process(self, parse_output):
+        return parse_output
+
+    def plot_process(self, parse_output):
+        return self.report_process(parse_output)
+
+    def report(self, process_output):
+        sys.stdout.write('Report: {}'.format(process_output))
+
+    def plot(self, process_output):
+        sys.stdout.write('Plot: {}'.format(process_output))
+
 
 class BalancerAnalysis(Analysis):
     pass
@@ -147,10 +163,18 @@ class FreqSweepAnalysis(Analysis):
             else:
                 raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
-    def process(self):
-        region_freq_map = self._region_freq_map(self.get_report_df())
-        region_freq_str = self._region_freq_str(region_freq_map)
+    def report_process(self, parse_output):
+        return self._region_freq_map(process_output)
+
+    def plot_process(self, parse_output):
+        return parse_output.get_report_df()
+
+    def report(self, process_output):
+        region_freq_str = self._region_freq_str(process_output)
         sys.stdout.write('Region frequency map: {}\n'.format(region_freq_str))
+
+    def plot(self, process_output):
+        pass
 
     def _region_freq_map(self, report_df):
         perf_margin = 0.1
@@ -186,34 +210,31 @@ class FreqSweepAnalysis(Analysis):
 
 def main(argv):
     help_str ="""
-usage: analysis.py [-h] -t ANALYSIS_TYPE [-o OUTPUT_DIR] [-v] [-l] [--version]
-                   [APP_ARGV [APP_ARGV ...]]
+Usage: {argv_0} [-h|--help] [--version]
+       {argv_0} -t ANALYSIS_TYPE -n NUM_RANK -N NUM_NODE [-o OUTPUT_DIR] [-p PROFILE_PREFIX] [-l] -- EXEC [EXEC_ARGS]
 
-GEOPM Analysis - Used to run applications and analyze results for specific
-                 GEOPM use cases.
+geopmanalysis - Used to run applications and analyze results for specific
+                GEOPM use cases.
 
-required:
-  -t ANALYSIS_TYPE, --analysis_type ANALYSIS_TYPE
-                        type of analysis to perform, select from: freq_sweep,
-                        balancer
-positional arguments:
-  APP_ARGV              positional arguments are the application and its
-                        arguments. (default: None)
-
-optional arguments:
   -h, --help            show this help message and exit
-  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
-                        the output directory for the generated files (default: '.')
-  -v, --verbose         print debugging information. (default: False)
-  -l, --launch_only     run application and generate data, do not analyze the
-                        data. (default: False)
-  --version             show program's version number and exit
 
-"""
+  -t, --analysis_type   type of analysis to perform. Available
+                        ANALYSIS_TYPE values: freq_sweep, and balancer.
+  -n, --num_rank        total number of application ranks to launch with
+  -N, --num_node        number of compute nodes to launch onto
+  -o, --output_dir      the output directory for reports, traces, and plots (default '.')
+  -p, --profile_prefix  prefix to prepend to profile name when launching
+  -l, --level           controls the level of detail provided in the analysis.
+                        level 0: run application and generate reports and traces only
+                        level 1: print analysis of report and trace data (default)
+                        level 2: create plots from report and trace data
+  --version             show the GEOPM version number and exit
+
+""".format(argv_0=sys.argv[0])
     version_str = """\
-GEOPM version {}
+GEOPM version {version}
 Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
-""".format(__version__)
+""".format(version=__version__)
 
     if '--help' in argv or '-h' in argv:
         sys.stdout.write(help_str)
@@ -231,27 +252,28 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
     parser.add_argument('-t', '--analysis_type',
                            help='type of analysis to perform, select from: {}'.format(', '.join(analysis_type_map.keys())),
                            action='store', required=True, default='REQUIRED OPTION')
-    parser.add_argument('app_argv', metavar='APP_ARGV',
-                        action='store', nargs='*')
+    parser.add_argument('-n', '--num_rank',
+                        action='store', required=True, default=None, type=int)
+    parser.add_argument('-N', '--num_node',
+                        action='store', required=True, default=None, type=int)
     parser.add_argument('-o', '--output_dir',
                         action='store', default='.')
-    parser.add_argument('-v', '--verbose',
-                        action='store_true')
-    parser.add_argument('-l', '--launch_only',
-                        action='store_true')
-    parser.add_argument('-p', '--profile_name_prefix',
+    parser.add_argument('-p', '--profile_prefix',
                         action='store', default=None)
-    parser.add_argument('-n', '--num_rank',
-                        action='store', default=None, type=int)
-    parser.add_argument('-N', '--num_node',
-                        action='store', default=None, type=int)
+    parser.add_argument('-l', '--level',
+                        action='store', default=1, type=int)
+    parser.add_argument('app_argv', metavar='APP_ARGV',
+                        action='store', nargs='*')
 
     args = parser.parse_args(argv)
     if args.analysis_type not in analysis_type_map:
         raise SyntaxError('Analysis type: "{}" unrecognized.'.format(args.analysis_type))
-    analysis = analysis_type_map[args.analysis_type](args.profile_name_prefix, args.num_rank, args.num_node, args.app_argv)
+    analysis = analysis_type_map[args.analysis_type](args.profile_prefix, args.num_rank, args.num_node, args.app_argv)
     analysis.launch()
-    if not args.launch_only:
-        analysis.parse()
-        analysis.process()
-
+    if args.level > 0:
+        parse_output = analysis.parse()
+        process_output = analysis.report_process(parse_output)
+        analysis.report(process_output)
+        if args.level > 1:
+            process_output = analysis.plot_process(parse_output)
+            analysis.plot(process_output)
