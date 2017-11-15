@@ -29,6 +29,19 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+"""
+GEOPM Analysis - Used to run applications and analyze results for specific GEOPM use cases.
+"""
+
+import argparse
+import sys
+import os
+import geopmpy
+
+from geopmpy import __version__
+
+from pandas import IndexSlice as idx
+
 def sys_freq_avail():
     step_freq = 100e6
     with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq") as fid:
@@ -45,46 +58,61 @@ def sys_freq_avail():
     return result
 
 class Analysis(object):
-    def __init__(self, name, app_argv, num_rank, num_node)
+    def __init__(self, name, num_rank, num_node, app_argv):
         self._name = name
-        self._app_argv = app_argv
         self._num_rank = num_rank
         self._num_node = num_node
+        self._app_argv = app_argv
         self._report_paths = []
         self._trace_paths = []
         self._app_output = None
 
     def launch(self):
+        """Run experiment and set data paths corresponding to output.
+        """
         raise NotImplementedError('Analysis base class does not implement the launch method()')
 
-    def set_output(self, report_paths, trace_paths=None):
+    def set_data_paths(self, report_paths, trace_paths=None):
         if self._report_paths is None and self._trace_paths is None:
             self._report_paths = report_paths
             self._trace_paths = trace_paths
         else:
             raise RuntimeError('Analysis object already has report and trace paths populated.')
 
+    def _parse(self):
+        if self._app_output is None:
+            self._app_output = geopmpy.io.AppOutput(self._report_paths, self._trace_paths)
+
+    def get_report_df(self):
+        if self._app_output is not None:
+            return self._app_output.get_report_df()
+
+    def get_trace_df(self):
+        if self._app_output is not None:
+            return self._app_output.get_trace_df()
+
+class MockAnalysis(Analysis):
+    def __init__(self, name, num_rank, num_node, app_argv):
+        super(MockAnalysis, self).__init__(name, num_rank, num_node, app_argv)
+        self._output_path = 'mock_analysis.out'
+
+    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+        with open(self._output_path, 'w') as fid:
+            fid.write("This is the mock analysis output.\n")
     def parse(self):
-        self._app_output = geopmpy.io.AppOutput(self._report_paths, self._trace_paths)
+        with open(self._output_path) as fid:
+            self._output = fid.read()
 
-    def report_df(self):
-        return self._app_output.report_df()
+    def process(self):
+        sys.stdout.write(self._output)
+        os.unlink(self._output_path)
 
-    def get_report_paths(self):
-        return self._report_paths
-
-    def set_report_paths(self, paths):
-        self._report_paths = report_paths
-
-    def append_report_paths(self, path):
-        self._report_paths.append(path)
-
-    def extend_report_paths(self, paths):
-        self._report_paths.extend(paths)
+class BalancerAnalysis(Analysis):
+    pass
 
 class FreqSweepAnalysis(Analysis):
-    def __init__(self, name, app_argv, num_rank, num_node):
-        super(FreqSweepAnalysis, self).__init__(name, app_argv, num_rank, num_node)
+    def __init__(self, name, num_rank, num_node, app_argv):
+        super(FreqSweepAnalysis, self).__init__(name, num_rank, num_node, app_argv)
 
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         ctl_conf = geopmpy.io.CtlConf(self._name + '_app.config',
@@ -99,9 +127,9 @@ class FreqSweepAnalysis(Analysis):
             del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
         for freq in sys_freq_avail():
             profile_name = self._name + '_freq_{}'.format(freq)
-            report_path = profile_name + '.report'
-            self.append_report_paths(report_path)
-            if not os.path.exists(report_path):
+            report_path = os.path.join(self._out_dir, profile_name + '.report')
+            self._report_paths.append(report_path)
+            if self._app_argv and not os.path.exists(report_path):
                 os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(freq)
                 os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(freq)
                 argv = ['dummy', '--geopm-ctl', geopm_ctl,
@@ -111,28 +139,119 @@ class FreqSweepAnalysis(Analysis):
                 if do_geopm_barrier:
                     argv.append('--geopm-barrier')
                 argv.append('--')
-                argv.extend(app_argv)
+                argv.extend(self._app_argv)
                 launcher = geopmpy.launcher.factory(argv, num_rank, num_node)
                 launcher.run()
+            elif os.path.exists(report_path):
+                sys.sterr.write('<geopmpy>: Warning: output file "{}" exists, skipping run.\n'.format(report_path))
             else:
-                sys.sterr.write('<geopmpy>: Warning: output file "{}" exists, skipping run.\n'.format(report_path)
+                raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
-def ee_region_freq_map(report_paths):
-    optimal_freq = dict()
-    min_runtime = dict()
-    is_once = True
-    for report_path in report_paths:
-        # FIXME NEED TO DETERMINE FREQUENCY EACH REPORT WAS GENERATED
-        # FOR AND SORT IN INVERSE ORDER.
-        region_mean_runtime = geopmpy.io.AppOutput(report_path).get_report_df().groupby('region')['runtime'].mean()
-        for region in region_mean_runtime.keys():
-            if is_once:
-                min_runtime[region] = region_mean_runtime[region]
-                optimal_freq[region] = freq
-            elif min_runtime[region] > region_mean_runtime[region]:
-                min_runtime[region] = region_mean_runtime[region]
-                optimal_freq[region] = freq
-            elif min_runtime[region] * (1 + perf_margin) > region_mean_runtime[region]:
-                optimal_freq[region] = freq
-        is_once = False
-    return optimal_freq
+    def process(self):
+        region_freq_map = self._region_freq_map(self.get_report_df())
+        region_freq_str = self._region_freq_str(region_freq_map)
+        sys.stdout.write('Region frequency map: {}\n'.format(region_freq_str))
+
+    def _region_freq_map(self, report_df):
+        perf_margin = 0.1
+        optimal_freq = dict()
+        min_runtime = dict()
+        is_once = True
+
+        profile_name_list = report_df.index.get_level_values('name').unique().tolist()
+        freq_list = [float(pn.split('_freq_')[1]) for pn in profile_name_list if '_freq_' in pn]
+        freq_pname = zip(freq_list, profile_name_list)
+        freq_pname.sort(reverse=True)
+
+        for freq, profile_name in freq_pname:
+            region_mean_runtime = report_df.loc([pandas.IndexSlice[:, profile_name, :, :, :, :, :, :], ].groupby(level='region'))
+            for region, region_df in region_mean_runtime:
+                runtime = region_df['runtime'].mean()
+                if is_once:
+                    min_runtime[region] = runtime
+                    optimal_freq[region] = freq
+                elif min_runtime[region] > runtime:
+                    min_runtime[region] = runtime
+                    optimal_freq[region] = freq
+                elif min_runtime[region] * (1.0 + perf_margin) > runtime:
+                    optimal_freq[region] = freq
+            is_once = False
+        return optimal_freq
+
+    def _region_freq_str(self, region_freq_map):
+        result = ['{}:{}'.format(key, value)
+                  for (key, value) in region_freq_map.iteritems()]
+        result = ','.join(result)
+        return result
+
+def main(argv):
+    help_str ="""
+usage: analysis.py [-h] -t ANALYSIS_TYPE [-o OUTPUT_DIR] [-v] [-l] [--version]
+                   [APP_ARGV [APP_ARGV ...]]
+
+GEOPM Analysis - Used to run applications and analyze results for specific
+                 GEOPM use cases.
+
+required:
+  -t ANALYSIS_TYPE, --analysis_type ANALYSIS_TYPE
+                        type of analysis to perform, select from: freq_sweep,
+                        balancer
+positional arguments:
+  APP_ARGV              positional arguments are the application and its
+                        arguments. (default: None)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
+                        the output directory for the generated files (default: '.')
+  -v, --verbose         print debugging information. (default: False)
+  -l, --launch_only     run application and generate data, do not analyze the
+                        data. (default: False)
+  --version             show program's version number and exit
+
+"""
+    version_str = """\
+GEOPM version {}
+Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
+""".format(__version__)
+
+    if '--help' in argv or '-h' in argv:
+        sys.stdout.write(help_str)
+        exit(0)
+    if '--version' in argv:
+        sys.stdout.write(version_str)
+        exit(0)
+
+    analysis_type_map = {'freq_sweep':FreqSweepAnalysis,
+                         'balancer':BalancerAnalysis,
+                         'test':MockAnalysis}
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=False)
+
+    parser.add_argument('-t', '--analysis_type',
+                           help='type of analysis to perform, select from: {}'.format(', '.join(analysis_type_map.keys())),
+                           action='store', required=True, default='REQUIRED OPTION')
+    parser.add_argument('app_argv', metavar='APP_ARGV',
+                        action='store', nargs='*')
+    parser.add_argument('-o', '--output_dir',
+                        action='store', default='.')
+    parser.add_argument('-v', '--verbose',
+                        action='store_true')
+    parser.add_argument('-l', '--launch_only',
+                        action='store_true')
+    parser.add_argument('-p', '--profile_name_prefix',
+                        action='store', default=None)
+    parser.add_argument('-n', '--num_rank',
+                        action='store', default=None, type=int)
+    parser.add_argument('-N', '--num_node',
+                        action='store', default=None, type=int)
+
+    args = parser.parse_args(argv)
+    if args.analysis_type not in analysis_type_map:
+        raise SyntaxError('Analysis type: "{}" unrecognized.'.format(args.analysis_type))
+    analysis = analysis_type_map[args.analysis_type](args.profile_name_prefix, args.num_rank, args.num_node, args.app_argv)
+    analysis.launch()
+    if not args.launch_only:
+        analysis.parse()
+        analysis.process()
+
