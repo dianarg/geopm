@@ -318,8 +318,7 @@ class TestIntegration(unittest.TestCase):
                     trace_elapsed_time = trace_data.iloc[-1]['seconds'] - trace_data.iloc[0]['seconds']
                     self.assertNear(trace_elapsed_time, region_data.get_runtime())
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_region_runtimes(self):
         name = 'test_region_runtime'
         report_path = name + '.report'
@@ -446,8 +445,7 @@ class TestIntegration(unittest.TestCase):
 
         # TODO Trace file parsing + analysis
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_scaling(self):
         """
         This test will start at ${num_node} nodes and ranks.  It will then calls check_run() to
@@ -499,8 +497,7 @@ class TestIntegration(unittest.TestCase):
                 num_node *= 2
                 self._output.remove_files()
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_power_consumption(self):
         name = 'test_power_consumption'
         report_path = name + '.report'
@@ -602,8 +599,7 @@ class TestIntegration(unittest.TestCase):
                     launcher.write_log(name, '{}'.format(negative_progress))
                     self.assertEqual(0, len(negative_progress))
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
     def test_sample_rate(self):
         """
         Check that sample rate is regular and fast.
@@ -707,14 +703,7 @@ class TestIntegration(unittest.TestCase):
             rr = self._output.get_report(nn)
             self.assertEqual(rr['ignore'].get_runtime(), rr.get_ignore_runtime())
 
-    @unittest.skipUnless([True for line in
-                          open(os.path.join(
-                               os.path.dirname(
-                               os.path.dirname(
-                               os.path.realpath(__file__))),
-                               'config.h'))
-                          if line.startswith('#define GEOPM_ENABLE_OMPT')],
-                          "Configure with --enable-ompt to enable this test.")
+    @skip_unless_config_enable('ompt')
     def test_unmarked_ompt(self):
         name = 'test_unmarked_ompt'
         report_path = name + '.report'
@@ -753,8 +742,8 @@ class TestIntegration(unittest.TestCase):
             gemm_region = [key for key in region_names if key.lower().find('gemm') != -1]
             self.assertLessEqual(1, len(gemm_region))
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
+    @skip_unless_platform_bdx()
     def test_plugin_simple_freq(self):
         """
         """
@@ -853,6 +842,9 @@ class TestIntegration(unittest.TestCase):
         self.assertLess(0.0, energy_savings_epoch)
         self.assertLess(-0.05, runtime_savings_epoch)
 
+    @skip_unless_cpufreq()
+    @skip_unless_run_long_tests()
+    @skip_unless_platform_bdx()
     def test_plugin_simple_freq_multi_node(self):
         """
         """
@@ -1040,8 +1032,8 @@ class TestIntegration(unittest.TestCase):
             #self.assertLess(0.0, adaptive_energy_savings)
             #self.assertLess(-0.05, adaptive_runtime_savings)
 
-    @unittest.skipUnless(os.getenv('GEOPM_RUN_LONG_TESTS') is not None,
-                         "Define GEOPM_RUN_LONG_TESTS in your environment to run this test.")
+    @skip_unless_run_long_tests()
+    @skip_unless_cpufreq()
     def test_plugin_adaptive_freq(self):
         """
         """
