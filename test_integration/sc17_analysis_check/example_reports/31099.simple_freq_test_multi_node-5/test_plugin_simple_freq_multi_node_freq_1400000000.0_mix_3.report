@@ -1,0 +1,167 @@
+##### geopm 0.3.0+dev101g39d9c32 #####
+Profile: test_plugin_simple_freq_multi_node_1400000000.0_3
+Policy Mode: DYNAMIC
+Tree Decider: static_policy
+Leaf Decider: simple_freq
+Power Budget: 400
+
+Host: it03.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 3.03443
+	energy (joules): 590.678
+	frequency (%): 64.5628
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 87.5397
+	energy (joules): 18017.6
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 60.1636
+	energy (joules): 9732.92
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0.0300994
+	energy (joules): 4.96826
+	frequency (%): 63.6365
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 160.604
+	energy (joules): 28626.2
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 165.137
+	energy (joules): 29381.2
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 52360 kB
+	geopmctl network BW (B/sec): 143.009
+
+Host: it11.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 3.60736
+	energy (joules): 583.486
+	frequency (%): 63.6535
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 98.9827
+	energy (joules): 17672.4
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 60.9676
+	energy (joules): 9272.97
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0.00520439
+	energy (joules): 0.765228
+	frequency (%): 63.6383
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 160.031
+	energy (joules): 26954.7
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 163.646
+	energy (joules): 27539.1
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 50104 kB
+	geopmctl network BW (B/sec): 0
+
+Host: it01.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 3.0756
+	energy (joules): 607.827
+	frequency (%): 64.0756
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 87.0758
+	energy (joules): 18986.5
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 60.1702
+	energy (joules): 10125.5
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0
+	energy (joules): 0
+	frequency (%): 0
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 160.563
+	energy (joules): 30100.4
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 165.213
+	energy (joules): 30890.6
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 50104 kB
+	geopmctl network BW (B/sec): 0
+
+Host: it07.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 3.07561
+	energy (joules): 579.253
+	frequency (%): 64.1191
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 88.0007
+	energy (joules): 18053.9
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 60.1588
+	energy (joules): 9707.8
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0.00501661
+	energy (joules): 0.903992
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 160.563
+	energy (joules): 28600.1
+	frequency (%): 63.6364
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 165.21
+	energy (joules): 29351.4
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 49996 kB
+	geopmctl network BW (B/sec): 0
+

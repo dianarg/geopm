@@ -1,0 +1,1082 @@
+2017-11-11 01:04:18.683292
+
+GEOPM_REGION_BARRIER=true GEOPM_PROFILE=test_plugin_simple_freq_multi_node_adaptive_2 GEOPM_POLICY=test_plugin_simple_freq_multi_node.config LD_DYNAMIC_WEAK=true GEOPM_REPORT=test_plugin_simple_freq_multi_node_adaptive_mix_2.report OMP_PROC_BIND=true GEOPM_PMPI_CTL=process MV2_ENABLE_AFFINITY=0 KMP_AFFINITY=disabled I_MPI_PIN_DOMAIN=[0x2,0xffc,0x3ff000,0xffc00000,0x3ff00000000] mpiexec --ppn 5 -n 20 /home/cmcantal/Git/geopm/test_integration/.libs/geopm_test_integration --verbose test_plugin_simple_freq_multi_node_mix_2.config
+
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+ is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: 
+nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it01.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it08.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Beginning loop of 60 iterations.
+Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 5977905031 Freq: nan is_new_region: 0
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -1.76129 Energy metric: 396.931
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -1.68103 Energy metric: 359.485
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -1.81646 Energy metric: 389.308
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -2.44351 Energy metric: 521.353
+Iteration: 0Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.687421 Energy metric: 153.18
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.707671 Energy metric: 168.2
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.707503 Energy metric: 160.251
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.732656 Energy metric: 179.184
+Executing 608437500 array length stream triadd.
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.93836 Energy metric: 289.443
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.943269 Energy metric: 278.443
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.968307 Energy metric: 282.827
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.973248 Energy metric: 303.082
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.707671 Energy metric: 168.2
+Iteration: 1Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.687421 Energy metric: 153.18
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.707503 Energy metric: 160.251
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.717496 Energy metric: 176.609
+Executing 608437500 array length stream triadd.
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.93836 Energy metric: 289.443
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.968289 Energy metric: 282.827
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.938211 Energy metric: 278.305
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.95842 Energy metric: 299.447
+Iteration: 2Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.68733 Energy metric: 153.18
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.707671 Energy metric: 168.2
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.707503 Energy metric: 160.251
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.702542 Energy metric: 173.428
+Executing 608437500 array length stream triadd.
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.93836 Energy metric: 289.443
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.968289 Energy metric: 282.827
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.938211 Energy metric: 278.305
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.94325 Energy metric: 294.934
+Iteration: 3Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.687242 Energy metric: 153.18
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.707671 Energy metric: 168.2
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.707503 Energy metric: 160.251
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.2e+09 Perf metric: -0.702542 Energy metric: 173.428
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -0.988444 Energy metric: 300.579
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -1.00769 Energy metric: 284.512
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -1.00333 Energy metric: 290.044
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -1.03367 Energy metric: 318.707
+Iteration: 4Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.1e+09 Perf metric: -0.677153 Energy metric: 125.479
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.1e+09 Perf metric: -0.742748 Energy metric: 147.295
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.1e+09 Perf metric: -0.702381 Energy metric: 130.45
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.1e+09 Perf metric: -0.737614 Energy metric: 150.425
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.923339 Energy metric: 286.576
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.938211 Energy metric: 278.305
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.01864 Energy metric: 273.624
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.94325 Energy metric: 294.934
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2e+09 Perf metric: -0.727433 Energy metric: 140.781
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Iteration: 5Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2e+09 Perf metric: -0.742732 Energy metric: 135.497
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2e+09 Perf metric: -0.677244 Energy metric: 120.739
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2e+09 Perf metric: -0.738517 Energy metric: 146.766
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -0.988444 Energy metric: 299.714
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.9e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -0.963576 Energy metric: 277.852
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.04363 Energy metric: 270.151
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -1.00869 Energy metric: 310.7
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.9e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.9e+09 Perf metric: -0.747714 Energy metric: 139.646
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2.1e+09 Perf metric: -0.702381 Energy metric: 130.45
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 6Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.9e+09 Perf metric: -0.727583 Energy metric: 127.252
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.9e+09 Perf metric: -0.71259 Energy metric: 136.77
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.923339 Energy metric: 286.576
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.02374 Energy metric: 283.132
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.8e+09 Perf metric: -1.06877 Energy metric: 265.234
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.8e+09 Perf metric: -0.732583 Energy metric: 135.126
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.94325 Energy metric: 294.934
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2e+09 Perf metric: -0.727517 Energy metric: 131.067
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Iteration: 7Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2e+09 Perf metric: -0.677244 Energy metric: 120.739
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.8e+09 Perf metric: -0.702591 Energy metric: 133.619
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -0.988444 Energy metric: 299.714
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.7e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.09393 Energy metric: 287.911
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.04363 Energy metric: 270.151
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -0.973535 Energy metric: 302.034
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.7e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.7e+09 Perf metric: -0.702412 Energy metric: 124.822
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.9e+09 Perf metric: -0.74773 Energy metric: 132.118
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 8Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.9e+09 Perf metric: -0.727583 Energy metric: 127.252
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.7e+09 Perf metric: -0.727512 Energy metric: 134.34
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.2e+09 Perf metric: -0.923339 Energy metric: 286.576
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.6e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.00883 Energy metric: 279.044
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.8e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.8e+09 Perf metric: -1.06877 Energy metric: 265.234
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.6e+09 Perf metric: -0.747745 Energy metric: 130.591
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.03845 Energy metric: 311.334
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.6e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.8e+09 Perf metric: -0.712217 Energy metric: 122.707
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Iteration: 9Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 2e+09 Perf metric: -0.677244 Energy metric: 120.739
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.6e+09 Perf metric: -0.737482 Energy metric: 132.468
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2.1e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -0.968457 Energy metric: 293.252
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.7e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.06891 Energy metric: 283.327
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.7e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.02358 Energy metric: 264.935
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.7e+09 Perf metric: -0.702412 Energy metric: 124.822
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2.1e+09 Perf metric: -0.973535 Energy metric: 302.034
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.5e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.7e+09 Perf metric: -0.722645 Energy metric: 121.332
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 10Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.9e+09 Perf metric: -0.692473 Energy metric: 120.578
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.5e+09 Perf metric: -0.712396 Energy metric: 123.231
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.02884 Energy metric: 296.785
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.6e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.00883 Energy metric: 279.044
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.6e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.6e+09 Perf metric: -0.732367 Energy metric: 126.266
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.02358 Energy metric: 308.007
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.4e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.8e+09 Perf metric: -1.05385 Energy metric: 261.806
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.6e+09 Perf metric: -0.737723 Energy metric: 118.944
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Iteration: 11Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.4e+09 Perf metric: -0.727625 Energy metric: 123.283
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.8e+09 Perf metric: -0.672322 Energy metric: 114.494
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.7e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.08879 Energy metric: 298.883
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.5e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.06891 Energy metric: 283.327
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.5e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.5e+09 Perf metric: -0.742563 Energy metric: 123.494
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.08372 Energy metric: 311.211
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.3e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.7e+09 Perf metric: -1.14418 Energy metric: 269.989
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.5e+09 Perf metric: -0.747788 Energy metric: 117.854
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.3e+09 Perf metric: -0.732463 Energy metric: 121.512
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 12Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.7e+09 Perf metric: -0.727336 Energy metric: 120.128
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.00869 Energy metric: 292.052
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.4e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.00883 Energy metric: 279.044
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.4e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.4e+09 Perf metric: -0.707386 Energy metric: 114.699
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.02358 Energy metric: 308.007
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.8e+09 Perf metric: -1.05385 Energy metric: 261.806
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.4e+09 Perf metric: -0.717587 Energy metric: 109.915
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.747618 Energy metric: 122.379
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Iteration: 13Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.8e+09 Perf metric: -0.672322 Energy metric: 114.494
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.7e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.06878 Energy metric: 295.143
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.3e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.06891 Energy metric: 283.327
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.3e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.3e+09 Perf metric: -0.722609 Energy metric: 114.198
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.05899 Energy metric: 305.614
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.3e+09 Perf metric: -0.727557 Energy metric: 109.037
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.7e+09 Perf metric: -1.11401 Energy metric: 264.075
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.00869 Energy metric: 292.052
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 14Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.7e+09 Perf metric: -0.677457 Energy metric: 111.736
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.732498 Energy metric: 113.533
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.02358 Energy metric: 308.007
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.742679 Energy metric: 110.2
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.8e+09 Perf metric: -1.05385 Energy metric: 261.806
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.6e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.06878 Energy metric: 295.143
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 15Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.6e+09 Perf metric: -0.727535 Energy metric: 115.611
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.7e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.732498 Energy metric: 113.533
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.05899 Energy metric: 305.614
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.727686 Energy metric: 107.985
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.7e+09 Perf metric: -1.11401 Energy metric: 264.075
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.00869 Energy metric: 292.052
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 16Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.7e+09 Perf metric: -0.677457 Energy metric: 111.736
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.732498 Energy metric: 113.428
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 2e+09 Perf metric: -1.02358 Energy metric: 308.007
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.727686 Energy metric: 107.985
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.8e+09 Perf metric: -1.05385 Energy metric: 261.806
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.6e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.9e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.06878 Energy metric: 295.143
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 17Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.6e+09 Perf metric: -0.687354 Energy metric: 109.043
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.7e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.732498 Energy metric: 113.428
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.9e+09 Perf metric: -1.05899 Energy metric: 305.614
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.722681 Energy metric: 106.98
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Current freq: 1.7e+09 Perf metric: -1.11401 Energy metric: 264.075
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.5e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 18Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.5e+09 Perf metric: -0.677321 Energy metric: 104.623
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.732498 Energy metric: 113.428
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.722681 Energy metric: 106.98
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.4e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717513 Energy metric: 111.368
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 19Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.4e+09 Perf metric: -0.68246 Energy metric: 103.198
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.722681 Energy metric: 106.98
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717513 Energy metric: 111.368
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717478 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.3e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 20Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.3e+09 Perf metric: -0.707448 Energy metric: 104.27
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717513 Energy metric: 111.368
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717478 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 21Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717506 Energy metric: 111.354
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.727506 Energy metric: 105.592
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717478 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717506 Energy metric: 111.354
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 22Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.727444 Energy metric: 105.592
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717478 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717506 Energy metric: 111.354
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 23Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.727444 Energy metric: 105.592
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717478 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712625 Energy metric: 111.289
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 24Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717478 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.727444 Energy metric: 105.592
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712625 Energy metric: 111.289
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717434 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 25Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702399 Energy metric: 102.354
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712625 Energy metric: 111.289
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717434 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 26Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702281 Energy metric: 102.354
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712625 Energy metric: 111.289
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717434 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 27Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702281 Energy metric: 102.354
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712625 Energy metric: 111.289
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717434 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 28Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702281 Energy metric: 102.354
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712625 Energy metric: 111.289
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717434 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 29Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702281 Energy metric: 102.354
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712625 Energy metric: 111.289
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717425 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 30Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702281 Energy metric: 102.354
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717425 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 31Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702281 Energy metric: 102.354
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.717425 Energy metric: 106.231
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 32Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702281 Energy metric: 102.354
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 33Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.702281 Energy metric: 102.319
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 34Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.692331 Energy metric: 100.738
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 35Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.692331 Energy metric: 100.738
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 36Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.677181 Energy metric: 98.1288
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 37Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 38Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 39Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 40Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 41Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 42Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 43Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 44Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 45Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 46Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 47Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 48Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 49Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712426 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Iteration: 50Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712313 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712313 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 51Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712313 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 52Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it07.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712313 Energy metric: 110.92
+Hostname: it07.ftm.alcf.anl.gov Region ID: 2305843009213693952 Freq: 2.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Hostname: it08.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712258 Energy metric: 105.617
+Hostname: it08.ftm.alcf.anl.gov Region ID: 2305843009213693952 Freq: 2.2e+09 is_new_region: 1
+Hostname: it01.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.712197 Energy metric: 116.004
+Hostname: it01.ftm.alcf.anl.gov Region ID: 2305843009213693952 Freq: 2.2e+09 is_new_region: 1
+Iteration: 53Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 54Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 55Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 56Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 57Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 58Executing 5224 x 5224 DGEMM 1 times.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 11396693813 Freq: 1.8e+09 is_new_region: 1
+Executing 608437500 array length stream triadd.
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+Iteration: 59Completed loop.                    
+Hostname: it11.ftm.alcf.anl.gov Region ID: 20779751936 Current freq: 1.2e+09 Perf metric: -0.67232 Energy metric: 97.7695
+Hostname: it11.ftm.alcf.anl.gov Region ID: 2305843009213693952 Freq: 2.2e+09 is_new_region: 1

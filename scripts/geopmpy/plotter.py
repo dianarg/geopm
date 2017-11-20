@@ -470,6 +470,49 @@ def generate_bar_plot(report_df, config):
     plt.close()
 
 
+# TODO: this can be combined with above bar plot function once analysis code is
+# moved to analysis.py
+def generate_bar_plot_sc17(data, name):
+    f, ax = plt.subplots()
+
+    cols = data.columns
+    colors = ['gray', 'blue', 'orange', 'green', 'red']  # todo: change to map
+    assert len(colors) >= len(cols)
+    num_series = len(cols)
+    bar_width = 0.7 / num_series
+
+    index = numpy.arange(len(data))
+
+    # centering for multiple bars
+    start_shift = -(num_series-1)/2.0*bar_width
+    for i in range(num_series):
+        shift = start_shift + (i * bar_width)
+        print shift
+        ax.bar(index + shift,
+               data[cols[i]],
+               width=bar_width,
+               color=colors[i],
+               align='center',
+               label=cols[i],
+               zorder=3)
+
+    ax.set_xticks(index)
+    ax.set_xticklabels(data.index)
+    ax.set_xlabel('stream fraction')
+
+    ax.set_ylabel(name)
+    ax.grid(axis='y', linestyle='--', color='black')
+
+    plt.margins(0.02, 0.01)
+
+    plt.legend(shadow=True, fancybox=True, fontsize=14, loc='best').set_zorder(11)
+    plt.title(name)
+
+    f.tight_layout()
+    plt.savefig(name + '_bar.png')
+    plt.close()
+
+
 def generate_power_plot(trace_df, config):
     """Plots the power consumed per node at each sample.
 
@@ -1107,4 +1150,3 @@ def main(argv):
             if len(report_df) == 0:
                 raise LookupError('No data present for the requested report plot.')
             globals()[plot_func_name](report_df, report_config)
-

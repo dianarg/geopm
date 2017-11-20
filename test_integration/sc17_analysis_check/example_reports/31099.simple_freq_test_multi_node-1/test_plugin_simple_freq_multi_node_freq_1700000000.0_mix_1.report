@@ -1,0 +1,167 @@
+##### geopm 0.3.0+dev101g39d9c32 #####
+Profile: test_plugin_simple_freq_multi_node_1700000000.0_1
+Policy Mode: DYNAMIC
+Tree Decider: static_policy
+Leaf Decider: simple_freq
+Power Budget: 400
+
+Host: it03.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 1.57916
+	energy (joules): 334.367
+	frequency (%): 78.1991
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 72.4563
+	energy (joules): 18788.6
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 30.4458
+	energy (joules): 5521.91
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0.0250876
+	energy (joules): 4.57053
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 115.508
+	energy (joules): 25293.4
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 117.119
+	energy (joules): 25631.7
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 52384 kB
+	geopmctl network BW (B/sec): 201.641
+
+Host: it11.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 1.57538
+	energy (joules): 303.032
+	frequency (%): 77.7708
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 84.873
+	energy (joules): 18223.8
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 30.5986
+	energy (joules): 5095.09
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0
+	energy (joules): 0
+	frequency (%): 0
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 115.512
+	energy (joules): 23324.6
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 117.093
+	energy (joules): 23628.4
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 50104 kB
+	geopmctl network BW (B/sec): 0
+
+Host: it01.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 1.54534
+	energy (joules): 330.271
+	frequency (%): 77.8047
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 72.7386
+	energy (joules): 19216
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 30.1084
+	energy (joules): 5635.62
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0.00519816
+	energy (joules): 0.937119
+	frequency (%): 77.2711
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 115.542
+	energy (joules): 25917.9
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 117.139
+	energy (joules): 26254.7
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 50120 kB
+	geopmctl network BW (B/sec): 0
+
+Host: it07.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 1.56539
+	energy (joules): 318.656
+	frequency (%): 77.7599
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 74.0151
+	energy (joules): 18403.9
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 30.1216
+	energy (joules): 5409.46
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0
+	energy (joules): 0
+	frequency (%): 0
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 115.522
+	energy (joules): 24690.8
+	frequency (%): 77.2727
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 117.13
+	energy (joules): 25014.6
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 49988 kB
+	geopmctl network BW (B/sec): 0
+

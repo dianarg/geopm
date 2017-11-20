@@ -34,7 +34,6 @@
 import sys
 import unittest
 from collections import defaultdict
-import random
 import pandas
 import geopmpy.analysis as ga
 
@@ -51,30 +50,30 @@ power_budget = 400
 tree_decider = 'static'
 leaf_decider = 'simple'
 node_name = 'mynode'
+
 # for input data frame
 index_names = ['version', 'name', 'power_budget', 'tree_decider',
                'leaf_decider', 'node_name', 'iteration', 'region']
 numeric_cols = ['count', 'energy', 'frequency', 'mpi_runtime', 'runtime', 'id']
 gen_val = {
-    'count': lambda: 1,
-    'energy': lambda: 14000.0 + 1e3*random.random(),  # TODO: change to random
-    'frequency': lambda: 1e9,
-    'mpi_runtime': lambda: 10,
-    'runtime': lambda: 50 + 10*random.random(),  # TODO: change to random
-    'id': lambda: 'bad'
+    'count': 1,
+    'energy': 14000.0,
+    'frequency': 1e9,
+    'mpi_runtime': 10,
+    'runtime': 50,
+    'id': 'bad'
 }
+ratio_inds = [0, 1, 2, 3, 6, 5, 4]
+# TODO: regions hardcoded in analysis.py
+regions = ['epoch', 'dgemm', 'stream']
+iterations = range(1, 4)
 
 
+# TODO: ratio_idx should affect performance. it can hide bugs if all the numbers are the same
 def make_mock_sweep_report_df(name_prefix, freqs, best_fit_freq, best_fit_perf,
                               metric_of_interest=None, best_fit_metric_perf=None,
                               baseline_freq=None, baseline_metric_perf=None):
-    # dimensions to vary data
-    ratio_inds = [0, 1, 2, 3, 6, 5, 4]
-    # TODO: regions hardcoded in analysis.py
-    regions = ['epoch', 'dgemm', 'stream']
-    iterations = range(1, 4)
-
-    # create input data
+    ''' Make a mock report dataframe for the fixed frequency sweeps.'''
     input_data = {}
     for col in numeric_cols:
         input_data[col] = {}
@@ -83,10 +82,10 @@ def make_mock_sweep_report_df(name_prefix, freqs, best_fit_freq, best_fit_perf,
                 prof_name = '{}_{}_{}'.format(name_prefix, freq, ratio_idx)
                 for it in iterations:
                     for region in regions:
-                        gen_val['id'] = lambda: region_id[region]  # return unique region id
+                        gen_val['id'] = region_id[region]  # return unique region id
                         index = (version, prof_name, power_budget, tree_decider,
                                  leaf_decider, node_name, it, region)
-                        value = gen_val[col]()
+                        value = gen_val[col]
                         # force best performance for requested best fit freq
                         if col == 'runtime':
                             if freq == best_fit_freq[region]:
@@ -107,13 +106,7 @@ def make_mock_sweep_report_df(name_prefix, freqs, best_fit_freq, best_fit_perf,
 
 
 def make_mock_optimal_report_df(name_prefix, metric, metric_perf):
-    # dimensions to vary data
-    ratio_inds = [0, 1, 2, 3, 6, 5, 4]
-    # TODO: hardcoded in analysis.py
-    regions = ['epoch', 'dgemm', 'stream']
-    iterations = range(1, 4)
-
-    # create input data
+    ''' Make a mock report dataframe for the frequency decider runs.'''
     input_data = {}
     for col in numeric_cols:
         input_data[col] = {}
@@ -125,10 +118,10 @@ def make_mock_optimal_report_df(name_prefix, metric, metric_perf):
             for short_name, prof_name in prof_names.items():
                 for it in iterations:
                     for region in regions:
-                        gen_val['id'] = lambda: region_id[region]  # return unique region id
+                        gen_val['id'] = region_id[region]  # return unique region id
                         index = (version, prof_name, power_budget, tree_decider,
                                  leaf_decider, node_name, it, region)
-                        value = gen_val[col]()
+                        value = gen_val[col]
                         if col == metric:
                             value = metric_perf[short_name][region]
                         input_data[col][index] = value
@@ -138,26 +131,17 @@ def make_mock_optimal_report_df(name_prefix, metric, metric_perf):
     return df
 
 
-# TODO: this should not need to know about the input data frame at all;
-# just need to give it the profile names
-def get_expected_output_df(input_data, column, baseline_freq, best_fit_freq,
+def get_expected_output_df(profile_names, column, best_fit_freq,
                            baseline_metric_perf, optimal_metric_perf):
-    # create expected output
-    # for output data frame
-    ratio_inds = [0, 1, 2, 3, 6, 5, 4]  # TODO: repeated above
-    expected_index = ratio_inds
+    ''' Create dataframe of the savings values expected to be produced by analysis.'''
     profiles = ['offline application', 'offline per-phase', 'online per-phase']
+    expected_index = ratio_inds
     expected_cols = profiles
 
-    energy_change = defaultdict(dict)
-    for index, dp in input_data.iterrows():
-        _, prof, _, _, _, _, it, reg = index
+    metric_change = defaultdict(dict)
+    for prof in profile_names:
         mix_idx = int(prof[-1])
-        if str(baseline_freq) in prof:
-            profile = 'baseline'
-            # no need for energy change
-            continue
-        elif str(best_fit_freq) in prof:
+        if str(best_fit_freq) in prof:
             profile = 'offline application'
         elif 'optimal' in prof:
             profile = 'offline per-phase'
@@ -166,7 +150,9 @@ def get_expected_output_df(input_data, column, baseline_freq, best_fit_freq,
         else:
             # ignore other sweep reports
             continue
-        energy_change[mix_idx][profile] = (baseline_metric_perf['epoch'] - optimal_metric_perf[profile]['epoch']) / baseline_metric_perf['epoch']
+        baseline_perf = baseline_metric_perf['epoch']
+        optimal_perf = optimal_metric_perf[profile]['epoch']
+        metric_change[mix_idx][profile] = (baseline_perf - optimal_perf) / baseline_perf
 
     # arrange into list of lists for DataFrame constructor
     expected_data = []
@@ -174,8 +160,7 @@ def get_expected_output_df(input_data, column, baseline_freq, best_fit_freq,
         row = []
         for prof in profiles:
             if prof != 'baseline':
-                change = energy_change[idx][prof]
-                row.append(change)
+                row.append(metric_change[idx][prof])
         expected_data.append(row)
     expected_df = pandas.DataFrame(expected_data, index=expected_index,
                                    columns=expected_cols)
@@ -184,35 +169,35 @@ def get_expected_output_df(input_data, column, baseline_freq, best_fit_freq,
 
 class TestAnalysis(unittest.TestCase):
     def setUp(self):
-        pass
+        self.m_name_prefix = 'prof'
+        # TODO: min and max hardcoded in analysis.py
+        self.m_freqs = [1.2e9, 1.3e9, 1.4e9, 1.5e9, 1.6e9, 1.7e9, 1.8e9, 1.9e9, 2.0e9, 2.1e9]
+        self.m_analysis = ga.EnergyEfficiencyAnalysis(self.m_name_prefix, 2, 3, '.', 'args')
 
     def test_nothing(self):
-        analysis = ga.MockAnalysis('name', 2, 3, 'args')
+        analysis = ga.MockAnalysis('name', 2, 3, '.', 'args')
         analysis.launch()
         parse_out = analysis.parse()
         out = analysis.report_process(parse_out)
         analysis.report(out)
         out = analysis.plot_process(parse_out)
         analysis.plot(out)
+        # TODO: add asserts or remove this test
+        # or move MockAnalysis into test code
 
-    def test_calculate_optimal_freq(self):
-        name_prefix = 'prof'
-        analysis = ga.Sc17Analysis('name', 2, 3, 'args')
+    def test_region_freq_map(self):
         best_fit_freq = {'dgemm': 2.0e9, 'stream': 1.2e9, 'epoch': 1.5e9}
         best_fit_perf = {'dgemm': 23.0, 'stream': 34.0, 'epoch': 45.0}
 
-        # TODO: min and max hardcoded in analysis.py
-        freqs = [1.2e9, 1.3e9, 1.4e9, 1.5e9, 1.6e9, 1.7e9, 1.8e9, 1.9e9, 2.0e9, 2.1e9]
+        parse_out = make_mock_sweep_report_df(self.m_name_prefix, self.m_freqs,
+                                              best_fit_freq, best_fit_perf)
 
-        parse_out = make_mock_sweep_report_df(name_prefix, freqs, best_fit_freq, best_fit_perf)
+        result = self.m_analysis._region_freq_map(parse_out, 1)
 
-        result = analysis.calculate_optimal_freq(parse_out, name_prefix, 1)
         for region in ['epoch', 'dgemm', 'stream']:
             self.assertEqual(best_fit_freq[region], result[region])
 
     def test_baseline_comparison_report(self):
-        analysis = ga.Sc17Analysis('name', 2, 3, 'args')
-
         baseline_freq = 2.1e9
         best_fit_freq = {'dgemm': 2.0e9, 'stream': 1.2e9, 'epoch': 1.5e9}
         best_fit_perf = {'dgemm': 23.0, 'stream': 34.0, 'epoch': 45.0}
@@ -225,22 +210,24 @@ class TestAnalysis(unittest.TestCase):
             'offline per-phase': {'dgemm': 12345.0, 'stream': 23456.0, 'epoch': 34567.0},
             'online per-phase': {'dgemm': 22345.0, 'stream': 33456.0, 'epoch': 44567.0},
         }
-        # TODO: min and max hardcoded in analysis.py
-        freqs = [1.2e9, 1.3e9, 1.4e9, 1.5e9, 1.6e9, 1.7e9, 1.8e9, 1.9e9, 2.0e9, 2.1e9]
 
-        name_prefix = 'test_plugin_simple_freq_multi_node'  # TODO: hardcoded in analysis.py
-        sweep_reports = make_mock_sweep_report_df(name_prefix, freqs, best_fit_freq, best_fit_perf,
+        sweep_reports = make_mock_sweep_report_df(self.m_name_prefix, self.m_freqs,
+                                                  best_fit_freq, best_fit_perf,
                                                   'energy', best_fit_metric_perf,
                                                   baseline_freq, baseline_metric_perf)
-
-        optimal_reports = make_mock_optimal_report_df(name_prefix, 'energy', optimal_metric_perf)
+        optimal_reports = make_mock_optimal_report_df(self.m_name_prefix, 'energy',
+                                                      optimal_metric_perf)
         parse_out = sweep_reports.append(optimal_reports)
 
-        expected_energy_df = get_expected_output_df(parse_out, 'energy',
-                                                    2.1e9, 1.5e9,  # baseline freq, epoch best fit
+        profile_names = ['{}_{}_{}'.format(self.m_name_prefix, run_name, mix_idx)
+                         for mix_idx in ratio_inds
+                         for run_name in ['optimal', 'adaptive', str(baseline_freq),
+                                          str(best_fit_freq['epoch'])]]
+        expected_energy_df = get_expected_output_df(profile_names, 'energy',
+                                                    best_fit_freq['epoch'],
                                                     baseline_metric_perf, optimal_metric_perf)
 
-        energy_result, runtime_result = analysis.report_process(parse_out)
+        energy_result, runtime_result = self.m_analysis.report_process(parse_out)
 
         expected_columns = expected_energy_df.columns
         expected_index = expected_energy_df.index
@@ -257,7 +244,10 @@ class TestAnalysis(unittest.TestCase):
         print energy_result
         self.assertTrue((expected_energy_df == energy_result).all().all())
 
+    def test_chosen_frequencies(self):
+        # parse the log files to get frequencies chosen by the adaptive algo
+        pass
+
 
 if __name__ == '__main__':
-    random.seed(0)
     unittest.main()

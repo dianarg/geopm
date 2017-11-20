@@ -1,0 +1,2035 @@
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2200000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2100000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2000000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1900000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1800000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1700000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1600000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1500000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1400000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 0
+DGEMM:STREAM = 1.0:0.25
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1200000000.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Frequency map: stream:1200000000.0,dgemm:2000000000.0
+
+
+RID map run
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2200000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2100000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2000000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1900000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1800000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1700000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1600000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1500000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1400000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 1
+DGEMM:STREAM = 1.0:0.5
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1200000000.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Frequency map: stream:1200000000.0,dgemm:2100000000.0
+
+
+RID map run
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2200000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2100000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2000000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1900000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1800000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1700000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1600000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1500000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1400000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 2
+DGEMM:STREAM = 1.0:0.75
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1200000000.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Frequency map: stream:1200000000.0,dgemm:2000000000.0
+
+
+RID map run
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2200000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2100000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2000000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1900000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1800000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1700000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1600000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1500000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1400000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 3
+DGEMM:STREAM = 1.0:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1200000000.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Frequency map: stream:1200000000.0,dgemm:2100000000.0
+
+
+RID map run
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2200000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2100000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2000000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1900000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1800000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1700000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1600000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1500000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1400000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 4
+DGEMM:STREAM = 0.25:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1200000000.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Frequency map: stream:1200000000.0,dgemm:1900000000.0
+
+
+RID map run
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2200000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2100000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2000000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1900000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1800000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1700000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1600000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1500000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1400000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 5
+DGEMM:STREAM = 0.5:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1200000000.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Frequency map: stream:1200000000.0,dgemm:2100000000.0
+
+
+RID map run
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2200000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2100000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 2000000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1900000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1800000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1700000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1600000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1500000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1400000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1300000000.0
+
+-------------------------------------------------------------------------------
+
+Mix ratio index 6
+DGEMM:STREAM = 0.75:1.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Frequency: 1200000000.0
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Frequency map: stream:1200000000.0,dgemm:2100000000.0
+
+
+RID map run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2000000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1900000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 1800000000.0
+
+
+Adaptive run
+
+
+Ctl config -
+path    : test_plugin_simple_freq_multi_node.config
+mode    : dynamic
+options : {'platform': 'rapl', 'leaf_decider': 'simple_freq', 'power_budget': 400, 'tree_decider': 'static_policy'}
+
+
+
+Baseline frequency: 2100000000.0
+
+
+Adaptive run
+

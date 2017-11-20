@@ -39,7 +39,7 @@ import os
 import glob
 import geopmpy.io
 import geopmpy.launcher
-
+import geopmpy.plotter
 from geopmpy import __version__
 
 import pandas
@@ -67,7 +67,7 @@ class Analysis(object):
         self._num_rank = num_rank
         self._num_node = num_node
         self._app_argv = app_argv
-        self._report_paths = []
+        self._report_paths = output_dir + '/*/*report'  # TODO: fix this
         self._trace_paths = []
 
     def launch(self):
@@ -83,7 +83,7 @@ class Analysis(object):
             raise RuntimeError('Analysis object already has report and trace paths populated.')
 
     def parse(self):
-        return geopmpy.io.AppOutput(self._report_paths, self._trace_paths)
+        return geopmpy.io.AppOutput(self._report_paths, self._trace_paths, verbose=False)
 
     def plot_process(self, parse_output):
         raise NotImplementedError('Analysis base class does not implement the plot_process method()')
@@ -139,10 +139,10 @@ class FreqSweepAnalysis(Analysis):
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         ctl_conf = geopmpy.io.CtlConf(self._name + '_app.config',
                                       'dynamic',
-                                      {'power_budget':400,
-                                       'tree_decider':'static_policy',
-                                       'leaf_decider':'simple_freq',
-                                       'platform':'rapl'})
+                                      {'power_budget': 400,
+                                       'tree_decider': 'static_policy',
+                                       'leaf_decider': 'simple_freq',
+                                       'platform': 'rapl'})
         if 'GEOPM_SIMPLE_FREQ_RID_MAP' in os.environ:
             del os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']
         if 'GEOPM_SIMPLE_FREQ_ADAPTIVE' in os.environ:
@@ -187,7 +187,11 @@ class FreqSweepAnalysis(Analysis):
     def plot(self, process_output):
         pass
 
-    def _region_freq_map(self, report_df):
+    def _region_freq_map(self, report_df, ratio_idx):
+        ''' Calculates the best-fit frequencies for each region for a single
+            mix ratio.
+            This function assumes that profile names end in _freq_FFFF_M
+            where FFFF is the frequency and M is the mix ratio.'''
         perf_margin = 0.1
         optimal_freq = dict()
         min_runtime = dict()
@@ -223,72 +227,34 @@ class FreqSweepAnalysis(Analysis):
         return result
 
 
-class Sc17Analysis(Analysis):
+class EnergyEfficiencyAnalysis(FreqSweepAnalysis):
     ''' Used to compare runs of an auto frequency plugin
         to runs at a fixed frequency for the application.
         Requires that the reports directory contains data for the baseline
-        frequency, as well as the runs to be compared to that baseline.
+        frequency, all runs within the best-fit frequency sweep range,
+        as well as the runs to be compared to that baseline.
     '''
 
-    def __init__(self, name, num_rank, num_node, app_argv):
-        super(Sc17Analysis, self).__init__(name, num_rank, num_node, app_argv)
+    def __init__(self, name, output_dir, num_rank, num_node, app_argv):
+        super(EnergyEfficiencyAnalysis, self).__init__(name, output_dir, num_rank, num_node, app_argv)
 
     def __del__(self):
         pass
 
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+        # call parent launch to do sweep
+        # then run other plugins: offline vs online
         pass
 
     def parse(self):
-        pass
-
-    # TODO: can be static
-    def descending_sweep_freqs(self):
-        # TODO: some of these can be parameters
-        step_freq = 100e6
-        min_freq = 1.2e9
-        max_freq = 2.1e9
-        # sticker_freq = 2.1e9
-        # default_freq = sticker_freq - 4 * step_freq
-        # if default_freq < min_freq:
-        #     default_freq = min_freq
-
-        num_step = 1 + int((max_freq - min_freq) / step_freq)
-        freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
-        freq_sweep.reverse()
-        return freq_sweep
-
-    # TODO: can be static
-    def calculate_optimal_freq(self, df, name_prefix, ratio_idx):
-        perf_margin = 0.1
-        optimal_freq = dict()
-        min_runtime = dict()
-        is_once = True
-        freq_sweep = self.descending_sweep_freqs()
-        for freq in freq_sweep:
-            profile_name = name_prefix + '_{}_{}'.format(freq, ratio_idx)
-            # index:
-            # version, name, power_budget, tree_dec, leaf_dec, node_name, iteration, region
-            mix_df = df.loc[idx[:, profile_name, :, :, :, :, :, :], ]  # last comma is significant
-
-            region_mean_runtime = mix_df.groupby(level='region')['runtime'].mean()
-
-            for region in ['dgemm', 'stream', 'epoch']:
-                if is_once:
-                    min_runtime[region] = region_mean_runtime[region]
-                    optimal_freq[region] = freq
-                elif min_runtime[region] > region_mean_runtime[region]:
-                    min_runtime[region] = region_mean_runtime[region]
-                    optimal_freq[region] = freq
-                elif min_runtime[region] * (1 + perf_margin) > region_mean_runtime[region]:
-                    optimal_freq[region] = freq
-            is_once = False
-
-        return optimal_freq
+        app_output = super(EnergyEfficiencyAnalysis, self).parse()
+        return app_output.get_report_df()
 
     def report_process(self, parse_output):
-        name_prefix = 'test_plugin_simple_freq_multi_node'
+        df = parse_output
+        name_prefix = self._name
         step_freq = 100e6
+        # for SC17 numbers, used max=2.2 and sticker = 2.1, baseline=sticker
         baseline_freq = 2.1e9
         sticker_freq = 2.1e9
         default_freq = sticker_freq - 4 * step_freq
@@ -302,8 +268,8 @@ class Sc17Analysis(Analysis):
         mix_ratios = [(1.0, 0.25), (1.0, 0.5), (1.0, 0.75), (1.0, 1.0),
                       (0.25, 1.0), (0.5, 1.0), (0.75, 1.0)]
         for (ratio_idx, ratio) in enumerate(mix_ratios):
-            optimal_freq = self.calculate_optimal_freq(parse_output, name_prefix, ratio_idx)
-
+            optimal_freq = self._region_freq_map(df, ratio_idx)
+            print 'mix {}, optimal freq: {}'.format(ratio_idx, optimal_freq)
             # set baseline and best fit freqs
             if is_baseline_sticker:
                 baseline_freq = sticker_freq
@@ -324,11 +290,9 @@ class Sc17Analysis(Analysis):
             runtime = {}
             energy = {}
 
-            drop_index = ['version', 'name', 'power_budget', 'tree_decider',
-                          'leaf_decider', 'node_name', 'iteration']
             for prof, pname in prof_name.items():
-                frame[prof] = parse_output.loc[idx[:, pname, :, :, :, :, :, :], ]
-                frame[prof] = frame[prof].reset_index(drop_index, drop=True)
+                frame[prof] = df.loc[idx[:, pname, :, :, :, :, :, :], ]
+                frame[prof].reset_index('name', drop=True, inplace=True)
                 runtime[prof] = frame[prof]['runtime']
                 energy[prof] = frame[prof]['energy']
 
@@ -338,9 +302,10 @@ class Sc17Analysis(Analysis):
             for sname in series_names:
                 runtime_savings = (runtime['baseline'] - runtime[sname]) / runtime['baseline']
                 # show runtime as positive percent
-                runtime_savings = runtime_savings.loc[idx['epoch'], ].mean() * -100.0
+                runtime_savings = runtime_savings.loc[idx[:, :, :, :, :, :, 'epoch'], ].mean() * -100.0
                 energy_savings = (energy['baseline'] - energy[sname]) / energy['baseline']
-                energy_savings = energy_savings.loc[idx['epoch'], ].mean()
+                energy_savings = energy_savings.loc[idx[:, :, :, :, :, :, 'epoch'], ].mean()
+
                 runtime_temp.append(runtime_savings)
                 energy_temp.append(energy_savings)
             runtime_data.append(runtime_temp)
@@ -359,13 +324,23 @@ class Sc17Analysis(Analysis):
         return energy_result_df, runtime_result_df
 
     def plot_process(self, parse_output):
-        return None
+        return self.report_process(parse_output)
 
     def report(self, process_output):
-        sys.stdout.write('Report')
+        rs = 'Report\n'
+        energy_result_df, runtime_result_df = process_output
+        rs += 'Energy\n'
+        rs += '{}\n'.format(energy_result_df)
+        rs += 'Runtime\n'
+        rs += '{}\n'.format(runtime_result_df)
+        print rs
+        return rs
 
     def plot(self, process_output):
         sys.stdout.write('Plot')
+        energy_result_df, runtime_result_df = process_output
+        geopmpy.plotter.generate_bar_plot_sc17(energy_result_df, 'Energy')
+        geopmpy.plotter.generate_bar_plot_sc17(runtime_result_df, 'Runtime')
 
 
 def main(argv):
@@ -379,7 +354,7 @@ geopmanalysis - Used to run applications and analyze results for specific
   -h, --help            show this help message and exit
 
   -t, --analysis_type   type of analysis to perform. Available
-                        ANALYSIS_TYPE values: freq_sweep, and balancer.
+                        ANALYSIS_TYPE values: freq_sweep, balancer, and baseline_comp.
   -n, --num_rank        total number of application ranks to launch with
   -N, --num_node        number of compute nodes to launch onto
   -o, --output_dir      the output directory for reports, traces, and plots (default '.')
@@ -406,7 +381,8 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
 
     analysis_type_map = {'freq_sweep': FreqSweepAnalysis,
                          'balancer': BalancerAnalysis,
-                         'test': MockAnalysis}
+                         'test': MockAnalysis,
+                         'baseline_comp': EnergyEfficiencyAnalysis}
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=False)
 
@@ -430,11 +406,18 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
     args = parser.parse_args(argv)
     if args.analysis_type not in analysis_type_map:
         raise SyntaxError('Analysis type: "{}" unrecognized.'.format(args.analysis_type))
-    analysis = analysis_type_map[args.analysis_type](args.profile_prefix, args.output_dir, args.num_rank, args.num_node, args.app_argv)
+
+    analysis = analysis_type_map[args.analysis_type](args.profile_prefix,
+                                                     args.output_dir,
+                                                     args.num_rank,
+                                                     args.num_node,
+                                                     args.app_argv)
+    analysis.launch()
     if args.skip_launch:
         analysis.find_files()
     else:
         analysis.launch()
+
     if args.level > 0:
         parse_output = analysis.parse()
         process_output = analysis.report_process(parse_output)
