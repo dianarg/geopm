@@ -164,7 +164,7 @@ class FreqSweepAnalysis(Analysis):
                 raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
     def report_process(self, parse_output):
-        return self._region_freq_map(process_output)
+        return self._region_freq_map(parse_output)
 
     def plot_process(self, parse_output):
         return parse_output.get_report_df()
@@ -172,6 +172,7 @@ class FreqSweepAnalysis(Analysis):
     def report(self, process_output):
         region_freq_str = self._region_freq_str(process_output)
         sys.stdout.write('Region frequency map: {}\n'.format(region_freq_str))
+        return region_freq_str
 
     def plot(self, process_output):
         pass

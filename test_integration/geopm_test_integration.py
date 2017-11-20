@@ -39,6 +39,7 @@ import time
 import pandas
 import collections
 import random
+import socket
 from natsort import natsorted
 
 import geopm_test_launcher
@@ -745,10 +746,10 @@ class TestIntegration(unittest.TestCase):
     @skip_unless_cpufreq()
     @skip_unless_run_long_tests()
     @skip_unless_platform_bdx()
-    def test_plugin_simple_freq_multi_node(self):
+    def test_plugin_simple_freq(self):
         """
         """
-        name = 'test_plugin_simple_freq_multi_node'
+        name = 'test_plugin_simple_freq'
         num_node = 4
         num_rank = 16
         loop_count = 60
@@ -758,96 +759,35 @@ class TestIntegration(unittest.TestCase):
         stream_bigo_quartz = 1.7941
         is_baseline_sticker = False
 
-        self._options['power_budget'] = 400 # Run at TDP to ensure RAPL does not win.
-        self._options['tree_decider'] = 'static_policy'
-        self._options['leaf_decider'] = 'simple_freq'
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        app_path = os.path.join(script_dir, '.libs', 'geopm_test_integration')
 
-        ctl_conf = geopmpy.io.CtlConf(name + '.config', self._mode, self._options)
-        self._tmp_files.append(ctl_conf.get_path())
-
-        # Setup the static policy run
-        step_freq = 100e6
-        with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq") as fid:
-            min_freq = 1e3 * float(fid.readline())
-        with open('/proc/cpuinfo') as fid:
-            for line in fid.readlines():
-                if line.startswith('model name\t:'):
-                    sticker_freq = float(line.split('@')[1].split('GHz')[0]) * 1e9
-                    break
-            max_freq = sticker_freq + step_freq
-        default_freq = sticker_freq - 4 * step_freq
-        if default_freq < min_freq:
-            default_freq = min_freq
-
-        num_step = 1 + int((max_freq - min_freq) / step_freq)
-        freq_sweep = [step_freq * ss + min_freq for ss in range(num_step)]
-        freq_sweep.reverse()
+        hostname = socket.gethostname()
+        if hostname.endswith('.alcf.anl.gov'):
+            dgemm_bigo = dgemm_bigo_jlse
+            stream_bigo = stream_bigo_jlse
+        else:
+            dgemm_bigo = dgemm_bigo_quartz
+            stream_bigo = stream_bigo_quartz
 
         perf_margin = 0.1
 
         mix_ratios = [(1.0, 0.25), (1.0, 0.5), (1.0, 0.75), (1.0, 1.0),
-                      (0.25, 1.0), (0.5, 1.0), (0.75, 1.0)]
+                      (0.75, 1.0), (0.5, 1.0), (0.25, 1.0)]
         for (ratio_idx, ratio) in enumerate(mix_ratios):
             app_conf = geopmpy.io.AppConf(name + '_mix_{}.config'.format(ratio_idx))
-            self._tmp_files.append(app_conf.get_path())
             app_conf.set_loop_count(loop_count)
-
-            app_conf.append_region('dgemm',  ratio[0] * dgemm_bigo_jlse)
-            app_conf.append_region('stream', ratio[1] * stream_bigo_jlse)
-
-            optimal_freq = dict()
-            min_runtime = dict()
-            is_once = True
-
-            for freq in freq_sweep:
-                report_path = '{}_freq_{}_mix_{}.report'.format(name, freq, ratio_idx)
-                try:
-                    os.stat(report_path)
-                except OSError:
-                    os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(freq)
-                    os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(freq)
-                    if 'GEOPM_SIMPLE_FREQ_RID_MAP' in os.environ:
-                        del os.environ['GEOPM_SIMPLE_FREQ_RID_MAP']
-                    if 'GEOPM_SIMPLE_FREQ_ADAPTIVE' in os.environ:
-                        del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
-
-                    launcher = geopm_test_launcher.TestLauncher(app_conf, ctl_conf, report_path,
-                                                                time_limit=900, region_barrier=True)
-                    launcher.write_log(name, 79 * '-')
-                    launcher.write_log(name, 'Mix ratio index {}\nDGEMM:STREAM = {}:{}'.format(ratio_idx, ratio[0], ratio[1]))
-
-                    launcher.write_log(name, '\nCtl config -\n{}'.format(ctl_conf))
-                    launcher.write_log(name, '\nFrequency: {}'.format(freq))
-                    launcher.set_num_node(num_node)
-                    launcher.set_num_rank(num_rank)
-                    #launcher.set_pmpi_ctl('application')
-                    time.sleep(2)
-                    launcher.run('{}_{}_{}'.format(name, freq, ratio_idx))
-
-                region_mean_runtime = geopmpy.io.AppOutput(report_path).get_report_df().groupby('region')['runtime'].mean()
-                for region in ['dgemm', 'stream', 'epoch']:
-                    if is_once:
-                        min_runtime[region] = region_mean_runtime[region]
-                        optimal_freq[region] = freq
-                    elif min_runtime[region] > region_mean_runtime[region]:
-                        min_runtime[region] = region_mean_runtime[region]
-                        optimal_freq[region] = freq
-                    elif min_runtime[region] * (1 + perf_margin) > region_mean_runtime[region]:
-                        optimal_freq[region] = freq
-                is_once = False
-
-            freq_map_str = 'stream:{},dgemm:{}'.format(optimal_freq['stream'], optimal_freq['dgemm'])
-            if is_baseline_sticker:
-                baseline_freq = sticker_freq
-            else:
-                baseline_freq = optimal_freq['epoch']
-                if baseline_freq < default_freq:
-                    baseline_freq = default_freq
+            app_conf.append_region('dgemm',  ratio[0] * dgemm_bigo)
+            app_conf.append_region('stream', ratio[1] * stream_bigo)
+            app_conf.write()
+            self._tmp_files.append(app_conf.get_path())
+            app_argv = [app_path, '--verbose', app_conf.get_path()]
+            analysis_obj = geopmpy.analysis.FreqSweepAnalysis(name, num_rank, num_node, app_argv)
+            analysis_obj.launch(do_geopm_barrier=True)
+            freq_map_str = analysis.report(analysis.report_process(analysis.parse()))
 
             report_path = '{}_adaptive_mix_{}.report'.format(name, ratio_idx)
-            try:
-                os.stat(report_path)
-            except OSError:
+            if not os.path.exists(report_path):
                 os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(min_freq)
                 os.environ['GEOPM_SIMPLE_FREQ_MAX'] = str(sticker_freq)
                 os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE'] = "true"
