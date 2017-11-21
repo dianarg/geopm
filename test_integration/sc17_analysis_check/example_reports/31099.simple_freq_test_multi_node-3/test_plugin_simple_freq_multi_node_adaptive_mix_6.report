@@ -1,0 +1,167 @@
+##### geopm 0.3.0+dev101g39d9c32 #####
+Profile: test_plugin_simple_freq_multi_node_adaptive_6
+Policy Mode: DYNAMIC
+Tree Decider: static_policy
+Leaf Decider: simple_freq
+Power Budget: 400
+
+Host: it11.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 3.07952
+	energy (joules): 532.773
+	frequency (%): 55.7435
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 49.9087
+	energy (joules): 12739.9
+	frequency (%): 90.6818
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 60.1492
+	energy (joules): 9424.85
+	frequency (%): 67.8941
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0.0301716
+	energy (joules): 5.71629
+	frequency (%): 90.9095
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 110.159
+	energy (joules): 22180
+	frequency (%): 78.0912
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 113.246
+	energy (joules): 22713.8
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 50364 kB
+	geopmctl network BW (B/sec): 207.69
+
+Host: it01.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 3.04067
+	energy (joules): 579.917
+	frequency (%): 55.2586
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 48.4389
+	energy (joules): 14071.7
+	frequency (%): 91.87
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 60.1342
+	energy (joules): 10359.7
+	frequency (%): 66.8567
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0.00511378
+	energy (joules): 0.791412
+	frequency (%): 54.5452
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 110.197
+	energy (joules): 24639.1
+	frequency (%): 77.9695
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 114.822
+	energy (joules): 25447.1
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 51976 kB
+	geopmctl network BW (B/sec): 0
+
+Host: it08.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 3.05527
+	energy (joules): 533.521
+	frequency (%): 55.2581
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 45.3858
+	energy (joules): 12951.8
+	frequency (%): 98.591
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 60.1016
+	energy (joules): 9529.08
+	frequency (%): 66.9759
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0.00511438
+	energy (joules): 0.733963
+	frequency (%): 54.5461
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 110.183
+	energy (joules): 23006
+	frequency (%): 80.6034
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 114.82
+	energy (joules): 23741.7
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 52000 kB
+	geopmctl network BW (B/sec): 0.348371
+
+Host: it07.ftm.alcf.anl.gov
+Region model-init (5977905031):
+	runtime (sec): 3.05565
+	energy (joules): 558.699
+	frequency (%): 55.1518
+	mpi-runtime (sec): 0
+	count: 1
+Region dgemm (11396693813):
+	runtime (sec): 47.1759
+	energy (joules): 13581.9
+	frequency (%): 94.1829
+	mpi-runtime (sec): 0
+	count: 60
+Region stream (20779751936):
+	runtime (sec): 60.1424
+	energy (joules): 9909.91
+	frequency (%): 66.6833
+	mpi-runtime (sec): 0
+	count: 60
+Region unmarked-region (2305843009213693952):
+	runtime (sec): 0
+	energy (joules): 0
+	frequency (%): 0
+	mpi-runtime (sec): 0
+	count: 0
+Region epoch (9223372036854775808):
+	runtime (sec): 110.182
+	energy (joules): 23829.4
+	frequency (%): 78.7487
+	mpi-runtime (sec): 0
+	count: 60
+Application Totals:
+	runtime (sec): 114.814
+	energy (joules): 24602.8
+	mpi-runtime (sec): 0
+	ignore-time (sec): 0
+	throttle time (%): 0
+	geopmctl memory HWM: 50044 kB
+	geopmctl network BW (B/sec): 0
+

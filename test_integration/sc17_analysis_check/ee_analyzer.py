@@ -260,7 +260,6 @@ class Sc17Plotter:
                     print row
         # endef
 
-
     def make_savings_bar(self, name):
         f, ax = plt.subplots()
         bar_width = 0.35
@@ -290,7 +289,6 @@ class Sc17Plotter:
                align='center',
                label='best fit')
 
-
         eng = df['dynamic_'+name]
         values = numpy.array([eng[p+1] for p in index])
         print 'y val dynamic', values
@@ -301,7 +299,6 @@ class Sc17Plotter:
                align='center',
                label='dynamic')
 
-
         eng = df['adaptive_'+name]
         values = numpy.array([eng[p+1] for p in index])
         print 'y val adaptive', values
@@ -311,7 +308,6 @@ class Sc17Plotter:
                color='orange',
                align='center',
                label='adaptive')
-
 
         ax.set_xticks(xticks)
         ax.set_xticklabels([format(p, '.2f') for p in pcts])

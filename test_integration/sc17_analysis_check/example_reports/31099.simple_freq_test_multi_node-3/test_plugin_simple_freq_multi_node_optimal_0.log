@@ -1,0 +1,628 @@
+2017-11-08 05:05:33.267014
+
+GEOPM_REGION_BARRIER=true GEOPM_PROFILE=test_plugin_simple_freq_multi_node_optimal_0 GEOPM_POLICY=test_plugin_simple_freq_multi_node.config LD_DYNAMIC_WEAK=true GEOPM_REPORT=test_plugin_simple_freq_multi_node_optimal_mix_0.report OMP_PROC_BIND=true GEOPM_PMPI_CTL=process MV2_ENABLE_AFFINITY=0 KMP_AFFINITY=disabled I_MPI_PIN_DOMAIN=[0x2,0xffc,0x3ff000,0xffc00000,0x3ff00000000] mpiexec --ppn 5 -n 20 /home/cmcantal/Git/geopm/test_integration/.libs/geopm_test_integration --verbose test_plugin_simple_freq_multi_node_mix_0.config
+
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+Region ID: 5977905031 Freq: 1.8e+09 is_new_region: Region ID: 5977905031 Freq: 0
+1.8e+09 is_new_region: 0
+Region ID: 5977905031 Freq: 1.8e+09 is_new_region: 0
+Region ID: 5977905031 Freq: 1.8e+09 is_new_region: 0
+Beginning loop of 60 iterations.
+Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 02.2e+09 is_new_region: 0
+
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 0Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 1Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 2Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 3Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 00
+
+Iteration: 4Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 5Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 6Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 7Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+0
+Iteration: 8Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 
+0
+Iteration: 9Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 10Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 11Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 12Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09Region ID: 11396693813 Freq: 2.2e+09 is_new_region:  is_new_region: 0
+0
+Iteration: 13Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 14Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 15Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 16Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 17Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 18Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 19Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 20Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 21Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 22Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 23Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 24Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 25Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 26Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 27Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 28Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 29Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 30Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 31Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 32Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 33Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 34Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 35Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 36Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 37Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 38Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 2305843009213693952 Freq: 1.8e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 39Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 40Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 41Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 42Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 43Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 44Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 45Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 46Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 47Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 48Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 49Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Iteration: 50Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 51Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 52Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 53Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 54Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 55Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 56Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 57Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 58Executing 5224 x 5224 DGEMM 1 times.
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Executing 202812500 array length stream triadd.
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Iteration: 59Completed loop.                    
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 11396693813 Freq: 2.2e+09 is_new_region: 0
+Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 0
+Region ID: 2305843009213693952 Freq: 1.8e+09 is_new_region: 0

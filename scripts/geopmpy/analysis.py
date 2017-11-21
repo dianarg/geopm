@@ -37,6 +37,7 @@ import argparse
 import sys
 import os
 import glob
+from collections import defaultdict
 import geopmpy.io
 import geopmpy.launcher
 import geopmpy.plotter
@@ -45,8 +46,11 @@ from geopmpy import __version__
 import pandas
 
 def sys_freq_avail():
+    """
+    Returns a list of the available frequencies on the current platform.
+    """
     step_freq = 100e6
-    with open("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq") as fid:
+    with open('/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq') as fid:
         min_freq = 1e3 * float(fid.readline())
     with open('/proc/cpuinfo') as fid:
         for line in fid.readlines():
@@ -61,21 +65,37 @@ def sys_freq_avail():
 
 
 class Analysis(object):
+    """
+    Base class for different types of analysis that use the data from geopm
+    reports and/or logs. Implementations should define how to launch experiments,
+    parse and process the output, and process text reports or graphical plots.
+    """
     def __init__(self, name, output_dir, num_rank, num_node, app_argv):
         self._name = name
         self._output_dir = output_dir
         self._num_rank = num_rank
         self._num_node = num_node
         self._app_argv = app_argv
-        self._report_paths = output_dir + '/*/*report'  # TODO: fix this
-        self._trace_paths = []
+        self._report_paths = None
+        self._trace_paths = None
 
     def launch(self):
-        """Run experiment and set data paths corresponding to output.
+        """
+        Run experiment and set data paths corresponding to output.
         """
         raise NotImplementedError('Analysis base class does not implement the launch method()')
 
+    def find_files(self):
+        """
+        Uses the output dir and any custom naming convention to load the report and trace data
+        produced by launch.
+        """
+        raise NotImplementedError('Analysis base class does not implement the find_files method()')
+
     def set_data_paths(self, report_paths, trace_paths=None):
+        """
+        Set directory paths for report and trace files to be used in the analysis.
+        """
         if not self._report_paths and not self._trace_paths:
             self._report_paths = report_paths
             self._trace_paths = trace_paths
@@ -83,21 +103,37 @@ class Analysis(object):
             raise RuntimeError('Analysis object already has report and trace paths populated.')
 
     def parse(self):
+        """
+        Load any necessary data from the application result files into memory for analysis.
+        """
         return geopmpy.io.AppOutput(self._report_paths, self._trace_paths, verbose=False)
 
     def plot_process(self, parse_output):
+        """
+        Process the parsed data into a form to be used for plotting (e.g. pandas dataframe).
+        """
         raise NotImplementedError('Analysis base class does not implement the plot_process method()')
 
     def report_process(self, parse_output):
+        """
+        Process the parsed data into a form to be used for the text report.
+        """
         raise NotImplementedError('Analysis base class does not implement the report_process method()')
 
     def report(self, process_output):
+        """
+        Print a text report of the results.
+        """
         raise NotImplementedError('Analysis base class does not implement the report method()')
 
     def plot(self, process_output):
+        """
+        Generate graphical plots of the results.
+        """
         raise NotImplementedError('Analysis base class does not implement the plot method()')
 
 
+# TODO: might want to move to tests?
 class MockAnalysis(Analysis):
     def __init__(self, name, output_dir, num_rank, num_node, app_argv):
         super(MockAnalysis, self).__init__(name, output_dir, num_rank, num_node, app_argv)
@@ -133,8 +169,14 @@ class BalancerAnalysis(Analysis):
 
 
 class FreqSweepAnalysis(Analysis):
+    """
+    Runs the application at each available frequency. Compared to the baseline
+    frequency, finds the lowest frequency for each region at which the performance
+    will not be degraded by more than a given margin.
+    """
     def __init__(self, name, output_dir, num_rank, num_node, app_argv):
         super(FreqSweepAnalysis, self).__init__(name, output_dir, num_rank, num_node, app_argv)
+        self._perf_margin = 0.1
 
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         ctl_conf = geopmpy.io.CtlConf(self._name + '_app.config',
@@ -187,15 +229,15 @@ class FreqSweepAnalysis(Analysis):
     def plot(self, process_output):
         pass
 
-    def _region_freq_map(self, report_df, ratio_idx):
-        ''' Calculates the best-fit frequencies for each region for a single
-            mix ratio.
-            This function assumes that profile names end in _freq_FFFF_M
-            where FFFF is the frequency and M is the mix ratio.'''
-        perf_margin = 0.1
+    def _region_freq_map(self, report_df):
+        """
+        Calculates the best-fit frequencies for each region for a single
+        mix ratio.
+        This function assumes that profile names end in _freq_FFFF_M
+        where FFFF is the frequency and M is the mix ratio.
+        """
         optimal_freq = dict()
         min_runtime = dict()
-        is_once = True
 
         profile_name_list = report_df.index.get_level_values('name').unique().tolist()
 
@@ -205,6 +247,7 @@ class FreqSweepAnalysis(Analysis):
         freq_pname = zip(freq_list, profile_name_list)
         freq_pname.sort(reverse=True)
 
+        is_once = True
         for freq, profile_name in freq_pname:
             region_mean_runtime = report_df.loc[pandas.IndexSlice[:, profile_name, :, :, :, :, :, :], ].groupby(level='region')
             for region, region_df in region_mean_runtime:
@@ -215,12 +258,15 @@ class FreqSweepAnalysis(Analysis):
                 elif min_runtime[region] > runtime:
                     min_runtime[region] = runtime
                     optimal_freq[region] = freq
-                elif min_runtime[region] * (1.0 + perf_margin) > runtime:
+                elif min_runtime[region] * (1.0 + self._perf_margin) > runtime:
                     optimal_freq[region] = freq
             is_once = False
         return optimal_freq
 
     def _region_freq_str(self, region_freq_map):
+        """
+        Format the mapping of region names to their best-fit frequencies.
+        """
         result = ['{}:{}'.format(key, value)
                   for (key, value) in region_freq_map.iteritems()]
         result = ','.join(result)
@@ -228,12 +274,11 @@ class FreqSweepAnalysis(Analysis):
 
 
 class EnergyEfficiencyAnalysis(FreqSweepAnalysis):
-    ''' Used to compare runs of an auto frequency plugin
-        to runs at a fixed frequency for the application.
-        Requires that the reports directory contains data for the baseline
-        frequency, all runs within the best-fit frequency sweep range,
-        as well as the runs to be compared to that baseline.
-    '''
+    """
+    Used to compare runs of an auto frequency plugin to runs at a fixed
+    frequency for the application. The best-fit frequency is determined using the
+    analysis from the FreqSweepAnalysis base class.
+    """
 
     def __init__(self, name, output_dir, num_rank, num_node, app_argv):
         super(EnergyEfficiencyAnalysis, self).__init__(name, output_dir, num_rank, num_node, app_argv)
@@ -242,9 +287,19 @@ class EnergyEfficiencyAnalysis(FreqSweepAnalysis):
         pass
 
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+        """
+        Run the frequency sweep, then run the auto plugin in offline and online mode.
+        """
+        super(EnergyEfficiencyAnalysis, self).launch(geopm_ctl, do_geopm_barrier)
+
+        # TODO:
         # call parent launch to do sweep
         # then run other plugins: offline vs online
         pass
+
+    def find_files(self):
+        report_glob = os.path.join(self._output_dir, self._name + '*.report')
+        self.set_data_paths(glob.glob(report_glob))
 
     def parse(self):
         app_output = super(EnergyEfficiencyAnalysis, self).parse()
@@ -262,14 +317,19 @@ class EnergyEfficiencyAnalysis(FreqSweepAnalysis):
 
         runtime_data = []
         energy_data = []
+        app_freq_data = []
+        online_freq_data = []
         series_names = ['offline application', 'offline per-phase', 'online per-phase']
+        regions = {'epoch':  '9223372036854775808',
+                   'dgemm':  '11396693813',
+                   'stream': '20779751936'}  # TODO: get from data; get_region_id_map function
+        #region_name_list = df.index.get_level_values('region').unique().tolist()
 
         # TODO: this would be easier to plot if these ratios were in order
         mix_ratios = [(1.0, 0.25), (1.0, 0.5), (1.0, 0.75), (1.0, 1.0),
                       (0.25, 1.0), (0.5, 1.0), (0.75, 1.0)]
         for (ratio_idx, ratio) in enumerate(mix_ratios):
-            optimal_freq = self._region_freq_map(df, ratio_idx)
-            print 'mix {}, optimal freq: {}'.format(ratio_idx, optimal_freq)
+            optimal_freq = self._region_freq_map(df) # FIXME may be combining all mix ratios 
             # set baseline and best fit freqs
             if is_baseline_sticker:
                 baseline_freq = sticker_freq
@@ -310,37 +370,80 @@ class EnergyEfficiencyAnalysis(FreqSweepAnalysis):
                 energy_temp.append(energy_savings)
             runtime_data.append(runtime_temp)
             energy_data.append(energy_temp)
+
+            # calculate chosen frequencies for each mix ratio
+            # TODO: this is ignoring the hostname for now, because we get display the entire range
+            adaptive_freq = defaultdict(list)
+            log_glob = os.path.join(self._output_dir,
+                                    '{}_adaptive_{}.log'.format(self._name, ratio_idx))
+            files = glob.glob(log_glob)
+            for filename in files:
+                with open(filename) as infile:
+                    last_freq = {}
+                    for line in infile:
+                        if 'is_new' in line:
+                            line = line.strip().split()
+                            if len(line) != 9:
+                                # some interleaving problem or uninteresting line
+                                continue
+                            last_freq[line[4]] = float(line[6])
+                for rid, freq in last_freq.items():
+                    adaptive_freq[rid].append(freq)
+            for rid in adaptive_freq:
+                adaptive_freq[rid] = (min(adaptive_freq[rid]), max(adaptive_freq[rid]))
+
+            app_freq_temp = []
+            online_freq_temp = []
+            for region in regions:
+                app_freq_temp.append(optimal_freq[region])
+                if region != 'epoch':
+                    online_freq_temp.append(adaptive_freq[regions[region]])
+
+            app_freq_data.append(app_freq_temp)
+            online_freq_data.append(online_freq_temp)
             # end mix ratio loop
 
         # produce combined output
         energy_result_df = pandas.DataFrame(energy_data, columns=series_names)
         runtime_result_df = pandas.DataFrame(runtime_data, columns=series_names)
+        app_freq_df = pandas.DataFrame(app_freq_data, columns=regions)
+        # online does not need epoch
+        del regions['epoch']
+        online_freq_df = pandas.DataFrame(online_freq_data, columns=regions)
 
         # fix for ordering of mixes
         order = [0, 1, 2, 3, 6, 5, 4]
         energy_result_df = energy_result_df.reindex(order)
         runtime_result_df = runtime_result_df.reindex(order)
+        app_freq_df = app_freq_df.reindex(order)
+        online_freq_df = online_freq_df.reindex(order)
 
-        return energy_result_df, runtime_result_df
+        return energy_result_df, runtime_result_df, app_freq_df, online_freq_df
 
     def plot_process(self, parse_output):
         return self.report_process(parse_output)
 
     def report(self, process_output):
         rs = 'Report\n'
-        energy_result_df, runtime_result_df = process_output
+        energy_result_df, runtime_result_df, app_freq_df, online_freq_df = process_output
         rs += 'Energy\n'
         rs += '{}\n'.format(energy_result_df)
         rs += 'Runtime\n'
         rs += '{}\n'.format(runtime_result_df)
+        rs += 'Application best-fit frequencies\n'
+        rs += '{}\n'.format(app_freq_df)
+        rs += 'Online chosen frequencies\n'
+        rs += '{}\n'.format(online_freq_df)
         print rs
         return rs
 
     def plot(self, process_output):
         sys.stdout.write('Plot')
-        energy_result_df, runtime_result_df = process_output
-        geopmpy.plotter.generate_bar_plot_sc17(energy_result_df, 'Energy')
-        geopmpy.plotter.generate_bar_plot_sc17(runtime_result_df, 'Runtime')
+        energy_result_df, runtime_result_df, app_freq_df, online_freq_df = process_output
+        geopmpy.plotter.generate_bar_plot_sc17(energy_result_df, 'Energy-to-Solution Decrease')
+        geopmpy.plotter.generate_bar_plot_sc17(runtime_result_df, 'Time-to-Solution Increase')
+        geopmpy.plotter.generate_app_best_freq_plot_sc17(app_freq_df, 'Offline auto per-phase best-fit frequency')
+        geopmpy.plotter.generate_best_freq_plot_sc17(online_freq_df, 'Online auto per-phase best-fit frequency')
 
 
 def main(argv):
@@ -407,12 +510,16 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
     if args.analysis_type not in analysis_type_map:
         raise SyntaxError('Analysis type: "{}" unrecognized.'.format(args.analysis_type))
 
+    if False:
+        if not args.profile_prefix:
+            raise RuntimeError('profile_prefix is required to skip launch.')
+
     analysis = analysis_type_map[args.analysis_type](args.profile_prefix,
                                                      args.output_dir,
                                                      args.num_rank,
                                                      args.num_node,
                                                      args.app_argv)
-    analysis.launch()
+
     if args.skip_launch:
         analysis.find_files()
     else:

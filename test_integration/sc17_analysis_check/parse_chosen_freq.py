@@ -20,9 +20,6 @@ from collections import defaultdict
 import sys
 
 
-data_folder = sys.argv[1]
-
-
 def print_csv(dgemm_freq, stream_freq):
     # ratios obtained from top level parsing script
     pct_ratios = {0.55500543152056236: 6,
@@ -34,18 +31,17 @@ def print_csv(dgemm_freq, stream_freq):
                   0.64043599149308772: 5}
 
     pcts = sorted(pct_ratios.keys())
-    print 'dgemm'
+    rv = 'dgemm\n'
     for p in pcts:
-        #print str(p)+','+','.join(sorted(dgemm_freq[pct_ratios[p]]))
-        print str(p)+','+','.join(dgemm_freq[pct_ratios[p]])
+        rv += str(p)+','+','.join(dgemm_freq[pct_ratios[p]])+'\n'
 
-    print 'stream'
+    rv += 'stream\n'
     for p in pcts:
-        #print str(p)+','+','.join(sorted(stream_freq[pct_ratios[p]]))
-        print str(p)+','+','.join(stream_freq[pct_ratios[p]])
+        rv += str(p)+','+','.join(stream_freq[pct_ratios[p]])+'\n'
+    return rv
 
 
-def adaptive_freq():
+def adaptive_freq(data_folder):
     dgemm_freq = defaultdict(list)
     stream_freq = defaultdict(list)
 
@@ -61,11 +57,12 @@ def adaptive_freq():
                 freq = line.split()[6]
                 stream_freq[mix].append(freq)
 
-    print 'Adaptive'
-    print_csv(dgemm_freq, stream_freq)
+    rv = 'Adaptive\n'
+    rv += print_csv(dgemm_freq, stream_freq)
+    return rv
 
 
-def per_region_map():
+def per_region_map(data_folder):
     dgemm_freq = defaultdict(list)
     stream_freq = defaultdict(list)
 
@@ -83,10 +80,11 @@ def per_region_map():
                 dgemm_freq[mix].append(dgemm)
                 stream_freq[mix].append(stream)
 
-    print 'Per-region freq map'
-    print_csv(dgemm_freq, stream_freq)
+    rv = 'Per-region freq map\n'
+    rv += print_csv(dgemm_freq, stream_freq)
+    return rv
 
 
 if __name__ == '__main__':
-    adaptive_freq()
-    per_region_map()
+    print adaptive_freq(sys.argv[1])
+    print per_region_map(sys.argv[1])

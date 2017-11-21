@@ -1,0 +1,146 @@
+2017-11-08 07:44:32.892452
+
+GEOPM_REGION_BARRIER=true GEOPM_PROFILE=test_plugin_simple_freq_multi_node_1500000000.0_6 GEOPM_POLICY=test_plugin_simple_freq_multi_node.config LD_DYNAMIC_WEAK=true GEOPM_REPORT=test_plugin_simple_freq_multi_node_freq_1500000000.0_mix_6.report OMP_PROC_BIND=true GEOPM_PMPI_CTL=process MV2_ENABLE_AFFINITY=0 KMP_AFFINITY=disabled I_MPI_PIN_DOMAIN=[0x2,0xffc,0x3ff000,0xffc00000,0x3ff00000000] mpiexec --ppn 5 -n 20 /home/cmcantal/Git/geopm/test_integration/.libs/geopm_test_integration --verbose test_plugin_simple_freq_multi_node_mix_6.config
+
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+OMP: Warning #181: OMP_PROC_BIND: ignored because KMP_AFFINITY has been defined
+Region ID: 5977905031 Freq: 1.5e+09 is_new_region: 0
+Region ID: 5977905031 Freq: 1.5e+09 is_new_region: 0
+Region ID: 5977905031 Freq: 1.5e+09 is_new_region: 0
+Region ID: 5977905031 Freq: 1.5e+09 is_new_region: 0
+Beginning loop of 60 iterations.
+Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 0Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 1Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 2Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 3Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 4Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 5Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 6Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 7Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 8Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 9Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 10Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 11Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 12Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 13Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 14Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 15Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 16Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 17Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 18Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 19Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 20Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 21Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 22Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 23Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 24Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 25Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 26Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 27Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 28Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 29Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 30Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 31Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 32Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 33Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 34Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 35Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 36Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 37Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 38Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 39Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 40Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 41Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 42Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 43Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 44Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 45Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 46Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 47Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 48Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 49Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 50Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 51Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 52Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 53Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 54Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 55Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 56Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 57Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 58Executing 4746 x 4746 DGEMM 1 times.
+Executing 811250000 array length stream triadd.
+Iteration: 59Completed loop.                    

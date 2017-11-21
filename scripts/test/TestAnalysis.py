@@ -39,11 +39,16 @@ import geopmpy.analysis as ga
 
 
 # constants; don't care for this analysis
+# region_id = {
+#     'epoch': '1234',
+#     'other': '5678',
+#     'dgemm': '2468',
+#     'stream': '1357',
+# }
 region_id = {
-    'epoch': '1234',
-    'other': '5678',
-    'dgemm': '2468',
-    'stream': '1357',
+    'epoch':  '9223372036854775808',
+    'dgemm':  '11396693813',
+    'stream': '20779751936'
 }
 version = '0.3.0'
 power_budget = 400
@@ -167,15 +172,63 @@ def get_expected_output_df(profile_names, column, best_fit_freq,
     return expected_df
 
 
+def make_dummy_logs(name_prefix, best_fit):
+    # ./31099.simple_freq_test_multi_node-1/test_plugin_simple_freq_multi_node_adaptive_6.log
+    # Region ID: 11396693813 Freq: 1.4e+09 is_new_region: 1
+    # Region ID: 20779751936 Freq: 1.2e+09 is_new_region: 1
+    #
+    # For per-region map, parse output from
+    # for f in $(find . -name "*freq_multi_node.log"); do grep 'Mix ratio\|Frequency map' $f | uniq; done > dynamic_freq.txt
+    # format:
+    # Mix ratio index 5
+    # Frequency map: stream:1200000000.0,dgemm:2100000000.0
+    # Mix ratio index 6
+    # Frequency map: stream:1200000000.0,dgemm:2100000000.0
+
+    for ratio_idx in range(7):
+        with open('{}_adaptive_{}.log'.format(name_prefix, ratio_idx), 'w') as of:
+            for region, rid in region_id.items():
+                of.write('Hostname: it0 Region ID: {} Freq: {} is_new_region: 1\n'.format(
+                    rid, best_fit[region]))
+
+
+def get_expected_app_freqs(best_fit):
+    expected_index = ratio_inds
+    expected_cols = ['epoch', 'dgemm', 'stream']
+    expected_data = []
+    for idx in expected_index:
+        row = []
+        for col in expected_cols:
+            row.append(best_fit[col])
+        expected_data.append(row)
+    expected_df = pandas.DataFrame(expected_data, index=expected_index,
+                                   columns=expected_cols)
+    return expected_df
+
+
+def get_expected_online_freqs(best_fit):
+    expected_index = ratio_inds
+    expected_cols = ['dgemm', 'stream']
+    expected_data = []
+    for idx in expected_index:
+        row = []
+        for col in expected_cols:
+            row.append((best_fit[col], best_fit[col]))
+        expected_data.append(row)
+    expected_df = pandas.DataFrame(expected_data, index=expected_index,
+                                   columns=expected_cols)
+    return expected_df
+
+
 class TestAnalysis(unittest.TestCase):
     def setUp(self):
-        self.m_name_prefix = 'prof'
+        self._name_prefix = 'prof'
         # TODO: min and max hardcoded in analysis.py
-        self.m_freqs = [1.2e9, 1.3e9, 1.4e9, 1.5e9, 1.6e9, 1.7e9, 1.8e9, 1.9e9, 2.0e9, 2.1e9]
-        self.m_analysis = ga.EnergyEfficiencyAnalysis(self.m_name_prefix, 2, 3, '.', 'args')
+        self._freqs = [1.2e9, 1.3e9, 1.4e9, 1.5e9, 1.6e9, 1.7e9, 1.8e9, 1.9e9, 2.0e9, 2.1e9]
+        self._analysis = ga.EnergyEfficiencyAnalysis(self._name_prefix, '.', 2, 3, 'args')
 
     def test_nothing(self):
-        analysis = ga.MockAnalysis('name', 2, 3, '.', 'args')
+        analysis = ga.MockAnalysis('name', '.', 2, 3, 'args')
         analysis.launch()
         parse_out = analysis.parse()
         out = analysis.report_process(parse_out)
@@ -189,10 +242,10 @@ class TestAnalysis(unittest.TestCase):
         best_fit_freq = {'dgemm': 2.0e9, 'stream': 1.2e9, 'epoch': 1.5e9}
         best_fit_perf = {'dgemm': 23.0, 'stream': 34.0, 'epoch': 45.0}
 
-        parse_out = make_mock_sweep_report_df(self.m_name_prefix, self.m_freqs,
+        parse_out = make_mock_sweep_report_df(self._name_prefix, self._freqs,
                                               best_fit_freq, best_fit_perf)
 
-        result = self.m_analysis._region_freq_map(parse_out, 1)
+        result = self._analysis._region_freq_map(parse_out, 1)
 
         for region in ['epoch', 'dgemm', 'stream']:
             self.assertEqual(best_fit_freq[region], result[region])
@@ -211,15 +264,15 @@ class TestAnalysis(unittest.TestCase):
             'online per-phase': {'dgemm': 22345.0, 'stream': 33456.0, 'epoch': 44567.0},
         }
 
-        sweep_reports = make_mock_sweep_report_df(self.m_name_prefix, self.m_freqs,
+        sweep_reports = make_mock_sweep_report_df(self._name_prefix, self._freqs,
                                                   best_fit_freq, best_fit_perf,
                                                   'energy', best_fit_metric_perf,
                                                   baseline_freq, baseline_metric_perf)
-        optimal_reports = make_mock_optimal_report_df(self.m_name_prefix, 'energy',
+        optimal_reports = make_mock_optimal_report_df(self._name_prefix, 'energy',
                                                       optimal_metric_perf)
         parse_out = sweep_reports.append(optimal_reports)
 
-        profile_names = ['{}_{}_{}'.format(self.m_name_prefix, run_name, mix_idx)
+        profile_names = ['{}_{}_{}'.format(self._name_prefix, run_name, mix_idx)
                          for mix_idx in ratio_inds
                          for run_name in ['optimal', 'adaptive', str(baseline_freq),
                                           str(best_fit_freq['epoch'])]]
@@ -227,7 +280,7 @@ class TestAnalysis(unittest.TestCase):
                                                     best_fit_freq['epoch'],
                                                     baseline_metric_perf, optimal_metric_perf)
 
-        energy_result, runtime_result = self.m_analysis.report_process(parse_out)
+        energy_result, runtime_result, _, _ = self._analysis.report_process(parse_out)
 
         expected_columns = expected_energy_df.columns
         expected_index = expected_energy_df.index
@@ -246,7 +299,47 @@ class TestAnalysis(unittest.TestCase):
 
     def test_chosen_frequencies(self):
         # parse the log files to get frequencies chosen by the adaptive algo
-        pass
+
+        baseline_freq = 2.1e9
+        best_fit_freq = {'dgemm': 2.0e9, 'stream': 1.2e9, 'epoch': 1.5e9}
+        best_fit_perf = {'dgemm': 23.0, 'stream': 34.0, 'epoch': 45.0}
+
+        # injected energy values
+        baseline_metric_perf = {'dgemm': 23456.0, 'stream': 34567.0, 'epoch': 45678.0}
+        best_fit_metric_perf = {'dgemm': 23000.0, 'stream': 34000.0, 'epoch': 45000.0}
+        optimal_metric_perf = {
+            'offline application': best_fit_metric_perf,
+            'offline per-phase': {'dgemm': 12345.0, 'stream': 23456.0, 'epoch': 34567.0},
+            'online per-phase': {'dgemm': 22345.0, 'stream': 33456.0, 'epoch': 44567.0},
+        }
+
+        sweep_reports = make_mock_sweep_report_df(self._name_prefix, self._freqs,
+                                                  best_fit_freq, best_fit_perf,
+                                                  'energy', best_fit_metric_perf,
+                                                  baseline_freq, baseline_metric_perf)
+        optimal_reports = make_mock_optimal_report_df(self._name_prefix, 'energy',
+                                                      optimal_metric_perf)
+        parse_out = sweep_reports.append(optimal_reports)
+
+        expected_app_freqs = get_expected_app_freqs(best_fit_freq)
+        expected_online_freqs = get_expected_online_freqs(best_fit_freq)
+        make_dummy_logs(self._name_prefix, best_fit_freq)
+
+        _, _, result_app_freqs, result_online_freqs = self._analysis.report_process(parse_out)
+
+        print 'expected'
+        print expected_app_freqs
+        print 'result'
+        print result_app_freqs
+        print (expected_app_freqs == result_app_freqs)
+        self.assertTrue((expected_app_freqs == result_app_freqs).all().all())
+
+        print 'expected'
+        print expected_online_freqs
+        print 'result'
+        print result_online_freqs
+        print (expected_online_freqs == result_online_freqs)
+        self.assertTrue((expected_online_freqs == result_online_freqs).all().all())
 
 
 if __name__ == '__main__':
