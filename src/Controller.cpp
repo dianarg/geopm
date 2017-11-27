@@ -623,9 +623,8 @@ namespace geopm
                     uint64_t map_id = base_region_id;
                     // Regular user region keys are only the least significant 32 bits of the region id,
                     // so clear the top 32 bits before the find.
-                    if (map_id != GEOPM_REGION_ID_UNMARKED && map_id != GEOPM_REGION_ID_EPOCH) {
-                        map_id = (map_id << 32) >> 32;
-                    }
+                    map_id = geopm_region_id_hash(map_id);
+
                     auto region_it = m_region[level].find(map_id);
                     if (region_it == m_region[level].end()) {
                         auto tmp_it = m_region[level].insert(
@@ -664,9 +663,8 @@ namespace geopm
                             uint64_t map_id = (*sample_it).second.region_id;
                             // Regular user region keys are only the least significant 32 bits of the region id,
                             // so clear the top 32 bits before the find.
-                            if (map_id != GEOPM_REGION_ID_UNMARKED && map_id != GEOPM_REGION_ID_EPOCH) {
-                                map_id = (map_id << 32) >> 32;
-                            }
+                            map_id = geopm_region_id_hash(map_id);
+
                             auto region_it = m_region[level].find(map_id);
                             if (region_it == m_region[level].end()) {
                                 auto tmp_it = m_region[level].insert(
@@ -840,9 +838,8 @@ namespace geopm
         uint64_t map_id = m_region_id_all;
         // Regular user region keys are only the least significant 32 bits of the region id,
         // so clear the top 32 bits before the find.
-        if (map_id != GEOPM_REGION_ID_UNMARKED && map_id != GEOPM_REGION_ID_EPOCH) {
-            map_id = (map_id << 32) >> 32;
-        }
+        map_id = geopm_region_id_hash(map_id);
+
         auto it = m_region[level].find(map_id);
         if (it == m_region[level].end()) {
             auto tmp_it = m_region[level].insert(
