@@ -36,6 +36,7 @@ GEOPM Analysis - Used to run applications and analyze results for specific GEOPM
 import argparse
 import sys
 import os
+import glob
 import geopmpy.io
 import geopmpy.launcher
 
@@ -165,6 +166,10 @@ class FreqSweepAnalysis(Analysis):
             else:
                 raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
+    def find_files(self):
+        report_glob = os.path.join(self._out_dir, self._name + '_freq_*.report')
+        self.set_data_paths(glob.glob(report_glob))
+
     def report_process(self, parse_output):
         return self._region_freq_map(parse_output)
 
@@ -231,6 +236,7 @@ geopmanalysis - Used to run applications and analyze results for specific
                         level 0: run application and generate reports and traces only
                         level 1: print analysis of report and trace data (default)
                         level 2: create plots from report and trace data
+  -s, --skip_launch     do not launch jobs, only analyze existing data
   --version             show the GEOPM version number and exit
 
 """.format(argv_0=sys.argv[0])
@@ -253,8 +259,7 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter, add_help=False)
 
     parser.add_argument('-t', '--analysis_type',
-                           help='type of analysis to perform, select from: {}'.format(', '.join(analysis_type_map.keys())),
-                           action='store', required=True, default='REQUIRED OPTION')
+                        action='store', required=True, default='REQUIRED OPTION')
     parser.add_argument('-n', '--num_rank',
                         action='store', required=True, default=None, type=int)
     parser.add_argument('-N', '--num_node',
@@ -267,12 +272,17 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
                         action='store', default=1, type=int)
     parser.add_argument('app_argv', metavar='APP_ARGV',
                         action='store', nargs='*')
+    parser.add_argument('-s', '--skip_launch',
+                        action='store_true', default=False)
 
     args = parser.parse_args(argv)
     if args.analysis_type not in analysis_type_map:
         raise SyntaxError('Analysis type: "{}" unrecognized.'.format(args.analysis_type))
     analysis = analysis_type_map[args.analysis_type](args.profile_prefix, args.output_dir, args.num_rank, args.num_node, args.app_argv)
-    analysis.launch()
+    if args.skip_launch:
+        analysis.find_files()
+    else:
+        analysis.launch()
     if args.level > 0:
         parse_output = analysis.parse()
         process_output = analysis.report_process(parse_output)
