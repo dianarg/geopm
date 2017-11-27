@@ -36,7 +36,8 @@ GEOPM Analysis - Used to run applications and analyze results for specific GEOPM
 import argparse
 import sys
 import os
-import geopmpy
+import geopmpy.io
+import geopmpy.launcher
 
 from geopmpy import __version__
 
@@ -58,8 +59,9 @@ def sys_freq_avail():
     return result
 
 class Analysis(object):
-    def __init__(self, name, num_rank, num_node, app_argv):
+    def __init__(self, name, output_dir, num_rank, num_node, app_argv):
         self._name = name
+        self._output_dir = output_dir
         self._num_rank = num_rank
         self._num_node = num_node
         self._app_argv = app_argv
@@ -95,8 +97,8 @@ class Analysis(object):
 
 
 class MockAnalysis(Analysis):
-    def __init__(self, name, num_rank, num_node, app_argv):
-        super(MockAnalysis, self).__init__(name, num_rank, num_node, app_argv)
+    def __init__(self, name, output_dir, num_rank, num_node, app_argv):
+        super(MockAnalysis, self).__init__(name, output_dir, num_rank, num_node, app_argv)
         self._output_path = 'mock_analysis.out'
 
     def __del__(self):
@@ -127,8 +129,8 @@ class BalancerAnalysis(Analysis):
     pass
 
 class FreqSweepAnalysis(Analysis):
-    def __init__(self, name, num_rank, num_node, app_argv):
-        super(FreqSweepAnalysis, self).__init__(name, num_rank, num_node, app_argv)
+    def __init__(self, name, output_dir, num_rank, num_node, app_argv):
+        super(FreqSweepAnalysis, self).__init__(name, output_dir, num_rank, num_node, app_argv)
 
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         ctl_conf = geopmpy.io.CtlConf(self._name + '_app.config',
@@ -143,7 +145,7 @@ class FreqSweepAnalysis(Analysis):
             del os.environ['GEOPM_SIMPLE_FREQ_ADAPTIVE']
         for freq in sys_freq_avail():
             profile_name = self._name + '_freq_{}'.format(freq)
-            report_path = os.path.join(self._out_dir, profile_name + '.report')
+            report_path = os.path.join(self._output_dir, profile_name + '.report')
             self._report_paths.append(report_path)
             if self._app_argv and not os.path.exists(report_path):
                 os.environ['GEOPM_SIMPLE_FREQ_MIN'] = str(freq)
@@ -269,7 +271,7 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
     args = parser.parse_args(argv)
     if args.analysis_type not in analysis_type_map:
         raise SyntaxError('Analysis type: "{}" unrecognized.'.format(args.analysis_type))
-    analysis = analysis_type_map[args.analysis_type](args.profile_prefix, args.num_rank, args.num_node, args.app_argv)
+    analysis = analysis_type_map[args.analysis_type](args.profile_prefix, args.output_dir, args.num_rank, args.num_node, args.app_argv)
     analysis.launch()
     if args.level > 0:
         parse_output = analysis.parse()
