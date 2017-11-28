@@ -42,7 +42,7 @@ import geopmpy.launcher
 
 from geopmpy import __version__
 
-from pandas import IndexSlice as idx
+import pandas
 
 def sys_freq_avail():
     step_freq = 100e6
@@ -75,7 +75,7 @@ class Analysis(object):
         raise NotImplementedError('Analysis base class does not implement the launch method()')
 
     def set_data_paths(self, report_paths, trace_paths=None):
-        if self._report_paths is None and self._trace_paths is None:
+        if not self._report_paths and not self._trace_paths:
             self._report_paths = report_paths
             self._trace_paths = trace_paths
         else:
@@ -167,11 +167,11 @@ class FreqSweepAnalysis(Analysis):
                 raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
     def find_files(self):
-        report_glob = os.path.join(self._out_dir, self._name + '_freq_*.report')
+        report_glob = os.path.join(self._output_dir, self._name + '_freq_*.report')
         self.set_data_paths(glob.glob(report_glob))
 
     def report_process(self, parse_output):
-        return self._region_freq_map(parse_output)
+        return self._region_freq_map(parse_output.get_report_df())
 
     def plot_process(self, parse_output):
         return parse_output.get_report_df()
@@ -191,7 +191,7 @@ class FreqSweepAnalysis(Analysis):
         is_once = True
 
         profile_name_list = report_df.index.get_level_values('name').unique().tolist()
-        freq_list = [float(pn.split('_freq_')[1]) for pn in profile_name_list if '_freq_' in pn]
+        freq_list = [float(pn.split('_')[-1]) for pn in profile_name_list if '_freq_' in pn]
         freq_pname = zip(freq_list, profile_name_list)
         freq_pname.sort(reverse=True)
 
@@ -267,7 +267,7 @@ Copyright (C) 2015, 2016, 2017, Intel Corporation. All rights reserved.
     parser.add_argument('-o', '--output_dir',
                         action='store', default='.')
     parser.add_argument('-p', '--profile_prefix',
-                        action='store', default=None)
+                        action='store', default='')
     parser.add_argument('-l', '--level',
                         action='store', default=1, type=int)
     parser.add_argument('app_argv', metavar='APP_ARGV',
