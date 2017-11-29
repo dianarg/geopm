@@ -782,7 +782,7 @@ class TestIntegration(unittest.TestCase):
             app_conf.write()
             self._tmp_files.append(app_conf.get_path())
             app_argv = [app_path, '--verbose', app_conf.get_path()]
-            analysis_obj = geopmpy.analysis.FreqSweepAnalysis(name, num_rank, num_node, app_argv)
+            analysis_obj = geopmpy.analysis.FreqSweepAnalysis(name + '_mix_{}'.format(ratio_idx), num_rank, num_node, app_argv)
             analysis_obj.launch(do_geopm_barrier=True)
             freq_map_str = analysis.report(analysis.report_process(analysis.parse()))
 

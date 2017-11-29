@@ -191,12 +191,15 @@ class FreqSweepAnalysis(Analysis):
         is_once = True
 
         profile_name_list = report_df.index.get_level_values('name').unique().tolist()
-        freq_list = [float(pn.split('_')[-1]) for pn in profile_name_list if '_freq_' in pn]
+
+        freq_list = [float(pn.split('_freq_')[-1].split('_')[0])
+                     for pn in profile_name_list
+                     if '_freq_' in pn]
         freq_pname = zip(freq_list, profile_name_list)
         freq_pname.sort(reverse=True)
 
         for freq, profile_name in freq_pname:
-            region_mean_runtime = report_df.loc([pandas.IndexSlice[:, profile_name, :, :, :, :, :, :], ].groupby(level='region'))
+            region_mean_runtime = report_df.loc[pandas.IndexSlice[:, profile_name, :, :, :, :, :, :], ].groupby(level='region')
             for region, region_df in region_mean_runtime:
                 runtime = region_df['runtime'].mean()
                 if is_once:
