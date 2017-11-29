@@ -659,7 +659,8 @@ namespace geopm
                 for (auto sample_it = m_prof_sample.cbegin();
                      sample_it != m_prof_sample.cbegin() + length;
                      ++sample_it) {
-                    if ((*sample_it).second.region_id != GEOPM_REGION_ID_UNDEFINED) {
+                    if ((*sample_it).second.region_id != GEOPM_REGION_ID_UNDEFINED &&
+                        !geopm_region_id_is_mpi((*sample_it).second.region_id)) {
                         if ((*sample_it).second.progress == 0.0) {
                             uint64_t map_id = (*sample_it).second.region_id;
                             // Regular user region keys are only the least significant 32 bits of the region id,

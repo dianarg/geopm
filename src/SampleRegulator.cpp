@@ -96,7 +96,8 @@ namespace geopm
         if (prof_sample_begin != prof_sample_end) {
             for (auto it = prof_sample_begin; it != prof_sample_end; ++it) {
                 if (!geopm_region_id_is_epoch((*it).second.region_id) &&
-                    (*it).second.region_id != GEOPM_REGION_ID_UNMARKED) {
+                    (*it).second.region_id != GEOPM_REGION_ID_UNMARKED &&
+                    !geopm_region_id_is_mpi((*it).second.region_id)) {
                     struct m_rank_sample_s rank_sample;
                     rank_sample.timestamp = (*it).second.timestamp;
                     rank_sample.progress = (*it).second.progress;
