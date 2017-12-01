@@ -233,8 +233,8 @@ class FreqSweepAnalysis(Analysis):
         """
         Calculates the best-fit frequencies for each region for a single
         mix ratio.
-        This function assumes that profile names end in _freq_FFFF_M
-        where FFFF is the frequency and M is the mix ratio.
+        This function assumes that the frequency set occurs in the report
+        name following the last occurenace of the string '_freq_'
         """
         optimal_freq = dict()
         min_runtime = dict()
