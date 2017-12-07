@@ -37,8 +37,8 @@ freq_change_delay_test: freq_change_delay_test.cpp
 	icc $(CFLAGS_EXTRA) $(CFLAGS) $(LDFLAGS) $(LIBS) -qopenmp $^ -o $@
 
 check: freq_change_delay_test
-	./freq_change_delay_test --dgemm & sleep 1; \
-	./freq_change_delay_test --sample; wait;
+	geopmsrun -n 16 --ppn=16 --geopm-rm=IMPI --geopm-ctl=process --geopm-report=bench.report --geopm-trace=bench.trace ../../geopmbench ../../test_integration/tutorial_6.config > bench.out & \
+	./freq_change_delay_test --sample > sample.out; wait;
 
 clean:
 	rm -f freq_change_delay_test
