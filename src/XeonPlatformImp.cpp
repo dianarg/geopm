@@ -428,7 +428,7 @@ namespace geopm
                         break;
                     case GEOPM_TELEMETRY_TYPE_FREQUENCY:
                         it->value = (double)((m_batch.ops[signal_index++].msrdata >> 8) & 0x0FF);
-                        //convert to MHZ
+                        //convert to GHz
                         it->value *= 0.1;
                         break;
                     case GEOPM_TELEMETRY_TYPE_INST_RETIRED:
