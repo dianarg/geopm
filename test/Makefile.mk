@@ -195,6 +195,8 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/RuntimeRegulatorTest.all_reenter \
               test/gtest_links/RuntimeRegulatorTest.one_rank_reenter_and_exit \
               test/gtest_links/RuntimeRegulatorTest.config_rank_then_workers \
+              test/gtest_links/PlatformTopoTest.laptop_num_domain \
+              test/gtest_links/PlatformTopoTest.knl_num_domain \
               # end
 
 if ENABLE_MPI
@@ -262,6 +264,7 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           plugin/AdaptiveFreqRegion.cpp \
                           test/AdaptiveFreqRegionTest.cpp \
                           test/RuntimeRegulatorTest.cpp \
+                          test/PlatformTopoTest.cpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \
