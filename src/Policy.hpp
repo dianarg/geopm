@@ -178,7 +178,7 @@ namespace geopm
             /// @brief Policy destructor, virtual
             virtual ~Policy();
             int num_domain(void);
-            void region_id(std::vector<uint64_t> &region_id);
+            void region_id(std::vector<uint64_t> &region_id) const;
             void update(uint64_t region_id, int domain_idx, double target);
             void update(uint64_t region_id, const std::vector<double> &target);
             void update(uint64_t region_id, int ctl_type, int domain_idx, double target);
@@ -208,7 +208,6 @@ namespace geopm
             static bool m_is_once;
             IPolicyFlags *m_policy_flags;
             RegionPolicy *region_policy(uint64_t region_id);
-            std::vector<int> m_num_domain;
             int m_mode;
             int m_num_sample;
             std::map<uint64_t, RegionPolicy *> m_region_policy;

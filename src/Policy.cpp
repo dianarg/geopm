@@ -39,7 +39,6 @@
 #include "PolicyFlags.hpp"
 #include "PlatformIO.hpp"
 #include "geopm_sched.h"
-#include "PlatformTopology.hpp"
 
 #include "config.h"
 
@@ -52,7 +51,7 @@ namespace geopm
     class RegionPolicy
     {
         public:
-            RegionPolicy(std::vector<int> &num_domain);
+            RegionPolicy();
             virtual ~RegionPolicy();
             void update(int ctl_type, int domain_idx, double target);
             void update(int ctl_type, const std::vector<double> &target);
@@ -72,18 +71,14 @@ namespace geopm
             /// @return true if converged else false.
             bool is_converged(void);
         protected:
-            std::vector<int> m_num_domain;
             std::map<int, std::vector<double> > m_target;
             bool m_is_converged;
 
     };
 
-    Policy::Policy(TelemetryConfig &config)
+    Policy::Policy()
         : m_policy_flags(0)
     {
-        for (int i = 0; i < GEOPM_NUM_CONTROL_DOMAIN; ++i) {
-            m_num_domain.push_back(config.num_signal_per_domain(i));
-        }
         //Add the default unmarked region
         (void) region_policy(GEOPM_REGION_ID_EPOCH);
         m_policy_flags = new PolicyFlags(0);
@@ -102,7 +97,7 @@ namespace geopm
         RegionPolicy *result = NULL;
         auto result_it = m_region_policy.find(region_id);
         if (result_it == m_region_policy.end()) {
-            result = new RegionPolicy(m_num_domain);
+            result = new RegionPolicy();
             m_region_policy.insert(std::pair<uint64_t, RegionPolicy *>(region_id, result));
         }
         else {
@@ -150,24 +145,24 @@ namespace geopm
         m_policy_flags->flags(flags);
     }
 
-    void Policy::target(uint64_t region_id, int domain_idx, double &target)
+    void Policy::target(uint64_t region_id, int domain_idx, double &value)
     {
-        target(region_id, GEOPM_CONTROL_DOMAIN_POWER, domain_idx, target);
+        target(region_id, GEOPM_CONTROL_DOMAIN_POWER, domain_idx, value);
     }
 
-    void Policy::target(uint64_t region_id, std::vector <double> &target)
+    void Policy::target(uint64_t region_id, std::vector <double> &value)
     {
-        target(region_id, GEOPM_CONTROL_DOMAIN_POWER, target);
+        target(region_id, GEOPM_CONTROL_DOMAIN_POWER, value);
     }
 
-    void Policy::target(uint64_t region_id, int control_type, int domain_idx, double &target)
+    void Policy::target(uint64_t region_id, int control_type, int domain_idx, double &value)
     {
-        region_policy(region_id)->target(control_type, domain_idx, target);
+        region_policy(region_id)->target(control_type, domain_idx, value);
     }
 
-    void Policy::target(uint64_t region_id, int control_type, std::vector <double> &target)
+    void Policy::target(uint64_t region_id, int control_type, std::vector <double> &values)
     {
-        region_policy(region_id)->target(control_type, target);
+        region_policy(region_id)->target(control_type, values);
     }
 
     int Policy::mode(void) const
@@ -219,11 +214,11 @@ namespace geopm
 
     void Policy::ctl_cpu_freq(std::vector<double> freq)
     {
-        /// Temporary interface to adjust CPU frequency with the PlatformIO object
+        /// @fixme Temporary interface to adjust CPU frequency with the PlatformIO object
         if (m_is_once) {
             size_t num_cpu = geopm_sched_num_cpu();
             for (size_t cpu_idx = 0; cpu_idx < num_cpu; ++cpu_idx) {
-                platform_io().push_control("PERF_CTL:FREQ", GEOPM_DOMAIN_CPU, cpu_idx);
+                platform_io().push_control("PERF_CTL:FREQ", IPlatformIO::M_DOMAIN_CPU, cpu_idx);
             }
             m_is_once = false;
         }
@@ -232,9 +227,8 @@ namespace geopm
 
 
 
-    RegionPolicy::RegionPolicy(std::vector<int> &num_domain)
-        : m_num_domain(num_domain)
-        , m_is_converged(false)
+    RegionPolicy::RegionPolicy()
+        : m_is_converged(false)
     {
 
     }
@@ -246,10 +240,10 @@ namespace geopm
 
     void RegionPolicy::update(int control_type, int domain_idx, double target)
     {
-        if (domain_idx >= 0 && domain_idx < m_num_domain[control_type]) {
+        if (domain_idx >= 0 && domain_idx < platform_io().num_domain(control_type)) {
             auto target_it = m_target.emplace(std::piecewise_construct,
                                               std::forward_as_tuple(control_type),
-                                              std::forward_as_tuple(m_num_domain[control_type], Policy::INVALID_TARGET)).first;
+                                              std::forward_as_tuple(platform_io().num_domain(control_type), Policy::INVALID_TARGET)).first;
             (*target_it).second[domain_idx] = target;
         }
         else {
@@ -259,7 +253,7 @@ namespace geopm
 
     void RegionPolicy::update(int control_type, const std::vector <double> &target)
     {
-        if ((int)target.size() == m_num_domain[control_type]) {
+        if ((int)target.size() == platform_io().num_domain(control_type)) {
             auto empl_ret = m_target.emplace(control_type, target);
             if (!empl_ret.second) {
                 (*(empl_ret.first)).second = target;
@@ -272,7 +266,7 @@ namespace geopm
 
     void RegionPolicy::target(int control_type, std::vector<double> &target)
     {
-        if ((int)target.size() == m_num_domain[control_type]) {
+        if ((int)target.size() == platform_io().num_domain(control_type)) {
             auto it = m_target.find(control_type);
             if (it != m_target.end()) {
                 target = (*it).second;
@@ -288,7 +282,7 @@ namespace geopm
 
     void RegionPolicy::target(int control_type, int domain_idx, double &target)
     {
-        if (domain_idx >= 0 && domain_idx < m_num_domain[control_type]) {
+        if (domain_idx >= 0 && domain_idx < platform_io().num_domain(control_type)) {
             auto it = m_target.find(control_type);
             if (it != m_target.end()) {
                 target = (*it).second[domain_idx];
@@ -304,16 +298,16 @@ namespace geopm
 
     void RegionPolicy::policy_message(const struct geopm_policy_message_s &parent_msg, std::vector<struct geopm_policy_message_s> &child_msg)
     {
-        if ((int)child_msg.size() >= m_num_domain[GEOPM_DOMAIN_CONTROL_POWER]) {
-            std::fill(child_msg.begin(), child_msg.begin() + m_num_domain[GEOPM_DOMAIN_CONTROL_POWER], parent_msg);
-            auto it = m_target.find(GEOPM_DOMAIN_CONTROL_POWER);
+        if ((int)child_msg.size() >= platform_io().num_domain(GEOPM_CONTROL_DOMAIN_POWER)) {
+            std::fill(child_msg.begin(), child_msg.begin() + platform_io().num_domain(GEOPM_CONTROL_DOMAIN_POWER), parent_msg);
+            auto it = m_target.find(GEOPM_CONTROL_DOMAIN_POWER);
             if (it != m_target.end()) {
-                for (int domain_idx = 0; domain_idx != m_num_domain[GEOPM_DOMAIN_CONTROL_POWER]; ++domain_idx) {
-                    child_msg[domain_idx].power_budget = (*it).second[GEOPM_DOMAIN_CONTROL_POWER];
+                for (int domain_idx = 0; domain_idx != platform_io().num_domain(GEOPM_CONTROL_DOMAIN_POWER); ++domain_idx) {
+                    child_msg[domain_idx].power_budget = (*it).second[GEOPM_CONTROL_DOMAIN_POWER];
                 }
             }
             else {
-                for (int domain_idx = 0; domain_idx != m_num_domain[GEOPM_DOMAIN_CONTROL_POWER]; ++domain_idx) {
+                for (int domain_idx = 0; domain_idx != platform_io().num_domain(GEOPM_CONTROL_DOMAIN_POWER); ++domain_idx) {
                     child_msg[domain_idx].power_budget = Policy::INVALID_TARGET;
                 }
             }

@@ -106,8 +106,9 @@ static inline uint64_t geopm_region_id_set_hint(uint64_t hint_type, uint64_t rid
 }
 
 enum geopm_control_e {
-    GEOPM_CONTROL_DOMAIN_POWER = 0,
-    GEOPM_CONTROL_DOMAIN_FREQUENCY = 1,
+    GEOPM_CONTROL_DOMAIN_POWER,
+    GEOPM_CONTROL_DOMAIN_FREQUENCY,
+    GEOPM_NUM_CONTROL_DOMAIN // Control counter, must be last
 };
 
 enum geopm_sample_type_e {

@@ -72,6 +72,7 @@ namespace geopm
 
             IPlatformIO() {}
             virtual ~IPlatformIO() {}
+            virtual int num_domain(int domain_type) = 0;
             /// @brief Push a signal onto the end of the vector that
             ///        can be sampled.
             /// @param [in] signal_name Name of the signal requested.

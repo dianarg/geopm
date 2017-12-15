@@ -34,6 +34,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
+#include <hwloc.h>
 
 #include "geopm_sched.h"
 #include "PlatformIO.hpp"
@@ -53,6 +54,7 @@ namespace geopm
     static const MSR *hsx_msr(size_t &num_msr);
     static const MSR *snb_msr(size_t &num_msr);
     static const MSR *get_msr_arr(int cpu_id, size_t &num_msr);
+    static const std::map<int, hwloc_obj_type_t> &domain_hwloc_map(void);
 
     IPlatformIO &platform_io(void)
     {
@@ -66,7 +68,26 @@ namespace geopm
         , m_is_active(false)
         , m_msrio(NULL)
     {
+        int err = hwloc_topology_init(&m_topo);
+        if (err) {
+            throw Exception("PlatformTopology: error returned by hwloc_topology_init()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
+        err = hwloc_topology_load(m_topo);
+        if (err) {
+            throw Exception("PlatformTopology: error returned by hwloc_topology_load()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
+    }
 
+    PlatformIO::PlatformIO(const PlatformIO &other)
+        : m_num_cpu(geopm_sched_num_cpu())
+        , m_is_init(false)
+        , m_is_active(false)
+        , m_msrio(NULL)
+    {
+        throw Exception("PlatformIO: singleton class, copy constructor not supported.",
+                        GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }
 
     PlatformIO::~PlatformIO()
@@ -82,6 +103,36 @@ namespace geopm
             }
         }
         delete m_msrio;
+        hwloc_topology_destroy(m_topo);
+    }
+
+    int PlatformIO::num_domain(int domain_type)
+    {
+        int result = 0;
+
+        try {
+            result = hwloc_get_nbobjs_by_type(m_topo, hwloc_domain(domain_type));
+        }
+        catch (Exception ex) {
+            if (ex.err_value() != GEOPM_ERROR_INVALID) {
+                throw ex;
+            }
+            if (domain_type == GEOPM_DOMAIN_TILE) {
+                /// @todo: This assumes that tiles are just below
+                ///        package in hwloc hierarchy.  If tiles are
+                ///        at L2 cache, but processor has an L3 cache,
+                ///        this may not be correct.
+                int depth = hwloc_get_type_depth(m_topo, hwloc_domain(GEOPM_DOMAIN_PACKAGE)) + 1;
+                result = hwloc_get_nbobjs_by_depth(m_topo, depth);
+            }
+            else {
+                throw ex;
+            }
+            if (result == 0) {
+                throw ex;
+            }
+        }
+        return result;
     }
 
     int PlatformIO::push_signal(const std::string &signal_name,
@@ -573,6 +624,37 @@ namespace geopm
             whitelist << "0x" << std::setw(8) << msr_offset << "   0x" << std::setw(16) << write_mask << "   # \"" << msr_name << "\"" << std::endl;
         }
         return whitelist.str();
+    }
+
+    hwloc_obj_type_t PlatformIO::hwloc_domain(int domain_type) const
+    {
+        auto it = domain_hwloc_map().find(domain_type);
+        if (it == domain_hwloc_map().end()) {
+            std::ostringstream ex_str;
+            ex_str << "PlatformIO::num_domain: Domain type unknown: "  << domain_type;
+            throw Exception(ex_str.str(), GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        return (*it).second;
+    }
+
+    static const std::map<int, hwloc_obj_type_t> &domain_hwloc_map(void)
+    {
+        static const std::map<int, hwloc_obj_type_t> hwloc_map = {
+#ifdef GEOPM_HWLOC_HAS_SOCKET
+            {PlatformIO::M_DOMAIN_PACKAGE, HWLOC_OBJ_SOCKET},
+#else
+            {PlatformIO::M_DOMAIN_PACKAGE, HWLOC_OBJ_PACKAGE},
+#endif
+#ifdef GEOPM_HWLOC_HAS_L2CACHE
+            {PlatformIO::M_DOMAIN_TILE, HWLOC_OBJ_L2CACHE},
+#endif
+            {PlatformIO::M_DOMAIN_PROCESS_GROUP, HWLOC_OBJ_SYSTEM},
+            {PlatformIO::M_DOMAIN_BOARD, HWLOC_OBJ_MACHINE},
+            {PlatformIO::M_DOMAIN_PACKAGE_CORE, HWLOC_OBJ_CORE},
+            {PlatformIO::M_DOMAIN_CPU, HWLOC_OBJ_PU},
+            {PlatformIO::M_DOMAIN_BOARD_MEMORY, HWLOC_OBJ_GROUP}
+        };
+        return hwloc_map;
     }
 
     static const MSR *knl_msr(size_t &num_msr)

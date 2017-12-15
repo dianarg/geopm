@@ -334,7 +334,7 @@ namespace geopm
 
             int num_domain = m_platform->num_control_domain();
             m_telemetry_sample.resize(num_domain, {0, {{0, 0}}, {0}});
-            m_policy[0] = new Policy(num_domain);
+            m_policy[0] = new Policy();
             m_region[0].insert(std::pair<uint64_t, Region *>
                                (GEOPM_REGION_ID_EPOCH,
                                 new Region(GEOPM_REGION_ID_EPOCH,
@@ -345,7 +345,7 @@ namespace geopm
             num_domain = m_tree_comm->level_size(0);
             m_max_fanout = num_domain;
             for (int level = 1; level < num_level; ++level) {
-                m_policy[level] = new Policy(num_domain);
+                m_policy[level] = new Policy();
                 m_region[level].insert(std::pair<uint64_t, Region *>
                                        (GEOPM_REGION_ID_EPOCH,
                                         new Region(GEOPM_REGION_ID_EPOCH,
