@@ -51,8 +51,10 @@ namespace geopm
 
             /// @brief Constructor for the PlatformIO class.
             PlatformIO();
+            PlatformIO(const PlatformIO &other);
             /// @brief Virtual destructor for the PlatformIO class.
             virtual ~PlatformIO();
+            int num_domain(int domain_type);
             int push_signal(const std::string &signal_name,
                             int domain_type,
                             int domain_idx);
@@ -121,6 +123,7 @@ namespace geopm
             void register_msr_control(const std::string &control_name,
                                       const std::vector<std::string> &msr_name,
                                       const std::vector<std::string> &field_name);
+            hwloc_obj_type_t hwloc_domain(int domain_type) const;
 
             const int m_num_cpu;
             bool m_is_init;
@@ -144,6 +147,8 @@ namespace geopm
             std::vector<int>      m_msr_write_cpu_idx;
             std::vector<uint64_t> m_msr_write_offset;
             std::vector<uint64_t> m_msr_write_mask;
+            /// @brief Holds the hwloc topology tree.
+            hwloc_topology_t m_topo;
     };
 }
 
