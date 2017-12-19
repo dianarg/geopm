@@ -135,6 +135,50 @@ namespace geopm
         return result;
     }
 
+    int PlatformIO::domain_cpu(int domain_type, int domain_idx, std::vector<int> &cpu)
+    {
+        cpu.clear();
+        int num_cpu = num_domain(M_DOMAIN_CPU);
+        int num_package = m_domain(M_DOMAIN_PACKAGE);
+        int cpu_per_package = num_cpu / num_package;
+
+        switch (domain_type) {
+            case M_DOMAIN_BOARD:
+                // Set cpu list to all CPUs
+                for (int cc = 0; cc < num_cpu; ++cc) {
+                    cpu.push_back(cc);
+                }
+                break;
+            case M_DOMAIN_PACKAGE:
+            case M_DOMAIN_PACKAGE_CORE:
+                for (int dd = domain_idx * cpu_per_package
+                // Set cpu to all CPUs on the package
+                break;
+            case M_DOMAIN_CPU:
+                // Set cpu to a vector with one entry
+                cpu.push_back(domain_idx);
+                break;
+            case M_DOMAIN_PACKAGE_UNCORE:
+            case M_DOMAIN_BOARD_MEMORY:
+            case M_DOMAIN_PACKAGE_MEMORY:
+            case M_DOMAIN_NIC:
+                // No CPU's within these domains, so just leave cpu cleared.
+                break;
+            case M_DOMAIN_PROCESS_GROUP:
+                throw Exception("PlatformIO::domain_cpu(): not implemented for M_DOMAIN_PROCESS_GROUP domain type",
+                                GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+                break;
+            case M_DOMAIN_TILE_GROUP:
+                throw Exception("PlatformIO::domain_cpu(): not implemented for M_DOMAIN_TILE_GROUP domain type",
+                                GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+                break;
+            case M_DOMAIN_TILE:
+                throw Exception("PlatformIO::domain_cpu(): not implemented for M_DOMAIN_TILE domain type",
+                                GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+                break;
+        }
+    }
+
     int PlatformIO::push_signal(const std::string &signal_name,
                                 int domain_type,
                                 int domain_idx)
