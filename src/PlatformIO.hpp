@@ -45,34 +45,110 @@ namespace geopm
     class IPlatformIO
     {
         public:
+            enum m_group_e {
+                M_GROUP_BOARD,
+                M_GROUP_PACKAGE,
+                M_GROUP_NUMA,
+                M_GROUP_L3CACHE,
+                M_GROUP_L2CACHE,
+                M_GROUP_L1CACHE,
+                M_GROUP_ETC_0,
+                M_GROUP_ETC_1,
+                M_GROUP_ETC_2,
+                M_GROUP_ETC_3,
+                M_NUM_GROUP
+            };
+
+            enum m_component_e {
+                M_COMPONENT_CPU,
+                M_COMPONENT_MEMORY,
+                M_COMPONENT_PMEMORY,
+                M_COMPONENT_NETWORK,
+                M_COMPONENT_OTHER,
+                M_NUM_COMPONENT
+            };
+
+            struct m_domain_s {
+                uint32_t grp;
+                uint32_t cmp;
+            };
+
+            union m_domain_u {
+                struct m_domain_s s;
+                uint64_t i;
+            };
+
             enum m_domain_e {
-                /// @brief Group of MPI processes used for control
-                M_DOMAIN_PROCESS_GROUP,
-                /// @brief Coherent memory domain
-                M_DOMAIN_BOARD,
-                /// @brief Single processor package
-                M_DOMAIN_PACKAGE,
-                /// @brief All CPU's within a package
-                M_DOMAIN_PACKAGE_CORE,
-                /// @brief Everything on package other than the cores
-                M_DOMAIN_PACKAGE_UNCORE,
-                /// @brief Single processing unit
-                M_DOMAIN_CPU,
-                /// @brief Standard off package DIMM (DRAM or NAND)
-                M_DOMAIN_BOARD_MEMORY,
-                /// @brief On package memory (MCDRAM)
-                M_DOMAIN_PACKAGE_MEMORY,
-                /// @brief Network interface controller
-                M_DOMAIN_NIC,
-                /// @brief Software defined grouping of tiles
-                M_DOMAIN_TILE_GROUP,
-                /// @brief Group of CPU's that share a cache
-                M_DOMAIN_TILE,
+                M_DOMAIN_BOARD_CPU = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_BOARD_MEMORY = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_BOARD_PMEMORY = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_BOARD_NETWORK = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_BOARD_OTHER = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_PACKAGE_CPU = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_PACKAGE_MEMORY = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_PACKAGE_PMEMORY = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_PACKAGE_NETWORK = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_PACKAGE_OTHER = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_NUMA_CPU = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_NUMA_MEMORY = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_NUMA_PMEMORY = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_NUMA_NETWORK = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_NUMA_OTHER = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_L3CACHE_CPU = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_L3CACHE_MEMORY = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_L3CACHE_PMEMORY = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_L3CACHE_NETWORK = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_L3CACHE_OTHER = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_L2CACHE_CPU = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_L2CACHE_MEMORY = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_L2CACHE_PMEMORY = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_L2CACHE_NETWORK = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_L2CACHE_OTHER = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_L1CACHE_CPU = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_L1CACHE_MEMORY = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_L1CACHE_PMEMORY = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_L1CACHE_NETWORK = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_L1CACHE_OTHER = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_ETC_0_CPU = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_ETC_0_MEMORY = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_ETC_0_PMEMORY = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_ETC_0_NETWORK = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_ETC_0_OTHER = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_ETC_1_CPU = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_ETC_1_MEMORY = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_ETC_1_PMEMORY = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_ETC_1_NETWORK = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_ETC_1_OTHER = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_ETC_2_CPU = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_ETC_2_MEMORY = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_ETC_2_PMEMORY = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_ETC_2_NETWORK = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_ETC_2_OTHER = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_OTHER) << 32),
+
+                M_DOMAIN_ETC_3_CPU = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_CPU) << 32),
+                M_DOMAIN_ETC_3_MEMORY = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
+                M_DOMAIN_ETC_3_PMEMORY = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
+                M_DOMAIN_ETC_3_NETWORK = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
+                M_DOMAIN_ETC_3_OTHER = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_OTHER) << 32),
             };
 
             IPlatformIO() {}
             virtual ~IPlatformIO() {}
-            virtual int num_domain(int domain_type) = 0;
+            /// @brief Add components to one of the etc groups.
+            virtual uint64_t etc_extend(int etc_idx, int component_type, const std::set<int> &component_idx);
+            /// @brief Remove all components from one of the etc groups.
+            virtual uint64_t etc_clear(int etc_idx);
+            /// @brief Number of domains on the platform of a
+            ///        particular m_domain_e type.
+            virtual int num_domain(uint64_t domain_type) = 0;
             /// @brief Push a signal onto the end of the vector that
             ///        can be sampled.
             /// @param [in] signal_name Name of the signal requested.
@@ -86,7 +162,7 @@ namespace geopm
             ///         or -1 if the signal is not valid on the
             ///         platform.
             virtual int push_signal(const std::string &signal_name,
-                                    int domain_type,
+                                    uint64_t domain_type,
                                     int domain_idx) = 0;
             /// @brief Push a control onto the end of the vector that
             ///        can be adjusted.
@@ -100,7 +176,7 @@ namespace geopm
             /// @return Pointer to an IControl object if the requested
             ///         control is valid, otherwise returns NULL.
             virtual int push_control(const std::string &control_name,
-                                     int domain_type,
+                                     uint64_t domain_type,
                                      int domain_idx) = 0;
             /// @brief Remove all signals and controls.  Must be
             ///        called before pushing signals or controls once
@@ -170,7 +246,7 @@ namespace geopm
             /// @brief Get the type of the domain under measurement.
             /// @return One of the values from the IPlatformIO::m_domain_e
             ///         enum described in PlatformTopology.hpp.
-            virtual int domain_type(void) const = 0;
+            virtual uint64_t domain_type(void) const = 0;
             /// @brief Get the index of the domain under measurement.
             /// @return The index of the domain within the set of
             ///        domains of the same type on the platform.
@@ -202,7 +278,7 @@ namespace geopm
             /// @brief Get the type of the domain under control.
             /// @return One of the values from the geopm_domain_type_e
             ///         enum described in PlatformTopology.hpp.
-            virtual int domain_type(void) const = 0;
+            virtual uint64_t domain_type(void) const = 0;
             /// @brief Get the index of the domain under control.
             /// @return The index of the domain within the set of
             ///        domains of the same type on the platform.
