@@ -135,7 +135,7 @@ namespace geopm
         return result;
     }
 
-    int PlatformIO::domain_cpu(int domain_type, int domain_idx, std::vector<int> &cpu)
+    void PlatformIO::domain_cpu(uint64_t domain_type, int domain_idx, std::vector<int> &cpu)
     {
         cpu.clear();
         int num_cpu = num_domain(M_DOMAIN_CPU);
