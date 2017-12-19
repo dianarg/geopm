@@ -106,9 +106,9 @@ static inline uint64_t geopm_region_id_set_hint(uint64_t hint_type, uint64_t rid
 }
 
 enum geopm_control_e {
-    GEOPM_CONTROL_DOMAIN_POWER,
-    GEOPM_CONTROL_DOMAIN_FREQUENCY,
-    GEOPM_NUM_CONTROL_DOMAIN // Control counter, must be last
+    GEOPM_CONTROL_POWER,
+    GEOPM_CONTROL_FREQUENCY,
+    GEOPM_NUM_CONTROL // Control counter, must be last
 };
 
 enum geopm_sample_type_e {
@@ -144,7 +144,7 @@ struct geopm_policy_message_s {
     /// a sample up the tree.
     int num_sample;
     /// @brief Power budget in Watts.
-    double power_budget;
+    double target[GEOPM_NUM_CONTROL];
 };
 
 /// @brief MPI message structure for sending

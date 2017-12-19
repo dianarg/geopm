@@ -186,8 +186,6 @@ namespace geopm
         , m_global_policy(global_policy)
         , m_tree_comm(NULL)
         , m_decider_factory(NULL)
-        , m_platform_factory(NULL)
-        , m_platform(NULL)
         , m_sampler(NULL)
         , m_sample_regulator(NULL)
         , m_tracer(NULL)
@@ -311,8 +309,7 @@ namespace geopm
             m_last_sample_msg.resize(num_level);
             std::fill(m_last_sample_msg.begin(), m_last_sample_msg.end(), GEOPM_SAMPLE_INVALID);
 
-            m_platform_factory = new PlatformFactory;
-            m_platform = m_platform_factory->platform(plugin_desc.platform, true);
+            /// @fixme: Set up batch read
             m_msr_sample.resize(m_platform->capacity());
             m_platform->sample(m_msr_sample);
             m_app_start_time = m_msr_sample[0].timestamp;

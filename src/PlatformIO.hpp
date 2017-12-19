@@ -52,11 +52,7 @@ namespace geopm
                 M_GROUP_L3CACHE,
                 M_GROUP_L2CACHE,
                 M_GROUP_L1CACHE,
-                M_GROUP_ETC_0,
-                M_GROUP_ETC_1,
-                M_GROUP_ETC_2,
-                M_GROUP_ETC_3,
-                M_NUM_GROUP
+                M_GROUP_EXT_BASE = 2048,
             };
 
             enum m_component_e {
@@ -65,90 +61,22 @@ namespace geopm
                 M_COMPONENT_PMEMORY,
                 M_COMPONENT_NETWORK,
                 M_COMPONENT_OTHER,
-                M_NUM_COMPONENT
-            };
-
-            struct m_domain_s {
-                uint32_t grp;
-                uint32_t cmp;
-            };
-
-            union m_domain_u {
-                struct m_domain_s s;
-                uint64_t i;
-            };
-
-            enum m_domain_e {
-                M_DOMAIN_BOARD_CPU = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_BOARD_MEMORY = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_BOARD_PMEMORY = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_BOARD_NETWORK = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_BOARD_OTHER = M_GROUP_BOARD & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_PACKAGE_CPU = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_PACKAGE_MEMORY = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_PACKAGE_PMEMORY = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_PACKAGE_NETWORK = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_PACKAGE_OTHER = M_GROUP_PACKAGE & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_NUMA_CPU = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_NUMA_MEMORY = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_NUMA_PMEMORY = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_NUMA_NETWORK = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_NUMA_OTHER = M_GROUP_NUMA & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_L3CACHE_CPU = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_L3CACHE_MEMORY = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_L3CACHE_PMEMORY = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_L3CACHE_NETWORK = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_L3CACHE_OTHER = M_GROUP_L3CACHE & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_L2CACHE_CPU = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_L2CACHE_MEMORY = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_L2CACHE_PMEMORY = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_L2CACHE_NETWORK = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_L2CACHE_OTHER = M_GROUP_L2CACHE & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_L1CACHE_CPU = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_L1CACHE_MEMORY = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_L1CACHE_PMEMORY = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_L1CACHE_NETWORK = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_L1CACHE_OTHER = M_GROUP_L1CACHE & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_ETC_0_CPU = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_ETC_0_MEMORY = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_ETC_0_PMEMORY = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_ETC_0_NETWORK = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_ETC_0_OTHER = M_GROUP_ETC_0 & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_ETC_1_CPU = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_ETC_1_MEMORY = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_ETC_1_PMEMORY = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_ETC_1_NETWORK = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_ETC_1_OTHER = M_GROUP_ETC_1 & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_ETC_2_CPU = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_ETC_2_MEMORY = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_ETC_2_PMEMORY = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_ETC_2_NETWORK = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_ETC_2_OTHER = M_GROUP_ETC_2 & ((uint64_t)(M_COMPONENT_OTHER) << 32),
-
-                M_DOMAIN_ETC_3_CPU = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_CPU) << 32),
-                M_DOMAIN_ETC_3_MEMORY = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_MEMORY) << 32),
-                M_DOMAIN_ETC_3_PMEMORY = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_PMEMORY) << 32),
-                M_DOMAIN_ETC_3_NETWORK = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_NETWORK) << 32),
-                M_DOMAIN_ETC_3_OTHER = M_GROUP_ETC_3 & ((uint64_t)(M_COMPONENT_OTHER) << 32),
             };
 
             IPlatformIO() {}
             virtual ~IPlatformIO() {}
+            virtual uint64_t domain(uint32_t group, uint32_t component) const = 0;
+            virtual std::pair<uint32_t, uint32_t> domain(uint64_t dom) const = 0;
             /// @brief Add components to one of the etc groups.
-            virtual uint64_t etc_extend(int etc_idx, int component_type, const std::set<int> &component_idx);
+            virtual void group_ext_define(int ext_idx, int component_type, const std::vector<std::set<int> > &component_idx) = 0;
             /// @brief Remove all components from one of the etc groups.
-            virtual uint64_t etc_clear(int etc_idx);
+            virtual void group_ext_clear(int ext_idx) = 0;
             /// @brief Number of domains on the platform of a
             ///        particular m_domain_e type.
-            virtual int num_domain(uint64_t domain_type) = 0;
+            virtual int num_domain(uint64_t domain_type) const = 0;
+            virtual void domain_cpus(uint64_t domain_type, int domain_idx, std::vector<int> &cpu_idx) const = 0;
+            int domain_idx(uint64_t domain_type, int cpu_idx) const = 0;
+
             /// @brief Push a signal onto the end of the vector that
             ///        can be sampled.
             /// @param [in] signal_name Name of the signal requested.
@@ -220,14 +148,14 @@ namespace geopm
             ///        reflecting all known MSRs for the current platform.
             /// @return String formatted to be written to
             ///        an msr-safe whitelist file.
-            virtual std::string msr_whitelist(void) = 0;
+            virtual std::string msr_whitelist(void) const = 0;
             /// @brief Fill string with the msr-safe whitelist file
             ///        contents reflecting all known MSRs for the
             ///        specified platform.
             /// @param cpuid [in] The CPUID of the platform.
             /// @return String formatted to be written to an msr-safe
             ///         whitelist file.
-            virtual std::string msr_whitelist(int cpuid) = 0;
+            virtual std::string msr_whitelist(int cpuid) const = 0;
     };
 
     IPlatformIO &platform_io(void);

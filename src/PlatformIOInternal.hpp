@@ -72,6 +72,7 @@ namespace geopm
             std::string msr_whitelist(int cpuid);
 
        protected:
+            virtual void domain_control_cpu(uint64_t domain_type, int domain_idx, std::set<int> &cpu_idx);
             virtual int cpuid(void);
             virtual void init(void);
             virtual void init_time(void);
