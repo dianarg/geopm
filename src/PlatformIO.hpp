@@ -65,18 +65,23 @@ namespace geopm
 
             IPlatformIO() {}
             virtual ~IPlatformIO() {}
-            virtual uint64_t domain(uint32_t group, uint32_t component) const = 0;
-            virtual std::pair<uint32_t, uint32_t> domain(uint64_t dom) const = 0;
+            /// @brief Returns a domain given the group and component
+            virtual uint64_t group_component_to_domain(uint32_t group, uint32_t component) const = 0;
+            /// @brief Returns a group/component pair given a domain
+            virtual std::pair<uint32_t, uint32_t> domain_to_group_component(uint64_t dom) const = 0;
             /// @brief Add components to one of the etc groups.
-            virtual void group_ext_define(int ext_idx, int component_type, const std::vector<std::set<int> > &component_idx) = 0;
+            virtual void group_ext_define(int ext_idx, const std::vector<std::set<int> > &cpu_idx) = 0;
             /// @brief Remove all components from one of the etc groups.
             virtual void group_ext_clear(int ext_idx) = 0;
             /// @brief Number of domains on the platform of a
             ///        particular m_domain_e type.
             virtual int num_domain(uint64_t domain_type) const = 0;
-            virtual void domain_cpus(uint64_t domain_type, int domain_idx, std::vector<int> &cpu_idx) const = 0;
+            /// @brief Get the set of Linux logical CPUs associated with the indexed domain
+            virtual void domain_cpus(uint64_t domain_type, int domain_idx, std::set<int> &cpu_idx) const = 0;
+            /// @brief Get the domain index for a particular domain
+            ///        type that contains the given Linux logical CPU
+            ///        index.
             int domain_idx(uint64_t domain_type, int cpu_idx) const = 0;
-
             /// @brief Push a signal onto the end of the vector that
             ///        can be sampled.
             /// @param [in] signal_name Name of the signal requested.
