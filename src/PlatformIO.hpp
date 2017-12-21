@@ -40,39 +40,59 @@
 
 namespace geopm
 {
-    /// @brief Class which is a collection of all valid control and
-    /// signal objects for a platform
-    class IPlatformIO
+    class IPlatformTopo
     {
         public:
-            enum m_group_e {
-                M_GROUP_BOARD,
-                M_GROUP_PACKAGE,
-                M_GROUP_NUMA,
-                M_GROUP_L3CACHE,
-                M_GROUP_L2CACHE,
-                M_GROUP_L1CACHE,
-                M_GROUP_EXT_BASE = 2048,
+            enum m_domain_e {
+                /// @brief All components on a user allocated compute node (one per controller)
+                M_DOMAIN_BOARD,
+                /// @brief Single processor package in one socket
+                M_DOMAIN_PACKAGE,
+                /// @brief Group of associated hyper-threads
+                M_DOMAIN_CORE,
+                /// @brief Linux logical CPU
+                M_DOMAIN_CPU,
+                /// @brief Standard off package DIMM (DRAM or NAND)
+                M_DOMAIN_BOARD_MEMORY,
+                /// @brief On package memory (MCDRAM)
+                M_DOMAIN_PACKAGE_MEMORY,
+                /// @brief Network interface controller on the PCI bus
+                M_DOMAIN_BOARD_NIC,
+                /// @brief Network interface controller on the processor package
+                M_DOMAIN_PACKAGE_NIC,
+                /// @brief Accelerator card on the PCI bus
+                M_DOMAIN_BOARD_ACCELERATOR,
+                /// @brief Accelerator unit on the package (e.g on-package graphics)
+                M_DOMAIN_PACKAGE_ACCELERATOR,
+                /// @brief Start of user defined collections of Linux logical CPUs
+                M_DOMAIN_CPU_GROUP_BASE = 4096,
+                /// @brief Reserved to represent an invalid domain
+                M_DOMAIN_INVALID = ~0ULL,
             };
 
-            enum m_component_e {
-                M_COMPONENT_CPU,
-                M_COMPONENT_MEMORY,
-                M_COMPONENT_PMEMORY,
-                M_COMPONENT_NETWORK,
-                M_COMPONENT_OTHER,
-            };
+            // How do we ask how many sockets per board?
+            //    num_domain(M_DOMAIN_BOARD, M_DOMAIN_PACKAGE)
+            // How do we ask how many CPUs per socket?
+            //    num_domain(M_DOMAIN_PACKAGE, M_DOMAIN_CPU)
+            // How do we know which Linux logical CPUs are on core 5?
+            //    domain_cpus(M_DOMAIN_CORE, 5, cpu_idx_set);
+            // How do we ask if there is on package memory?
+            //    num_domain(M_DOMAIN_PACKAGE, M_DOMAIN_PACKAGE_MEMORY) > 0
+            // How do we ask if the frequency control is per package or per core?
+            //    platform_io().control_domain_type("PERF_CTL:FREQ") == M_DOMAIN_PACKAGE
+            // How do we ask which socket Linux logical CPU 8 is on?
+            //    domain_idx(M_DOMAIN_PACKAGE, 8)
+            // How do we find out all of the other Linux logical CPUs that share a socket with CPU 8?
+            //    domain_cpus(M_DOMAIN_PACKAGE, domain_idx(M_DOMAIN_PACKAGE, 8), socket_cpu_set)
+            // How do we define a group all linux logical CPUs that are divisable by 4?
+            //    int num_cpu = num_domain(M_DOMAIN_CPU);
+            //    for (int i = 0; i < num_cpu; i +=4) {
+            //        domain_idx.push_back(i);
+            //    }
+            //    uint64_t group_domain = group_ext_define(0, domain_idx);
 
-            IPlatformIO() {}
-            virtual ~IPlatformIO() {}
-            /// @brief Returns a domain given the group and component
-            virtual uint64_t group_component_to_domain(uint32_t group, uint32_t component) const = 0;
-            /// @brief Returns a group/component pair given a domain
-            virtual std::pair<uint32_t, uint32_t> domain_to_group_component(uint64_t dom) const = 0;
-            /// @brief Add components to one of the etc groups.
-            virtual void group_ext_define(int ext_idx, const std::vector<std::set<int> > &cpu_idx) = 0;
-            /// @brief Remove all components from one of the etc groups.
-            virtual void group_ext_clear(int ext_idx) = 0;
+            IPlatformTopo() {}
+            virtual ~IPlatformTopo() {}
             /// @brief Number of domains on the platform of a
             ///        particular m_domain_e type.
             virtual int num_domain(uint64_t domain_type) const = 0;
@@ -80,8 +100,29 @@ namespace geopm
             virtual void domain_cpus(uint64_t domain_type, int domain_idx, std::set<int> &cpu_idx) const = 0;
             /// @brief Get the domain index for a particular domain
             ///        type that contains the given Linux logical CPU
-            ///        index.
-            int domain_idx(uint64_t domain_type, int cpu_idx) const = 0;
+            ///        index
+            virtual int domain_idx(uint64_t domain_type, int cpu_idx) const = 0;
+            /// @brief Define a new domain type that is a group of
+            ///        Linux logical CPUs by assigning a domain index
+            ///        to each.
+            /// @param [in] cpu_domain_idx A vector over Linux logical CPUs
+            ///        assigning a domain index to each.
+            virtual uint64_t define_cpu_group(const std::vector<int> &cpu_domain_idx) = 0;
+    }
+
+    IPlatformTopo &platform_topo(void);
+
+    /// @brief Class which is a collection of all valid control and
+    /// signal objects for a platform
+    class IPlatformIO
+    {
+        public:
+            IPlatformIO() {}
+            virtual ~IPlatformIO() {}
+            /// @brief Query the domain for a named signal.
+            virtual uint64_t signal_domain_type(const std::string &signal_name) const = 0;
+            /// @brief Query the domain for a named control.
+            virtual uint64_t control_domain_type(const std::string &control_name) const = 0;
             /// @brief Push a signal onto the end of the vector that
             ///        can be sampled.
             /// @param [in] signal_name Name of the signal requested.

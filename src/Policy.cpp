@@ -53,10 +53,10 @@ namespace geopm
         public:
             RegionPolicy();
             virtual ~RegionPolicy();
-            void update(int ctl_type, int domain_idx, double target);
-            void update(int ctl_type, const std::vector<double> &target);
-            void target(int ctl_type, std::vector<double> &target);
-            void target(int ctl_type, int domain_idx, double &target);
+            void update(int domain_idx, double target);
+            void update(const std::vector<double> &target);
+            void target(std::vector<double> &target);
+            void target(int domain_idx, double &target);
             void policy_message(const struct geopm_policy_message_s &parent_msg,
                                 std::vector<struct geopm_policy_message_s> &message);
             /// @brief Set the convergence state.
@@ -117,22 +117,12 @@ namespace geopm
 
     void Policy::update(uint64_t region_id, int domain_idx, double target)
     {
-        update(region_id, GEOPM_CONTROL_DOMAIN_POWER, domain_idx, target);
+        region_policy(region_id)->update(domain_idx, target);
     }
 
     void Policy::update(uint64_t region_id, const std::vector <double> &target)
     {
-        update(region_id, GEOPM_CONTROL_DOMAIN_POWER, target);
-    }
-
-    void Policy::update(uint64_t region_id, int control_type, int domain_idx, double target)
-    {
-        region_policy(region_id)->update(control_type, domain_idx, target);
-    }
-
-    void Policy::update(uint64_t region_id, int control_type, const std::vector <double> &target)
-    {
-        region_policy(region_id)->update(control_type, target);
+        region_policy(region_id)->update(target);
     }
 
     void Policy::mode(int mode)
@@ -147,22 +137,12 @@ namespace geopm
 
     void Policy::target(uint64_t region_id, int domain_idx, double &value)
     {
-        target(region_id, GEOPM_CONTROL_DOMAIN_POWER, domain_idx, value);
+        region_policy(region_id)->target(domain_idx, value);
     }
 
-    void Policy::target(uint64_t region_id, std::vector <double> &value)
+    void Policy::target(uint64_t region_id, std::vector <double> &values)
     {
-        target(region_id, GEOPM_CONTROL_DOMAIN_POWER, value);
-    }
-
-    void Policy::target(uint64_t region_id, int control_type, int domain_idx, double &value)
-    {
-        region_policy(region_id)->target(control_type, domain_idx, value);
-    }
-
-    void Policy::target(uint64_t region_id, int control_type, std::vector <double> &values)
-    {
-        region_policy(region_id)->target(control_type, values);
+        region_policy(region_id)->target(values);
     }
 
     int Policy::mode(void) const

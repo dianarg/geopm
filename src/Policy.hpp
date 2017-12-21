@@ -85,42 +85,6 @@ namespace geopm
             ///
             /// @param [out] target The current target power limit for each domain of control.
             virtual void target(uint64_t region_id, std::vector<double> &target) = 0;
-            /// @brief Update the target of a specific control domain.
-            ///
-            /// @param [in] region_id The region of interest.
-            ///
-            /// @param [in] ctl_type The control of interest.
-            ///
-            /// @param [in] domain_idx The index of the control sub-domain.
-            ///
-            /// @param [in] target The new target.
-            virtual void update(uint64_t region_id, int ctl_type, int domain_idx, double target) = 0;
-            /// @brief Update the targets of a  control's sub-domains.
-            ///
-            /// @param [in] region_id The region of interest.
-            ///
-            /// @param [in] ctl_type The control of interest.
-            ///
-            /// @param [in] target The new targets (One for each sub-domain of the control).
-            virtual void update(uint64_t region_id, int ctl_type, const std::vector<double> &target) = 0;
-            /// @brief Get  the current target of a specific control domain.
-            ///
-            /// @param [in] region_id The region of interest.
-            ///
-            /// @param [in] ctl_type The control of interest.
-            ///
-            /// @param [in] domain_idx The index of the control sub-domain.
-            ///
-            /// @param [out] target The current target.
-            virtual void target(uint64_t region_id, int ctl_type, int domain_idx, double &target) = 0;
-            /// @brief Get  the current targets of a specific control.
-            ///
-            /// @param [in] region_id The region of interest.
-            ///
-            /// @param [in] ctl_type The control of interest.
-            ///
-            /// @param [out] target The current targets (One for each sub-domain of the control).
-            virtual void target(uint64_t region_id, int ctl_type, std::vector<double> &target) = 0;
             /// @brief Get the policy power mode
             /// @return geopm_policy_mode_e power mode
             virtual void mode(int new_mode) = 0;
@@ -181,12 +145,8 @@ namespace geopm
             void region_id(std::vector<uint64_t> &region_id) const;
             void update(uint64_t region_id, int domain_idx, double target);
             void update(uint64_t region_id, const std::vector<double> &target);
-            void update(uint64_t region_id, int ctl_type, int domain_idx, double target);
-            void update(uint64_t region_id, int ctl_type, const std::vector<double> &target);
             void target(uint64_t region_id, int domain_idx, double &target);
             void target(uint64_t region_id, std::vector<double> &target);
-            void target(uint64_t region_id, int ctl_type, int domain_idx, double &target);
-            void target(uint64_t region_id, int ctl_type, std::vector<double> &target);
             void mode(int new_mode);
             void policy_flags(unsigned long new_flags);
             int mode(void) const;

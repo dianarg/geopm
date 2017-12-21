@@ -79,7 +79,7 @@ namespace geopm
         , m_freq_min(cpu_freq_min())
         , m_freq_max(cpu_freq_max())
         , m_freq_step(100e6)
-        , m_num_cores(geopm_sched_num_cpu())
+        , m_num_cpu(geopm_sched_num_cpu())
         , m_last_freq(NAN)
     {
         m_name = "simple_freq";
@@ -87,6 +87,25 @@ namespace geopm
         const char* env_freq_adapt_str = getenv("GEOPM_SIMPLE_FREQ_ADAPTIVE");
         if (env_freq_adapt_str) {
             m_is_adaptive = true;
+        }
+
+        uint64_t freq_domain_type = platform_io().control_domain_type("PERF_CTL:FREQ");
+        if (freq_domain_type == PlatformTopo::M_DOMAIN_INVALID) {
+            throw Exception("SimpleFreqDecider: Platform does not support frequency control",
+                            GEOPM_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
+        }
+        int num_freq_domain = platform_topo().num_domain(freq_domain_type);
+        if (!num_freq_domain) {
+            throw Exception("SimpleFreqDecider: Platform does not support frequency control",
+                            GEOPM_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
+        }
+        for (uint32_t dom_idx = 0; dom_idx != num_freq_domain; ++dom_idx) {
+            int policy_idx = platform_io().push_control("PERF_CTL:FREQ", freq_domain_type, dom_idx);
+            if (policy_idx < 0) {
+                throw Exception("SimpleFreqDecider: Failed to enable frequency control in the platform.",
+                                GEOPM_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
+            }
+            m_policy_idx.push_back(policy_idx);
         }
     }
 
@@ -98,7 +117,7 @@ namespace geopm
         , m_freq_min(other.m_freq_min)
         , m_freq_max(other.m_freq_max)
         , m_freq_step(other.m_freq_step)
-        , m_num_cores(other.m_num_cores)
+        , m_num_cpu(other.m_num_cpu)
         , m_last_freq(other.m_last_freq)
         , m_rid_freq_map(other.m_rid_freq_map)
         , m_is_adaptive(other.m_is_adaptive)
@@ -158,7 +177,6 @@ namespace geopm
         // since we set according to frequencies, not policy.
         bool is_updated = false;
         is_updated = GoverningDecider::update_policy(curr_region, curr_policy);
-        int num_domain = curr_policy.num_domain();
         auto curr_region_id = curr_region.identifier();
         uint64_t rid = curr_region_id & 0x00000000FFFFFFFF;
         double freq = m_last_freq;
@@ -178,7 +196,7 @@ namespace geopm
                         std::unique_ptr<AdaptiveFreqRegion>(
                             new AdaptiveFreqRegion(&curr_region, m_freq_min,
                                                    m_freq_max, m_freq_step,
-                                                   num_domain)));
+                                                   m_policy_idx.size())));
                     region_it = tmp.first;
                 }
                 region_it->second->update_entry();
@@ -195,7 +213,7 @@ namespace geopm
                         std::unique_ptr<AdaptiveFreqRegion>(
                             new AdaptiveFreqRegion(m_region_last, m_freq_min,
                                                    m_freq_max, m_freq_step,
-                                                   num_domain)));
+                                                   m_policy_idx.size())));
                     region_it = tmp.first;
                 }
                 region_it->second->update_exit();
@@ -228,12 +246,12 @@ namespace geopm
         }
 
         if (freq != m_last_freq) {
-            std::vector<double> freq_vec(m_num_cores, freq);
-            curr_policy.ctl_cpu_freq(freq_vec);
+            for (auto pol_idx : m_policy_idx) {
+                curr_policy.update(curr_region_id, pol_idx, freq);
+            }
             m_last_freq = freq;
         }
 
-        // Don't do anything since we never get a new policy.
         return is_updated;
     }
 

@@ -81,6 +81,7 @@ namespace geopm
             bool m_is_adaptive = false;
             IRegion *m_region_last = nullptr;
             std::map<uint64_t, std::unique_ptr<AdaptiveFreqRegion>> m_region_map;
+            std::vector<int> m_policy_idx;
     };
 }
 
