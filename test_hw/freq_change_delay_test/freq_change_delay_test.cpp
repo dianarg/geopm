@@ -43,6 +43,7 @@
 #include <errno.h>
 #include <omp.h>
 #include <signal.h>
+#include <sched.h>
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
@@ -268,7 +269,6 @@ void *dgemm_thread(void *args) {
 
 int open_non_batch(bool safe, std::vector<int> &msr_descs)
 {
-    #pragma omp parallel for
     for (int x = 0; x < msr_descs.size(); ++x) {
         msr_descs[x] = open_msr(safe, x);
     }
@@ -277,25 +277,26 @@ int open_non_batch(bool safe, std::vector<int> &msr_descs)
 
 int write_non_batch(const std::vector<int> &msr_descs, uint64_t write_value)
 {
-    #pragma omp parallel for
-    for (int x = 0; x < msr_descs.size(); ++x) {
-        write_msr(msr_descs[x], IA_32_PERF_CTL_MSR, write_value, IA_32_PERF_MASK);
+    #pragma omp parallel
+    {
+        int cpu_idx = sched_getcpu();
+        write_msr(msr_descs[cpu_idx], IA_32_PERF_CTL_MSR, write_value, IA_32_PERF_MASK);
     }
     return 0;
 }
 
 int read_non_batch(const std::vector<int> &msr_descs, std::vector<uint64_t> &read_vals)
 {
-    #pragma omp parallel for
-    for (int x = 0; x < msr_descs.size(); ++x) {
-        read_vals[x] = read_msr(msr_descs[x], IA_32_PERF_STATUS_MSR);
+    #pragma omp parallel
+    {
+        int cpu_idx = sched_getcpu();
+        read_vals[cpu_idx] = read_msr(msr_descs[cpu_idx], IA_32_PERF_STATUS_MSR);
     }
     return 0;
 }
 
 int close_non_batch(std::vector<int> &msr_descs)
 {
-    #pragma omp parallel for
     for (int x = 0; x < msr_descs.size(); ++x) {
         close(msr_descs[x]);
         msr_descs[x] = -1;

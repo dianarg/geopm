@@ -43,7 +43,7 @@ freq_change_delay_test: freq_change_delay_test.cpp
 FREQ_STEP_COUNT=4
 check: freq_change_delay_test
 	./freq_change_delay_test --dgemm > bench.out & sleep 1; \
-	./freq_change_delay_test --sample --batch --stride $(FREQ_STEP_COUNT) > sample.out; wait;
+	./freq_change_delay_test --sample --safe --stride $(FREQ_STEP_COUNT) > sample.out; wait;
 
 clean:
 	rm -f freq_change_delay_test
