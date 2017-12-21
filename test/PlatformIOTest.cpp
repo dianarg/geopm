@@ -30,31 +30,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#ifdef __APPLE__
-#define _DARWIN_C_SOURCE
-#include <sys/sysctl.h>
-#endif
-#include <stdint.h>
-#include <hwloc.h>
 #include <sstream>
 #include <fstream>
 #include <string>
 #include <map>
-#include <iostream>
 #include "gtest/gtest.h"
 
 #include "geopm_sched.h"
 #include "PlatformIO.hpp"
 #include "PlatformIOInternal.hpp"
 #include "MSRIO.hpp"
-#include "geopm_error.h"
 #include "Exception.hpp"
-
 
 class TestPlatformIO : public geopm::PlatformIO
 {
@@ -272,34 +264,4 @@ TEST_F(PlatformIOTest, time_signal)
     EXPECT_NEAR(1, time_1 - time_0, 0.1);
     EXPECT_LE(0, time_0);
     EXPECT_LE(0, time_1);
-}
-
-TEST_F(PlatformIOTest, cpu_count)
-{
-#ifdef _SC_NPROCESSORS_ONLN
-    int expect = sysconf(_SC_NPROCESSORS_ONLN);
-#else
-    int expect = 1;
-    size_t len = sizeof(expect);
-    sysctl((int[2]) {CTL_HW, HW_NCPU}, 2, &expect, &len, NULL, 0);
-#endif
-    int actual = m_platform_io->num_domain(geopm::PlatformIO::M_DOMAIN_CPU);
-
-    EXPECT_EQ(expect, actual);
-}
-
-TEST_F(PlatformIOTest, negative_num_domain)
-{
-    int thrown = 0;
-    int val = 0;
-
-    try {
-        val = m_platform_io->num_domain(HWLOC_OBJ_TYPE_MAX);
-    }
-    catch (geopm::Exception e) {
-        thrown = e.err_value();
-    }
-
-    EXPECT_EQ(val, 0);
-    EXPECT_EQ(thrown, GEOPM_ERROR_INVALID);
 }
