@@ -152,6 +152,12 @@ namespace geopm
             virtual int push_control(const std::string &control_name,
                                      uint64_t domain_type,
                                      int domain_idx) = 0;
+            /// @brief Return number of signals that have been pushed
+            ///        since last call to clear().
+            virtual int num_signal(void) const = 0;
+            /// @brief Return number of controls that have been pushed
+            ///        since last call to clear().
+            virtual int num_control(void) const = 0;
             /// @brief Remove all signals and controls.  Must be
             ///        called before pushing signals or controls once
             ///        they have been sampled or adjusted.
@@ -175,11 +181,11 @@ namespace geopm
             virtual void adjust(int control_idx,
                                 double setting) = 0;
             /// @brief Measure the signals specified by the previous
-            ///        call to the config() method.
+            ///        call to the push_signal() method.
             /// @param [out] signal Vector of signal values measured
             ///        from the platform in SI units.  The order of
             ///        these signals is determined by the previous
-            ///        call to the config() method.
+            ///        call to the push_signal() method.
             virtual void sample(std::vector<double> &signal) = 0;
             /// @brief Set values of controls specified by the previous
             ///        calls to push_control().
@@ -187,7 +193,7 @@ namespace geopm
             ///        adjusted.
             /// @param [in] setting Vector of control parameter values
             ///        in SI units.  The order of these controls is
-            ///        determined by the previous call to the config()
+            ///        determined by the previous call to the push_control()
             ///        method.
             virtual void adjust(const std::vector<double> &setting) = 0;
             /// @brief Fill string with the msr-safe whitelist file contents
