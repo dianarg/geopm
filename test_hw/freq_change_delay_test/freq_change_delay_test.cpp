@@ -277,9 +277,15 @@ int open_non_batch(bool safe, std::vector<int> &msr_descs)
 
 int write_non_batch(const std::vector<int> &msr_descs, uint64_t write_value)
 {
+    static __thread int cpu_idx = -1;
+    if (cpu_idx == -1) {
+        #pragma omp parallel
+        {
+            cpu_idx = sched_getcpu();
+        }
+    }
     #pragma omp parallel
     {
-        int cpu_idx = sched_getcpu();
         write_msr(msr_descs[cpu_idx], IA_32_PERF_CTL_MSR, write_value, IA_32_PERF_MASK);
     }
     return 0;
@@ -287,9 +293,17 @@ int write_non_batch(const std::vector<int> &msr_descs, uint64_t write_value)
 
 int read_non_batch(const std::vector<int> &msr_descs, std::vector<uint64_t> &read_vals)
 {
+    static __thread int cpu_idx = -1;
+    if (cpu_idx == -1) {
+        #pragma omp parallel
+        {
+            cpu_idx = sched_getcpu();
+            //#pragma omp critical
+	    //std::cerr << cpu_idx << std::endl;
+        }
+    }
     #pragma omp parallel
     {
-        int cpu_idx = sched_getcpu();
         read_vals[cpu_idx] = read_msr(msr_descs[cpu_idx], IA_32_PERF_STATUS_MSR);
     }
     return 0;

@@ -30,22 +30,29 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-CFLAGS_EXTRA = -std=c++11 -D_POSIX_C_SOURCE=200809L -O0 -g -lrt -mkl=parallel
-#CFLAGS_EXTRA = -std=c++11  -D_POSIX_C_SOURCE=200809L -O3 -lrt -mkl=parallel
+MKL_DIRS = $(MKLROOT)/lib/intel64
+MKL_LIBS        = -Wl,--start-group $(MKL_DIRS)/libmkl_intel_lp64.a $(MKL_DIRS)/libmkl_intel_thread.a $(MKL_DIRS)/libmkl_core.a  -Wl,--end-group -liomp5 -lpthread -lm -ldl
 
-#check: freq_change_delay_test
-	#geopmsrun -n 16 --ppn=16 --geopm-rm=IMPI --geopm-ctl=process --geopm-report=bench.report --geopm-trace=bench.trace ../../geopmbench ../../test_integration/tutorial_6.config > bench.out & \
-	#./freq_change_delay_test --sample > sample.out; wait;
+#CFLAGS_EXTRA = -std=c++11 -D_POSIX_C_SOURCE=200809L -O0 -g -qopenmp -lrt -lpthread $(MKL_LIBS)
+CFLAGS_EXTRA = -std=c++11 -D_POSIX_C_SOURCE=200809L -O3 -qopenmp -lrt -lpthread $(MKL_LIBS)
+
+all: freq_change_delay_test freq_change_delay_test_simple
 
 freq_change_delay_test: freq_change_delay_test.cpp
 	icc $(CFLAGS_EXTRA) $(CFLAGS) $(LDFLAGS) $(LIBS) -qopenmp $^ -o $@
 
+freq_change_delay_test_simple:  MSRIO.cpp freq_change_delay_test_simple.cpp 
+	icpc $^ $(CFLAGS_EXTRA) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@
+
+check: freq_change_delay_test_simple
+	KMP_AFFINITY=granularity=fine,compact ./freq_change_delay_test_simple 1.2e9 2.0e9
+
 FREQ_STEP_COUNT=4
-check: freq_change_delay_test
+check2: freq_change_delay_test
 	./freq_change_delay_test --dgemm > bench.out & sleep 1; \
-	./freq_change_delay_test --sample --safe --stride $(FREQ_STEP_COUNT) > sample.out; wait;
+	KMP_AFFINITY=granularity=fine,compact ./freq_change_delay_test --sample --safe --stride $(FREQ_STEP_COUNT) > sample.out; wait;
 
 clean:
-	rm -f freq_change_delay_test
+	rm -f freq_change_delay_test freq_change_delay_test_simple
 
 .PHONY: clean test
