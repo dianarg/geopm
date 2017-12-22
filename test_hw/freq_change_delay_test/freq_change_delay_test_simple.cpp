@@ -50,7 +50,7 @@ geopm::IMSRIO &msrio(void){
     return instance;
 }
 
-int write_all_cpu(uint64_t write_value)
+void write_all_cpu(uint64_t write_value)
 {
     static __thread int cpu_idx = -1;
     if (cpu_idx == -1) {
@@ -63,7 +63,6 @@ int write_all_cpu(uint64_t write_value)
     {
         msrio().write_msr(cpu_idx, IA_32_PERF_CTL_MSR, write_value, IA_32_PERF_MASK);
     }
-    return 0;
 }
 
 bool read_all_cpu(uint64_t target_val)
@@ -99,42 +98,47 @@ int main(int argc, char **argv)
     const uint64_t freq0 = (uint64_t)(atof(argv[1]) / 1e8) << 8;
     const uint64_t freq1 = (uint64_t)(atof(argv[2]) / 1e8) << 8;
 
-    struct geopm_time_s time0 = {{0, 0}};
-    struct geopm_time_s time1 = {{0, 0}};
-    struct geopm_time_s time2 = {{0, 0}};
-    struct geopm_time_s time3 = {{0, 0}};
+    struct geopm_time_s write_time = {{0, 0}};
+    struct geopm_time_s write_delay_time = {{0, 0}};
+    struct geopm_time_s read_time = {{0, 0}};
+    struct geopm_time_s read_delay_time = {{0, 0}};
+    struct geopm_time_s yield_time = {{0, 0}};
 
     for (int loop_idx = 0; loop_idx < NUM_TRIAL; ++loop_idx) {
         uint64_t freq = loop_idx % 2 ? freq0 : freq1;
         write_all_cpu(freq);
-        geopm_time(&time0);
-        bool is_done = false;
-        double delay = 0.0;
-        while (!is_done && delay < 1.0) {
-            geopm_time(&time1);
-            is_done = read_all_cpu(freq);
-            do {
-                geopm_time(&time2);
-                sched_yield();
-                geopm_time(&time3);
-                double yield_time = geopm_time_diff(&time2, &time3);
-                if (yield_time > 4e-6) {
-                    std::cerr << "Warning: yeild time " << yield_time << std::endl;
+        geopm_time(&write_time);
+        bool is_freq_changed = false;
+        double write_delay = 0.0;
+        while (write_delay < 1.0) {
+            while (!is_freq_changed && write_delay < 1.0) {
+                is_freq_changed = read_all_cpu(freq);
+                geopm_time(&read_time);
+                double read_delay = 0.0;
+                while (!is_freq_changed && read_delay < 5e-6) {
+                    geopm_time(&yield_time);
+                    sched_yield();
+                    geopm_time(&read_delay_time);
+                    double yield_delay = geopm_time_diff(&yield_time, &read_delay_time);
+                    if (yield_delay > 4e-6) {
+                        std::cerr << "Warning: yield delay" << yield_delay << std::endl;
+                    }
+                    read_delay = geopm_time_diff(&read_time, &read_delay_time);
                 }
-            } while (geopm_time_diff(&time1, &time2) < 5e-6);
-            delay = geopm_time_diff(&time0, &time2);
-        }
-        if (is_done) {
-            std::cout << delay << std::endl;
-            while (delay < 1.0) {
-                geopm_time(&time1);
-                delay = geopm_time_diff(&time0, &time1);
-                sched_yield();
+                geopm_time(&write_delay_time);
+                write_delay = geopm_time_diff(&write_time, &write_delay_time);
             }
+            geopm_time(&write_delay_time);
+            write_delay = geopm_time_diff(&write_time, &write_delay_time);
+
+        }
+        if (is_freq_changed) {
+            std::cout << geopm_time_diff(&write_time, &read_time) << std::endl;
         }
         else {
             std::cout << "FAILED" << std::endl;
         }
     }
+
     return 0;
 }

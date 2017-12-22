@@ -44,8 +44,9 @@ freq_change_delay_test: freq_change_delay_test.cpp
 freq_change_delay_test_simple:  MSRIO.cpp freq_change_delay_test_simple.cpp 
 	icpc $^ $(CFLAGS_EXTRA) $(CFLAGS) $(LDFLAGS) $(LIBS) -o $@
 
-check: freq_change_delay_test_simple
-	KMP_AFFINITY=granularity=fine,compact ./freq_change_delay_test_simple 1.2e9 2.0e9
+check: freq_change_delay_test freq_change_delay_test_simple
+	KMP_AFFINITY=granularity=fine,scatter OMP_NUM_THREADS=44 numactl --physcpubind=0-43 ./freq_change_delay_test --dgemm > bench.out & sleep 1; \
+	KMP_AFFINITY=granularity=fine,scatter OMP_NUM_THREADS=44 numactl --physcpubind=44-87 ./freq_change_delay_test_simple 1.1e9 1.3e9; wait;
 
 FREQ_STEP_COUNT=4
 check2: freq_change_delay_test
