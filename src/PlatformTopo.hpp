@@ -34,6 +34,9 @@
 #ifndef PLATFORMTOPO_HPP_INCLUDE
 #define PLATFORMTOPO_HPP_INCLUDE
 
+#include <vector>
+#include <set>
+
 namespace geopm
 {
     class IPlatformTopo
@@ -70,22 +73,21 @@ namespace geopm
             virtual ~IPlatformTopo() {}
             /// @brief Number of domains on the platform of a
             ///        particular m_domain_e type.
-            virtual int num_domain(uint64_t domain_type) const = 0;
+            virtual int num_domain(int domain_type) const = 0;
             /// @brief Get the set of Linux logical CPUs associated with the indexed domain
-            virtual void domain_cpus(uint64_t domain_type, int domain_idx, std::set<int> &cpu_idx) const = 0;
+            virtual void domain_cpus(int domain_type, int domain_idx, std::set<int> &cpu_idx) const = 0;
             /// @brief Get the domain index for a particular domain
             ///        type that contains the given Linux logical CPU
             ///        index
-            virtual int domain_idx(uint64_t domain_type, int cpu_idx) const = 0;
+            virtual int domain_idx(int domain_type, int cpu_idx) const = 0;
             /// @brief Define a new domain type that is a group of
             ///        Linux logical CPUs by assigning a domain index
             ///        to each.
             /// @param [in] cpu_domain_idx A vector over Linux logical CPUs
             ///        assigning a domain index to each.
-            virtual uint64_t define_cpu_group(const std::vector<int> &cpu_domain_idx) = 0;
-    }
+            virtual int define_cpu_group(const std::vector<int> &cpu_domain_idx) = 0;
+    };
 
     IPlatformTopo &platform_topo(void);
-
 }
 #endif

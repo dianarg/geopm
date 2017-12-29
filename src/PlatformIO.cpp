@@ -34,12 +34,11 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>
-#include <hwloc.h>
 
 #include "geopm_sched.h"
 #include "PlatformIO.hpp"
 #include "PlatformIOInternal.hpp"
-#include "PlatformTopology.hpp"
+#include "PlatformTopo.hpp"
 #include "TimeSignal.hpp"
 
 #include "MSR.hpp"
@@ -54,7 +53,6 @@ namespace geopm
     static const MSR *hsx_msr(size_t &num_msr);
     static const MSR *snb_msr(size_t &num_msr);
     static const MSR *get_msr_arr(int cpu_id, size_t &num_msr);
-    static const std::map<int, hwloc_obj_type_t> &domain_hwloc_map(void);
 
     IPlatformIO &platform_io(void)
     {
@@ -68,16 +66,7 @@ namespace geopm
         , m_is_active(false)
         , m_msrio(NULL)
     {
-        int err = hwloc_topology_init(&m_topo);
-        if (err) {
-            throw Exception("PlatformTopology: error returned by hwloc_topology_init()",
-                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-        }
-        err = hwloc_topology_load(m_topo);
-        if (err) {
-            throw Exception("PlatformTopology: error returned by hwloc_topology_load()",
-                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-        }
+
     }
 
     PlatformIO::PlatformIO(const PlatformIO &other)
@@ -103,80 +92,6 @@ namespace geopm
             }
         }
         delete m_msrio;
-        hwloc_topology_destroy(m_topo);
-    }
-
-    int PlatformIO::num_domain(int domain_type)
-    {
-        int result = 0;
-
-        try {
-            result = hwloc_get_nbobjs_by_type(m_topo, hwloc_domain(domain_type));
-        }
-        catch (Exception ex) {
-            if (ex.err_value() != GEOPM_ERROR_INVALID) {
-                throw ex;
-            }
-            if (domain_type == GEOPM_DOMAIN_TILE) {
-                /// @todo: This assumes that tiles are just below
-                ///        package in hwloc hierarchy.  If tiles are
-                ///        at L2 cache, but processor has an L3 cache,
-                ///        this may not be correct.
-                int depth = hwloc_get_type_depth(m_topo, hwloc_domain(GEOPM_DOMAIN_PACKAGE)) + 1;
-                result = hwloc_get_nbobjs_by_depth(m_topo, depth);
-            }
-            else {
-                throw ex;
-            }
-            if (result == 0) {
-                throw ex;
-            }
-        }
-        return result;
-    }
-
-    void PlatformIO::domain_cpu(uint64_t domain_type, int domain_idx, std::vector<int> &cpu)
-    {
-        cpu.clear();
-        int num_cpu = num_domain(M_DOMAIN_CPU);
-        int num_package = m_domain(M_DOMAIN_PACKAGE);
-        int cpu_per_package = num_cpu / num_package;
-
-        switch (domain_type) {
-            case M_DOMAIN_BOARD:
-                // Set cpu list to all CPUs
-                for (int cc = 0; cc < num_cpu; ++cc) {
-                    cpu.push_back(cc);
-                }
-                break;
-            case M_DOMAIN_PACKAGE:
-            case M_DOMAIN_PACKAGE_CORE:
-                for (int dd = domain_idx * cpu_per_package
-                // Set cpu to all CPUs on the package
-                break;
-            case M_DOMAIN_CPU:
-                // Set cpu to a vector with one entry
-                cpu.push_back(domain_idx);
-                break;
-            case M_DOMAIN_PACKAGE_UNCORE:
-            case M_DOMAIN_BOARD_MEMORY:
-            case M_DOMAIN_PACKAGE_MEMORY:
-            case M_DOMAIN_NIC:
-                // No CPU's within these domains, so just leave cpu cleared.
-                break;
-            case M_DOMAIN_PROCESS_GROUP:
-                throw Exception("PlatformIO::domain_cpu(): not implemented for M_DOMAIN_PROCESS_GROUP domain type",
-                                GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-                break;
-            case M_DOMAIN_TILE_GROUP:
-                throw Exception("PlatformIO::domain_cpu(): not implemented for M_DOMAIN_TILE_GROUP domain type",
-                                GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-                break;
-            case M_DOMAIN_TILE:
-                throw Exception("PlatformIO::domain_cpu(): not implemented for M_DOMAIN_TILE domain type",
-                                GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-                break;
-        }
     }
 
     int PlatformIO::push_signal(const std::string &signal_name,
@@ -192,7 +107,7 @@ namespace geopm
         }
         int result = -1;
         /// @todo support for non-CPU domains.
-        if (domain_type != GEOPM_DOMAIN_CPU) {
+        if (domain_type != IPlatformTopo::M_DOMAIN_CPU) {
             throw Exception("PlatformIO: non-CPU domain_type not implemented.",
                             GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
@@ -244,7 +159,7 @@ namespace geopm
         }
         int result = -1;
         /// @todo support for non-CPU domains.
-        if (domain_type != GEOPM_DOMAIN_CPU) {
+        if (domain_type != IPlatformTopo::M_DOMAIN_CPU) {
             throw Exception("PlatformIO: non-CPU domain_type not implemented.",
                             GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
@@ -595,7 +510,7 @@ namespace geopm
         }
     }
 
-    int PlatformIO::cpuid(void)
+    int PlatformIO::cpuid(void) const
     {
         uint32_t key = 1; //processor features
         uint32_t proc_info = 0;
@@ -633,12 +548,12 @@ namespace geopm
                         GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
-    std::string PlatformIO::msr_whitelist(void)
+    std::string PlatformIO::msr_whitelist(void) const
     {
         return msr_whitelist(cpuid());
     }
 
-    std::string PlatformIO::msr_whitelist(int cpuid)
+    std::string PlatformIO::msr_whitelist(int cpuid) const
     {
         size_t num_msr = 0;
         const MSR *msr_arr = get_msr_arr(cpuid, num_msr);
@@ -670,37 +585,6 @@ namespace geopm
         return whitelist.str();
     }
 
-    hwloc_obj_type_t PlatformIO::hwloc_domain(int domain_type) const
-    {
-        auto it = domain_hwloc_map().find(domain_type);
-        if (it == domain_hwloc_map().end()) {
-            std::ostringstream ex_str;
-            ex_str << "PlatformIO::num_domain: Domain type unknown: "  << domain_type;
-            throw Exception(ex_str.str(), GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        return (*it).second;
-    }
-
-    static const std::map<int, hwloc_obj_type_t> &domain_hwloc_map(void)
-    {
-        static const std::map<int, hwloc_obj_type_t> hwloc_map = {
-#ifdef GEOPM_HWLOC_HAS_SOCKET
-            {PlatformIO::M_DOMAIN_PACKAGE, HWLOC_OBJ_SOCKET},
-#else
-            {PlatformIO::M_DOMAIN_PACKAGE, HWLOC_OBJ_PACKAGE},
-#endif
-#ifdef GEOPM_HWLOC_HAS_L2CACHE
-            {PlatformIO::M_DOMAIN_TILE, HWLOC_OBJ_L2CACHE},
-#endif
-            {PlatformIO::M_DOMAIN_PROCESS_GROUP, HWLOC_OBJ_SYSTEM},
-            {PlatformIO::M_DOMAIN_BOARD, HWLOC_OBJ_MACHINE},
-            {PlatformIO::M_DOMAIN_PACKAGE_CORE, HWLOC_OBJ_CORE},
-            {PlatformIO::M_DOMAIN_CPU, HWLOC_OBJ_PU},
-            {PlatformIO::M_DOMAIN_BOARD_MEMORY, HWLOC_OBJ_GROUP}
-        };
-        return hwloc_map;
-    }
-
     static const MSR *knl_msr(size_t &num_msr)
     {
         static const MSR instance[] = {
@@ -708,7 +592,7 @@ namespace geopm
                 {{"FREQ", (struct IMSR::m_encode_s) {
                       .begin_bit = 8,
                       .end_bit   = 16,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_HZ,
                       .scalar    = 1e8}}},
@@ -718,14 +602,14 @@ namespace geopm
                 {{"FREQ", (struct IMSR::m_encode_s) {
                       .begin_bit = 8,
                       .end_bit   = 16,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_HZ,
                       .scalar    = 1e8}},
                  {"ENABLE", (struct IMSR::m_encode_s) {
                       .begin_bit = 32,
                       .end_bit   = 33,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}}),
@@ -733,21 +617,21 @@ namespace geopm
                 {{"POWER", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 4,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_LOG_HALF,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 8.0}}, // Signal is 1.0 because the units should be 0.125 Watts
                  {"ENERGY", (struct IMSR::m_encode_s) {
                       .begin_bit = 8,
                       .end_bit   = 13,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_LOG_HALF,
                       .units     = IMSR::M_UNITS_JOULES,
                       .scalar    = 1.6384e4}}, // Signal is 1.0 because the units should be 6.103515625e-05 Joules.
                  {"TIME", (struct IMSR::m_encode_s) {
                       .begin_bit = 16,
                       .end_bit   = 20,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_LOG_HALF,
                       .units     = IMSR::M_UNITS_SECONDS,
                       .scalar    = 1.024e3}}}, // Signal is 1.0 because the units should be 9.765625e-04 seconds.
@@ -757,56 +641,56 @@ namespace geopm
                 {{"SOFT_POWER_LIMIT", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 15,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"SOFT_LIMIT_ENABLE", (struct IMSR::m_encode_s) {
                       .begin_bit = 15,
                       .end_bit   = 16,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"SOFT_CLAMP_ENABLE", (struct IMSR::m_encode_s) {
                       .begin_bit = 16,
                       .end_bit   = 17,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"SOFT_TIME_WINDOW", (struct IMSR::m_encode_s) {
                       .begin_bit = 17,
                       .end_bit   = 24,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_7_BIT_FLOAT,
                       .units     = IMSR::M_UNITS_SECONDS,
                       .scalar    = 9.765625e-04}},
                  {"HARD_POWER_LIMIT", (struct IMSR::m_encode_s) {
                       .begin_bit = 32,
                       .end_bit   = 47,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"HARD_LIMIT_ENABLE", (struct IMSR::m_encode_s) {
                       .begin_bit = 47,
                       .end_bit   = 48,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"HARD_CLAMP_ENABLE", (struct IMSR::m_encode_s) {
                       .begin_bit = 48,
                       .end_bit   = 49,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"HARD_TIME_WINDOW", (struct IMSR::m_encode_s) {
                       .begin_bit = 49,
                       .end_bit   = 56,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_7_BIT_FLOAT,
                       .units     = IMSR::M_UNITS_SECONDS,
                       .scalar    = 9.765625e-04}}}),
@@ -814,7 +698,7 @@ namespace geopm
                 {{"ENERGY", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 32,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_JOULES,
                       .scalar    = 6.103515625e-05}}},
@@ -823,28 +707,28 @@ namespace geopm
                 {{"THERMAL_SPEC_POWER", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 15,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"MIN_POWER", (struct IMSR::m_encode_s) {
                       .begin_bit = 16,
                       .end_bit   = 31,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"MAX_POWER", (struct IMSR::m_encode_s) {
                       .begin_bit = 32,
                       .end_bit   = 47,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"MAX_TIME_WINDOW", (struct IMSR::m_encode_s) {
                       .begin_bit = 48,
                       .end_bit   = 55,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_7_BIT_FLOAT,
                       .units     = IMSR::M_UNITS_SECONDS,
                       .scalar    = 9.765625e-04}}},
@@ -854,21 +738,21 @@ namespace geopm
                 {{"POWER_LIMIT", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 15,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"ENABLE", (struct IMSR::m_encode_s) {
                       .begin_bit = 15,
                       .end_bit   = 16,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"TIME_WINDOW", (struct IMSR::m_encode_s) {
                       .begin_bit = 17,
                       .end_bit   = 24,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_7_BIT_FLOAT,
                       .units     = IMSR::M_UNITS_SECONDS,
                       .scalar    = 9.765625e-04}}}),
@@ -876,7 +760,7 @@ namespace geopm
                 {{"ENERGY", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 32,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_JOULES,
                       .scalar    = 6.103515625e-05}}},
@@ -885,7 +769,7 @@ namespace geopm
                 {{"THROTTLE_TIME", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 32,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_SECONDS,
                       .scalar    = 9.765625e-04}}},
@@ -894,28 +778,28 @@ namespace geopm
                 {{"THERMAL_SPEC_POWER", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 15,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"MIN_POWER", (struct IMSR::m_encode_s) {
                       .begin_bit = 16,
                       .end_bit   = 31,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"MAX_POWER", (struct IMSR::m_encode_s) {
                       .begin_bit = 32,
                       .end_bit   = 47,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_WATTS,
                       .scalar    = 1.25e-1}},
                  {"MAX_TIME_WINDOW", (struct IMSR::m_encode_s) { // Not correctly documented in SDM, this description is correct.
                       .begin_bit = 48,
                       .end_bit   = 55,
-                      .domain    = IPlatformIO::M_DOMAIN_BOARD_MEMORY,
+                      .domain    = IPlatformTopo::M_DOMAIN_BOARD_MEMORY,
                       .function  = IMSR::M_FUNCTION_7_BIT_FLOAT,
                       .units     = IMSR::M_UNITS_SECONDS,
                       .scalar    = 9.765625e-04}}},
@@ -925,63 +809,63 @@ namespace geopm
                 {{"EN0_OS", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 1,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN0_USR", (struct IMSR::m_encode_s) {
                       .begin_bit = 1,
                       .end_bit   = 2,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN0_PMI", (struct IMSR::m_encode_s) {
                       .begin_bit = 3,
                       .end_bit   = 4,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN1_OS", (struct IMSR::m_encode_s) {
                       .begin_bit = 4,
                       .end_bit   = 5,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN1_USR", (struct IMSR::m_encode_s) {
                       .begin_bit = 5,
                       .end_bit   = 6,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN1_PMI", (struct IMSR::m_encode_s) {
                       .begin_bit = 7,
                       .end_bit   = 8,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN2_OS", (struct IMSR::m_encode_s) {
                       .begin_bit = 8,
                       .end_bit   = 9,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN2_USR", (struct IMSR::m_encode_s) {
                       .begin_bit = 9,
                       .end_bit   = 10,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN2_PMI", (struct IMSR::m_encode_s) {
                       .begin_bit = 11,
                       .end_bit   = 12,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}}),
@@ -990,35 +874,35 @@ namespace geopm
                 {{"EN_PMC0", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 1,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN_PMC1", (struct IMSR::m_encode_s) {
                       .begin_bit = 1,
                       .end_bit   = 2,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN_FIXED_CTR0", (struct IMSR::m_encode_s) {
                       .begin_bit = 32,
                       .end_bit   = 33,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN_FIXED_CTR1", (struct IMSR::m_encode_s) {
                       .begin_bit = 33,
                       .end_bit   = 34,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"EN_FIXED_CTR2", (struct IMSR::m_encode_s) {
                       .begin_bit = 34,
                       .end_bit   = 35,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}}),
@@ -1027,35 +911,35 @@ namespace geopm
                 {{"CLEAR_OVF_PMC0", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 1,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"CLEAR_OVF_PMC1", (struct IMSR::m_encode_s) {
                       .begin_bit = 1,
                       .end_bit   = 2,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"CLEAR_OVF_FIXED_CTR0", (struct IMSR::m_encode_s) {
                       .begin_bit = 32,
                       .end_bit   = 33,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"CLEAR_OVF_FIXED_CTR1", (struct IMSR::m_encode_s) {
                       .begin_bit = 33,
                       .end_bit   = 34,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}},
                  {"CLEAR_OVF_FIXED_CTR2", (struct IMSR::m_encode_s) {
                       .begin_bit = 34,
                       .end_bit   = 35,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}}),
@@ -1063,7 +947,7 @@ namespace geopm
                 {{"INST_RETIRED_ANY", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 64,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}},
@@ -1072,7 +956,7 @@ namespace geopm
                 {{"CPU_CLK_UNHALTED_THREAD", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 64,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}},
@@ -1081,7 +965,7 @@ namespace geopm
                 {{"CPU_CLK_UNHALTED_REF_TSC", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
                       .end_bit   = 64,
-                      .domain    = IPlatformIO::M_DOMAIN_CPU,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}},
@@ -1099,7 +983,7 @@ namespace geopm
                 {{"FREQ", (struct IMSR::m_encode_s) {
                       .begin_bit = 8,
                       .end_bit   = 16,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_HZ,
                       .scalar    = 1e8}}},
@@ -1109,14 +993,14 @@ namespace geopm
                 {{"FREQ", (struct IMSR::m_encode_s) {
                       .begin_bit = 8,
                       .end_bit   = 16,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_HZ,
                       .scalar    = 1e8}},
                  {"ENABLE", (struct IMSR::m_encode_s) {
                       .begin_bit = 32,
                       .end_bit   = 33,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}}),
@@ -1133,7 +1017,7 @@ namespace geopm
                 {{"FREQ", (struct IMSR::m_encode_s) {
                       .begin_bit = 8,
                       .end_bit   = 16,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_HZ,
                       .scalar    = 1e8}}},
@@ -1143,14 +1027,14 @@ namespace geopm
                 {{"FREQ", (struct IMSR::m_encode_s) {
                       .begin_bit = 8,
                       .end_bit   = 16,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_HZ,
                       .scalar    = 1e8}},
                  {"ENABLE", (struct IMSR::m_encode_s) {
                       .begin_bit = 32,
                       .end_bit   = 33,
-                      .domain    = IPlatformIO::M_DOMAIN_PACKAGE,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
                       .function  = IMSR::M_FUNCTION_SCALE,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}}),

@@ -48,9 +48,9 @@ namespace geopm
             IPlatformIO() {}
             virtual ~IPlatformIO() {}
             /// @brief Query the domain for a named signal.
-            virtual uint64_t signal_domain_type(const std::string &signal_name) const = 0;
+            virtual int signal_domain_type(const std::string &signal_name) const = 0;
             /// @brief Query the domain for a named control.
-            virtual uint64_t control_domain_type(const std::string &control_name) const = 0;
+            virtual int control_domain_type(const std::string &control_name) const = 0;
             /// @brief Push a signal onto the end of the vector that
             ///        can be sampled.
             /// @param [in] signal_name Name of the signal requested.
@@ -64,7 +64,7 @@ namespace geopm
             ///         or -1 if the signal is not valid on the
             ///         platform.
             virtual int push_signal(const std::string &signal_name,
-                                    uint64_t domain_type,
+                                    int domain_type,
                                     int domain_idx) = 0;
             /// @brief Push a control onto the end of the vector that
             ///        can be adjusted.
@@ -78,7 +78,7 @@ namespace geopm
             /// @return Pointer to an IControl object if the requested
             ///         control is valid, otherwise returns NULL.
             virtual int push_control(const std::string &control_name,
-                                     uint64_t domain_type,
+                                     int domain_type,
                                      int domain_idx) = 0;
             /// @brief Return number of signals that have been pushed
             ///        since last call to clear().
@@ -154,7 +154,7 @@ namespace geopm
             /// @brief Get the type of the domain under measurement.
             /// @return One of the values from the IPlatformIO::m_domain_e
             ///         enum described in PlatformTopology.hpp.
-            virtual uint64_t domain_type(void) const = 0;
+            virtual int domain_type(void) const = 0;
             /// @brief Get the index of the domain under measurement.
             /// @return The index of the domain within the set of
             ///        domains of the same type on the platform.
@@ -186,7 +186,7 @@ namespace geopm
             /// @brief Get the type of the domain under control.
             /// @return One of the values from the geopm_domain_type_e
             ///         enum described in PlatformTopology.hpp.
-            virtual uint64_t domain_type(void) const = 0;
+            virtual int domain_type(void) const = 0;
             /// @brief Get the index of the domain under control.
             /// @return The index of the domain within the set of
             ///        domains of the same type on the platform.

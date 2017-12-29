@@ -68,15 +68,15 @@ namespace geopm
     bool Decider::update_policy(const struct geopm_policy_message_s &policy, IPolicy &curr_policy)
     {
         bool result = false;
-        if (policy.power_budget != m_last_power_budget) {
+        if (policy.target[GEOPM_CONTROL_TYPE_POWER] != m_last_power_budget) {
             curr_policy.is_converged(GEOPM_REGION_ID_EPOCH, false);
             int num_domain = curr_policy.num_domain();
             // Split the budget up evenly to start.
-            double split_budget = policy.power_budget / num_domain;
+            double split_budget = policy.target[GEOPM_CONTROL_TYPE_POWER] / num_domain;
             std::vector<double> domain_budget(num_domain);
             std::fill(domain_budget.begin(), domain_budget.end(), split_budget);
             curr_policy.update(GEOPM_REGION_ID_EPOCH, domain_budget);
-            m_last_power_budget = policy.power_budget;
+            m_last_power_budget = policy.target[GEOPM_CONTROL_TYPE_POWER];
             result = true;
         }
         return result;

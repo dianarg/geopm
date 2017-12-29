@@ -100,7 +100,7 @@ namespace geopm
     Platform::Platform()
         : m_imp(NULL)
         , m_num_domain(0)
-        , m_control_domain_type(GEOPM_CONTROL_DOMAIN_POWER)
+        , m_control_domain_type(GEOPM_CONTROL_TYPE_POWER)
         , m_num_energy_domain(0)
         , m_num_counter_domain(0)
         , m_num_rank(0)

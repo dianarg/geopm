@@ -38,6 +38,7 @@
 #include "Policy.hpp"
 #include "PolicyFlags.hpp"
 #include "PlatformIO.hpp"
+#include "PlatformTopo.hpp"
 #include "geopm_sched.h"
 
 #include "config.h"
@@ -194,11 +195,10 @@ namespace geopm
 
     void Policy::ctl_cpu_freq(std::vector<double> freq)
     {
-        /// @fixme Temporary interface to adjust CPU frequency with the PlatformIO object
         if (m_is_once) {
-            size_t num_cpu = geopm_sched_num_cpu();
+            size_t num_cpu = platform_topo().num_domain(IPlatformTopo::M_DOMAIN_TYPE_CPU);
             for (size_t cpu_idx = 0; cpu_idx < num_cpu; ++cpu_idx) {
-                platform_io().push_control("PERF_CTL:FREQ", IPlatformIO::M_DOMAIN_CPU, cpu_idx);
+                platform_io().push_control("PERF_CTL:FREQ", IPlatformTopo::M_DOMAIN_TYPE_CPU, cpu_idx);
             }
             m_is_once = false;
         }

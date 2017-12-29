@@ -483,7 +483,7 @@ namespace geopm
             read();
         }
         policy_message.mode = m_mode;
-        policy_message.power_budget = m_power_budget_watts;
+        policy_message.target[GEOPM_CONTROL_TYPE_POWER] = m_power_budget_watts;
         policy_message.flags = m_flags->flags();
     }
 
@@ -821,7 +821,7 @@ namespace geopm
             throw Exception("GlobalPolicy::read_shm(): Could not lock shared memory region for root of tree", err, __FILE__, __LINE__);
         }
         m_mode = m_policy_shmem_in->policy.mode;
-        m_power_budget_watts = m_policy_shmem_in->policy.power_budget;
+        m_power_budget_watts = m_policy_shmem_in->policy.target[GEOPM_CONTROL_TYPE_POWER];
         m_flags->flags(m_policy_shmem_in->policy.flags);
         m_tree_decider = m_policy_shmem_in->plugin.tree_decider;
         m_leaf_decider = m_policy_shmem_in->plugin.leaf_decider;
@@ -970,7 +970,7 @@ namespace geopm
             throw Exception("GlobalPolicy: Could not lock shared memory region for resource manager", errno, __FILE__, __LINE__);
         }
         m_policy_shmem_out->policy.mode = m_mode;
-        m_policy_shmem_out->policy.power_budget = m_power_budget_watts;
+        m_policy_shmem_out->policy.target[GEOPM_CONTROL_TYPE_POWER] = m_power_budget_watts;
         m_policy_shmem_out->policy.flags = m_flags->flags();
         m_policy_shmem_out->plugin.tree_decider[NAME_MAX - 1] = '\0';
         strncpy(m_policy_shmem_out->plugin.tree_decider, m_tree_decider.c_str(), NAME_MAX - 1);
