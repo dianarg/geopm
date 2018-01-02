@@ -39,35 +39,29 @@
 
 namespace geopm {
 
-    const std::string PMON_EVENT_NAME_KEY = "EventName";
-    const std::string PMON_EVENT_CODE_KEY = "EventCode";
-    const std::string PMON_UMASK_KEY = "UMask";
-    const std::string PMON_OFFCORE_KEY = "Offcore";
-
     /// Used to hold information about performance counters, as described in
     /// files found at https://download.01.org/perfmon/
-    class PerfmonInfo
+    class PerfmonEvents
     {
         public:
-            PerfmonInfo(std::string name, std::pair<int, int> event_code,
-                        uint64_t umask, bool offcore)
-                : m_event_name(name)
-                , m_event_code(event_code)
-                , m_umask(umask)
-                , m_offcore(offcore)
-            {
+            PerfmonEvents(std::string json_str);
+            virtual ~PerfmonEvents();
+            uint64_t code(const std::string &event_name);
+            uint64_t mask(const std::string &event_name);
+            bool is_off_core(const std::string &event_name);
+            uint64_t off_core_offset0(const std::string &event_name);
+            uint64_t off_core_offset1(const std::string &event_name);
+            uint64_t off_core_code0(const std::string &event_name);
+            uint64_t off_core_code1(const std::string &event_name);
+        protected:
+            struct m_event {
+                uint64_t code;
+                uint64_t mask;
+                uint64_t off_core_offset[2];
+                uint64_t off_core_code[2];
             }
-
-            std::string m_event_name;
-            // TODO: what size of int to use?
-            std::pair<int, int> m_event_code;
-            uint64_t m_umask;
-            bool m_offcore;
-    };
-
-    /// Reads a collection of perfmon counters from a json string. The key of the
-    /// map is the same as the EventName field.
-    std::map<std::string, PerfmonInfo> parse_perfmon(const std::string &json_string);
+            std::map<std::string, stuct m_event> m_event_map;
+    }
 }
 
 #endif

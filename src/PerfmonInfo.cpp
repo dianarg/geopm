@@ -42,6 +42,12 @@
 
 namespace geopm {
 
+    static const std::string PMON_EVENT_NAME_KEY = "EventName";
+    static const std::string PMON_EVENT_CODE_KEY = "EventCode";
+    static const std::string PMON_UMASK_KEY = "UMask";
+    static const std::string PMON_OFFCORE_KEY = "Offcore";
+
+
     /// Helper class to manage json-c objects
     class JsonObject
     {
