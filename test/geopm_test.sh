@@ -68,7 +68,7 @@ if [[ ! $test_name =~ ^MPI ]]; then
 
     if [ "$run_test" == "true" ]; then
         # This is not an MPI test, run geopm_test
-        $dir_name/../.libs/geopm_test \
+        $GEOPM_TEST_WRAPPER $dir_name/../.libs/geopm_test \
             --gtest_filter=$test_name --gtest_output=xml:$xml_dir/$test_name.xml >& $dir_name/$test_name.log
         err=$?
     fi

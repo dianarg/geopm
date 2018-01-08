@@ -44,6 +44,7 @@ BuildRequires: openmpi-devel
 BuildRequires: hwloc-devel
 BuildRequires: unzip
 BuildRequires: libtool
+BuildRequires: valgrind
 %if %{defined suse_version}
 BuildRequires: libjson-c-devel
 %else
@@ -120,13 +121,13 @@ test -f configure || ./autogen.sh
             --includedir=%{_includedir} --sbindir=%{_sbindir} \
             --mandir=%{_mandir} --docdir=%{docdir} \
             --with-mpi-bin=%{_libdir}/mpi/gcc/openmpi/bin \
-            --disable-fortran --disable-doc
+            --disable-fortran --disable-doc --enable-debug
 %else
 ./configure --prefix=%{_prefix} --libdir=%{_libdir} --libexecdir=%{_libexecdir} \
             --includedir=%{_includedir} --sbindir=%{_sbindir} \
             --mandir=%{_mandir} --docdir=%{docdir} \
             --with-mpi-bin=%{_libdir}/openmpi/bin \
-            --disable-fortran --disable-doc
+            --disable-fortran --disable-doc --enable-debug
 %endif
 
 %{__make}
@@ -134,9 +135,11 @@ test -f configure || ./autogen.sh
 %check
 
 %if %{defined suse_version}
+GEOPM_TEST_WRAPPER='valgrind --leak-check=full' \
 MPIEXEC=/usr/lib64/mpi/gcc/openmpi/bin/mpiexec %{__make} check || \
 ( cat test/gtest_links/*.log && cat scripts/test/pytest_links/*.log && false )
 %else
+GEOPM_TEST_WRAPPER='valgrind --leak-check=full' \
 MPIEXEC=/usr/lib64/openmpi/bin/mpiexec %{__make} check || \
 ( cat test/gtest_links/*.log && cat scripts/test/pytest_links/*.log && false )
 %endif
