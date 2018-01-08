@@ -139,6 +139,7 @@ GEOPM_TEST_WRAPPER='valgrind --leak-check=full' \
 MPIEXEC=/usr/lib64/mpi/gcc/openmpi/bin/mpiexec %{__make} check || \
 ( cat test/gtest_links/*.log && cat scripts/test/pytest_links/*.log && false )
 %else
+LD_LIBRARY_PATH=/usr/lib64/openmpi/lib/ \
 GEOPM_TEST_WRAPPER='valgrind --leak-check=full' \
 MPIEXEC=/usr/lib64/openmpi/bin/mpiexec %{__make} check || \
 ( cat test/gtest_links/*.log && cat scripts/test/pytest_links/*.log && false )
