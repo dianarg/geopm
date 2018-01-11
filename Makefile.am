@@ -227,11 +227,11 @@ libgeopmpolicy_la_LDFLAGS = $(AM_LDFLAGS) -version-info $(geopm_abi_version)
 # ADD LIBRARY DEPENDENCIES FOR EXECUTABLES
 geopmpolicy_LDADD = libgeopmpolicy.la
 if ENABLE_MPI
-    geopmctl_LDADD = libgeopm.la $(MPI_CLIBS)
-    geopmbench_LDADD = libgeopm.la $(MPI_CLIBS)
-    libgeopm_la_LIBADD = $(MPI_CLIBS)
+    geopmctl_LDADD = libgeopm.la libgeopmpolicy.la $(MPI_CLIBS)
+    geopmbench_LDADD = libgeopm.la libgeopmpolicy.la $(MPI_CLIBS)
+    libgeopm_la_LIBADD = libgeopmpolicy.la $(MPI_CLIBS)
 if ENABLE_FORTRAN
-    libgeopmfort_la_LIBADD = libgeopm.la $(MPI_FLIBS)
+    libgeopmfort_la_LIBADD = libgeopmpolicy.la libgeopm.la $(MPI_FLIBS)
 endif
 endif
 
@@ -296,8 +296,6 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/Tracer.hpp \
                             src/XeonPlatformImp.cpp \
                             src/XeonPlatformImp.hpp \
-                            src/geopm.h \
-                            src/geopm_ctl.h \
                             src/geopm_env.h \
                             src/geopm_error.h \
                             src/geopm_hash.c \
@@ -323,103 +321,30 @@ geopmpolicy_SOURCES = src/geopmpolicy_main.c \
 
 
 if ENABLE_MPI
-    libgeopm_la_SOURCES = src/CircularBuffer.hpp \
-                          src/Controller.cpp \
+    libgeopm_la_SOURCES = src/Controller.cpp \
                           src/Controller.hpp \
-                          src/ControlMessage.cpp \
-                          src/ControlMessage.hpp \
-                          src/Comm.hpp \
-                          src/Comm.cpp \
-                          src/Decider.cpp \
-                          src/Decider.hpp \
-                          src/DeciderFactory.cpp \
-                          src/DeciderFactory.hpp \
-                          src/Environment.cpp \
-                          src/Exception.cpp \
-                          src/Exception.hpp \
-                          src/GlobalPolicy.cpp \
-                          src/GlobalPolicy.hpp \
-                          src/KNLPlatformImp.cpp \
-                          src/KNLPlatformImp.hpp \
-                          src/MSR.cpp \
-                          src/MSR.hpp \
-                          src/MSRIO.cpp \
-                          src/MSRIO.hpp \
                           src/OMPT.cpp \
                           src/OMPT.hpp \
-                          src/Platform.cpp \
-                          src/PlatformIO.cpp \
-                          src/PlatformIO.hpp \
-                          src/PlatformIOInternal.hpp \
-                          src/PlatformFactory.cpp \
-                          src/PlatformFactory.hpp \
-                          src/Platform.hpp \
-                          src/PlatformImp.cpp \
-                          src/PlatformImp.hpp \
-                          src/PlatformTopology.cpp \
-                          src/PlatformTopology.hpp \
-                          src/Policy.cpp \
-                          src/Policy.hpp \
-                          src/PolicyFlags.cpp \
-                          src/PolicyFlags.hpp \
                           src/Profile.cpp \
                           src/Profile.hpp \
-                          src/ProfileTable.cpp \
-                          src/ProfileTable.hpp \
-                          src/ProfileThread.cpp \
-                          src/ProfileThread.hpp \
-                          src/RAPLPlatform.cpp \
-                          src/RAPLPlatform.hpp \
-                          src/Region.cpp \
-                          src/Region.hpp \
-                          src/RuntimeRegulator.cpp \
-                          src/RuntimeRegulator.hpp \
-                          src/SampleRegulator.cpp \
-                          src/SampleRegulator.hpp \
-                          src/SampleScheduler.cpp \
-                          src/SampleScheduler.hpp \
-                          src/SharedMemory.cpp \
-                          src/SharedMemory.hpp \
-                          src/SignalHandler.cpp \
-                          src/StaticPolicyDecider.cpp \
-                          src/StaticPolicyDecider.hpp \
-                          src/TimeSignal.cpp \
-                          src/TimeSignal.hpp \
-                          src/Tracer.cpp \
-                          src/Tracer.hpp \
-                          src/geopm_env.h \
                           src/TreeCommunicator.cpp \
                           src/TreeCommunicator.hpp \
-                          src/XeonPlatformImp.cpp \
-                          src/XeonPlatformImp.hpp \
                           src/geopm.h \
                           src/geopm_ctl.h \
                           src/geopm_mpi_comm_split.h \
                           src/MPICommSplit.cpp \
-                          src/geopm_error.h \
-                          src/geopm_hash.c \
-                          src/geopm_hash.h \
-                          src/geopm_message.c \
-                          src/geopm_message.h \
-                          src/geopm_plugin.c \
-                          src/geopm_plugin.h \
                           src/geopm_pmpi.h \
                           src/geopm_pmpi.c \
-                          src/geopm_signal_handler.h \
-                          src/geopm_sched.c \
-                          src/geopm_sched.h \
-                          src/geopm_time.h \
-                          src/geopm_version.c \
-                          src/geopm_version.h \
                           # end
 if ENABLE_FORTRAN
     libgeopmfort_la_SOURCES = src/geopm.f90 \
                               src/geopm_pmpi_fortran.c \
                               # end
 endif
-
     geopmctl_SOURCES = src/geopmctl_main.c \
                        src/geopm_version.h \
+                       src/geopm_error.h \
+                       src/geopm_env.h \
                        # end
 endif
 

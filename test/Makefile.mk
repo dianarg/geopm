@@ -296,6 +296,7 @@ if ENABLE_MPI
     test_geopm_mpi_test_LDADD = libgtest.a \
                                 libgmock.a \
                                 libgeopm.la \
+                                libgeopmpolicy.la \
                                 $(MPI_CLIBS) \
                                 # end
 
