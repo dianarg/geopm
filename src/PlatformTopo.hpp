@@ -118,7 +118,7 @@ namespace geopm
             void parse_lscpu_numa(std::map<std::string, std::string> lscpu_map,
                                   std::vector<std::set<int> > &numa_map);
             FILE *open_lscpu(void);
-            void close_cmd(FILE *fid);
+            void close_lscpu(FILE *fid);
 
             const std::string m_lscpu_file_name;
             int m_num_package;

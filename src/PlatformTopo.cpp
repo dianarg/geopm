@@ -34,22 +34,9 @@
 #include <sstream>
 #include <string>
 
+#include "geopm_sched.h"
 #include "PlatformTopo.hpp"
 #include "Exception.hpp"
-
-extern "C"
-{
-    static volatile unsigned g_is_popen_complete = 0;
-    static struct sigaction g_popen_complete_signal_action;
-
-    static void geopm_popen_complete(int signum)
-    {
-        if (signum == SIGCHLD) {
-            g_is_popen_complete = 1;
-        }
-    }
-}
-
 
 namespace geopm
 {
@@ -272,32 +259,36 @@ namespace geopm
         FILE *result = nullptr;
         if (m_lscpu_file_name.size()) {
             result = fopen(m_lscpu_file_name.c_str(), "r");
+            if (!result) {
+                throw Exception("PlatformTopo::open_lscpu(): Could not open lscpu file",
+                                errno ? errno : GEOPM_ERROR_FILE_PARSE, __FILE__, __LINE__);
+            }
         }
         else {
-            struct sigaction save_action;
-            g_popen_complete_signal_action.sa_handler = geopm_popen_complete;
-            sigemptyset(&g_popen_complete_signal_action.sa_mask);
-            g_popen_complete_signal_action.sa_flags = 0;
-            int err = sigaction(SIGCHLD, &g_popen_complete_signal_action, &save_action);
-            if (!err) {
-                result = popen("lscpu -x", "r");
-                while (!g_is_popen_complete) {
-
-                }
-                g_is_popen_complete = 0;
-                sigaction(SIGCHLD, &save_action, NULL);
+            int err = geopm_sched_popen("lscpu -x", &result);
+            if (err) {
+                throw Exception("PlatformTopo::open_lscpu(): Could not popen lscpu command",
+                                errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
             }
         }
         return result;
     }
 
-    void PlatformTopo::close_cmd(FILE *fid)
+    void PlatformTopo::close_lscpu(FILE *fid)
     {
         if (m_lscpu_file_name.size()) {
-            fclose(fid);
+            int err = fclose(fid);
+            if (err) {
+                throw Exception("PlatformTopo::close_lscpu(): Could not fclose lscpu file",
+                                errno ? errno : GEOPM_ERROR_FILE_PARSE, __FILE__, __LINE__);
+            }
         }
         else {
-            pclose(fid);
+            int err = pclose(fid);
+            if (err) {
+                throw Exception("PlatformTopo::close_lscpu(): Could not fclose lscpu file",
+                                errno ? errno : GEOPM_ERROR_FILE_PARSE, __FILE__, __LINE__);
+            }
         }
     }
 
