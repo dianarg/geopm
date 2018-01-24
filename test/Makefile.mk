@@ -198,6 +198,10 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/PlatformTopoTest.hsw_num_domain \
               test/gtest_links/PlatformTopoTest.knl_num_domain \
               test/gtest_links/PlatformTopoTest.bdx_num_domain \
+              test/gtest_links/PlatformTopoTest.construction \
+              test/gtest_links/PlatformTopoTest.singleton_construction \
+              test/gtest_links/PlatformTopoTest.bdx_domain_idx \
+              test/gtest_links/PlatformTopoTest.bdx_domain_cpus \
               # end
 
 if ENABLE_MPI
