@@ -142,7 +142,7 @@ namespace geopm
     {
         int result = -1;
         int num_cpu = num_domain(M_DOMAIN_CPU);
-        if (cpu_idx >= 0 && cpu_idx <= num_cpu) {
+        if (cpu_idx >= 0 && cpu_idx < num_cpu) {
             switch (domain_type) {
                 case M_DOMAIN_BOARD:
                     result = 0;

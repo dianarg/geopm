@@ -195,8 +195,9 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/RuntimeRegulatorTest.all_reenter \
               test/gtest_links/RuntimeRegulatorTest.one_rank_reenter_and_exit \
               test/gtest_links/RuntimeRegulatorTest.config_rank_then_workers \
-              test/gtest_links/PlatformTopoTest.laptop_num_domain \
+              test/gtest_links/PlatformTopoTest.hsw_num_domain \
               test/gtest_links/PlatformTopoTest.knl_num_domain \
+              test/gtest_links/PlatformTopoTest.bdx_num_domain \
               # end
 
 if ENABLE_MPI
