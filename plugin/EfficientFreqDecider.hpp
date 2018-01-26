@@ -42,6 +42,7 @@
 namespace geopm
 {
     class EfficientFreqRegion;
+    class IPlatformIO;
 
     /// @brief Energy efficient implementation of a binary frequency decider.
     ///
@@ -59,7 +60,8 @@ namespace geopm
             EfficientFreqDecider();
             EfficientFreqDecider(const std::string &cpu_info_path,
                                  const std::string &cpu_freq_min_path,
-                                 const std::string &cpu_freq_max_path);
+                                 const std::string &cpu_freq_max_path,
+                                 IPlatformIO *platform_io);
             EfficientFreqDecider(const EfficientFreqDecider &other);
             /// @brief EfficientFreqDecider destructor, virtual.
             virtual ~EfficientFreqDecider();
@@ -85,6 +87,7 @@ namespace geopm
             bool m_is_adaptive = false;
             IRegion *m_region_last = nullptr;
             std::map<uint64_t, std::unique_ptr<EfficientFreqRegion>> m_region_map;
+            IPlatformIO *m_platform_io;
     };
 }
 

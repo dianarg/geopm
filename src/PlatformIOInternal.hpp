@@ -33,6 +33,8 @@
 #ifndef PLATFORMIOINTERNAL_HPP_INCLUDE
 #define PLATFORMIOINTERNAL_HPP_INCLUDE
 
+#include "PlatformIO.hpp"
+
 namespace geopm
 {
     class IMSR;
