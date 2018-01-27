@@ -72,6 +72,7 @@ class EfficientFreqDeciderTest: public :: testing :: Test
         std::vector<double> m_mapped_freqs;
         double m_freq_min;
         double m_freq_max;
+        geopm::IPlatformIO *m_platform_io;
         const std::string m_cpuinfo_path = "EfficientFreqDeciderTest_cpu_info";
         const std::string m_cpufreq_min_path = "EfficientFreqDeciderTest_cpu_freq_min";
         const std::string m_cpufreq_max_path = "EfficientFreqDeciderTest_cpu_freq_max";
@@ -79,6 +80,8 @@ class EfficientFreqDeciderTest: public :: testing :: Test
 
 void EfficientFreqDeciderTest::SetUp()
 {
+    m_platform_io = new TestPlatformIO(0x657); // KNL CPUID
+
     setenv("GEOPM_PLUGIN_PATH", ".libs/", 1);
 
     m_freq_min = 1800000000.0;
@@ -104,7 +107,7 @@ void EfficientFreqDeciderTest::SetUp()
 
     m_mock_region = std::unique_ptr<MockRegion>(new MockRegion());
     m_mock_policy = std::unique_ptr<MockPolicy>(new MockPolicy());
-    m_decider = std::unique_ptr<IDecider>(new EfficientFreqDecider());
+    m_decider = std::unique_ptr<IDecider>(new EfficientFreqDecider(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path, m_platform_io));
 }
 
 void EfficientFreqDeciderTest::TearDown()
@@ -115,6 +118,7 @@ void EfficientFreqDeciderTest::TearDown()
     std::remove(m_cpufreq_min_path.c_str());
     std::remove(m_cpufreq_max_path.c_str());
     std::remove(m_cpuinfo_path.c_str());
+    delete m_platform_io;
 }
 
 TEST_F(EfficientFreqDeciderTest, parse_cpu_info0)
@@ -424,23 +428,10 @@ TEST_F(EfficientFreqDeciderTest, parse_cpu_freq)
 
 TEST_F(EfficientFreqDeciderTest, map)
 {
-    Sequence s1;
-    for (size_t x = 0; x < M_NUM_REGIONS; x++) {
-        double expected_freq = m_mapped_freqs[x];
-        EXPECT_CALL(*m_mock_policy, ctl_cpu_freq(_))
-            .InSequence(s1)
-            .WillOnce(Invoke([expected_freq] (std::vector<double> freq)
-                    {
-                        for (auto &cpu_freq : freq) {
-                            EXPECT_EQ(expected_freq, cpu_freq);
-                        }
-                    }));
-    }
-
-    Sequence s2;
+    Sequence mock_seq;
     for (size_t x = 0; x < M_NUM_REGIONS; x++) {
         EXPECT_CALL(*m_mock_region, identifier())
-            .InSequence(s2)
+            .InSequence(mock_seq)
             // one for super, once for our decider
             .WillOnce(Return(geopm_crc32_str(0, m_region_names[x].c_str())))
             .WillOnce(Return(geopm_crc32_str(0, m_region_names[x].c_str())));
@@ -471,22 +462,10 @@ TEST_F(EfficientFreqDeciderTest, clone)
 
 TEST_F(EfficientFreqDeciderTest, hint)
 {
-    Sequence s1;
-    for (auto &expected_freq : m_expected_freqs) {
-        EXPECT_CALL(*m_mock_policy, ctl_cpu_freq(_))
-            .InSequence(s1)
-            .WillOnce(Invoke([expected_freq] (std::vector<double> freq)
-                {
-                    for (auto &cpu_freq : freq) {
-                        EXPECT_EQ(expected_freq, cpu_freq);
-                    }
-                }));
-    }
-
-    Sequence s2;
+    Sequence mock_seq;
     for (size_t x = 0; x < m_hints.size(); x++) {
         EXPECT_CALL(*m_mock_region, hint())
-            .InSequence(s2)
+            .InSequence(mock_seq)
             .WillOnce(testing::Return(m_hints[x]));
     }
 
@@ -505,13 +484,12 @@ TEST_F(EfficientFreqDeciderTest, online_mode)
     setenv("GEOPM_EFFICIENT_FREQ_MAX", "2e9", 1);
 
     // reset decider with new settings
-    m_decider = std::unique_ptr<IDecider>(new EfficientFreqDecider());
+    m_decider = std::unique_ptr<IDecider>(new EfficientFreqDecider(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path, m_platform_io));
 
     {
         // should not be called if we hit the adaptive branch
         EXPECT_CALL(*m_mock_region, hint()).Times(0);
 
-        EXPECT_CALL(*m_mock_policy, ctl_cpu_freq(_));
         EXPECT_CALL(*m_mock_region, num_sample(_, _));
         EXPECT_CALL(*m_mock_region, identifier()).Times(2);
 

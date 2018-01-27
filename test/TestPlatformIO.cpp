@@ -98,7 +98,8 @@ namespace geopm
     }
 
     TestPlatformIO::TestPlatformIO(int cpuid)
-        : m_cpuid(cpuid)
+        : PlatformIO()
+        , m_cpuid(cpuid)
     {
         m_msrio = new geopm::TestPlatformIOMSRIO;
     }

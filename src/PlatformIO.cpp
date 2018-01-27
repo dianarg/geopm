@@ -64,6 +64,7 @@ namespace geopm
     PlatformIO::PlatformIO()
         : m_num_cpu(geopm_sched_num_cpu())
         , m_is_init(false)
+        , m_is_active(false)
         , m_msrio(NULL)
     {
 
