@@ -46,7 +46,7 @@ namespace geopm
             {GEOPM_DOMAIN_PACKAGE, HWLOC_OBJ_PACKAGE},
 #endif
 #ifdef GEOPM_HWLOC_HAS_L2CACHE
-            {GEOPM_DOMAIN_TILE, HWLOC_OBJ_L2CACHE},
+            {GEOPM_DOMAIN_CORE, HWLOC_OBJ_L2CACHE},
 #endif
             {GEOPM_DOMAIN_PROCESS_GROUP, HWLOC_OBJ_SYSTEM},
             {GEOPM_DOMAIN_BOARD, HWLOC_OBJ_MACHINE},
@@ -106,7 +106,7 @@ namespace geopm
             if (ex.err_value() != GEOPM_ERROR_INVALID) {
                 throw ex;
             }
-            if (domain_type == GEOPM_DOMAIN_TILE) {
+            if (domain_type == GEOPM_DOMAIN_CORE) {
                 /// @todo  This assumes that tiles are just below
                 ///        package in hwloc hierarchy.  If tiles are
                 ///        at L2 cache, but processor has an L3 cache,

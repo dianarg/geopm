@@ -44,6 +44,7 @@
 #include "Platform.hpp"
 #include "PlatformFactory.hpp"
 #include "PlatformImp.hpp"
+#include "PlatformTopo.hpp"
 #include "geopm_message.h"
 #include "geopm_policy.h"
 #include "config.h"
@@ -149,11 +150,6 @@ namespace geopm
         return m_imp->num_energy_signal();
     }
 
-    const PlatformTopology *Platform::topology(void) const
-    {
-        return m_imp->topology();
-    }
-
     void Platform::transform_rank_data(uint64_t region_id, const struct geopm_time_s &aligned_time, const std::vector<double> &aligned_data, std::vector<struct geopm_telemetry_message_s> &telemetry)
     {
         const int NUM_RANK_SIGNAL = 2;
@@ -168,7 +164,7 @@ namespace geopm
         std::fill(max_progress.begin(), max_progress.end(), -DBL_MAX);
 
         int num_cpu_per_package = num_cpu / num_package;
-        if (m_imp->power_control_domain() == GEOPM_DOMAIN_PACKAGE) {
+        if (m_imp->power_control_domain() == IPlatformTopo::M_DOMAIN_PACKAGE) {
             int rank_offset = num_package * num_platform_signal;
             int rank_id = 0;
             for (size_t i = rank_offset;  i < aligned_data.size(); i += NUM_RANK_SIGNAL)  {
@@ -233,7 +229,7 @@ namespace geopm
 
     int Platform::num_control_domain(void) const
     {
-        return (topology()->num_domain(m_imp->power_control_domain()));
+        return (platform_topo().num_domain(m_imp->power_control_domain()));
     }
 
     void Platform::tdp_limit(double percentage) const
@@ -280,7 +276,7 @@ namespace geopm
             }
             if (small) {
                 freq_perc = ((int64_t)(frequency * 0.01) << 8) & 0xffff;
-                m_imp->msr_write(GEOPM_DOMAIN_CPU, i, "IA32_PERF_CTL", freq_perc & 0xffff);
+                m_imp->msr_write(IPlatformTopo::M_DOMAIN_CPU, i, "IA32_PERF_CTL", freq_perc & 0xffff);
             }
             small = false;
         }

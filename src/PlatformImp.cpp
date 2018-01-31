@@ -40,6 +40,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <float.h>
+#include <string.h>
 
 #include <sstream>
 #include <fstream>
@@ -47,6 +48,7 @@
 
 #include "Exception.hpp"
 #include "PlatformImp.hpp"
+#include "PlatformTopo.hpp"
 #include "config.h"
 
 namespace geopm
@@ -56,7 +58,6 @@ namespace geopm
         : m_num_logical_cpu(0)
         , m_num_hw_cpu(0)
         , m_num_tile(0)
-        , m_num_tile_group(0)
         , m_num_package(0)
         , m_num_core_per_tile(0)
         , m_control_latency_ms(10.0)
@@ -77,7 +78,6 @@ namespace geopm
         , m_num_logical_cpu(0)
         , m_num_hw_cpu(0)
         , m_num_tile(0)
-        , m_num_tile_group(0)
         , m_num_package(0)
         , m_num_core_per_tile(0)
         , m_num_energy_signal(num_energy_signal)
@@ -96,14 +96,12 @@ namespace geopm
     }
 
     PlatformImp::PlatformImp(const PlatformImp &other)
-        : m_topology(other.m_topology)
-        , m_cpu_file_desc(other.m_cpu_file_desc)
+        : m_cpu_file_desc(other.m_cpu_file_desc)
         , m_msr_map_ptr(other.m_msr_map_ptr)
         , m_num_logical_cpu(other.m_num_logical_cpu)
         , m_num_hw_cpu(other.m_num_hw_cpu)
         , m_num_cpu_per_core(other.m_num_cpu_per_core)
         , m_num_tile(other.m_num_tile)
-        , m_num_tile_group(other.m_num_tile_group)
         , m_num_package(other.m_num_package)
         , m_num_core_per_tile(other.m_num_core_per_tile)
         , m_num_energy_signal(other.m_num_energy_signal)
@@ -167,11 +165,6 @@ namespace geopm
         return m_num_tile;
     }
 
-    int PlatformImp::num_tile_group(void) const
-    {
-        return m_num_tile_group;
-    }
-
     int PlatformImp::num_hw_cpu(void) const
     {
         return m_num_hw_cpu;
@@ -201,17 +194,14 @@ namespace geopm
     {
         int count;
         switch (domain_type) {
-            case GEOPM_DOMAIN_PACKAGE:
+            case IPlatformTopo::M_DOMAIN_PACKAGE:
                 count = m_num_package;
                 break;
-            case GEOPM_DOMAIN_CPU:
+            case IPlatformTopo::M_DOMAIN_CPU:
                 count = m_num_hw_cpu;
                 break;
-            case GEOPM_DOMAIN_TILE:
+            case IPlatformTopo::M_DOMAIN_CORE:
                 count = m_num_tile;
-                break;
-            case GEOPM_DOMAIN_TILE_GROUP:
-                count = m_num_tile_group;
                 break;
             default:
                 count = 0;
@@ -223,11 +213,6 @@ namespace geopm
     double PlatformImp::control_latency_ms(void) const
     {
         return m_control_latency_ms;
-    }
-
-    const PlatformTopology *PlatformImp::topology(void) const
-    {
-        return &m_topology;
     }
 
     void PlatformImp::msr_write(int device_type, int device_index, const std::string &msr_name, uint64_t value)
@@ -245,9 +230,9 @@ namespace geopm
         curr_value = msr_read(device_type, device_index, msr_offset);
         curr_value &= ~msr_mask;
 
-        if (device_type == GEOPM_DOMAIN_PACKAGE)
+        if (device_type == IPlatformTopo::M_DOMAIN_PACKAGE)
             device_index = (m_num_hw_cpu / m_num_package) * device_index;
-        else if (device_type == GEOPM_DOMAIN_TILE)
+        else if (device_type == IPlatformTopo::M_DOMAIN_CORE)
             device_index = (m_num_hw_cpu / m_num_tile) * device_index;
 
         if (m_cpu_file_desc.size() < (uint64_t)device_index) {
@@ -284,9 +269,9 @@ namespace geopm
         uint64_t value;
         int index = device_index;
 
-        if (device_type == GEOPM_DOMAIN_PACKAGE)
+        if (device_type == IPlatformTopo::M_DOMAIN_PACKAGE)
             index = (m_num_logical_cpu / m_num_package) * device_index;
-        else if (device_type == GEOPM_DOMAIN_TILE)
+        else if (device_type == IPlatformTopo::M_DOMAIN_CORE)
             index = (m_num_logical_cpu / m_num_tile) * device_index;
 
         if (m_cpu_file_desc.size() < (uint64_t)index) {
@@ -405,11 +390,11 @@ namespace geopm
 
     void PlatformImp::parse_hw_topology(void)
     {
-        m_num_logical_cpu = m_topology.num_domain(GEOPM_DOMAIN_CPU);
-        m_num_package = m_topology.num_domain(GEOPM_DOMAIN_PACKAGE);
-        m_num_hw_cpu = m_topology.num_domain(GEOPM_DOMAIN_PACKAGE_CORE);
+        m_num_logical_cpu = platform_topo().num_domain(IPlatformTopo::M_DOMAIN_CPU);
+        m_num_package = platform_topo().num_domain(IPlatformTopo::M_DOMAIN_PACKAGE);
+        m_num_hw_cpu = platform_topo().num_domain(IPlatformTopo::M_DOMAIN_PACKAGE_CORE);
         m_num_cpu_per_core = m_num_logical_cpu / m_num_hw_cpu;
-        m_num_tile = m_topology.num_domain(GEOPM_DOMAIN_TILE);
+        m_num_tile = platform_topo().num_domain(IPlatformTopo::M_DOMAIN_CORE);
         m_num_core_per_tile = m_num_hw_cpu / m_num_tile;
     }
 
@@ -477,18 +462,18 @@ namespace geopm
 
         //per package state
         for (int i = 0; i < niter; i++) {
-            build_msr_save_string(save_file, GEOPM_DOMAIN_PACKAGE, i, "PKG_POWER_LIMIT");
-            build_msr_save_string(save_file, GEOPM_DOMAIN_PACKAGE, i, "DRAM_POWER_LIMIT");
+            build_msr_save_string(save_file, IPlatformTopo::M_DOMAIN_PACKAGE, i, "PKG_POWER_LIMIT");
+            build_msr_save_string(save_file, IPlatformTopo::M_DOMAIN_PACKAGE, i, "DRAM_POWER_LIMIT");
         }
 
         niter = m_num_hw_cpu;
 
         //per cpu state
         for (int i = 0; i < niter; i++) {
-            build_msr_save_string(save_file, GEOPM_DOMAIN_CPU, i, "PERF_FIXED_CTR_CTRL");
-            build_msr_save_string(save_file, GEOPM_DOMAIN_CPU, i, "PERF_GLOBAL_CTRL");
-            build_msr_save_string(save_file, GEOPM_DOMAIN_CPU, i, "PERF_GLOBAL_OVF_CTRL");
-            build_msr_save_string(save_file, GEOPM_DOMAIN_CPU, i, "IA32_PERF_CTL");
+            build_msr_save_string(save_file, IPlatformTopo::M_DOMAIN_CPU, i, "PERF_FIXED_CTR_CTRL");
+            build_msr_save_string(save_file, IPlatformTopo::M_DOMAIN_CPU, i, "PERF_GLOBAL_CTRL");
+            build_msr_save_string(save_file, IPlatformTopo::M_DOMAIN_CPU, i, "PERF_GLOBAL_OVF_CTRL");
+            build_msr_save_string(save_file, IPlatformTopo::M_DOMAIN_CPU, i, "IA32_PERF_CTL");
         }
 
         save_file.close();
@@ -539,7 +524,7 @@ namespace geopm
 
     bool PlatformImp::is_updated(void)
     {
-        uint64_t curr_value = msr_read(GEOPM_DOMAIN_PACKAGE, 0, m_trigger_offset);
+        uint64_t curr_value = msr_read(IPlatformTopo::M_DOMAIN_PACKAGE, 0, m_trigger_offset);
         bool result = (m_trigger_value && curr_value != m_trigger_value);
         m_trigger_value = curr_value;
         return result;

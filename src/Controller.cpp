@@ -62,7 +62,6 @@
 #include "TreeCommunicator.hpp"
 #include "Platform.hpp"
 #include "PlatformFactory.hpp"
-#include "PlatformTopology.hpp"
 #include "Profile.hpp"
 #include "DeciderFactory.hpp"
 #include "Decider.hpp"
@@ -72,6 +71,7 @@
 #include "Region.hpp"
 #include "OMPT.hpp"
 #include "PlatformIO.hpp"
+#include "PlatformTopo.hpp"
 #include "RuntimeRegulator.hpp"
 #include "config.h"
 
@@ -332,7 +332,7 @@ namespace geopm
             m_platform->sample(m_msr_sample);
             m_app_start_time = m_msr_sample[0].timestamp;
             for (auto it = m_msr_sample.begin(); it != m_msr_sample.end(); ++it) {
-                if (it->domain_type == GEOPM_DOMAIN_PACKAGE &&
+                if (it->domain_type == IPlatformTopo::M_DOMAIN_PACKAGE &&
                     (it->signal_type == GEOPM_TELEMETRY_TYPE_DRAM_ENERGY ||
                      it->signal_type == GEOPM_TELEMETRY_TYPE_PKG_ENERGY)) {
                     m_counter_energy_start += it->signal;
@@ -951,7 +951,7 @@ namespace geopm
         platform_io().read_signal();
         m_platform->sample(m_msr_sample);
         for (auto it = m_msr_sample.begin(); it != m_msr_sample.end(); ++it) {
-            if (it->domain_type == GEOPM_DOMAIN_PACKAGE &&
+            if (it->domain_type == IPlatformTopo::M_DOMAIN_PACKAGE &&
                 (it->signal_type == GEOPM_TELEMETRY_TYPE_DRAM_ENERGY ||
                  it->signal_type == GEOPM_TELEMETRY_TYPE_PKG_ENERGY)) {
                 energy_exit += it->signal;

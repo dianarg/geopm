@@ -37,6 +37,7 @@
 #include "geopm_message.h"
 #include "Exception.hpp"
 #include "KNLPlatformImp.hpp"
+#include "PlatformTopo.hpp"
 
 #include "config.h"
 
@@ -136,17 +137,17 @@ namespace geopm
 
     int KNLPlatformImp::power_control_domain(void) const
     {
-        return GEOPM_DOMAIN_PACKAGE;
+        return IPlatformTopo::M_DOMAIN_PACKAGE;
     }
 
     int KNLPlatformImp::frequency_control_domain(void) const
     {
-        return GEOPM_DOMAIN_PACKAGE;
+        return IPlatformTopo::M_DOMAIN_PACKAGE;
     }
 
     int KNLPlatformImp::performance_counter_domain(void) const
     {
-        return GEOPM_DOMAIN_TILE;
+        return IPlatformTopo::M_DOMAIN_CORE;
     }
 
     void KNLPlatformImp::bound(int control_type, double &upper_bound, double &lower_bound)
@@ -274,13 +275,13 @@ namespace geopm
                     m_batch.ops[index].msrdata = 0;
                     m_batch.ops[index].wmask = 0x0;
                     switch (it->device_type) {
-                        case GEOPM_DOMAIN_PACKAGE:
+                        case IPlatformTopo::M_DOMAIN_PACKAGE:
                             m_batch.ops[index].cpu = (m_num_hw_cpu / m_num_package) * it->device_index;
                             break;
-                        case GEOPM_DOMAIN_TILE:
+                        case IPlatformTopo::M_DOMAIN_CORE:
                             m_batch.ops[index].cpu = (m_num_hw_cpu / m_num_tile) * it->device_index;
                             break;
-                        case GEOPM_DOMAIN_CPU:
+                        case IPlatformTopo::M_DOMAIN_CPU:
                             m_batch.ops[index].cpu = it->device_index;
                             break;
                         default:
@@ -494,13 +495,13 @@ namespace geopm
         uint64_t tmp;
 
         //Make sure units are consistent between packages
-        tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "RAPL_POWER_UNIT");
+        tmp = msr_read(IPlatformTopo::M_DOMAIN_PACKAGE, 0, "RAPL_POWER_UNIT");
         m_power_units_inv = (double)(1 << (tmp & 0xF));
         m_energy_units = 1.0 / (double)(1 << ((tmp >> 8)  & 0x1F));
         double time_units = 1.0 / (double)(1 << ((tmp >> 16) & 0xF));
 
         for (int i = 1; i < m_num_package; i++) {
-            tmp = msr_read(GEOPM_DOMAIN_PACKAGE, i, "RAPL_POWER_UNIT");
+            tmp = msr_read(IPlatformTopo::M_DOMAIN_PACKAGE, i, "RAPL_POWER_UNIT");
             double power_inv = (double)(1 << (tmp & 0xF));
             double energy = 1.0 / (double)(1 << ((tmp >> 8)  & 0x1F));
             if (energy != m_energy_units || power_inv != m_power_units_inv) {
@@ -514,7 +515,7 @@ namespace geopm
         // Manual Volume 3 (3A, 3B, 3C & 3D): System Programming Guide
 
         // Make sure bounds are consistent between packages
-        tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "PKG_POWER_INFO");
+        tmp = msr_read(IPlatformTopo::M_DOMAIN_PACKAGE, 0, "PKG_POWER_INFO");
         m_tdp_pkg_watts = ((double)(tmp & 0x7fff)) / m_power_units_inv;
         m_min_pkg_watts = ((double)((tmp >> 16) & 0x7fff)) / m_power_units_inv;
         m_max_pkg_watts = ((double)((tmp >> 32) & 0x7fff)) / m_power_units_inv;
@@ -523,7 +524,7 @@ namespace geopm
         // Intel(R) 64 and IA-32 Architectures Software Developer’s
         // Manual Volume 3 (3A, 3B, 3C & 3D): System Programming Guide
 
-        tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "DRAM_POWER_INFO");
+        tmp = msr_read(IPlatformTopo::M_DOMAIN_PACKAGE, 0, "DRAM_POWER_INFO");
         m_min_dram_watts = ((double)((tmp >> 16) & 0x7fff)) / m_power_units_inv;
         m_max_dram_watts = ((double)((tmp >> 32) & 0x7fff)) / m_power_units_inv;
 
@@ -531,7 +532,7 @@ namespace geopm
         // Intel(R) 64 and IA-32 Architectures Software Developer’s
         // Manual Volume 3 (3A, 3B, 3C & 3D): System Programming Guide
 
-        tmp = msr_read(GEOPM_DOMAIN_PACKAGE, 0, "PKG_POWER_LIMIT");
+        tmp = msr_read(IPlatformTopo::M_DOMAIN_PACKAGE, 0, "PKG_POWER_LIMIT");
         // Set time window 1 to the minimum time window of 15 msec
         double tau = 0.015;
         uint64_t pkg_time_window_y = (uint64_t)std::log2(tau/time_units);
@@ -554,14 +555,14 @@ namespace geopm
         m_pkg_power_limit_static = m_pkg_power_limit_static | (0x3 << 15);
 
         for (int i = 1; i < m_num_package; i++) {
-            tmp = msr_read(GEOPM_DOMAIN_PACKAGE, i, "PKG_POWER_INFO");
+            tmp = msr_read(IPlatformTopo::M_DOMAIN_PACKAGE, i, "PKG_POWER_INFO");
             double pkg_min = ((double)((tmp >> 16) & 0x7fff)) / m_power_units_inv;
             double pkg_max = ((double)((tmp >> 32) & 0x7fff)) / m_power_units_inv;
             if (pkg_min != m_min_pkg_watts || pkg_max != m_max_pkg_watts) {
                 throw Exception("detected inconsistent power pkg bounds among packages",
                                 GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
             }
-            tmp = msr_read(GEOPM_DOMAIN_PACKAGE, i, "DRAM_POWER_INFO");
+            tmp = msr_read(IPlatformTopo::M_DOMAIN_PACKAGE, i, "DRAM_POWER_INFO");
             double dram_min = ((double)((tmp >> 16) & 0x7fff)) / m_power_units_inv;
             double dram_max = ((double)((tmp >> 32) & 0x7fff)) / m_power_units_inv;
             if (dram_min != m_min_dram_watts || dram_max != m_max_dram_watts) {
@@ -588,40 +589,40 @@ namespace geopm
             filter_msr_name.insert(0, "C");
 
             // enable freeze
-            msr_write(GEOPM_DOMAIN_TILE, i, box_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, box_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name)
                       | M_BOX_FRZ_EN);
             // freeze box
-            msr_write(GEOPM_DOMAIN_TILE, i, box_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, box_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name)
                       | M_BOX_FRZ);
             // enable counter 0
-            msr_write(GEOPM_DOMAIN_TILE, i, ctl1_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, ctl1_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, ctl1_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, ctl1_msr_name)
                       | M_CTR_EN);
             // enable counter 1
-            msr_write(GEOPM_DOMAIN_TILE, i, ctl2_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, ctl2_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, ctl2_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, ctl2_msr_name)
                       | M_CTR_EN);
             // l2 misses
-            msr_write(GEOPM_DOMAIN_TILE, i, ctl1_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, ctl1_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, ctl1_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, ctl1_msr_name)
                       | M_EVENT_SEL_0 | M_UMASK_0);
             // l2 prefetches
-            msr_write(GEOPM_DOMAIN_TILE, i, ctl2_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, ctl2_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, ctl2_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, ctl2_msr_name)
                       | M_EVENT_SEL_1 | M_UMASK_1);
             // reset counters
-            msr_write(GEOPM_DOMAIN_TILE, i, box_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, box_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name)
                       | M_RST_CTRS);
             // disable freeze
-            msr_write(GEOPM_DOMAIN_TILE, i, box_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, box_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name)
                       | M_BOX_FRZ);
             // unfreeze box
-            msr_write(GEOPM_DOMAIN_TILE, i, box_msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, box_msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, box_msr_name)
                       & ~M_BOX_FRZ_EN);
         }
     }
@@ -629,9 +630,9 @@ namespace geopm
     void KNLPlatformImp::fixed_counters_init()
     {
         for (int tile = 0; tile < m_num_tile; tile++) {
-            msr_write(GEOPM_DOMAIN_TILE, tile, "PERF_FIXED_CTR_CTRL", 0x0333);
-            msr_write(GEOPM_DOMAIN_TILE, tile, "PERF_GLOBAL_CTRL", 0x700000003);
-            msr_write(GEOPM_DOMAIN_TILE, tile, "PERF_GLOBAL_OVF_CTRL", 0x0);
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, tile, "PERF_FIXED_CTR_CTRL", 0x0333);
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, tile, "PERF_GLOBAL_CTRL", 0x700000003);
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, tile, "PERF_GLOBAL_OVF_CTRL", 0x0);
         }
     }
 
@@ -642,8 +643,8 @@ namespace geopm
             msr_name.insert(0, std::to_string(i));
             msr_name.insert(0, "C");
             // reset counters
-            msr_write(GEOPM_DOMAIN_TILE, i, msr_name,
-                      msr_read(GEOPM_DOMAIN_TILE, i, msr_name)
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, i, msr_name,
+                      msr_read(IPlatformTopo::M_DOMAIN_CORE, i, msr_name)
                       | M_RST_CTRS);
         }
     }
@@ -651,9 +652,9 @@ namespace geopm
     void KNLPlatformImp::fixed_counters_reset()
     {
         for (int tile = 0; tile < m_num_tile; tile++) {
-            msr_write(GEOPM_DOMAIN_TILE, tile, "PERF_FIXED_CTR0", 0x0);
-            msr_write(GEOPM_DOMAIN_TILE, tile, "PERF_FIXED_CTR1", 0x0);
-            msr_write(GEOPM_DOMAIN_TILE, tile, "PERF_FIXED_CTR2", 0x0);
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, tile, "PERF_FIXED_CTR0", 0x0);
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, tile, "PERF_FIXED_CTR1", 0x0);
+            msr_write(IPlatformTopo::M_DOMAIN_CORE, tile, "PERF_FIXED_CTR2", 0x0);
         }
     }
 

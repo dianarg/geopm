@@ -60,9 +60,9 @@ namespace geopm
         /// @brief Network interface controller
         GEOPM_DOMAIN_NIC,
         /// @brief Software defined grouping of tiles
-        GEOPM_DOMAIN_TILE_GROUP,
+        GEOPM_DOMAIN_CORE_GROUP,
         /// @brief Group of CPU's that share a cache
-        GEOPM_DOMAIN_TILE,
+        GEOPM_DOMAIN_CORE,
     };
 
     /// @brief This class is a wrapper around hwloc. It holds the topology of

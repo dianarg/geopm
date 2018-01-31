@@ -44,8 +44,6 @@
 #include <utility>
 #include <string>
 
-#include "PlatformTopology.hpp"
-
 namespace geopm
 {
 
@@ -119,26 +117,22 @@ namespace geopm
             virtual double control_latency_ms(void) const;
             /// @brief Return the TDP of a single package.
             double package_tdp(void) const;
-            /// @brief Retrieve the topology tree for the platform.
-            /// @return PlatformTopology object holding the
-            ///         current platform topology.
-            virtual const PlatformTopology *topology(void) const;
 
             ////////////////////////////////////////////////////////////////////
             //                     MSR read/write support                     //
             ////////////////////////////////////////////////////////////////////
             /// @brief Write a value to a Model Specific Register.
             /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
+            ///        one of IPlatformTopo::M_DOMAIN_PACKAGE, IPlatformTopo::M_DOMAIN_CPU,
+            ///        IPlatformTopo::M_DOMAIN_CORE, or IPlatformTopo::M_DOMAIN_BOARD_MEMORY.
             /// @param [in] device_index Numbered index of the specified type.
             /// @param [in] msr_name String name of the requested MSR.
             /// @param [in] value Value to write to the specified MSR.
             void msr_write(int device_type, int device_index, const std::string &msr_name, uint64_t value);
             /// @brief Read a value from a Model Specific Register.
             /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
+            ///        one of IPlatformTopo::M_DOMAIN_PACKAGE, IPlatformTopo::M_DOMAIN_CPU,
+            ///        IPlatformTopo::M_DOMAIN_CORE, or IPlatformTopo::M_DOMAIN_BOARD_MEMORY.
             /// @param [in] device_index Numbered index of the specified type.
             /// @param [in] msr_name String name of the requested MSR.
             /// @return Value read from the specified MSR.
@@ -179,8 +173,8 @@ namespace geopm
             /// Read a signal value from the hw platform and do any transformation
             /// needed to convert it to the expected output format and units.
             /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
+            ///        one of IPlatformTopo::M_DOMAIN_PACKAGE, IPlatformTopo::M_DOMAIN_CPU,
+            ///        IPlatformTopo::M_DOMAIN_CORE, or IPlatformTopo::M_DOMAIN_BOARD_MEMORY.
             /// @param [in] device_index Numbered index of the specified type.
             /// @param [in] signal_type enum signal type of geopm_telemetry_type_e.
             ///        The signal typr to return.
@@ -198,8 +192,8 @@ namespace geopm
             /// and units expected by the hw platform. Write the transformed value to
             /// a controll on the hw platform.
             /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
+            ///        one of IPlatformTopo::M_DOMAIN_PACKAGE, IPlatformTopo::M_DOMAIN_CPU,
+            ///        IPlatformTopo::M_DOMAIN_CORE, or IPlatformTopo::M_DOMAIN_BOARD_MEMORY.
             /// @param [in] device_index Numbered index of the specified type.
             /// @param [in] signal_type enum signal type of geopm_telemetry_type_e.
             ///        The control type to write to.
@@ -238,8 +232,8 @@ namespace geopm
             ////////////////////////////////////////////////////////////////////
             /// @brief Write a value to a Model Specific Register.
             /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
+            ///        one of IPlatformTopo::M_DOMAIN_PACKAGE, IPlatformTopo::M_DOMAIN_CPU,
+            ///        IPlatformTopo::M_DOMAIN_CORE, or IPlatformTopo::M_DOMAIN_BOARD_MEMORY.
             /// @param [in] device_index Numbered index of the specified type.
             /// @param [in] msr_offset Address offset of the requested MSR.
             /// @param [in] msr_mask Write mask of the specified MSR.
@@ -247,8 +241,8 @@ namespace geopm
             void msr_write(int device_type, int device_index, off_t msr_offset, unsigned long msr_mask, uint64_t value);
             /// @brief Read a value from a Model Specific Register.
             /// @param [in] device_type enum device type can be
-            ///        one of GEOPM_DOMAIN_PACKAGE, GEOPM_DOMAIN_CPU,
-            ///        GEOPM_DOMAIN_TILE, or GEOPM_DOMAIN_BOARD_MEMORY.
+            ///        one of IPlatformTopo::M_DOMAIN_PACKAGE, IPlatformTopo::M_DOMAIN_CPU,
+            ///        IPlatformTopo::M_DOMAIN_CORE, or IPlatformTopo::M_DOMAIN_BOARD_MEMORY.
             /// @param [in] device_index Numbered index of the specified type.
             /// @param [in] msr_offset Address offset of the requested MSR.
             /// @return Value read from the specified MSR.
@@ -300,8 +294,6 @@ namespace geopm
                 struct m_msr_batch_op *ops;   /// @brief In: Array[numops] of operations
             };
 
-            /// @brief Holds the underlying hardware topology.
-            PlatformTopology m_topology;
             /// @brief Holds the file descriptors for the per-cpu special files.
             std::vector<int> m_cpu_file_desc;
             /// @brief Map of MSR string name to address offset and write mask.

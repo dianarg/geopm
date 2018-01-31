@@ -41,7 +41,6 @@
 namespace geopm
 {
     class PlatformImp;
-    class PlatformTopology;
     class IPolicy;
 
     /// @brief This class provides an abstraction of specific functionality
@@ -124,10 +123,6 @@ namespace geopm
             /// @param [out] lower_bound The lower control bound.
             ///
             virtual void bound(double &upper_bound, double &lower_bound) = 0;
-            /// @brief Retrieve the topology of the current platform.
-            /// @return PlatformTopology object containing the current
-            ///         topology information.
-            virtual const PlatformTopology *topology(void) const = 0;
             /// @brief initialize the signal transformation matrix.
             /// Initialize the matrix that transforms the per package,
             /// per-cpu, and per-rank signals into the domain of control.
@@ -189,7 +184,6 @@ namespace geopm
             virtual bool model_supported(int platform_id, const std::string &description) const = 0;
             virtual void enforce_policy(uint64_t region_id, IPolicy &policy) const = 0;
             virtual void bound(double &upper_bound, double &lower_bound) = 0;
-            const PlatformTopology *topology(void) const;
             void init_transform(const std::vector<int> &cpu_rank);
             int num_control_domain(void) const;
             double control_latency_ms(void) const;
