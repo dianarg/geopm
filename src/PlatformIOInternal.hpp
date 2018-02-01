@@ -71,8 +71,8 @@ namespace geopm
             double sample(int signal_idx);
             std::string log(int signal_idx, double sample);
             void adjust(int control_idx, double setting);
-            void read_signal(void) override;
-            void write_control(void) override;
+            void read_batch(void) override;
+            void write_batch(void) override;
             std::string msr_whitelist(void) const;
             std::string msr_whitelist(int cpuid) const;
 

@@ -312,7 +312,7 @@ namespace geopm
         m_is_adjusted[control_idx] = true;
     }
 
-    void PlatformIO::write_control(void)
+    void PlatformIO::write_batch(void)
     {
         if (std::any_of(m_is_adjusted.begin(), m_is_adjusted.end(), [](bool it){return !it;})) {
             throw Exception("PlatformIO::write_control() called before all controls were adjusted",
@@ -323,7 +323,7 @@ namespace geopm
         }
     }
 
-    void PlatformIO::read_signal(void)
+    void PlatformIO::read_batch(void)
     {
         if (!m_is_active) {
             activate();

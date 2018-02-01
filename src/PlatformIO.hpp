@@ -116,11 +116,11 @@ namespace geopm
                                 double setting) = 0;
             /// @brief Read all pushed signals so that the next call
             ///        to sample() will reflect the updated data.
-            virtual void read_signal(void) = 0;
+            virtual void read_batch(void) = 0;
             /// @brief Write all of the pushed controls so that values
             ///        previously given to adjust() are written to the
             ///        platform.
-            virtual void write_control(void) = 0;
+            virtual void write_batch(void) = 0;
             /// @brief Fill string with the msr-safe whitelist file contents
             ///        reflecting all known MSRs for the current platform.
             /// @return String formatted to be written to
