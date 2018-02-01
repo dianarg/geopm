@@ -103,6 +103,7 @@ src/geopm_version.c
 src/geopm_version.h
 src/GlobalPolicy.cpp
 src/GlobalPolicy.hpp
+src/IOGroup.hpp
 src/KNLPlatformImp.cpp
 src/KNLPlatformImp.hpp
 src/MSR.cpp
@@ -149,6 +150,8 @@ src/SharedMemory.hpp
 src/SignalHandler.cpp
 src/StaticPolicyDecider.cpp
 src/StaticPolicyDecider.hpp
+src/TimeIOGroup.cpp
+src/TimeIOGroup.hpp
 src/TimeSignal.cpp
 src/TimeSignal.hpp
 src/Tracer.cpp
@@ -177,6 +180,7 @@ test/googletest.mk
 test/GoverningDeciderTest.cpp
 test/legacy_whitelist.out
 test/RuntimeRegulatorTest.cpp
+test/TimeIOGroupTest.cpp
 test_hw/geopm_time.h
 test_hw/geopm_time.h
 test_hw/Makefile

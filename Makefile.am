@@ -251,6 +251,7 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/Exception.hpp \
                             src/GlobalPolicy.cpp \
                             src/GlobalPolicy.hpp \
+                            src/IOGroup.hpp \
                             src/geopm.h \
                             src/geopm_ctl.h \
                             src/geopm_env.h \
@@ -310,6 +311,8 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/SignalHandler.cpp \
                             src/StaticPolicyDecider.cpp \
                             src/StaticPolicyDecider.hpp \
+                            src/TimeIOGroup.cpp \
+                            src/TimeIOGroup.hpp \
                             src/TimeSignal.cpp \
                             src/TimeSignal.hpp \
                             src/Tracer.cpp \
