@@ -39,6 +39,7 @@ namespace geopm
 {
     TimeIOGroup::TimeIOGroup()
         : m_is_signal_pushed(false)
+        , m_is_batch_read(false)
     {
         geopm_time(&m_time_zero);
     }
@@ -81,6 +82,7 @@ namespace geopm
             geopm_time_s time_curr;
             geopm_time(&time_curr);
             m_time_curr = geopm_time_diff(&m_time_zero, &time_curr);
+            m_is_batch_read = true;
         }
     }
 
@@ -91,7 +93,15 @@ namespace geopm
 
     double TimeIOGroup::sample(int batch_idx)
     {
-        if (batch_idx) {
+        if (!m_is_signal_pushed) {
+            throw Exception("TimeIOGroup::sample() signal has not been pushed",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        if (!m_is_batch_read) {
+            throw Exception("TimeIOGroup::sample() signal has not been read",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        if (batch_idx != 0) {
             throw Exception("TimeIOGroup::sample() batch_idx out of range",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }

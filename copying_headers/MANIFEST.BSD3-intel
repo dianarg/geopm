@@ -180,6 +180,7 @@ test/googletest.mk
 test/GoverningDeciderTest.cpp
 test/legacy_whitelist.out
 test/RuntimeRegulatorTest.cpp
+test/TimeIOGroupTest.cpp
 test_hw/geopm_time.h
 test_hw/geopm_time.h
 test_hw/Makefile

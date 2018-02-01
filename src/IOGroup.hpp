@@ -115,7 +115,7 @@ namespace geopm
             /// @param [in] domain_idx The index of the domain within
             ///        the set of domains of the same type on the
             ///        platform.
-            /// @return The value in SI unites of the signal.
+            /// @return The value in SI units of the signal.
             virtual double read_signal(const std::string &signal_name,
                                        int domain_type,
                                        int domain_idx) = 0;
@@ -129,8 +129,8 @@ namespace geopm
             /// @param [in] domain_idx The index of the domain within
             ///        the set of domains of the same type on the
             ///        platform.
-            /// @param [in] setting Value in SI units of the value of
-            ///        the control.
+            /// @param [in] setting Value in SI units of the setting
+            ///        for the control.
             virtual void write_control(const std::string &control_name,
                                        int domain_type,
                                        int domain_idx,
