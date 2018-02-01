@@ -43,18 +43,98 @@ namespace geopm
         public:
             IOGroup() {}
             virtual ~IOGroup() {}
+            /// @brief Test if signal_name refers to a signal
+            ///        supported by the group.
+            /// @param [in] signal_name Name of signal to test.
+            /// @return True if signal is supported, false otherwise.
             virtual bool is_valid_signal(const std::string &signal_name) = 0;
+            /// @brief Test if control_name refers to a control
+            ///        supported by the group.
+            /// @param [in] control_name Name of control to test.
+            /// @return True if control is supported, false otherwise.
             virtual bool is_valid_control(const std::string &control_name) = 0;
-            virtual int push_signal(const std::string &signal_name, int domain_type, int domain_idx) = 0;
-            virtual int push_control(const std::string &control_name, int domain_type, int domain_idx) = 0;
+            /// @brief Add a signal to the list of signals that is
+            ///        read by read_batch() and sampled by sample().
+            /// @param [in] signal_name Name of the signal requested.
+            /// @param [in] domain_type One of the values from the
+            ///        PlatformTopo::m_domain_e enum described in
+            ///        PlatformTopo.hpp.
+            /// @param [in] domain_idx The index of the domain within
+            ///        the set of domains of the same type on the
+            ///        platform.
+            /// @return Index of signal when sample() method is called.
+            virtual int push_signal(const std::string &signal_name,
+                                    int domain_type,
+                                    int domain_idx) = 0;
+            /// @brief Add a control to the list of controls that is
+            ///        written by write_batch() and configured with
+            ///        adjust().
+            /// @param [in] control_name Name of the control requested.
+            /// @param [in] domain_type One of the values from the
+            ///        PlatformTopo::m_domain_e enum described in
+            ///        PlatformTopo.hpp.
+            /// @param [in] domain_idx The index of the domain within
+            ///        the set of domains of the same type on the
+            ///        platform.
+            /// @return Index of control when adjust() method is called.
+            virtual int push_control(const std::string &control_name,
+                                     int domain_type,
+                                     int domain_idx) = 0;
+            /// @brief Read all pushed signals from the platform so
+            ///        that the next call to sample() will reflect the
+            ///        updated data.
             virtual void read_batch(void) = 0;
+            /// @brief Write all of the pushed controls so that values
+            ///        previously given to adjust() are written to the
+            ///        platform.
             virtual void write_batch(void) = 0;
-            virtual void sample(std::vector<double> &signal) = 0;
+            /// @brief Retrieve signal value from data read by last
+            ///        call to read_batch() for a particular signal
+            ///        previously pushed with push_signal().
+            /// @param [in] batch_idx The index returned by previous
+            ///        call to push_signal().
+            /// @return Value of signal in SI units.
             virtual double sample(int batch_idx) = 0;
-            virtual void adjust(const std::vector<double> &setting) = 0;
-            virtual void adjust(int batch_idx, double setting) = 0;
-            virtual double read_signal(const std::string &signal_name, int domain_type, int domain_idx) = 0;
-            virtual void write_control(const std::string &control_name, int domain_type, int domain_idx, double setting) = 0;
+            /// @brief Adjust a setting for a particular control that
+            ///        was previously pushed with push_control(). This
+            ///        adjustment will be written to the platform on
+            ///        the next call to write_batch().
+            /// @param [in] batch_idx The index returned by previous
+            ///        call to push_control().
+            /// @param [in] setting Value of the control in SI units.
+            virtual void adjust(int batch_idx,
+                                double setting) = 0;
+            /// @brief Read from platform and interpret into SI units
+            ///        a signal given its name and domain.  Does not
+            ///        modify the values stored by calling
+            ///        read_batch().
+            /// @param [in] signal_name Name of the signal requested.
+            /// @param [in] domain_type One of the values from the
+            ///        PlatformTopo::m_domain_e enum described in
+            ///        PlatformTopo.hpp.
+            /// @param [in] domain_idx The index of the domain within
+            ///        the set of domains of the same type on the
+            ///        platform.
+            /// @return The value in SI unites of the signal.
+            virtual double read_signal(const std::string &signal_name,
+                                       int domain_type,
+                                       int domain_idx) = 0;
+            /// @brief Interpret the setting and write setting to the
+            ///        platform.  Does not modify the values stored by
+            ///        calling adjust().
+            /// @param [in] control_name Name of the control requested.
+            /// @param [in] domain_type One of the values from the
+            ///        PlatformTopo::m_domain_e enum described in
+            ///        PlatformTopo.hpp.
+            /// @param [in] domain_idx The index of the domain within
+            ///        the set of domains of the same type on the
+            ///        platform.
+            /// @param [in] setting Value in SI units of the value of
+            ///        the control.
+            virtual void write_control(const std::string &control_name,
+                                       int domain_type,
+                                       int domain_idx,
+                                       double setting) = 0;
     };
 }
 

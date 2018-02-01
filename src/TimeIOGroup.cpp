@@ -89,13 +89,6 @@ namespace geopm
 
     }
 
-    void TimeIOGroup::sample(std::vector<double> &signal)
-    {
-        if (m_is_signal_pushed && signal.size() > 0) {
-            signal[0] = m_time_curr;
-        }
-    }
-
     double TimeIOGroup::sample(int batch_idx)
     {
         if (batch_idx) {
@@ -103,14 +96,6 @@ namespace geopm
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return m_time_curr;
-    }
-
-    void TimeIOGroup::adjust(const std::vector<double> &setting)
-    {
-        if (setting.size() != 0) {
-            throw Exception("TimeIOGroup::adjust() there are no controls supported by the TimeIOGroup",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
     }
 
     void TimeIOGroup::adjust(int batch_idx, double setting)

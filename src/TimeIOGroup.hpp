@@ -48,9 +48,7 @@ namespace geopm
             virtual int push_control(const std::string &control_name, int domain_type, int domain_idx) override;
             virtual void read_batch(void) override;
             virtual void write_batch(void) override;
-            virtual void sample(std::vector<double> &signal) override;
             virtual double sample(int batch_idx) override;
-            virtual void adjust(const std::vector<double> &setting) override;
             virtual void adjust(int batch_idx, double setting) override;
             virtual double read_signal(const std::string &signal_name, int domain_type, int domain_idx) override;
             virtual void write_control(const std::string &control_name, int domain_type, int domain_idx, double setting) override;
