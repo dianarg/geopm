@@ -56,7 +56,6 @@ namespace geopm
             MPIComm(const MPIComm *in_comm, std::string tag, int split_type);
             virtual ~MPIComm();
 
-            static const IComm &get_comm();
             static std::string plugin_name();
             static std::unique_ptr<IComm> make_plugin();
 
@@ -96,5 +95,13 @@ namespace geopm
             const std::string m_name;
     };
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void pre_finalize();
+#ifdef __cplusplus
+}
+#endif
 
 #endif

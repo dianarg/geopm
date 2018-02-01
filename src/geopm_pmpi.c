@@ -47,6 +47,8 @@
 #include "geopm_message.h"
 #include "geopm_pmpi.h"
 #include "geopm_sched.h"
+#include "geopm_time.h"
+#include "geopm_mpi_comm_split.h"
 #include "config.h"
 
 static int g_is_geopm_pmpi_ctl_enabled = 0;
@@ -173,7 +175,7 @@ static int geopm_pmpi_init(const char *exec_name)
                     }
                 }
                 if (!err) {
-                    err = geopm_ctl_create(policy, g_geopm_comm_world_swap, &g_ctl);
+                    err = geopm_ctl_create(policy, &g_ctl);
                 }
                 if (!err) {
                     err = geopm_ctl_run(g_ctl);
@@ -208,7 +210,7 @@ static int geopm_pmpi_init(const char *exec_name)
                     err = geopm_policy_create(geopm_env_policy(), NULL, &policy);
                 }
                 if (!err) {
-                    err = geopm_ctl_create(policy, g_ppn1_comm, &g_ctl);
+                    err = geopm_ctl_create(policy, &g_ctl);
                 }
 #ifndef __APPLE__
                 if (!err) {
@@ -331,6 +333,10 @@ int MPI_Finalize(void)
 {
     int err = geopm_pmpi_finalize();
     int err_final = PMPI_Finalize();
+    struct geopm_time_s zero = (struct geopm_time_s) {{0, 0}};
+    struct geopm_time_s finalize_time;
+    geopm_time(&finalize_time);
+    fprintf(stderr, "finalize call time: %lf\n", geopm_time_diff(&zero, &finalize_time));
     return err ? err : err_final;
 }
 #endif
@@ -611,87 +617,104 @@ int MPI_Waitsome(int incount, MPI_Request array_of_requests[], int *outcount, in
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Iallgather(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Iallgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Iallgatherv(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, GEOPM_MPI_CONST int recvcounts[], GEOPM_MPI_CONST int displs[], MPI_Datatype recvtype, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Iallgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Iallreduce(GEOPM_MPI_CONST void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Iallreduce(sendbuf, recvbuf, count, datatype, op, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ialltoall(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ialltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ialltoallv(GEOPM_MPI_CONST void *sendbuf, GEOPM_MPI_CONST int sendcounts[], GEOPM_MPI_CONST int sdispls[], MPI_Datatype sendtype, void *recvbuf, GEOPM_MPI_CONST int recvcounts[], GEOPM_MPI_CONST int rdispls[], MPI_Datatype recvtype, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ialltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ialltoallw(GEOPM_MPI_CONST void *sendbuf, GEOPM_MPI_CONST int sendcounts[], GEOPM_MPI_CONST int sdispls[], GEOPM_MPI_CONST MPI_Datatype sendtypes[], void *recvbuf, GEOPM_MPI_CONST int recvcounts[], GEOPM_MPI_CONST int rdispls[], GEOPM_MPI_CONST MPI_Datatype recvtypes[], MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ialltoallw(sendbuf, sendcounts, sdispls, sendtypes, recvbuf, recvcounts, rdispls, recvtypes, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ibarrier(MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ibarrier(geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ibcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ibcast(buffer, count, datatype, root, geopm_swap_comm_world(comm), request);
 }
 #endif
 
 int MPI_Cart_coords(MPI_Comm comm, int rank, int maxdims, int coords[])
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Cart_coords(geopm_swap_comm_world(comm), rank, maxdims, coords);
 }
 
 int MPI_Cart_create(MPI_Comm old_comm, int ndims, GEOPM_MPI_CONST int dims[], GEOPM_MPI_CONST int periods[], int reorder, MPI_Comm *comm_cart)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Cart_create(geopm_swap_comm_world(old_comm), ndims, dims, periods, reorder, comm_cart);
 }
 
 int MPI_Cart_get(MPI_Comm comm, int maxdims, int dims[], int periods[], int coords[])
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Cart_get(geopm_swap_comm_world(comm), maxdims, dims, periods, coords);
 }
 
 int MPI_Cart_map(MPI_Comm comm, int ndims, GEOPM_MPI_CONST int dims[], GEOPM_MPI_CONST int periods[], int *newrank)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Cart_map(geopm_swap_comm_world(comm), ndims, dims, periods, newrank);
 }
 
 int MPI_Cart_rank(MPI_Comm comm, GEOPM_MPI_CONST int coords[], int *rank)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Cart_rank(geopm_swap_comm_world(comm), coords, rank);
 }
 
 int MPI_Cart_shift(MPI_Comm comm, int direction, int disp, int *rank_source, int *rank_dest)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Cart_shift(geopm_swap_comm_world(comm), direction, disp, rank_source, rank_dest);
 }
 
 int MPI_Cart_sub(MPI_Comm comm, GEOPM_MPI_CONST int remain_dims[], MPI_Comm *new_comm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Cart_sub(geopm_swap_comm_world(comm), remain_dims, new_comm);
 }
 
 int MPI_Cartdim_get(MPI_Comm comm, int *ndims)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Cartdim_get(geopm_swap_comm_world(comm), ndims);
 }
 
 int MPI_Comm_accept(GEOPM_MPI_CONST char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_accept(port_name, info, root, geopm_swap_comm_world(comm), newcomm);
 }
 
@@ -702,55 +725,65 @@ int MPI_Comm_accept(GEOPM_MPI_CONST char *port_name, MPI_Info info, int root, MP
 #else
 MPI_Fint MPI_Comm_c2f(MPI_Comm comm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_c2f(geopm_swap_comm_world(comm));
 }
 #endif
 
 int MPI_Comm_call_errhandler(MPI_Comm comm, int errorcode)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_call_errhandler(geopm_swap_comm_world(comm), errorcode);
 }
 
 int MPI_Comm_compare(MPI_Comm comm1, MPI_Comm comm2, int *result)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_compare(geopm_swap_comm_world(comm1), geopm_swap_comm_world(comm2), result);
 }
 
 int MPI_Comm_connect(GEOPM_MPI_CONST char *port_name, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_connect(port_name, info, root, geopm_swap_comm_world(comm), newcomm);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Comm_create_group(MPI_Comm comm, MPI_Group group, int tag, MPI_Comm *newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_create_group(geopm_swap_comm_world(comm), group, tag, newcomm);
 }
 #endif
 
 int MPI_Comm_create(MPI_Comm comm, MPI_Group group, MPI_Comm *newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_create(geopm_swap_comm_world(comm), group, newcomm);
 }
 
 int MPI_Comm_delete_attr(MPI_Comm comm, int comm_keyval)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_delete_attr(geopm_swap_comm_world(comm), comm_keyval);
 }
 
 int MPI_Comm_dup(MPI_Comm comm, MPI_Comm *newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_dup(geopm_swap_comm_world(comm), newcomm);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Comm_idup(MPI_Comm comm, MPI_Comm *newcomm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_idup(geopm_swap_comm_world(comm), newcomm, request);
 }
 
 int MPI_Comm_dup_with_info(MPI_Comm comm, MPI_Info info, MPI_Comm *newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_dup_with_info(geopm_swap_comm_world(comm), info, newcomm);
 }
 #endif
@@ -762,130 +795,154 @@ int MPI_Comm_dup_with_info(MPI_Comm comm, MPI_Info info, MPI_Comm *newcomm)
 #else
 MPI_Comm MPI_Comm_f2c(MPI_Fint comm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return geopm_swap_comm_world(PMPI_Comm_f2c(comm));
 }
 #endif
 
 int MPI_Comm_get_attr(MPI_Comm comm, int comm_keyval, void *attribute_val, int *flag)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_get_attr(geopm_swap_comm_world(comm), comm_keyval, attribute_val, flag);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Dist_graph_create(MPI_Comm comm_old, int n, GEOPM_MPI_CONST int nodes[], GEOPM_MPI_CONST int degrees[], GEOPM_MPI_CONST int targets[], GEOPM_MPI_CONST int weights[], MPI_Info info, int reorder, MPI_Comm * newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Dist_graph_create(geopm_swap_comm_world(comm_old), n, nodes, degrees, targets, weights, info, reorder, newcomm);
 }
 
 int MPI_Dist_graph_create_adjacent(MPI_Comm comm_old, int indegree, GEOPM_MPI_CONST int sources[], GEOPM_MPI_CONST int sourceweights[], int outdegree, GEOPM_MPI_CONST int destinations[], GEOPM_MPI_CONST int destweights[], MPI_Info info, int reorder, MPI_Comm *comm_dist_graph)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Dist_graph_create_adjacent(geopm_swap_comm_world(comm_old), indegree, sources, sourceweights, outdegree, destinations, destweights, info, reorder, comm_dist_graph);
 }
 
 int MPI_Dist_graph_neighbors(MPI_Comm comm, int maxindegree, int sources[], int sourceweights[], int maxoutdegree, int destinations[], int destweights[])
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Dist_graph_neighbors(geopm_swap_comm_world(comm), maxindegree, sources, sourceweights, maxoutdegree, destinations, destweights);
 }
 
 int MPI_Dist_graph_neighbors_count(MPI_Comm comm, int *inneighbors, int *outneighbors, int *weighted)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Dist_graph_neighbors_count(geopm_swap_comm_world(comm), inneighbors, outneighbors, weighted);
 }
 #endif
 
 int MPI_Comm_get_errhandler(MPI_Comm comm, MPI_Errhandler *erhandler)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_get_errhandler(geopm_swap_comm_world(comm), erhandler);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Comm_get_info(MPI_Comm comm, MPI_Info *info_used)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_get_info(geopm_swap_comm_world(comm), info_used);
 }
 #endif
 
 int MPI_Comm_get_name(MPI_Comm comm, char *comm_name, int *resultlen)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_get_name(geopm_swap_comm_world(comm), comm_name, resultlen);
 }
 
 int MPI_Comm_get_parent(MPI_Comm *parent)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_get_parent(parent);
 }
 
 int MPI_Comm_group(MPI_Comm comm, MPI_Group *group)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_group(geopm_swap_comm_world(comm), group);
 }
 
 int MPI_Comm_rank(MPI_Comm comm, int *rank)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_rank(geopm_swap_comm_world(comm), rank);
 }
 
 int MPI_Comm_remote_group(MPI_Comm comm, MPI_Group *group)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_remote_group(geopm_swap_comm_world(comm), group);
 }
 
 int MPI_Comm_remote_size(MPI_Comm comm, int *size)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_remote_size(geopm_swap_comm_world(comm), size);
 }
 
 int MPI_Comm_set_attr(MPI_Comm comm, int comm_keyval, void *attribute_val)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_set_attr(geopm_swap_comm_world(comm), comm_keyval, attribute_val);
 }
 
 int MPI_Comm_set_errhandler(MPI_Comm comm, MPI_Errhandler errhandler)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_set_errhandler(geopm_swap_comm_world(comm), errhandler);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Comm_set_info(MPI_Comm comm, MPI_Info info)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_set_info(geopm_swap_comm_world(comm), info);
 }
 #endif
 
 int MPI_Comm_set_name(MPI_Comm comm, GEOPM_MPI_CONST char *comm_name)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_set_name(geopm_swap_comm_world(comm), comm_name);
 }
 
 int MPI_Comm_size(MPI_Comm comm, int *size)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_size(geopm_swap_comm_world(comm), size);
 }
 
 int MPI_Comm_spawn(GEOPM_MPI_CONST char *command, char *argv[], int maxprocs, MPI_Info info, int root, MPI_Comm comm, MPI_Comm *intercomm, int array_of_errcodes[])
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_spawn(command, argv, maxprocs, info, root, geopm_swap_comm_world(comm), intercomm, array_of_errcodes);
 }
 
 int MPI_Comm_spawn_multiple(int count, char *array_of_commands[], char **array_of_argv[], GEOPM_MPI_CONST int array_of_maxprocs[], GEOPM_MPI_CONST MPI_Info array_of_info[], int root, MPI_Comm comm, MPI_Comm *intercomm, int array_of_errcodes[])
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_spawn_multiple(count, array_of_commands, array_of_argv, array_of_maxprocs, array_of_info, root, geopm_swap_comm_world(comm), intercomm, array_of_errcodes);
 }
 
 int MPI_Comm_split(MPI_Comm comm, int color, int key, MPI_Comm *newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_split(geopm_swap_comm_world(comm), color, key, newcomm);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Comm_split_type(MPI_Comm comm, int split_type, int key, MPI_Info info, MPI_Comm *newcomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_split_type(geopm_swap_comm_world(comm), split_type, key, info, newcomm);
 }
 #endif
 
 int MPI_Comm_test_inter(MPI_Comm comm, int *flag)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Comm_test_inter(geopm_swap_comm_world(comm), flag);
 }
 
@@ -901,153 +958,182 @@ int MPI_Exscan(GEOPM_MPI_CONST void *sendbuf, void *recvbuf, int count, MPI_Data
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Iexscan(GEOPM_MPI_CONST void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Iexscan(sendbuf, recvbuf, count, datatype, op, geopm_swap_comm_world(comm), request);
 }
 #endif
 
 int MPI_File_open(MPI_Comm comm, GEOPM_MPI_CONST char *filename, int amode, MPI_Info info, MPI_File *fh)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_File_open(geopm_swap_comm_world(comm), filename, amode, info, fh);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Igather(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Igather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Igatherv(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, GEOPM_MPI_CONST int recvcounts[], GEOPM_MPI_CONST int displs[], MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Igatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, root, geopm_swap_comm_world(comm), request);
 }
 #endif
 
 int MPI_Graph_create(MPI_Comm comm_old, int nnodes, GEOPM_MPI_CONST int index[], GEOPM_MPI_CONST int edges[], int reorder, MPI_Comm *comm_graph)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Graph_create(geopm_swap_comm_world(comm_old), nnodes, index, edges, reorder, comm_graph);
 }
 
 int MPI_Graph_get(MPI_Comm comm, int maxindex, int maxedges, int index[], int edges[])
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Graph_get(geopm_swap_comm_world(comm), maxindex, maxedges, index, edges);
 }
 
 int MPI_Graph_map(MPI_Comm comm, int nnodes, GEOPM_MPI_CONST int index[], GEOPM_MPI_CONST int edges[], int *newrank)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Graph_map(geopm_swap_comm_world(comm), nnodes, index, edges, newrank);
 }
 
 int MPI_Graph_neighbors_count(MPI_Comm comm, int rank, int *nneighbors)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Graph_neighbors_count(geopm_swap_comm_world(comm), rank, nneighbors);
 }
 
 int MPI_Graph_neighbors(MPI_Comm comm, int rank, int maxneighbors, int neighbors[])
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Graph_neighbors(geopm_swap_comm_world(comm), rank, maxneighbors, neighbors);
 }
 
 int MPI_Graphdims_get(MPI_Comm comm, int *nnodes, int *nedges)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Graphdims_get(geopm_swap_comm_world(comm), nnodes, nedges);
 }
 
 int MPI_Ibsend(GEOPM_MPI_CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ibsend(buf, count, datatype, dest, tag, geopm_swap_comm_world(comm), request);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Improbe(int source, int tag, MPI_Comm comm, int *flag, MPI_Message *message, MPI_Status *status)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Improbe(source, tag, geopm_swap_comm_world(comm), flag, message, status);
 }
 #endif
 
 int MPI_Intercomm_create(MPI_Comm local_comm, int local_leader, MPI_Comm bridge_comm, int remote_leader, int tag, MPI_Comm *newintercomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Intercomm_create(geopm_swap_comm_world(local_comm), local_leader, geopm_swap_comm_world(bridge_comm), remote_leader, tag, newintercomm);
 }
 
 int MPI_Intercomm_merge(MPI_Comm intercomm, int high, MPI_Comm *newintercomm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Intercomm_merge(geopm_swap_comm_world(intercomm), high, newintercomm);
 }
 
 int MPI_Iprobe(int source, int tag, MPI_Comm comm, int *flag, MPI_Status *status)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Iprobe(source, tag, geopm_swap_comm_world(comm), flag, status);
 }
 
 int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Irecv(buf, count, datatype, source, tag, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Irsend(GEOPM_MPI_CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Irsend(buf, count, datatype, dest, tag, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Isend(GEOPM_MPI_CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Isend(buf, count, datatype, dest, tag, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Issend(GEOPM_MPI_CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Issend(buf, count, datatype, dest, tag, geopm_swap_comm_world(comm), request);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Mprobe(int source, int tag, MPI_Comm comm, MPI_Message *message, MPI_Status *status)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Mprobe(source, tag, geopm_swap_comm_world(comm), message, status);
 }
 
 int MPI_Ineighbor_allgather(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ineighbor_allgather(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ineighbor_allgatherv(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, GEOPM_MPI_CONST int recvcounts[], GEOPM_MPI_CONST int displs[], MPI_Datatype recvtype, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ineighbor_allgatherv(sendbuf, sendcount, sendtype, recvbuf, recvcounts, displs, recvtype, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ineighbor_alltoall(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ineighbor_alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ineighbor_alltoallv(GEOPM_MPI_CONST void *sendbuf, GEOPM_MPI_CONST int sendcounts[], GEOPM_MPI_CONST int sdispls[], MPI_Datatype sendtype, void *recvbuf, GEOPM_MPI_CONST int recvcounts[], GEOPM_MPI_CONST int rdispls[], MPI_Datatype recvtype, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ineighbor_alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ineighbor_alltoallw(GEOPM_MPI_CONST void *sendbuf, GEOPM_MPI_CONST int sendcounts[], GEOPM_MPI_CONST MPI_Aint sdispls[], GEOPM_MPI_CONST MPI_Datatype sendtypes[], void *recvbuf, GEOPM_MPI_CONST int recvcounts[], GEOPM_MPI_CONST MPI_Aint rdispls[], GEOPM_MPI_CONST MPI_Datatype recvtypes[], MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ineighbor_alltoallw(sendbuf, sendcounts, sdispls, sendtypes, recvbuf, recvcounts, rdispls, recvtypes, geopm_swap_comm_world(comm), request);
 }
 #endif
 
 int MPI_Pack(GEOPM_MPI_CONST void *inbuf, int incount, MPI_Datatype datatype, void *outbuf, int outsize, int *position, MPI_Comm comm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Pack(inbuf, incount, datatype, outbuf, outsize, position, geopm_swap_comm_world(comm));
 }
 
 int MPI_Pack_size(int incount, MPI_Datatype datatype, MPI_Comm comm, int *size)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Pack_size(incount, datatype, geopm_swap_comm_world(comm), size);
 }
 
 int MPI_Probe(int source, int tag, MPI_Comm comm, MPI_Status *status)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Probe(source, tag, geopm_swap_comm_world(comm), status);
 }
 
 int MPI_Recv_init(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Recv_init(buf, count, datatype, source, tag, geopm_swap_comm_world(comm), request);
 }
 
@@ -1063,37 +1149,44 @@ int MPI_Recv(void *buf, int count, MPI_Datatype datatype, int source, int tag, M
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Ireduce(GEOPM_MPI_CONST void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, int root, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ireduce(sendbuf, recvbuf, count, datatype, op, root, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ireduce_scatter(GEOPM_MPI_CONST void *sendbuf, void *recvbuf, GEOPM_MPI_CONST int recvcounts[], MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ireduce_scatter(sendbuf, recvbuf, recvcounts, datatype, op, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Ireduce_scatter_block(GEOPM_MPI_CONST void *sendbuf, void *recvbuf, int recvcount, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ireduce_scatter_block(sendbuf, recvbuf, recvcount, datatype, op, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Iscan(GEOPM_MPI_CONST void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Iscan(sendbuf, recvbuf, count, datatype, op, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Iscatter(GEOPM_MPI_CONST void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Iscatter(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, geopm_swap_comm_world(comm), request);
 }
 
 int MPI_Iscatterv(GEOPM_MPI_CONST void *sendbuf, GEOPM_MPI_CONST int sendcounts[], GEOPM_MPI_CONST int displs[], MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Iscatterv(sendbuf, sendcounts, displs, sendtype, recvbuf, recvcount, recvtype, root, geopm_swap_comm_world(comm), request);
 }
 #endif
 
 int MPI_Send_init(GEOPM_MPI_CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Send_init(buf, count, datatype, dest, tag, geopm_swap_comm_world(comm), request);
 }
 
@@ -1126,6 +1219,7 @@ int MPI_Sendrecv_replace(void * buf, int count, MPI_Datatype datatype, int dest,
 
 int MPI_Ssend_init(GEOPM_MPI_CONST void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Ssend_init(buf, count, datatype, dest, tag, geopm_swap_comm_world(comm), request);
 }
 
@@ -1140,34 +1234,40 @@ int MPI_Ssend(GEOPM_MPI_CONST void *buf, int count, MPI_Datatype datatype, int d
 
 int MPI_Topo_test(MPI_Comm comm, int *status)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Topo_test(geopm_swap_comm_world(comm), status);
 }
 
 int MPI_Unpack(GEOPM_MPI_CONST void *inbuf, int insize, int *position, void *outbuf, int outcount, MPI_Datatype datatype, MPI_Comm comm)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Unpack(inbuf, insize, position, outbuf, outcount, datatype, geopm_swap_comm_world(comm));
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Win_allocate(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Win_allocate(size, disp_unit, info, geopm_swap_comm_world(comm), baseptr, win);
 }
 
 int MPI_Win_allocate_shared(MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, void *baseptr, MPI_Win *win)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Win_allocate_shared(size, disp_unit, info, geopm_swap_comm_world(comm), baseptr, win);
 }
 #endif
 
 int MPI_Win_create(void *base, MPI_Aint size, int disp_unit, MPI_Info info, MPI_Comm comm, MPI_Win *win)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Win_create(base, size, disp_unit, info, geopm_swap_comm_world(comm), win);
 }
 
 #ifdef GEOPM_ENABLE_MPI3
 int MPI_Win_create_dynamic(MPI_Info info, MPI_Comm comm, MPI_Win *win)
 {
+    fprintf(stderr, "%s entry", __func__);
     return PMPI_Win_create_dynamic(info, geopm_swap_comm_world(comm), win);
 }
 #endif

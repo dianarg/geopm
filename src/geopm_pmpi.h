@@ -48,12 +48,15 @@ uint64_t geopm_mpi_func_rid(const char *func_name);
 #define GEOPM_PMPI_ENTER_MACRO(FUNC) \
     static unsigned is_once = 1; \
     static uint64_t func_rid = 0; \
+    fprintf(stderr, "%s (%lu) entry", FUNC, func_rid); \
     if (is_once) { \
         func_rid = geopm_mpi_func_rid(FUNC); \
         is_once = 0; \
     } \
     geopm_mpi_region_enter(func_rid);
 
-#define GEOPM_PMPI_EXIT_MACRO geopm_mpi_region_exit(func_rid);
+#define GEOPM_PMPI_EXIT_MACRO \
+    fprintf(stderr, "%lu exit", func_rid); \
+    geopm_mpi_region_exit(func_rid);
 
 #endif //GEOPM_PMPI_H_INCLUDE

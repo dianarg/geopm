@@ -33,16 +33,29 @@
 #include <sstream>
 #include <limits.h>
 #include <map>
+#include <iostream>
 
 #include "Comm.hpp"
 #include "MPIComm.hpp"
 #include "Exception.hpp"
 #include "SharedMemory.hpp"
 #include "geopm_env.h"
+#include "geopm_time.h"
+#include <iomanip>
 #include "geopm_mpi_comm_split.h"
 #include "config.h"
 
 #define GEOPM_MPI_COMM_PLUGIN_NAME "MPIComm"
+
+std::unique_ptr<geopm::MPIComm> g_singleton = nullptr;
+extern "C" {
+    void pre_finalize()
+    {
+        if (g_singleton != nullptr) {
+            g_singleton.reset(nullptr);
+        }
+    }
+}
 
 namespace geopm
 {
@@ -79,15 +92,26 @@ namespace geopm
         return GEOPM_MPI_COMM_PLUGIN_NAME;
     }
 
+    struct my_delete
+    {
+        void operator()(void* x)
+        {
+            struct geopm_time_s zero = (struct geopm_time_s) {{0, 0}};
+            struct geopm_time_s delete_time;
+            geopm_time(&delete_time);
+            std::cerr << "singleton deleted time: " << std::setprecision(16) << geopm_time_diff(&zero, &delete_time) << std::endl;
+            delete x;
+        }
+    };
+
     std::unique_ptr<IComm> MPIComm::make_plugin(void)
     {
-        return std::unique_ptr<IComm>(new MPIComm);
-    }
-
-    const IComm &MPIComm::get_comm(void)
-    {
-        static MPIComm instance;
-        return instance;
+        //static std::unique_ptr<MPIComm> instance(new MPIComm);
+        if (g_singleton == nullptr) {
+            //static std::unique_ptr<MPIComm, my_delete> instance(new MPIComm);
+            g_singleton.reset(new MPIComm);
+        }
+        return std::unique_ptr<MPIComm>(new MPIComm(g_singleton.get()));
     }
 
     MPIComm::MPIComm()
@@ -103,7 +127,7 @@ namespace geopm
         , m_name(in_comm->m_name)
     {
         if (in_comm->is_valid()) {
-            check_mpi(PMPI_Comm_dup(in_comm->m_comm, &m_comm));
+            check_mpi(MPI_Comm_dup(in_comm->m_comm, &m_comm));
         }
     }
 
@@ -178,7 +202,12 @@ namespace geopm
         for (auto it = m_windows.begin(); it != m_windows.end(); ++it) {
             delete (CommWindow *) *it;
         }
+        struct geopm_time_s zero = (struct geopm_time_s) {{0, 0}};
+        struct geopm_time_s delete_time;
+        geopm_time(&delete_time);
+        std::cerr << "MPIComm instance destroyed at time: " << std::setprecision(16) << geopm_time_diff(&zero, &delete_time) << std::endl;
         if (is_valid() && m_comm != MPI_COMM_WORLD) {
+            std::cerr << "calling MPI_Comm_free" << std::endl;
             MPI_Comm_free(&m_comm);
         }
     }
