@@ -325,6 +325,8 @@ namespace geopm
             ///        used to combine the signals.
             MSRSignal(const std::vector<IMSRSignal::m_signal_config_s> &config,
                       const std::string &name);
+            MSRSignal(const MSRSignal &other) = default;
+            MSRSignal &operator=(const MSRSignal &other) = default;
             virtual ~MSRSignal();
             virtual std::string name(void) const;
             int domain_type(void) const;
@@ -383,6 +385,8 @@ namespace geopm
             ///        control field setting.
             MSRControl(const std::vector<struct IMSRControl::m_control_config_s> &config,
                        const std::string &name);
+            MSRControl(const MSRControl &other) = default;
+            MSRControl &operator=(const MSRControl &other) = default;
             virtual ~MSRControl();
             virtual std::string name(void) const;
             int domain_type(void) const;

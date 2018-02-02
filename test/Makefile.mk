@@ -222,6 +222,10 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/TimeIOGroupTest.sample \
               test/gtest_links/TimeIOGroupTest.adjust \
               test/gtest_links/TimeIOGroupTest.read_signal \
+              test/gtest_links/MSRIOGroupTest.signal \
+              test/gtest_links/MSRIOGroupTest.control \
+              test/gtest_links/MSRIOGroupTest.whitelist \
+              test/gtest_links/MSRIOGroupTest.cpuid \
               # end
 
 if ENABLE_MPI
@@ -292,11 +296,10 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           tutorial/ModelParse.cpp \
                           tutorial/Imbalancer.cpp \
                           test/PlatformTopoTest.cpp \
-<<<<<<< HEAD
                           test/TreeCommunicatorTest.cpp \
-=======
                           test/TimeIOGroupTest.cpp \
->>>>>>> Finished up tests and corrected code accordingly for TimeIOGroup.
+                          test/MSRIOGroupTest.cpp \
+                          test/geopm_test.hpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \

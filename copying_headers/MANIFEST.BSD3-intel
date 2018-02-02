@@ -113,6 +113,8 @@ src/MSR.cpp
 src/MSR.hpp
 src/MSRIO.cpp
 src/MSRIO.hpp
+src/MSRIOGroup.cpp
+src/MSRIOGroup.hpp
 src/OMPT.cpp
 src/OMPT.hpp
 src/Platform.cpp
@@ -177,6 +179,7 @@ test/ExceptionTest.cpp
 test/geopm_static_modes_test.cpp
 test/geopm_static_modes_test.sh
 test/geopm_test.cpp
+test/geopm_test.hpp
 test/geopm_test.sh
 test/GlobalPolicyTest.cpp
 test/googletest.mk
@@ -208,7 +211,6 @@ test/legacy_whitelist.out
 test/Makefile.mk
 test/MockComm.hpp
 test/MockGlobalPolicy.hpp
-test/MockMSRIO.hpp
 test/MockPlatform.hpp
 test/MockPlatformImp.hpp
 test/MockPlatformTopology.hpp
@@ -217,6 +219,7 @@ test/MockProfileSampler.hpp
 test/MockRegion.hpp
 test/ModelApplicationTest.cpp
 test/MPIInterfaceTest.cpp
+test/MSRIOGroupTest.cpp
 test/MSRIOTest.cpp
 test/MSRTest.cpp
 test/no_omp_cpu.c

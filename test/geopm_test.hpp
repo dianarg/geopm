@@ -30,22 +30,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MSRIO.hpp"
+#ifndef GEOPM_TEST_HPP
+#define GEOPM_TEST_HPP
 
-class MockMSRIO : public geopm::IMSRIO {
-    public:
-        MOCK_METHOD2(read_msr,
-                uint64_t (int cpu_idx, uint64_t offset));
-        MOCK_METHOD4(write_msr,
-                void (int cpu_idx, uint64_t offset, uint64_t write_mask, uint64_t raw_value));
-        MOCK_METHOD5(config_batch,
-                void (const std::vector<int> &read_cpu_idx,
-                      const std::vector<uint64_t> &read_offset,
-                      const std::vector<int> &write_cpu_idx,
-                      const std::vector<uint64_t> &write_offset,
-                      const std::vector<uint64_t> &write_mask));
-        MOCK_METHOD1(read_batch,
-                void (std::vector<uint64_t> &raw_value));
-        MOCK_METHOD1(write_batch,
-                void (const std::vector<uint64_t> &raw_value));
-};
+#include <string>
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
+
+#include "Exception.hpp"
+
+#define EXPECT_THROW_MESSAGE(statement, expected_err, expected_message) \
+    try {                                                               \
+        statement;                                                      \
+        ADD_FAILURE() << "Expected to throw, but succeeded.";           \
+    }                                                                   \
+    catch (const geopm::Exception &ex) {                                \
+        EXPECT_EQ(expected_err, ex.err_value());                        \
+        EXPECT_THAT(ex.what(), ::testing::MatchesRegex(std::string(".*") + expected_message + ".*")); \
+    }                                                                   \
+    catch (const std::exception &ex) {                                  \
+        ADD_FAILURE() << "Threw a different exception: " << ex.what();  \
+    }
+
+#endif
