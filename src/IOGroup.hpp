@@ -91,18 +91,18 @@ namespace geopm
             /// @brief Retrieve signal value from data read by last
             ///        call to read_batch() for a particular signal
             ///        previously pushed with push_signal().
-            /// @param [in] batch_idx The index returned by previous
+            /// @param [in] sample_idx The index returned by previous
             ///        call to push_signal().
             /// @return Value of signal in SI units.
-            virtual double sample(int batch_idx) = 0;
+            virtual double sample(int sample_idx) = 0;
             /// @brief Adjust a setting for a particular control that
             ///        was previously pushed with push_control(). This
             ///        adjustment will be written to the platform on
             ///        the next call to write_batch().
-            /// @param [in] batch_idx The index returned by previous
+            /// @param [in] control_idx The index returned by previous
             ///        call to push_control().
             /// @param [in] setting Value of the control in SI units.
-            virtual void adjust(int batch_idx,
+            virtual void adjust(int control_idx,
                                 double setting) = 0;
             /// @brief Read from platform and interpret into SI units
             ///        a signal given its name and domain.  Does not

@@ -46,6 +46,7 @@ namespace geopm
     class MSRSignal;
     class MSRControl;
     class IMSRIO;
+
     class MSRIOGroup : public IOGroup
     {
         public:
@@ -61,17 +62,27 @@ namespace geopm
             virtual ~MSRIOGroup();
             bool is_valid_signal(const std::string &signal_name) override;
             bool is_valid_control(const std::string &control_name) override;
-            int push_signal(const std::string &signal_name, int domain_type, int domain_idx) override;
-            int push_control(const std::string &control_name, int domain_type, int domain_idx) override;
+            int push_signal(const std::string &signal_name,
+                            int domain_type,
+                            int domain_idx) override;
+            int push_control(const std::string &control_name,
+                             int domain_type,
+                             int domain_idx) override;
             void read_batch(void) override;
             void write_batch(void) override;
-            double sample(int batch_idx) override;
-            void adjust(int batch_idx, double setting) override;
-            double read_signal(const std::string &signal_name, int domain_type, int domain_idx) override;
-            void write_control(const std::string &control_name, int domain_type, int domain_idx, double setting) override;
+            double sample(int sample_idx) override;
+            void adjust(int control_idx,
+                        double setting) override;
+            double read_signal(const std::string &signal_name,
+                               int domain_type,
+                               int domain_idx) override;
+            void write_control(const std::string &control_name,
+                               int domain_type,
+                               int domain_idx,
+                               double setting) override;
         protected:
             virtual int cpuid(void) const;
-            void init_msr(void);
+            void activate(void);
             /// @brief Register a single MSR field as a signal. This
             ///        is called by init_msr().
             /// @param [in] signal_name Compound signal name of form
@@ -112,9 +123,9 @@ namespace geopm
                                       const std::vector<std::string> &field_name);
 
             int m_num_cpu;
-            size_t m_msr_arr_size;
+            bool m_is_active;
+            bool m_is_read;
             std::unique_ptr<IMSRIO> m_msrio;
-            std::vector<bool> m_is_read;
             std::vector<bool> m_is_adjusted;
             std::map<std::string, const IMSR *> m_name_msr_map;
             std::map<std::string, std::vector<MSRSignal *> > m_name_cpu_signal_map;
