@@ -275,6 +275,9 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/MSR.hpp \
                             src/MSRIO.cpp \
                             src/MSRIO.hpp \
+                            src/msr_bdx.cpp \
+                            src/msr_knl.cpp \
+                            src/msr_snb.cpp \
                             src/Platform.cpp \
                             src/Platform.hpp \
                             src/PlatformFactory.cpp \
