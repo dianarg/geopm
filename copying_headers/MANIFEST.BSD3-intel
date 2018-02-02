@@ -106,6 +106,9 @@ src/GlobalPolicy.hpp
 src/IOGroup.hpp
 src/KNLPlatformImp.cpp
 src/KNLPlatformImp.hpp
+src/msr_hsx.cpp
+src/msr_knl.cpp
+src/msr_snb.cpp
 src/MSR.cpp
 src/MSR.hpp
 src/MSRIO.cpp
