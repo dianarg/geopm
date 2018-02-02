@@ -41,9 +41,12 @@
 
 namespace geopm
 {
+    class MSR;
     class IMSR;
+    class MSRSignal;
+    class MSRControl;
     class IMSRIO;
-    class MSRIOGroup
+    class MSRIOGroup : public IOGroup
     {
         public:
             enum m_cpuid_e {
@@ -62,16 +65,13 @@ namespace geopm
             int push_control(const std::string &control_name, int domain_type, int domain_idx) override;
             void read_batch(void) override;
             void write_batch(void) override;
-            void sample(std::vector<double> &signal) override;
             double sample(int batch_idx) override;
-            void adjust(const std::vector<double> &setting) override;
             void adjust(int batch_idx, double setting) override;
             double read_signal(const std::string &signal_name, int domain_type, int domain_idx) override;
             void write_control(const std::string &control_name, int domain_type, int domain_idx, double setting) override;
         protected:
             virtual int cpuid(void) const;
-            void init_msr(void)
-            const MSR *init_msr_arr(size_t &arr_size);
+            void init_msr(void);
             /// @brief Register a single MSR field as a signal. This
             ///        is called by init_msr().
             /// @param [in] signal_name Compound signal name of form
@@ -111,15 +111,16 @@ namespace geopm
                                       const std::vector<std::string> &msr_name,
                                       const std::vector<std::string> &field_name);
 
+            int m_num_cpu;
             size_t m_msr_arr_size;
-            unique_ptr<IMSRIO> m_msrio;
+            std::unique_ptr<IMSRIO> m_msrio;
             std::vector<bool> m_is_read;
             std::vector<bool> m_is_adjusted;
             std::map<std::string, const IMSR *> m_name_msr_map;
             std::map<std::string, std::vector<MSRSignal *> > m_name_cpu_signal_map;
             std::map<std::string, std::vector<MSRControl *> > m_name_cpu_control_map;
-            std::vector<ISignal *> m_active_signal;
-            std::vector<IControl *> m_active_control;
+            std::vector<MSRSignal *> m_active_signal;
+            std::vector<MSRControl *> m_active_control;
             // Vectors are over MSRs for all active signals
             std::vector<uint64_t> m_read_field;
             std::vector<off_t>    m_read_signal_off;

@@ -31,7 +31,11 @@
  */
 
 #include <cpuid.h>
+#include <cmath>
 
+#include "geopm_sched.h"
+#include "Exception.hpp"
+#include "MSR.hpp"
 #include "MSRIOGroup.hpp"
 #include "MSRIO.hpp"
 
@@ -40,6 +44,7 @@ namespace geopm
     const MSR *msr_knl(size_t &num_msr);
     const MSR *msr_hsx(size_t &num_msr);
     const MSR *msr_snb(size_t &num_msr);
+    static const MSR *init_msr_arr(int cpu_id, size_t &arr_size);
 
     MSRIOGroup::MSRIOGroup()
         : m_num_cpu(geopm_sched_num_cpu())
@@ -48,7 +53,7 @@ namespace geopm
         init_msr();
     }
 
-    virtual MSRIOGroup::~MSRIOGroup()
+    MSRIOGroup::~MSRIOGroup()
     {
 
     }
@@ -83,19 +88,9 @@ namespace geopm
 
     }
 
-    void MSRIOGroup::sample(std::vector<double> &signal)
-    {
-
-    }
-
     double MSRIOGroup::sample(int batch_idx)
     {
         return NAN;
-    }
-
-    void MSRIOGroup::adjust(const std::vector<double> &setting)
-    {
-
     }
 
     void MSRIOGroup::adjust(int batch_idx, double setting)
@@ -185,9 +180,9 @@ namespace geopm
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         // Insert the signal name with an empty vector into the map
-        auto ins_ret = m_name_cpu_signal_map.insert(std::pair<std::string, std::vector<ISignal *> >(signal_name, {}));
+        auto ins_ret = m_name_cpu_signal_map.insert(std::pair<std::string, std::vector<MSRSignal *> >(signal_name, {}));
         // Get reference to the per-cpu signal vector
-        std::vector <ISignal *> &cpu_signal = (*(ins_ret.first)).second;
+        std::vector <MSRSignal *> &cpu_signal = (*(ins_ret.first)).second;
         // Check to see if the signal name has already been registered
         if (!ins_ret.second) {
             /* delete previous signals */
@@ -245,9 +240,9 @@ namespace geopm
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         // Insert the control name with an empty vector into the map
-        auto ins_ret = m_name_cpu_control_map.insert(std::pair<std::string, std::vector<IControl *> >(control_name, {}));
+        auto ins_ret = m_name_cpu_control_map.insert(std::pair<std::string, std::vector<MSRControl *> >(control_name, {}));
         // Get reference to the per-cpu control vector
-        std::vector <IControl *> &cpu_control = (*(ins_ret.first)).second;
+        std::vector <MSRControl *> &cpu_control = (*(ins_ret.first)).second;
         // Check to see if the control name has already been registered
         if (!ins_ret.second) {
             /* delete previous controls */
@@ -283,21 +278,21 @@ namespace geopm
         }
     }
 
-    static const MSR *MSRIOGroup::init_msr_arr(size_t &arr_size)
+    const MSR *init_msr_arr(int cpu_id, size_t &arr_size)
     {
         const MSR *msr_arr = NULL;
-        num_msr = 0;
+        arr_size = 0;
         switch (cpu_id) {
             case MSRIOGroup::M_CPUID_KNL:
-                msr_arr = msr_knl(num_msr);
+                msr_arr = msr_knl(arr_size);
                 break;
             case MSRIOGroup::M_CPUID_HSX:
             case MSRIOGroup::M_CPUID_BDX:
-                msr_arr = msr_hsx(num_msr);
+                msr_arr = msr_hsx(arr_size);
                 break;
             case MSRIOGroup::M_CPUID_SNB:
             case MSRIOGroup::M_CPUID_IVT:
-                msr_arr = msr_snb(num_msr);
+                msr_arr = msr_snb(arr_size);
                 break;
             default:
                 throw Exception("MSRIOGroup: Unsupported CPUID",
@@ -306,5 +301,3 @@ namespace geopm
         return msr_arr;
     }
 }
-
-#endif
