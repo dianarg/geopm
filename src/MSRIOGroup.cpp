@@ -34,6 +34,7 @@
 #include <cmath>
 #include <sstream>
 #include <algorithm>
+#include <utility>
 
 #include "geopm_sched.h"
 #include "Exception.hpp"
@@ -50,13 +51,19 @@ namespace geopm
     static const MSR *init_msr_arr(int cpu_id, size_t &arr_size);
 
     MSRIOGroup::MSRIOGroup()
+        : MSRIOGroup(std::unique_ptr<IMSRIO>(new MSRIO), cpuid())
+    {
+
+    }
+
+    MSRIOGroup::MSRIOGroup(std::unique_ptr<IMSRIO> msrio, int cpuid)
         : m_num_cpu(geopm_sched_num_cpu())
         , m_is_active(false)
         , m_is_read(false)
-        , m_msrio(new MSRIO())
+        , m_msrio(std::move(msrio))
     {
         size_t num_msr = 0;
-        const MSR *msr_arr = init_msr_arr(cpuid(), num_msr);
+        const MSR *msr_arr = init_msr_arr(cpuid, num_msr);
         for (const MSR *msr_ptr = msr_arr;
              msr_ptr != msr_arr + num_msr;
              ++msr_ptr) {

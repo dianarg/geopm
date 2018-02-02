@@ -34,7 +34,6 @@
 #include "gmock/gmock.h"
 
 #include "MSR.hpp"
-#include "MockMSRIO.hpp"
 #include "PlatformTopo.hpp"
 #include "PlatformIO.hpp"
 #include "Exception.hpp"

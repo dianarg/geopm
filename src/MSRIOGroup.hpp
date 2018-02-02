@@ -59,6 +59,7 @@ namespace geopm
             };
 
             MSRIOGroup();
+            MSRIOGroup(std::unique_ptr<IMSRIO> msrio);
             virtual ~MSRIOGroup();
             bool is_valid_signal(const std::string &signal_name) override;
             bool is_valid_control(const std::string &control_name) override;
@@ -81,7 +82,7 @@ namespace geopm
                                int domain_idx,
                                double setting) override;
         protected:
-            virtual int cpuid(void) const;
+            int cpuid(void) const;
             void activate(void);
             /// @brief Register a single MSR field as a signal. This
             ///        is called by init_msr().
