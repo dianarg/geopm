@@ -115,7 +115,7 @@ namespace geopm
         int cpu_idx = domain_idx;
 
         result = m_active_signal.size();
-        if (ncsm_it->second.size() == 1) {
+        if (ncsm_it->second.size() == 1) { //drg huh? is this needed?
             m_active_signal.push_back(ncsm_it->second[0]);
         }
         else {

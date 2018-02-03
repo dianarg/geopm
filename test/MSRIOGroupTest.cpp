@@ -42,23 +42,27 @@
 #include <string>
 #include <map>
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
 #include "geopm_sched.h"
-#include "PlatformIO.hpp"
-#include "PlatformIOInternal.hpp"
+//#include "PlatformIO.hpp"
+//#include "PlatformIOInternal.hpp"
 #include "PlatformTopo.hpp"
 #include "MSRIO.hpp"
 #include "Exception.hpp"
+#include "MSRIOGroup.hpp"
 
+using geopm::MSRIOGroup;
 
 class MSRIOGroupTest : public :: testing :: Test
 {
     protected:
-        SetUp();
+        void SetUp();
         std::vector<std::string> m_test_dev_path;
+        std::unique_ptr<geopm::MSRIOGroup> m_msrio_group;
 };
 
-class MockMSRIO : public MSRIO
+class MockMSRIO : public geopm::MSRIO
 {
     public:
         MockMSRIO();
@@ -67,8 +71,8 @@ class MockMSRIO : public MSRIO
     protected:
         void msr_path(int cpu_idx,
                       bool is_fallback,
-                      std::string &path);
-        void msr_batch_path(std::string &path);
+                      std::string &path) override;
+        void msr_batch_path(std::string &path) override;
 
         const size_t M_MAX_OFFSET;
         const int m_num_cpu;
@@ -95,13 +99,13 @@ MockMSRIO::MockMSRIO()
 
         int err = ftruncate(fd, M_MAX_OFFSET);
         if (err) {
-            throw Exception("MockMSRIO: ftruncate() failed",
-                            errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            throw geopm::Exception("MockMSRIO: ftruncate() failed",
+                                   errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
         uint64_t *contents = (uint64_t *)mmap(NULL, M_MAX_OFFSET, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if (contents == NULL) {
-            throw Exception("MockMSRIO: mmap() failed",
-                            errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            throw geopm::Exception("MockMSRIO: mmap() failed",
+                                   errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
         close(fd);
         size_t num_field = M_MAX_OFFSET / sizeof(uint64_t);
@@ -144,10 +148,26 @@ void MSRIOGroupTest::SetUp()
 {
      std::unique_ptr<MockMSRIO> msrio(new MockMSRIO);
      m_test_dev_path = msrio->test_dev_paths();
-     m_msrio_group = MSRIOGroup(std::move(msrio));
+     m_msrio_group = std::unique_ptr<MSRIOGroup>(new MSRIOGroup(std::move(msrio), 0x657)); // KNL cpuid
 }
 
+template <typename Func> //, typename ...Args>
+void ExpectGeopmErrorMessage(int err, std::string message, Func func) //, Args ...args)
+{
+    try {
+        func();
+        //func(std::forward<Args>(args)...);
+        FAIL() << "Expected to fail, but succeeded.";
+    }
+    catch (const geopm::Exception &ex) {
+        EXPECT_EQ(err, ex.err_value());
+        EXPECT_THAT(ex.what(), ::testing::MatchesRegex(".*" + message + ".*"));
+    }
 
+}
+
+// TODO: add whitelist function
+/*
 TEST_F(MSRIOGroupTest, whitelist)
 {
     std::ifstream file("test/legacy_whitelist.out");
@@ -203,13 +223,62 @@ TEST_F(MSRIOGroupTest, whitelist)
             << std::setw(16) << leg_mask << " to 0x" << mask << " bitwise AND yields 0x" << (mask & leg_mask);
     }
 }
+*/
 
-TEST_F(MSRIOGroupTest, freq_ctl)
+
+TEST_F(MSRIOGroupTest, freq_signal)
 {
+    ExpectGeopmErrorMessage(GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type", [this] {
+            m_msrio_group->push_signal("PERF_STATUS:FREQ", 99, 0);
+        });
+    ExpectGeopmErrorMessage(GEOPM_ERROR_INVALID, "signal name.*not found", [this] {
+            m_msrio_group->push_signal("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+        });
+
+
+    int fd = open(m_test_dev_path[0].c_str(), O_RDWR);
+    ASSERT_NE(-1, fd);
+    uint64_t value = 0xB00;
+    size_t num_write = pwrite(fd, &value, sizeof(value), 0x198);
+    ASSERT_EQ(num_write, sizeof(value));
+
+    int idx = m_msrio_group->push_signal("PERF_STATUS:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+    ASSERT_EQ(0, idx);
+
+    ExpectGeopmErrorMessage(GEOPM_ERROR_RUNTIME, "sample.* called before signal was read", [this] {
+            m_msrio_group->sample(0);
+        });
+
+
+    m_msrio_group->read_batch();
+    double freq = m_msrio_group->sample(idx);
+    EXPECT_EQ(1.1e9, freq);
+    freq = m_msrio_group->sample(idx);
+
+    // sample again without read should get same value
+    freq = m_msrio_group->sample(idx);
+    EXPECT_EQ(1.1e9, freq);
+
+    value = 0xC00;
+    num_write = pwrite(fd, &value, sizeof(value), 0x198);
+    m_msrio_group->read_batch();
+    freq = m_msrio_group->sample(idx);
+    EXPECT_EQ(1.2e9, freq);
+
+    ExpectGeopmErrorMessage(GEOPM_ERROR_INVALID, "cannot push a signal after read_batch", [this] {
+            m_msrio_group->push_signal("PERF_STATUS:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+        });
+}
+
+TEST_F(MSRIOGroupTest, freq_control)
+{
+
     int fd = open(m_test_dev_path[0].c_str(), O_RDWR);
     ASSERT_NE(-1, fd);
     uint64_t value;
     size_t num_read;
+
+    //// DRG: what is this for?
     num_read = pread(fd, &value, sizeof(value), 0x0);
     EXPECT_EQ(8ULL, num_read);
     EXPECT_EQ(0x0ULL, value);
@@ -219,6 +288,14 @@ TEST_F(MSRIOGroupTest, freq_ctl)
     num_read = pread(fd, &value, sizeof(value), 0x1A0);
     EXPECT_EQ(8ULL, num_read);
     EXPECT_EQ(0x01A001A001A001A0ULL, value);
+    ////
+
+
+    ExpectGeopmErrorMessage(GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type", [this] {
+            m_msrio_group->push_control("PERF_CTL:FREQ", 99, 0); });
+    ExpectGeopmErrorMessage(GEOPM_ERROR_INVALID, "control name.*not found", [this] {
+            m_msrio_group->push_control("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+        });
 
     int idx = m_msrio_group->push_control("PERF_CTL:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
     ASSERT_EQ(0, idx);
@@ -242,19 +319,9 @@ TEST_F(MSRIOGroupTest, freq_ctl)
     EXPECT_EQ(8ULL, num_read);
     EXPECT_EQ(0x3200ULL, (value & 0xFF00));
     close(fd);
-}
 
-TEST_F(MSRIOGroupTest, time_signal)
-{
-    int idx = m_msrio_group->push_signal("TIME", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
-    ASSERT_EQ(0, idx);
-    std::vector<double> sample(1);
-    m_msrio_group->read_batch();
-    double time_0 = m_msrio_group->sample(idx);
-    sleep(1);
-    m_msrio_group->read_batch();
-    double time_1 = m_msrio_group->sample(idx);
-    EXPECT_NEAR(1, time_1 - time_0, 0.1);
-    EXPECT_LE(0, time_0);
-    EXPECT_LE(0, time_1);
+    ExpectGeopmErrorMessage(GEOPM_ERROR_INVALID, "cannot push a control after .*adjust", [this] {
+            m_msrio_group->push_control("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+        });
+
 }

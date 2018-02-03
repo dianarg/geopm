@@ -59,7 +59,7 @@ namespace geopm
             };
 
             MSRIOGroup();
-            MSRIOGroup(std::unique_ptr<IMSRIO> msrio);
+            MSRIOGroup(std::unique_ptr<IMSRIO> msrio, int cpuid);
             virtual ~MSRIOGroup();
             bool is_valid_signal(const std::string &signal_name) override;
             bool is_valid_control(const std::string &control_name) override;
