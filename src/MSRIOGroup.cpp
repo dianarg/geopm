@@ -35,6 +35,8 @@
 #include <sstream>
 #include <algorithm>
 #include <utility>
+#include <iomanip>
+#include <sstream>
 
 #include "geopm_sched.h"
 #include "Exception.hpp"
@@ -61,6 +63,7 @@ namespace geopm
         , m_is_active(false)
         , m_is_read(false)
         , m_msrio(std::move(msrio))
+        , m_cpuid(cpuid)
     {
         size_t num_msr = 0;
         const MSR *msr_arr = init_msr_arr(cpuid, num_msr);
@@ -299,6 +302,43 @@ namespace geopm
         for (int msr_idx = 0; msr_idx != num_msr; ++msr_idx) {
             m_msrio->write_msr(cpu_idx, offset_vec[msr_idx], field_vec[msr_idx], mask_vec[msr_idx]);
         }
+    }
+
+    std::string MSRIOGroup::msr_whitelist(void) const
+    {
+        return msr_whitelist(m_cpuid);
+    }
+
+    std::string MSRIOGroup::msr_whitelist(int cpuid) const
+    {
+        size_t num_msr = 0;
+        const MSR *msr_arr = init_msr_arr(cpuid, num_msr);
+        std::ostringstream whitelist;
+        whitelist << "# MSR        Write Mask           # Comment" << std::endl;
+        whitelist << std::setfill('0') << std::hex;
+        for (size_t idx = 0; idx < num_msr; idx++) {
+            std::string msr_name = msr_arr[idx].name();
+            uint64_t msr_offset = msr_arr[idx].offset();
+            size_t num_signals = msr_arr[idx].num_signal();
+            size_t num_controls = msr_arr[idx].num_control();
+            uint64_t write_mask = 0;
+
+            if (!num_signals && !num_controls) {
+                std::ostringstream err_str;
+                err_str << "MSRIOGroup::msr_whitelist(): invalid msr";
+                throw Exception(err_str.str(), GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+
+            if (num_controls) {
+                for (size_t cidx = 0; cidx < num_controls; cidx++) {
+                    uint64_t idx_field = 0, idx_mask = 0;
+                    msr_arr[idx].control(cidx, 1, idx_field, idx_mask);
+                    write_mask |= idx_mask;
+                }
+            }
+            whitelist << "0x" << std::setw(8) << msr_offset << "   0x" << std::setw(16) << write_mask << "   # \"" << msr_name << "\"" << std::endl;
+        }
+        return whitelist.str();
     }
 
     int MSRIOGroup::cpuid(void) const

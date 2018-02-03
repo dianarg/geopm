@@ -81,6 +81,18 @@ namespace geopm
                                int domain_type,
                                int domain_idx,
                                double setting) override;
+            /// @brief Fill string with the msr-safe whitelist file contents
+            ///        reflecting all known MSRs for the current platform.
+            /// @return String formatted to be written to
+            ///        an msr-safe whitelist file.
+            std::string msr_whitelist(void) const;
+            /// @brief Fill string with the msr-safe whitelist file
+            ///        contents reflecting all known MSRs for the
+            ///        specified platform.
+            /// @param cpuid [in] The CPUID of the platform.
+            /// @return String formatted to be written to an msr-safe
+            ///         whitelist file.
+            std::string msr_whitelist(int cpuid) const;
         protected:
             int cpuid(void) const;
             void activate(void);
@@ -127,6 +139,7 @@ namespace geopm
             bool m_is_active;
             bool m_is_read;
             std::unique_ptr<IMSRIO> m_msrio;
+            int m_cpuid;
             std::vector<bool> m_is_adjusted;
             std::map<std::string, const IMSR *> m_name_msr_map;
             std::map<std::string, std::vector<MSRSignal *> > m_name_cpu_signal_map;

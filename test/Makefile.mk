@@ -224,6 +224,7 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/TimeIOGroupTest.read_signal \
               test/gtest_links/MSRIOGroupTest.freq_signal \
               test/gtest_links/MSRIOGroupTest.freq_control \
+              test/gtest_links/MSRIOGroupTest.whitelist \
               # end
 
 if ENABLE_MPI
