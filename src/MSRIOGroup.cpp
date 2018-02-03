@@ -82,6 +82,16 @@ namespace geopm
 
     MSRIOGroup::~MSRIOGroup()
     {
+        for (auto &ncsm : m_name_cpu_signal_map) {
+            for (auto &sig_ptr : ncsm.second) {
+                delete sig_ptr;
+            }
+        }
+        for (auto &nccm : m_name_cpu_control_map) {
+            for (auto &ctl_ptr : nccm.second) {
+                delete ctl_ptr;
+            }
+        }
 
     }
 
@@ -103,7 +113,7 @@ namespace geopm
                             GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
         if (m_is_active) {
-            throw Exception("PlatformIO::push_signal(): cannot push a signal after read_batch() or adjust() has been called.",
+            throw Exception("MSRIOGroup::push_signal(): cannot push a signal after read_batch() or adjust() has been called.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         auto ncsm_it = m_name_cpu_signal_map.find(signal_name);
@@ -118,26 +128,22 @@ namespace geopm
         int cpu_idx = domain_idx;
 
         result = m_active_signal.size();
-        if (ncsm_it->second.size() == 1) { //drg huh? is this needed?
-            m_active_signal.push_back(ncsm_it->second[0]);
+        m_active_signal.push_back(ncsm_it->second[cpu_idx]);
+
+        MSRSignal *msr_sig = m_active_signal.back();
+#ifdef GEOPM_DEBUG
+        if (!msr_sig) {
+            throw Exception("MSRIOGroup::push_signal(): NULL MSRSignal pointer was saved in active signals",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
-        else {
-            m_active_signal.push_back(ncsm_it->second[cpu_idx]);
-        }
-        IMSRSignal *msr_sig = m_active_signal.back();
-        if (msr_sig) {
-            std::vector<uint64_t> offset;
-            msr_sig->offset(offset);
-            m_read_signal_off.push_back(m_read_cpu_idx.size());
-            m_read_signal_len.push_back(msr_sig->num_msr());
-            for (int i = 0; i < msr_sig->num_msr(); ++i) {
-                m_read_cpu_idx.push_back(cpu_idx);
-                m_read_offset.push_back(offset[i]);
-            }
-        }
-        else {
-            m_read_signal_off.push_back(0);
-            m_read_signal_len.push_back(0);
+#endif
+        std::vector<uint64_t> offset;
+        msr_sig->offset(offset);
+        m_read_signal_off.push_back(m_read_cpu_idx.size());
+        m_read_signal_len.push_back(msr_sig->num_msr());
+        for (int i = 0; i < msr_sig->num_msr(); ++i) {
+            m_read_cpu_idx.push_back(cpu_idx);
+            m_read_offset.push_back(offset[i]);
         }
         return result;
     }
@@ -166,23 +172,23 @@ namespace geopm
         result = m_active_control.size();
         m_is_adjusted.push_back(false);
         m_active_control.push_back(nccm_it->second[cpu_idx]);
-        IMSRControl *msr_ctl = m_active_control.back();
-        if (msr_ctl) {
-            std::vector<uint64_t> offset;
-            std::vector<uint64_t> mask;
-            msr_ctl->offset(offset);
-            msr_ctl->mask(mask);
-            m_write_control_off.push_back(m_write_cpu_idx.size());
-            m_write_control_len.push_back(msr_ctl->num_msr());
-            for (int i = 0; i < msr_ctl->num_msr(); ++i) {
-                m_write_cpu_idx.push_back(cpu_idx);
-                m_write_offset.push_back(offset[i]);
-                m_write_mask.push_back(mask[i]);
-            }
+        MSRControl *msr_ctl = m_active_control.back();
+#ifdef GEOPM_DEBUG
+        if (!msr_ctl) {
+            throw Exception("MSRIOGroup::push_control(): NULL MSRControl pointer was saved in active controls",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
-        else {
-            m_write_control_off.push_back(0);
-            m_write_control_len.push_back(0);
+#endif
+        std::vector<uint64_t> offset;
+        std::vector<uint64_t> mask;
+        msr_ctl->offset(offset);
+        msr_ctl->mask(mask);
+        m_write_control_off.push_back(m_write_cpu_idx.size());
+        m_write_control_len.push_back(msr_ctl->num_msr());
+        for (int i = 0; i < msr_ctl->num_msr(); ++i) {
+            m_write_cpu_idx.push_back(cpu_idx);
+            m_write_offset.push_back(offset[i]);
+            m_write_mask.push_back(mask[i]);
         }
         return result;
     }
@@ -264,7 +270,7 @@ namespace geopm
         }
         signal.map_field(field_ptr);
         for (int msr_idx = 0; msr_idx != num_msr; ++msr_idx) {
-            m_msrio->read_msr(cpu_idx, offset_vec[msr_idx]);
+            field_vec[msr_idx] = m_msrio->read_msr(cpu_idx, offset_vec[msr_idx]);
         }
         return signal.sample();
     }

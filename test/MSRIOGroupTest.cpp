@@ -49,6 +49,7 @@
 #include "MSRIO.hpp"
 #include "Exception.hpp"
 #include "MSRIOGroup.hpp"
+#include "geopm_test.hpp"
 
 using geopm::MSRIOGroup;
 
@@ -144,26 +145,29 @@ void MockMSRIO::msr_batch_path(std::string &path)
 
 void MSRIOGroupTest::SetUp()
 {
-     std::unique_ptr<MockMSRIO> msrio(new MockMSRIO);
-     m_test_dev_path = msrio->test_dev_paths();
-     m_msrio_group = std::unique_ptr<MSRIOGroup>(new MSRIOGroup(std::move(msrio), 0x657)); // KNL cpuid
+    std::unique_ptr<MockMSRIO> msrio(new MockMSRIO);
+    m_test_dev_path = msrio->test_dev_paths();
+    m_msrio_group = std::unique_ptr<MSRIOGroup>(new MSRIOGroup(std::move(msrio), 0x657)); // KNL cpuid
+
+    int fd = open(m_test_dev_path[0].c_str(), O_RDWR);
+    ASSERT_NE(-1, fd);
+    uint64_t value;
+    size_t num_read = pread(fd, &value, sizeof(value), 0x0);
+    EXPECT_EQ(8ULL, num_read);
+    EXPECT_EQ(0x0ULL, value);
+    num_read = pread(fd, &value, sizeof(value), 0x198);
+    EXPECT_EQ(8ULL, num_read);
+    EXPECT_EQ(0x0198019801980198ULL, value);
+    num_read = pread(fd, &value, sizeof(value), 0x1A0);
+    EXPECT_EQ(8ULL, num_read);
+    EXPECT_EQ(0x01A001A001A001A0ULL, value);
+    num_read = pread(fd, &value, sizeof(value), 0x610);
+    EXPECT_EQ(8ULL, num_read);
+    EXPECT_EQ(0x0610061006100610ULL, value);
+    close(fd);
 }
 
-#define EXPECT_THROW_MESSAGE(statement, expected_err, expected_message) \
-    try {                                                               \
-        statement;                                                      \
-        ADD_FAILURE() << "Expected to throw, but succeeded.";           \
-    }                                                                   \
-    catch (const geopm::Exception &ex) {                                \
-        EXPECT_EQ(expected_err, ex.err_value());                        \
-        EXPECT_THAT(ex.what(), ::testing::MatchesRegex(std::string(".*") + expected_message + ".*")); \
-    }                                                                   \
-    catch (const std::exception &ex) {                                  \
-        ADD_FAILURE() << "Threw a different exception: " << ex.what();  \
-    }
-
-
-TEST_F(MSRIOGroupTest, freq_signal)
+TEST_F(MSRIOGroupTest, signal)
 {
     EXPECT_THROW_MESSAGE(m_msrio_group->push_signal("PERF_STATUS:FREQ", 99, 0),
                          GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type");
@@ -176,104 +180,132 @@ TEST_F(MSRIOGroupTest, freq_signal)
     EXPECT_THROW_MESSAGE(m_msrio_group->read_signal("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0),
                          GEOPM_ERROR_INVALID, "signal name.*not found");
 
+    int freq_idx = m_msrio_group->push_signal("PERF_STATUS:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+    ASSERT_EQ(0, freq_idx);
+    int inst_idx = m_msrio_group->push_signal("PERF_FIXED_CTR0:INST_RETIRED_ANY",
+                                              geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+    ASSERT_EQ(1, inst_idx);
+
+    EXPECT_THROW_MESSAGE(m_msrio_group->sample(0),
+                         GEOPM_ERROR_RUNTIME, "sample.* called before signal was read");
+
+    // write some values to be read
     int fd = open(m_test_dev_path[0].c_str(), O_RDWR);
     ASSERT_NE(-1, fd);
     uint64_t value = 0xB00;
     size_t num_write = pwrite(fd, &value, sizeof(value), 0x198);
     ASSERT_EQ(num_write, sizeof(value));
-
-    int idx = m_msrio_group->push_signal("PERF_STATUS:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
-    ASSERT_EQ(0, idx);
-
-    EXPECT_THROW_MESSAGE(m_msrio_group->sample(0),
-                         GEOPM_ERROR_RUNTIME, "sample.* called before signal was read");
+    value = 5678;
+    num_write = pwrite(fd, &value, sizeof(value), 0x309);
+    ASSERT_EQ(num_write, sizeof(value));
 
     m_msrio_group->read_batch();
-    double freq = m_msrio_group->sample(idx);
+    double freq = m_msrio_group->sample(freq_idx);
+    double inst = m_msrio_group->sample(inst_idx);
     EXPECT_EQ(1.1e9, freq);
-    freq = m_msrio_group->sample(idx);
+    EXPECT_EQ(5678, inst);
 
     // sample again without read should get same value
-    freq = m_msrio_group->sample(idx);
+    freq = m_msrio_group->sample(freq_idx);
+    inst = m_msrio_group->sample(inst_idx);
     EXPECT_EQ(1.1e9, freq);
+    EXPECT_EQ(5678, inst);
 
+    // read_batch sees updated values
     value = 0xC00;
-    num_write = pwrite(fd, &value, sizeof(value), 0x198);
+    pwrite(fd, &value, sizeof(value), 0x198);
+    value = 65432;
+    pwrite(fd, &value, sizeof(value), 0x309);
     m_msrio_group->read_batch();
-    freq = m_msrio_group->sample(idx);
+    freq = m_msrio_group->sample(freq_idx);
+    inst = m_msrio_group->sample(inst_idx);
     EXPECT_EQ(1.2e9, freq);
+    EXPECT_EQ(65432, inst);
 
     // read and sample immediately
     value = 0xD00;
-    num_write = pwrite(fd, &value, sizeof(value), 0x198);
+    pwrite(fd, &value, sizeof(value), 0x198);
     freq = m_msrio_group->read_signal("PERF_STATUS:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
     EXPECT_EQ(1.3e9, freq);
+    value = 7777;
+    pwrite(fd, &value, sizeof(value), 0x309);
+    inst = m_msrio_group->read_signal("PERF_FIXED_CTR0:INST_RETIRED_ANY", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+    EXPECT_EQ(7777, inst);
 
     EXPECT_THROW_MESSAGE(m_msrio_group->push_signal("PERF_STATUS:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0),
                          GEOPM_ERROR_INVALID, "cannot push a signal after read_batch");
 }
 
-TEST_F(MSRIOGroupTest, freq_control)
+TEST_F(MSRIOGroupTest, control)
 {
     int fd = open(m_test_dev_path[0].c_str(), O_RDWR);
     ASSERT_NE(-1, fd);
     uint64_t value;
     size_t num_read;
 
-    num_read = pread(fd, &value, sizeof(value), 0x0);
-    EXPECT_EQ(8ULL, num_read);
-    EXPECT_EQ(0x0ULL, value);
-    num_read = pread(fd, &value, sizeof(value), 0x198);
-    EXPECT_EQ(8ULL, num_read);
-    EXPECT_EQ(0x0198019801980198ULL, value);
-    num_read = pread(fd, &value, sizeof(value), 0x1A0);
-    EXPECT_EQ(8ULL, num_read);
-    EXPECT_EQ(0x01A001A001A001A0ULL, value);
 
     EXPECT_THROW_MESSAGE(m_msrio_group->push_control("PERF_CTL:FREQ", 99, 0),
                          GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type");
     EXPECT_THROW_MESSAGE(m_msrio_group->push_control("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0),
                          GEOPM_ERROR_INVALID, "control name.*not found");
-    EXPECT_THROW_MESSAGE(m_msrio_group->adjust(-1), GEOPM_ERROR_INVALID, "control_idx out of range");
-    EXPECT_THROW_MESSAGE(m_msrio_group->adjust(22), GEOPM_ERROR_INVALID, "control_idx out of range");
+    EXPECT_THROW_MESSAGE(m_msrio_group->adjust(-1, 0), GEOPM_ERROR_INVALID, "control_idx out of range");
+    EXPECT_THROW_MESSAGE(m_msrio_group->adjust(22, 0), GEOPM_ERROR_INVALID, "control_idx out of range");
     EXPECT_THROW_MESSAGE(m_msrio_group->write_control("PERF_CTL:FREQ", 99, 0, 1e9),
                          GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type");
     EXPECT_THROW_MESSAGE(m_msrio_group->write_control("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0, 1e9),
                          GEOPM_ERROR_INVALID, "control name.*not found");
 
+    int freq_idx = m_msrio_group->push_control("PERF_CTL:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+    ASSERT_EQ(0, freq_idx);
+    int power_idx = m_msrio_group->push_control("PKG_POWER_LIMIT:SOFT_POWER_LIMIT", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
+    ASSERT_EQ(1, power_idx);
 
-    int idx = m_msrio_group->push_control("PERF_CTL:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
-    ASSERT_EQ(0, idx);
+    EXPECT_THROW_MESSAGE(m_msrio_group->write_batch(), GEOPM_ERROR_INVALID,
+                         "called before all controls were adjusted");
 
-    EXPECT_THROW(m_msrio_group->write_batch(), GEOPM_ERROR_INVALID,
-                 "called before all controls were adjusted".);
-
-    // Set frequency to 1 GHz
-    m_msrio_group->adjust(0, 1e9);
+    // Set frequency to 1 GHz, power to 100W
+    m_msrio_group->adjust(freq_idx, 1e9);
+    m_msrio_group->adjust(power_idx, 160);
     m_msrio_group->write_batch();
     num_read = pread(fd, &value, sizeof(value), 0x199);
     EXPECT_EQ(8ULL, num_read);
     EXPECT_EQ(0xA00ULL, (value & 0xFF00));
-    // Set frequency to 5 GHz
-    m_msrio_group->adjust(0, 5e9);
+    num_read = pread(fd, &value, sizeof(value), 0x610);
+    EXPECT_EQ(8ULL, num_read);
+    EXPECT_EQ(0x500ULL, (value & 0x3FFF));
+
+    // Set frequency to 5 GHz, power to 200W
+    m_msrio_group->adjust(freq_idx, 5e9);
+    m_msrio_group->adjust(power_idx, 200);
     // Calling adjust without calling write_batch() should not
     // change the platform.
     num_read = pread(fd, &value, sizeof(value), 0x199);
     EXPECT_EQ(8ULL, num_read);
     EXPECT_EQ(0xA00ULL, (value & 0xFF00));
+    num_read = pread(fd, &value, sizeof(value), 0x610);
+    EXPECT_EQ(8ULL, num_read);
+    EXPECT_EQ(0x500ULL, (value & 0x7FFF));
+
     m_msrio_group->write_batch();
     // Now that write_batch() been called the value on the platform
     // should be updated.
     num_read = pread(fd, &value, sizeof(value), 0x199);
     EXPECT_EQ(8ULL, num_read);
     EXPECT_EQ(0x3200ULL, (value & 0xFF00));
+    num_read = pread(fd, &value, sizeof(value), 0x610);
+    EXPECT_EQ(8ULL, num_read);
+    EXPECT_EQ(0x640ULL, (value & 0x7FFF));
 
     // Set frequency to 3 GHz immediately
-    m_msrio_group->write_control("PERF_CTL:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0,3e9);
-    m_msrio_group->write_batch();
+    m_msrio_group->write_control("PERF_CTL:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0, 3e9);
     num_read = pread(fd, &value, sizeof(value), 0x199);
     EXPECT_EQ(8ULL, num_read);
     EXPECT_EQ(0x1E00ULL, (value & 0xFF00));
+
+    m_msrio_group->write_control("PKG_POWER_LIMIT:SOFT_POWER_LIMIT", geopm::IPlatformTopo::M_DOMAIN_CPU, 0, 300);
+    num_read = pread(fd, &value, sizeof(value), 0x610);
+    EXPECT_EQ(8ULL, num_read);
+    EXPECT_EQ(0x960ULL, (value & 0x7FFF));
 
     close(fd);
 
@@ -286,7 +318,7 @@ TEST_F(MSRIOGroupTest, whitelist)
     std::ifstream file("test/legacy_whitelist.out");
     std::string line;
     uint64_t offset;
-    uint64_t  mask;
+    uint64_t mask;
     std::string comment;
     std::map<uint64_t, uint64_t> legacy_map;
     std::map<uint64_t, uint64_t> curr_map;
