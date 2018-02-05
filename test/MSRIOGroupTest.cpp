@@ -169,6 +169,7 @@ void MSRIOGroupTest::SetUp()
 
 TEST_F(MSRIOGroupTest, signal)
 {
+    // error cases
     EXPECT_THROW_MESSAGE(m_msrio_group->push_signal("PERF_STATUS:FREQ", 99, 0),
                          GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type");
     EXPECT_THROW_MESSAGE(m_msrio_group->push_signal("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0),
@@ -179,7 +180,13 @@ TEST_F(MSRIOGroupTest, signal)
                          GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type");
     EXPECT_THROW_MESSAGE(m_msrio_group->read_signal("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0),
                          GEOPM_ERROR_INVALID, "signal name.*not found");
+    EXPECT_TRUE(m_msrio_group->is_valid_signal("PERF_STATUS:FREQ"));
+    EXPECT_FALSE(m_msrio_group->is_valid_signal("INVALID"));
 
+    // check domains
+    EXPECT_EQ(1234, m_msrio_group->signal_domain_type("PERF_STATUS:FREQ");
+
+    // push valid signals
     int freq_idx = m_msrio_group->push_signal("PERF_STATUS:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
     ASSERT_EQ(0, freq_idx);
     int inst_idx = m_msrio_group->push_signal("PERF_FIXED_CTR0:INST_RETIRED_ANY",
@@ -238,12 +245,7 @@ TEST_F(MSRIOGroupTest, signal)
 
 TEST_F(MSRIOGroupTest, control)
 {
-    int fd = open(m_test_dev_path[0].c_str(), O_RDWR);
-    ASSERT_NE(-1, fd);
-    uint64_t value;
-    size_t num_read;
-
-
+    // error cases
     EXPECT_THROW_MESSAGE(m_msrio_group->push_control("PERF_CTL:FREQ", 99, 0),
                          GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type");
     EXPECT_THROW_MESSAGE(m_msrio_group->push_control("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0),
@@ -254,7 +256,10 @@ TEST_F(MSRIOGroupTest, control)
                          GEOPM_ERROR_NOT_IMPLEMENTED, "non-CPU domain_type");
     EXPECT_THROW_MESSAGE(m_msrio_group->write_control("INVALID", geopm::IPlatformTopo::M_DOMAIN_CPU, 0, 1e9),
                          GEOPM_ERROR_INVALID, "control name.*not found");
+    EXPECT_TRUE(m_msrio_group->is_valid_control("PERF_CTL:FREQ"));
+    EXPECT_FALSE(m_msrio_group->is_valid_control("INVALID"));
 
+    // push valid controls
     int freq_idx = m_msrio_group->push_control("PERF_CTL:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
     ASSERT_EQ(0, freq_idx);
     int power_idx = m_msrio_group->push_control("PKG_POWER_LIMIT:SOFT_POWER_LIMIT", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
@@ -263,6 +268,10 @@ TEST_F(MSRIOGroupTest, control)
     EXPECT_THROW_MESSAGE(m_msrio_group->write_batch(), GEOPM_ERROR_INVALID,
                          "called before all controls were adjusted");
 
+    int fd = open(m_test_dev_path[0].c_str(), O_RDWR);
+    ASSERT_NE(-1, fd);
+    uint64_t value;
+    size_t num_read;
     // Set frequency to 1 GHz, power to 100W
     m_msrio_group->adjust(freq_idx, 1e9);
     m_msrio_group->adjust(power_idx, 160);
@@ -372,4 +381,16 @@ TEST_F(MSRIOGroupTest, whitelist)
                                          << mask << " bitwise AND yields 0x"
                                          << (mask & leg_mask);
     }
+}
+
+TEST_F(MSRIOGroupTest, cpuid)
+{
+    std::string command = "printf '%.2x%x\n' $(lscpu | grep 'CPU family:' | awk -F: '{print $2}') $(lscpu | grep 'Model:' | awk -F: '{print $2}')";
+    int expected_cpuid = 0;
+    FILE *fid;
+    geopm_sched_popen(command.c_str(), &fid);
+    fscanf(fid, "%x", &expected_cpuid);
+    fclose(fid);
+    int cpuid = m_msrio_group->cpuid();
+    EXPECT_EQ(expected_cpuid, cpuid);
 }
