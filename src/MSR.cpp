@@ -107,7 +107,7 @@ namespace geopm
                 break;
             case IMSR::M_FUNCTION_LOG_HALF:
                 // F = S * 2.0 ^ -X
-                result = m_scalar * (1ULL << sub_field);
+                result = m_scalar / (1ULL << sub_field);
                 break;
             case IMSR::M_FUNCTION_7_BIT_FLOAT:
                 // F = S * 2 ^ Y * (1.0 + Z / 4.0)
