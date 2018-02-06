@@ -216,9 +216,11 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/TreeCommunicatorTest.send_sample_up \
               test/gtest_links/TimeIOGroupTest.is_valid \
               test/gtest_links/TimeIOGroupTest.push \
+              test/gtest_links/TimeIOGroupTest.read_nothing \
               test/gtest_links/TimeIOGroupTest.sample \
               test/gtest_links/TimeIOGroupTest.adjust \
               test/gtest_links/TimeIOGroupTest.read_signal \
+              test/gtest_links/TimeIOGroupTest.read_signal_and_batch \
               test/gtest_links/MSRIOGroupTest.signal \
               test/gtest_links/MSRIOGroupTest.control \
               test/gtest_links/MSRIOGroupTest.whitelist \
