@@ -30,7 +30,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sstream>
 
 #include "TimeIOGroup.hpp"
 #include "PlatformTopo.hpp"
@@ -77,9 +76,13 @@ namespace geopm
     int TimeIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         if (!is_valid_signal(signal_name)) {
-            std::ostringstream err_str;
-            err_str << "TimeIOGroup: signal_name " << signal_name << "not valid for TimeIOGroup";
-            throw Exception(err_str.str(), GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            throw Exception("TimeIOGroup::push_signal(): signal_name " + signal_name +
+                            "not valid for TimeIOGroup",
+                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        if (m_is_batch_read) {
+            throw Exception("TimeIOGroup::push_signal(): cannot push signal after call to read_batch().",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         m_is_signal_pushed = true;
         return 0;
@@ -97,8 +100,8 @@ namespace geopm
             geopm_time_s time_curr;
             geopm_time(&time_curr);
             m_time_curr = geopm_time_diff(&m_time_zero, &time_curr);
-            m_is_batch_read = true;
         }
+        m_is_batch_read = true;
     }
 
     void TimeIOGroup::write_batch(void)
@@ -132,9 +135,9 @@ namespace geopm
     double TimeIOGroup::read_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         if (!is_valid_signal(signal_name)) {
-            std::ostringstream err_str;
-            err_str << "TimeIOGroup:read_signal " << signal_name << "not valid for TimeIOGroup";
-            throw Exception(err_str.str(), GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            throw Exception("TimeIOGroup:read_signal " + signal_name +
+                            "not valid for TimeIOGroup",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         geopm_time_s time_curr;
         geopm_time(&time_curr);

@@ -65,12 +65,18 @@ TEST_F(TimeIOGroupTest, push)
     EXPECT_THROW(m_group.push_control("INVALID", 0, 0), geopm::Exception);
 }
 
-TEST_F(TimeIOGroupTest, sample)
+TEST_F(TimeIOGroupTest, read_nothing)
 {
     // Can't sample before we push a signal
     EXPECT_THROW(m_group.sample(0), geopm::Exception);
     // Calling read_batch with no signals pushed is okay
     EXPECT_NO_THROW(m_group.read_batch());
+    // Can't push signal after calling read_batch
+    EXPECT_THROW(m_group.push_signal("TIME", 0, 0), geopm::Exception);
+}
+
+TEST_F(TimeIOGroupTest, sample)
+{
     // Push a signal and make sure the index comes back 0
     int signal_idx = m_group.push_signal("TIME", 0, 0);
     EXPECT_EQ(0, signal_idx);
@@ -125,4 +131,18 @@ TEST_F(TimeIOGroupTest, read_signal)
     double time1 = m_group.read_signal("TIME", 0, 0);
     EXPECT_NEAR(time1 - time0, 1.0, 0.001);
     EXPECT_THROW(m_group.read_signal("INVALID", 0, 0), geopm::Exception);    
+}
+
+TEST_F(TimeIOGroupTest, read_signal_and_batch)
+{
+    // Test that calling read_signal() does not modify the read_batch() values.
+    int signal_idx = m_group.push_signal("TIME", 0, 0);
+    EXPECT_EQ(0, signal_idx);
+    m_group.read_batch();
+    double time0 = m_group.sample(0);
+    sleep(1);
+    double time1 = m_group.read_signal("TIME", 0, 0);
+    double time2 = m_group.sample(0);
+    EXPECT_EQ(time0, time2);
+    EXPECT_LT(0.9, time1 - time2);
 }
