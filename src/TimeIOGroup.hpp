@@ -42,16 +42,18 @@ namespace geopm
         public:
             TimeIOGroup();
             virtual ~TimeIOGroup();
-            virtual bool is_valid_signal(const std::string &signal_name) override;
-            virtual bool is_valid_control(const std::string &control_name) override;
-            virtual int push_signal(const std::string &signal_name, int domain_type, int domain_idx)  override;
-            virtual int push_control(const std::string &control_name, int domain_type, int domain_idx) override;
-            virtual void read_batch(void) override;
-            virtual void write_batch(void) override;
-            virtual double sample(int batch_idx) override;
-            virtual void adjust(int batch_idx, double setting) override;
-            virtual double read_signal(const std::string &signal_name, int domain_type, int domain_idx) override;
-            virtual void write_control(const std::string &control_name, int domain_type, int domain_idx, double setting) override;
+            bool is_valid_signal(const std::string &signal_name) override;
+            bool is_valid_control(const std::string &control_name) override;
+            int signal_domain_type(const std::string &signal_name) override;
+            int control_domain_type(const std::string &control_name) override;
+            int push_signal(const std::string &signal_name, int domain_type, int domain_idx)  override;
+            int push_control(const std::string &control_name, int domain_type, int domain_idx) override;
+            void read_batch(void) override;
+            void write_batch(void) override;
+            double sample(int batch_idx) override;
+            void adjust(int batch_idx, double setting) override;
+            double read_signal(const std::string &signal_name, int domain_type, int domain_idx) override;
+            void write_control(const std::string &control_name, int domain_type, int domain_idx, double setting) override;
         protected:
             bool m_is_signal_pushed;
             bool m_is_batch_read;

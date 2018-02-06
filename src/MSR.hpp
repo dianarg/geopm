@@ -38,8 +38,6 @@
 #include <vector>
 #include <map>
 
-#include "PlatformIO.hpp"
-
 
 namespace geopm
 {
@@ -150,7 +148,7 @@ namespace geopm
             virtual int domain_type(void) const = 0;
     };
 
-    class IMSRSignal : public ISignal
+    class IMSRSignal
     {
         public:
             struct m_signal_config_s {
@@ -186,7 +184,7 @@ namespace geopm
             virtual std::string log(double sample) const = 0;
     };
 
-    class IMSRControl : public IControl
+    class IMSRControl
     {
         public:
             struct m_control_config_s {
