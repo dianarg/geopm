@@ -105,6 +105,26 @@ namespace geopm
         return m_name_cpu_control_map.find(control_name) != m_name_cpu_control_map.end();
     }
 
+    int MSRIOGroup::signal_domain_type(const std::string &signal_name)
+    {
+        int result = IPlatformTopo::M_DOMAIN_INVALID;
+        if (is_valid_signal(signal_name)) {
+            /// @todo support for non-CPU domains.
+            result = IPlatformTopo::M_DOMAIN_CPU;
+        }
+        return result;
+    }
+
+    int MSRIOGroup::control_domain_type(const std::string &control_name)
+    {
+        int result = IPlatformTopo::M_DOMAIN_INVALID;
+        if (is_valid_control(control_name)) {
+            /// @todo support for non-CPU domains.
+            result = IPlatformTopo::M_DOMAIN_CPU;
+        }
+        return result;
+    }
+
     int MSRIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         /// @todo support for non-CPU domains.

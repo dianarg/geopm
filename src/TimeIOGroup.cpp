@@ -33,6 +33,7 @@
 #include <sstream>
 
 #include "TimeIOGroup.hpp"
+#include "PlatformTopo.hpp"
 #include "Exception.hpp"
 
 namespace geopm
@@ -57,6 +58,20 @@ namespace geopm
     bool TimeIOGroup::is_valid_control(const std::string &control_name)
     {
         return false;
+    }
+
+    int TimeIOGroup::signal_domain_type(const std::string &signal_name)
+    {
+        int result = PlatformTopo::M_DOMAIN_INVALID;
+        if (signal_name == "TIME") {
+            result = PlatformTopo::M_DOMAIN_BOARD;
+        }
+        return result;
+    }
+
+    int TimeIOGroup::control_domain_type(const std::string &control_name)
+    {
+        return PlatformTopo::M_DOMAIN_INVALID;
     }
 
     int TimeIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)

@@ -32,10 +32,12 @@
 
 #include "gtest/gtest.h"
 #include "TimeIOGroup.hpp"
+#include "PlatformTopo.hpp"
 #include "Exception.hpp"
 #include "geopm_time.h"
 
 using geopm::TimeIOGroup;
+using geopm::PlatformTopo;
 
 class TimeIOGroupTest : public :: testing :: Test
 {
@@ -49,6 +51,10 @@ TEST_F(TimeIOGroupTest, is_valid)
     EXPECT_FALSE(m_group.is_valid_signal("INVALID"));
     EXPECT_FALSE(m_group.is_valid_control("TIME"));
     EXPECT_FALSE(m_group.is_valid_control("INVALID"));
+    EXPECT_EQ(PlatformTopo::M_DOMAIN_BOARD, m_group.signal_domain_type("TIME"));
+    EXPECT_EQ(PlatformTopo::M_DOMAIN_INVALID, m_group.signal_domain_type("INVALID"));
+    EXPECT_EQ(PlatformTopo::M_DOMAIN_INVALID, m_group.control_domain_type("TIME"));
+    EXPECT_EQ(PlatformTopo::M_DOMAIN_INVALID, m_group.control_domain_type("INVALID"));
 }
 
 TEST_F(TimeIOGroupTest, push)

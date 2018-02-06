@@ -184,7 +184,8 @@ TEST_F(MSRIOGroupTest, signal)
     EXPECT_FALSE(m_msrio_group->is_valid_signal("INVALID"));
 
     // check domains
-    EXPECT_EQ(1234, m_msrio_group->signal_domain_type("PERF_STATUS:FREQ");
+    EXPECT_EQ(geopm::PlatformTopo::M_DOMAIN_CPU, m_msrio_group->signal_domain_type("PERF_FIXED_CTR0:INST_RETIRED_ANY"));
+    EXPECT_EQ(geopm::PlatformTopo::M_DOMAIN_INVALID, m_msrio_group->signal_domain_type("INVALID"));
 
     // push valid signals
     int freq_idx = m_msrio_group->push_signal("PERF_STATUS:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
@@ -258,6 +259,9 @@ TEST_F(MSRIOGroupTest, control)
                          GEOPM_ERROR_INVALID, "control name.*not found");
     EXPECT_TRUE(m_msrio_group->is_valid_control("PERF_CTL:FREQ"));
     EXPECT_FALSE(m_msrio_group->is_valid_control("INVALID"));
+
+    EXPECT_EQ(geopm::PlatformTopo::M_DOMAIN_CPU, m_msrio_group->control_domain_type("PERF_FIXED_CTR_CTRL:EN0_OS"));
+    EXPECT_EQ(geopm::PlatformTopo::M_DOMAIN_INVALID, m_msrio_group->control_domain_type("INVALID"));
 
     // push valid controls
     int freq_idx = m_msrio_group->push_control("PERF_CTL:FREQ", geopm::IPlatformTopo::M_DOMAIN_CPU, 0);
