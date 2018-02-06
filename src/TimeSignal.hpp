@@ -33,12 +33,11 @@
 #define TIMESIGNAL_HPP_INCLUDE
 
 #include <string>
-#include "PlatformIO.hpp"
 #include "geopm_time.h"
 
 namespace geopm
 {
-    class TimeSignal : public ISignal
+    class TimeSignal
     {
         public:
             TimeSignal();
@@ -47,7 +46,6 @@ namespace geopm
             int domain_type(void) const;
             int domain_idx(void) const;
             double sample(void) const;
-            std::string log(double sample) const;
         protected:
             struct geopm_time_s m_time_zero;
     };
