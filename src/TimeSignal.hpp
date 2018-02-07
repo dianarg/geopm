@@ -33,21 +33,19 @@
 #define TIMESIGNAL_HPP_INCLUDE
 
 #include <string>
-#include "PlatformIO.hpp"
 #include "geopm_time.h"
 
 namespace geopm
 {
-    class TimeSignal : public ISignal
+    class TimeSignal
     {
         public:
             TimeSignal();
             virtual ~TimeSignal();
-            std::string name(void) const override;
-            int domain_type(void) const override;
-            int domain_idx(void) const override;
-            double sample(void) const override;
-            std::string log(double sample) const override;
+            std::string name(void) const;
+            int domain_type(void) const;
+            int domain_idx(void) const;
+            double sample(void) const;
         protected:
             struct geopm_time_s m_time_zero;
     };
