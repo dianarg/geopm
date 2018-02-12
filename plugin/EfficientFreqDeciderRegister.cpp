@@ -37,7 +37,7 @@
 void __attribute__((constructor)) efficient_freq_decider_plugin_init()
 {
     try {
-        geopm::DeciderFactory::decider_factory().register_decider(new geopm::EfficientFreqDecider);
+        geopm::DeciderFactory::decider_factory().register_decider(geopm::EfficientFreqDecider::plugin_name(), geopm::EfficientFreqDecider::make_decider);
     }
     catch(...) {
         geopm::exception_handler(std::current_exception());

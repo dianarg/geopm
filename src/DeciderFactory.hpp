@@ -62,12 +62,9 @@ namespace geopm
             ///
             /// @param [in] description The description string corresponding
             /// to the desired Decider.
-            virtual IDecider *decider(const std::string &description) = 0;
+            virtual IDecider *decider(const std::string &plugin_name) = 0;
             /// @brief Concrete Deciders register with the factory through this API.
-            ///
-            /// @param [in] decider Pointer to a Decider object.
-            /// @param [in] dl_ptr The handle returned by dlopen().
-            virtual void register_decider(IDecider *decider) = 0;
+            virtual void register_decider(const std::string &plugin_name, std::function<IDecider *()> constructor); 
         protected:
             IDeciderFactory() {}
             IDeciderFactory(const IDeciderFactory &other) {}
@@ -79,21 +76,14 @@ namespace geopm
             /// @brief DeciderFactory destructor, virtual.
             virtual ~DeciderFactory();
             IDecider *decider(const std::string &description) override;
-            void register_decider(IDecider *decider) override;
+            void register_decider(const std::string &description, std::function<IDecider *()> constructor);
             static DeciderFactory &decider_factory();
         protected:
             /// @brief DeciderFactory default constructor.
             DeciderFactory();
-            /// @brief DeciderFactory testing constructor.
-            ///
-            /// This constructor takes in
-            /// a specific Decider object and does not load plugins.
-            /// It is intended to be used for testing.
-            /// @param [in] decider The pointer to a Decider object.
-            DeciderFactory(IDecider *decider);
         private:
             /// @brief Holds all registered concrete Decider instances.
-            std::list<IDecider*> m_decider_list;
+            std::map<std::string, std::function<IDecider *()> m_description_func_map;
     };
 
 }
