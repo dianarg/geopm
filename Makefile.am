@@ -245,7 +245,6 @@ endif
 
 libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/Comm.hpp \
-                            src/Comm.cpp \
                             src/ControlMessage.cpp \
                             src/ControlMessage.hpp \
                             src/Decider.cpp \

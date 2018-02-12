@@ -35,6 +35,7 @@
 
 #include <string>
 
+#include "PluginFactory.hpp"
 #include "geopm_message.h"
 
 namespace geopm
@@ -103,6 +104,11 @@ namespace geopm
             double m_lower_bound;
     };
 
+    PluginFactory<IDecider> &decider_factory(void)
+    {
+        static PluginFactory<IDecider> instance;
+        return instance;
+    }
 }
 
 #endif
