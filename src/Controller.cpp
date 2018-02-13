@@ -217,7 +217,7 @@ namespace geopm
             path_ptr += strlen(path_ptr) + 1;
         }
         for (int i = 0; i < num_path && !found; ++i) {
-            std::string plugin_path = paths[i] + "/" + plugin_name + ".so";
+            std::string plugin_path = paths[i] + "/libgeopmpi_" + plugin_name + ".so";
             if (NULL != dlopen(plugin_path.c_str(), RTLD_LAZY)) {
                 found = true;
             }
@@ -261,8 +261,9 @@ namespace geopm
         , m_ppn1_rank(-1)
     {
         //load_plugin(std::string(geopm_env_comm())); // TODO: wrong name
-        load_plugin("libgeopmpi_mpi");
-        auto ppn1_comm = comm_factory().make_plugin(geopm_env_comm())->split("ctl", IComm::M_COMM_SPLIT_TYPE_PPN1);
+        //auto ppn1_comm = comm_factory().make_plugin(geopm_env_comm())->split("ctl", IComm::M_COMM_SPLIT_TYPE_PPN1);
+        load_plugin("mpi");
+        auto ppn1_comm = comm_factory().make_plugin("mpi")->split("ctl", IComm::M_COMM_SPLIT_TYPE_PPN1);
 
         // Only the root rank on each node will have a fully initialized controller
         if (m_ppn1_comm != MPI_COMM_NULL) {
@@ -368,13 +369,13 @@ namespace geopm
             // TODO: fix names
             //std::vector<std::string> decider_names{plugin_desc.tree_decider,
             //                                       plugin_desc.leaf_decider};
-            std::vector<std::string> decider_names{"libgeopmpi_balancing",
-                                                   "libgeopmpi_governing"};
+            std::vector<std::string> decider_names{"balancing",
+                                                   "governing"};
             for (const auto &name : decider_names) {
                 load_plugin(name);
-
             }
-            m_decider[0] = decider_factory().make_plugin(plugin_desc.leaf_decider);
+            m_decider[0] = decider_factory().make_plugin("governing");
+            //m_decider[0] = decider_factory().make_plugin(plugin_desc.leaf_decider);
             m_decider[0]->bound(upper_bound, lower_bound);
 
             int num_domain = m_platform->num_control_domain();
@@ -397,7 +398,8 @@ namespace geopm
                                                    num_domain,
                                                    level,
                                                    NULL)));
-                m_decider[level] = decider_factory().make_plugin(plugin_desc.tree_decider);
+                m_decider[level] = decider_factory().make_plugin("balancing");
+                //m_decider[level] = decider_factory().make_plugin(plugin_desc.tree_decider);
                 m_decider[level]->bound(upper_bound, lower_bound);
                 upper_bound *= num_domain;
                 lower_bound *= num_domain;

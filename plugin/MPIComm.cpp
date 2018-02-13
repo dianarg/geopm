@@ -74,7 +74,7 @@ namespace geopm
         }
     }
 
-    const std::string MPIComm::M_PLUGIN_NAME = "MPIComm";
+    const std::string MPIComm::M_PLUGIN_NAME = "mpi";
 
     const std::string& MPIComm::plugin_name()
     {

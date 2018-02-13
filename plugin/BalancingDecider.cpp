@@ -49,7 +49,7 @@ struct {
 
 namespace geopm
 {
-    const std::string BalancingDecider::M_PLUGIN_NAME = "power_balancing";
+    const std::string BalancingDecider::M_PLUGIN_NAME = "balancing";
 
     BalancingDecider::BalancingDecider()
         : m_name(M_PLUGIN_NAME)

@@ -54,7 +54,7 @@
 
 namespace geopm
 {
-    const std::string EfficientFreqDecider::M_PLUGIN_NAME = "efficient_freq";
+    const std::string EfficientFreqDecider::M_PLUGIN_NAME = "efficientfreq";
 
     EfficientFreqDecider::EfficientFreqDecider()
         : EfficientFreqDecider("/proc/cpuinfo",

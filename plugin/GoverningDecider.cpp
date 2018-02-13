@@ -43,7 +43,7 @@
 
 namespace geopm
 {
-    const std::string GoverningDecider::M_PLUGIN_NAME = "power_governing";
+    const std::string GoverningDecider::M_PLUGIN_NAME = "governing";
 
     GoverningDecider::GoverningDecider()
         : m_name(M_PLUGIN_NAME)
