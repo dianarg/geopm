@@ -30,24 +30,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <vector>
-#include <map>
-#include <algorithm>
+#include <dlfcn.h>
+#include <fcntl.h>
 #include <libgen.h>
-#include <iostream>
-#include <fstream>
-#include <streambuf>
-#include <stdexcept>
-#include <string>
-#include <sstream>
-#include <numeric>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <system_error>
 #include <unistd.h>
+
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <sstream>
+#include <streambuf>
+#include <string>
+#include <stdexcept>
+#include <system_error>
+#include <vector>
 
 #include "geopm.h"
 #include "geopm_ctl.h"
@@ -189,6 +191,45 @@ extern "C"
 
 namespace geopm
 {
+    // TODO: where to put?
+    void load_plugin(const std::string &plugin_name)
+    {
+        bool found = false;
+        int num_path = 1;
+        std::vector<std::string> paths;
+        std::string default_path = GEOPM_PLUGIN_PATH;
+        char path_env[NAME_MAX] = {0};
+
+        if (strlen(geopm_env_plugin_path())) {
+            ++num_path;
+            strncpy(path_env, geopm_env_plugin_path(), NAME_MAX - 1);
+            char *path_ptr = path_env;
+            while ((path_ptr = strchr(path_ptr, ':'))) {
+                *path_ptr = '\0';
+                ++num_path;
+            }
+        }
+        paths.resize(num_path + 1);
+        paths[0] = default_path;
+        char *path_ptr = path_env;
+        for (int i = 1; i < num_path; ++i) {
+            paths[i] = std::string(path_ptr); // null terminator was set by loop above
+            path_ptr += strlen(path_ptr) + 1;
+        }
+        for (int i = 0; i < num_path && !found; ++i) {
+            std::string plugin_path = paths[i] + "/" + plugin_name + ".so";
+            if (NULL != dlopen(plugin_path.c_str(), RTLD_LAZY)) {
+                found = true;
+            }
+        }
+#ifdef GEOPM_DEBUG
+        if (!found) {
+            std::cerr << "Warning: failed to load plugin " << plugin_name
+                      << ": not found or failed to dlopen()." << std::endl;
+        }
+#endif
+    }
+
     Controller::Controller(IGlobalPolicy *global_policy, MPI_Comm comm)
         : m_is_node_root(false)
         , m_max_fanout(0)
@@ -219,7 +260,8 @@ namespace geopm
         , m_ppn1_comm(comm)
         , m_ppn1_rank(-1)
     {
-        int num_nodes = 0;
+        //load_plugin(std::string(geopm_env_comm())); // TODO: wrong name
+        load_plugin("libgeopmpi_mpi");
         auto ppn1_comm = comm_factory().make_plugin(geopm_env_comm())->split("ctl", IComm::M_COMM_SPLIT_TYPE_PPN1);
 
         // Only the root rank on each node will have a fully initialized controller
@@ -275,6 +317,7 @@ namespace geopm
             }
             check_mpi(MPI_Bcast(&plugin_desc, sizeof(plugin_desc), MPI_CHAR, 0, m_ppn1_comm));
 
+            int num_nodes = 0;
             check_mpi(MPI_Comm_size(m_ppn1_comm, &num_nodes));
 
             if (num_nodes > 1) {
@@ -322,6 +365,15 @@ namespace geopm
             m_platform->bound(upper_bound, lower_bound);
             m_throttle_limit_mhz = m_platform->throttle_limit_mhz();
 
+            // TODO: fix names
+            //std::vector<std::string> decider_names{plugin_desc.tree_decider,
+            //                                       plugin_desc.leaf_decider};
+            std::vector<std::string> decider_names{"libgeopmpi_balancing",
+                                                   "libgeopmpi_governing"};
+            for (const auto &name : decider_names) {
+                load_plugin(name);
+
+            }
             m_decider[0] = decider_factory().make_plugin(plugin_desc.leaf_decider);
             m_decider[0]->bound(upper_bound, lower_bound);
 

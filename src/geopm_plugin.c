@@ -49,6 +49,7 @@
 
 static void __attribute__((constructor)) geopm_plugin_load()
 {
+#if 0
     int err = 0;
     int fts_options = FTS_COMFOLLOW | FTS_NOCHDIR;
     FTS *p_fts;
@@ -98,4 +99,5 @@ static void __attribute__((constructor)) geopm_plugin_load()
         }
         free(paths);
     }
+#endif
 }

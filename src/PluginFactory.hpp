@@ -79,5 +79,6 @@ namespace geopm
 
             std::map<std::string, std::function<std::unique_ptr<T>()> > m_name_func_map;
     };
+
 }
 #endif
