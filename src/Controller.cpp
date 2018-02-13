@@ -220,7 +220,7 @@ namespace geopm
         , m_ppn1_rank(-1)
     {
         int num_nodes = 0;
-        auto ppn1_comm = CommFactory::comm_factory().get_comm(geopm_env_comm())->split("ctl", IComm::M_COMM_SPLIT_TYPE_PPN1);
+        auto ppn1_comm = comm_factory().make_plugin(geopm_env_comm())->split("ctl", IComm::M_COMM_SPLIT_TYPE_PPN1);
 
         // Only the root rank on each node will have a fully initialized controller
         if (m_ppn1_comm != MPI_COMM_NULL) {
