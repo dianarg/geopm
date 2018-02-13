@@ -43,7 +43,7 @@
 #include "Exception.hpp"
 #include "Decider.hpp"
 #include "EfficientFreqDecider.hpp"
-#include "DeciderFactory.hpp"
+#include "Decider.hpp"
 #include "PlatformTopo.hpp"
 
 #include "MockRegion.hpp"
@@ -118,7 +118,6 @@ void EfficientFreqDeciderTest::SetUp()
     m_mock_region = std::unique_ptr<MockRegion>(new MockRegion());
     m_mock_policy = std::unique_ptr<MockPolicy>(new MockPolicy());
     m_decider = std::unique_ptr<IDecider>(new EfficientFreqDecider(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path, m_platform_io, m_platform_topo));
-    m_decider.reset(m_decider->clone());
 }
 
 void EfficientFreqDeciderTest::TearDown()
@@ -446,6 +445,13 @@ TEST_F(EfficientFreqDeciderTest, map)
     }
 }
 
+TEST_F(EfficientFreqDeciderTest, plugin)
+{
+    efficient_freq_decider_plugin_init();
+    EXPECT_EQ("efficient_freq", geopm::decider_factory().make_plugin("efficient_freq")->name());
+}
+
+
 TEST_F(EfficientFreqDeciderTest, decider_is_supported)
 {
     EXPECT_TRUE(m_decider->decider_supported("efficient_freq"));
@@ -454,14 +460,7 @@ TEST_F(EfficientFreqDeciderTest, decider_is_supported)
 
 TEST_F(EfficientFreqDeciderTest, name)
 {
-    EXPECT_EQ(std::string("efficient_freq"), m_decider->name());
-}
-
-TEST_F(EfficientFreqDeciderTest, clone)
-{
-    geopm::IDecider *cloned = m_decider->clone();
-    EXPECT_EQ(std::string("efficient_freq"), cloned->name());
-    delete cloned;
+    EXPECT_EQ("efficient_freq", m_decider->name());
 }
 
 TEST_F(EfficientFreqDeciderTest, hint)
@@ -489,7 +488,6 @@ TEST_F(EfficientFreqDeciderTest, online_mode)
 
     // reset decider with new settings
     m_decider = std::unique_ptr<IDecider>(new EfficientFreqDecider(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path, m_platform_io, m_platform_topo));
-    m_decider.reset(m_decider->clone());
 
     {
         // should not be called if we hit the adaptive branch

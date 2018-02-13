@@ -52,12 +52,14 @@ namespace geopm
             GoverningDecider(const GoverningDecider &other);
             /// @brief GoverningDecider destructor, virtual.
             virtual ~GoverningDecider();
-            virtual IDecider *clone(void) const override;
             virtual bool update_policy(const struct geopm_policy_message_s &policy_msg, IPolicy &curr_policy) override;
             virtual bool update_policy(IRegion &curr_region, IPolicy &curr_policy) override;
             virtual bool decider_supported(const std::string &descripton) override;
             virtual const std::string& name(void) const override;
+            static const std::string& plugin_name(void);
+            static std::unique_ptr<IDecider> make_decider(void);
         protected:
+            static const std::string M_PLUGIN_NAME;
             std::string m_name;
             const unsigned m_min_num_converged;
             double m_last_power_budget;

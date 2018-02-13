@@ -64,7 +64,6 @@
 #include "PlatformFactory.hpp"
 #include "PlatformTopology.hpp"
 #include "Profile.hpp"
-#include "DeciderFactory.hpp"
 #include "Decider.hpp"
 #include "GlobalPolicy.hpp"
 #include "Policy.hpp"
@@ -306,7 +305,6 @@ namespace geopm
             m_region.resize(num_level);
             m_policy.resize(num_level);
             m_decider.resize(num_level);
-            std::fill(m_decider.begin(), m_decider.end(), (IDecider *)NULL);
             m_last_policy_msg.resize(num_level);
             std::fill(m_last_policy_msg.begin(), m_last_policy_msg.end(), GEOPM_POLICY_UNKNOWN);
             m_is_epoch_changed.resize(num_level);
@@ -324,7 +322,7 @@ namespace geopm
             m_platform->bound(upper_bound, lower_bound);
             m_throttle_limit_mhz = m_platform->throttle_limit_mhz();
 
-            m_decider[0] = DeciderFactory::decider_factory().decider(std::string(plugin_desc.leaf_decider));
+            m_decider[0] = decider_factory().make_plugin(plugin_desc.leaf_decider);
             m_decider[0]->bound(upper_bound, lower_bound);
 
             int num_domain = m_platform->num_control_domain();
@@ -347,7 +345,7 @@ namespace geopm
                                                    num_domain,
                                                    level,
                                                    NULL)));
-                m_decider[level] = DeciderFactory::decider_factory().decider(std::string(plugin_desc.tree_decider));
+                m_decider[level] = decider_factory().make_plugin(plugin_desc.tree_decider);
                 m_decider[level]->bound(upper_bound, lower_bound);
                 upper_bound *= num_domain;
                 lower_bound *= num_domain;
@@ -406,9 +404,6 @@ namespace geopm
                 delete it->second;
             }
             delete m_policy[level];
-        }
-        for (auto it = m_decider.begin(); it != m_decider.end(); ++it) {
-            delete (*it);
         }
         delete m_platform_factory;
         delete m_tree_comm;

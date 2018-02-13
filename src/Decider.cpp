@@ -82,4 +82,10 @@ namespace geopm
         }
         return result;
     }
+
+    PluginFactory<IDecider> &decider_factory(void)
+    {
+        static PluginFactory<IDecider> instance;
+        return instance;
+    }
 }

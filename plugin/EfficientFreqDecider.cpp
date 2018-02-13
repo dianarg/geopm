@@ -54,6 +54,8 @@
 
 namespace geopm
 {
+    const std::string EfficientFreqDecider::M_PLUGIN_NAME = "efficient_freq";
+
     EfficientFreqDecider::EfficientFreqDecider()
         : EfficientFreqDecider("/proc/cpuinfo",
                                "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq",
@@ -81,7 +83,7 @@ namespace geopm
         , m_platform_io(pio)
         , m_platform_topo(ptopo)
     {
-        m_name = "efficient_freq";
+        m_name = M_PLUGIN_NAME;
         parse_env_map();
         const char* env_freq_adapt_str = getenv("GEOPM_EFFICIENT_FREQ_ONLINE");
         if (env_freq_adapt_str) {
@@ -139,10 +141,15 @@ namespace geopm
         }
     }
 
-    IDecider *EfficientFreqDecider::clone(void) const
+    const std::string& EfficientFreqDecider::plugin_name(void)
     {
-        EfficientFreqDecider *result = new EfficientFreqDecider(*this);
-        result->init_platform_io();
+        return M_PLUGIN_NAME;
+    }
+
+    std::unique_ptr<IDecider> EfficientFreqDecider::make_decider(void)
+    {
+        std::unique_ptr<IDecider> result {new EfficientFreqDecider};
+        dynamic_cast<EfficientFreqDecider*>(result.get())->init_platform_io();
         return result;
     }
 

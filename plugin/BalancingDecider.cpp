@@ -49,8 +49,10 @@ struct {
 
 namespace geopm
 {
+    const std::string BalancingDecider::M_PLUGIN_NAME = "power_balancing";
+
     BalancingDecider::BalancingDecider()
-        : m_name("power_balancing")
+        : m_name(M_PLUGIN_NAME)
         , m_convergence_target(0.01)
         , m_min_num_converged(7)
         , m_num_converged(0)
@@ -83,11 +85,6 @@ namespace geopm
 
     }
 
-    IDecider *BalancingDecider::clone(void) const
-    {
-        return (IDecider*)(new BalancingDecider(*this));
-    }
-
     bool BalancingDecider::decider_supported(const std::string &description)
     {
         return (description == m_name);
@@ -96,6 +93,17 @@ namespace geopm
     const std::string& BalancingDecider::name(void) const
     {
         return m_name;
+    }
+
+    const std::string& BalancingDecider::plugin_name(void)
+    {
+        return M_PLUGIN_NAME;
+    }
+
+    std::unique_ptr<IDecider> BalancingDecider::make_decider(void)
+    {
+        std::unique_ptr<IDecider> result {new BalancingDecider};
+        return result;
     }
 
     void BalancingDecider::bound(double upper_bound, double lower_bound)

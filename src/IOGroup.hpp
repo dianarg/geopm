@@ -147,11 +147,7 @@ namespace geopm
                                        double setting) = 0;
     };
 
-    PluginFactory<IOGroup> &iogroup_factory(void)
-    {
-        static PluginFactory<IOGroup> instance;
-        return instance;
-    }
+    PluginFactory<IOGroup> &iogroup_factory(void);
 }
 
 #endif
