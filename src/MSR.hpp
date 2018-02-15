@@ -155,6 +155,7 @@ namespace geopm
                 const IMSR *msr_obj;
                 int cpu_idx;
                 int signal_idx;
+                uint64_t last_field;
             };
             IMSRSignal() {}
             virtual ~IMSRSignal() {}
