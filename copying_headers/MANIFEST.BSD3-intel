@@ -233,6 +233,8 @@ test/PlatformTopoTest.cpp
 test/PlatformTopologyTest.cpp
 test/pmpi_mock.c
 test/PolicyTest.cpp
+test/ProfileIOGroupTest.cpp
+test/ProfileSampleTest.cpp
 test/ProfileTableTest.cpp
 test/RegionTest.cpp
 test/SampleRegulatorTest.cpp

@@ -59,7 +59,7 @@ namespace geopm
                 M_INTERP_TYPE_LINEAR = 2,
             };
             /// @brief Number of ranks running on the node.
-            int m_num_rank;
+            size_t m_num_rank;
             /// @brief A map from the MPI rank reported in the
             ///        ProfileSampler data to the node local rank
             ///        index.
@@ -74,5 +74,5 @@ namespace geopm
             /// @brief Vector to multiply with signal_domain_matrix to
             /// project into control domains
             std::vector<double> m_aligned_signal;
-};
+    };
 }

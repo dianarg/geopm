@@ -120,6 +120,7 @@ namespace geopm
                     sub_field = sub_field + ((1 << m_num_bit) - 1);
                 }
                 break;
+            case IMSR::M_FUNCTION_SCALE:
             default:
                 break;
         }

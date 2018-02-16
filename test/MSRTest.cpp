@@ -93,6 +93,8 @@ class MSRTest : public :: testing :: Test
         std::vector<const IMSR *> m_msrs;
 };
 
+// TODO: test of overflow counter
+
 void MSRTest::SetUp()
 {
     m_cpu_idx = 0;
@@ -221,6 +223,26 @@ TEST_F(MSRTest, msr)
             EXPECT_EQ(m_expected_con_fields[control_idx], field) << "control_idx: " << control_idx;
         }
     }
+}
+
+TEST_F(MSRTest, msr_overflow)
+{
+    auto signal = std::pair<std::string, struct IMSR::m_encode_s>
+                     ("sig4", (struct IMSR::m_encode_s) {
+                         .begin_bit = 0,
+                         .end_bit   = 4,
+                         .domain    = IPlatformTopo::M_DOMAIN_CPU,
+                         .function  = IMSR::M_FUNCTION_OVERFLOW,
+                         .units     = IMSR::M_UNITS_NONE,
+                         .scalar    = 1.0});
+    MSR msr("msr4", 0, {signal}, {});
+
+    double raw_value = msr.signal(0, 5, 0);
+    EXPECT_DOUBLE_EQ(5.0, raw_value);
+
+    // overflowed
+    double of_value = msr.signal(0, 5, 9);
+    EXPECT_DOUBLE_EQ(20.0, of_value);  // 5 + (16 -1)  // TODO: is this correct
 }
 
 #define MSG_2_IMPLEMENTOR "Congrats, you've implemented the API.  Now update the test."

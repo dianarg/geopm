@@ -46,7 +46,9 @@ namespace geopm
 
     ProfileSample::~ProfileSample()
     {
-
+        for (auto it : m_rank_sample_buffer) {
+            delete it;
+        }
     }
 
     void ProfileSample::cpu_rank(const std::vector<int> &cpu_rank)
@@ -63,9 +65,16 @@ namespace geopm
             m_rank_idx_map.insert(std::pair<int, int>(it, i));
             ++i;
         }
-        for (int i = 0; i < m_num_rank; ++i) {
+
+        // TODO fix
+        for (auto it : m_rank_sample_buffer) {
+            delete it;
+        }
+        m_rank_sample_buffer.resize(m_num_rank);
+
+        for (size_t i = 0; i < m_num_rank; ++i) {
             // two samples are required for linear interpolation
-            m_rank_sample_buffer.push_back(new CircularBuffer<struct m_rank_sample_s>(M_INTERP_TYPE_LINEAR));
+            m_rank_sample_buffer[i] = new CircularBuffer<struct m_rank_sample_s>(M_INTERP_TYPE_LINEAR);
         }
         m_region_id.resize(m_num_rank, GEOPM_REGION_ID_UNMARKED);
     }
@@ -108,6 +117,11 @@ namespace geopm
         double dsdt;
         geopm_time_s timestamp_prev[2];
         std::vector<double> result(m_num_rank);
+#ifdef GEOPM_DEBUG
+        if (m_rank_sample_buffer.size() != m_num_rank) {
+            throw Exception("m_rank_sample_buffer was wrong size", GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
 
         auto result_it = result.begin();
         for (auto sample_it = m_rank_sample_buffer.begin();
@@ -154,7 +168,6 @@ namespace geopm
 
     std::vector<uint64_t> ProfileSample::per_cpu_region_id(void)
     {
-        std::vector<uint64_t> result;
-        return result;
+        return m_region_id;
     }
 }
