@@ -31,12 +31,13 @@
  */
 
 #include <vector>
+#include <map>
 
 #include "geopm_message.h"
 
 namespace geopm
 {
-    class ICircularBuffer;
+    template <typename T> class CircularBuffer;
     class ProfileSample
     {
         public:
@@ -45,7 +46,7 @@ namespace geopm
             void cpu_rank(const std::vector<int> &cpu_rank);
             void update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                         std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end);
-            std::vector<double> per_cpu_progress(struct geopm_time_s extrapolation_time);
+            std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time);
             std::vector<uint64_t> per_cpu_region_id(void);
         private:
             struct m_rank_sample_s {
@@ -69,11 +70,9 @@ namespace geopm
             std::vector<uint64_t> m_region_id;
             /// @brief Per rank record of last profile samples in
             ///        m_region_id_prev
-            std::vector<ICircularBuffer<struct m_rank_sample_s> *> m_rank_sample_buffer;
+            std::vector<CircularBuffer<struct m_rank_sample_s> *> m_rank_sample_buffer;
             /// @brief Vector to multiply with signal_domain_matrix to
             /// project into control domains
             std::vector<double> m_aligned_signal;
-
-
-    }
+};
 }

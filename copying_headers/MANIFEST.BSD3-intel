@@ -137,7 +137,7 @@ src/Policy.hpp
 src/Profile.cpp
 src/Profile.hpp
 src/ProfileIOGroup.cpp
-rc/ProfileIOGroup.hpp
+src/ProfileIOGroup.hpp
 src/ProfileSample.cpp
 src/ProfileSample.hpp
 src/ProfileTable.cpp

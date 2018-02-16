@@ -206,7 +206,7 @@ TEST_F(MSRTest, msr)
         for (int signal_idx = 0; signal_idx < msr->num_signal(); signal_idx++) {
             EXPECT_EQ(m_signal_names[signal_idx], msr->signal_name(signal_idx)) << "signal_idx: " << signal_idx;
             EXPECT_EQ(signal_idx, msr->signal_index(m_signal_names[signal_idx])) << "signal_idx: " << signal_idx;
-            double value = msr->signal(signal_idx, m_signal_field);
+            double value = msr->signal(signal_idx, m_signal_field, 0);  //TODO: check this
             EXPECT_DOUBLE_EQ(m_expected_sig_values[signal_idx], value) << "signal_idx: " << signal_idx;
         }
 

@@ -393,6 +393,7 @@ namespace geopm
         : m_config(config)
         , m_name(name)
         , m_field_ptr(config.size(), NULL)
+        , m_field_last(config.size(), 0) // TODO: hmmm
         , m_is_field_mapped(false)
     {
 
@@ -423,14 +424,16 @@ namespace geopm
     double MSRSignal::sample(void) const
     {
         if (!m_is_field_mapped) {
-            throw Exception("MSRControl::sample(): must call map() method before sample() can be called",
+            throw Exception("MSRSignal::sample(): must call map() method before sample() can be called",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         std::vector<double> signal_vec(num_msr());
         auto signal_it = signal_vec.begin();
         auto field_it = m_field_ptr.begin();
-        for (auto config_it = m_config.begin(); config_it != m_config.end(); ++config_it, ++signal_it, ++field_it) {
-            *signal_it = config_it->msr_obj->signal(config_it->signal_idx, *(*field_it));
+        auto last_it = m_field_last.begin();
+        for (auto config_it = m_config.begin(); config_it != m_config.end();
+             ++config_it, ++signal_it, ++field_it, ++last_it) {
+            *signal_it = config_it->msr_obj->signal(config_it->signal_idx, *(*field_it), *last_it);
         }
         return sample(signal_vec);
     }

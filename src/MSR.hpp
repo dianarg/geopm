@@ -357,6 +357,7 @@ namespace geopm
             ///        used to combine the signals.
             MSRSignal(const std::vector<IMSRSignal::m_signal_config_s> &config,
                       const std::string &name);
+            /// @todo Revisit whether this is really okay to copy
             MSRSignal(const MSRSignal &other) = default;
             MSRSignal &operator=(const MSRSignal &other) = default;
             virtual ~MSRSignal();
@@ -382,7 +383,7 @@ namespace geopm
             std::vector<IMSRSignal::m_signal_config_s> m_config;
             std::string m_name;
             std::vector<const uint64_t *> m_field_ptr;
-            std::vector<const uint64_t> m_field_last;
+            std::vector<uint64_t> m_field_last;
             bool m_is_field_mapped;
     };
 

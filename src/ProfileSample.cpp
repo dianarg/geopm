@@ -30,6 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <set>
+
 #include "ProfileSample.hpp"
 #include "CircularBuffer.hpp"
 #include "config.h"
@@ -51,14 +53,14 @@ namespace geopm
     {
         std::set<int> rank_set;
         for (auto it : cpu_rank) {
-            if ((*it) != -1) {
-                rank_set.insert(*it);
+            if (it != -1) {
+                rank_set.insert(it);
             }
         }
         m_num_rank = rank_set.size();
         int i = 0;
         for (auto it : rank_set) {
-            m_rank_idx_map.insert(std::pair<int, int>(*it, i));
+            m_rank_idx_map.insert(std::pair<int, int>(it, i));
             ++i;
         }
         for (int i = 0; i < m_num_rank; ++i) {
@@ -101,42 +103,40 @@ namespace geopm
 
     std::vector<double> ProfileSample::per_cpu_progress(const struct geopm_time_s &extrapolation_time)
     {
-        int i = 0;
         double delta;
         double factor;
         double dsdt;
         geopm_time_s timestamp_prev[2];
         std::vector<double> result(m_num_rank);
 
-        int rank_idx = 0;
         auto result_it = result.begin();
         for (auto sample_it = m_rank_sample_buffer.begin();
              sample_it != m_rank_sample_buffer.end();
              ++sample_it, ++result_it) {
-            switch((*it)->size()) {
+            switch((*sample_it)->size()) {
                 case M_INTERP_TYPE_NONE:
                     *result_it = 0.0;
                     break;
                 case M_INTERP_TYPE_NEAREST:
                     // if there is only one sample insert it directly
-                    *result_it = (*it)->value(0).progress;
+                    *result_it = (*sample_it)->value(0).progress;
                     break;
                 case M_INTERP_TYPE_LINEAR:
                     // if there are two samples, extrapolate to the given timestamp
-                    timestamp_prev[0] = (*it)->value(0).timestamp;
-                    timestamp_prev[1] = (*it)->value(1).timestamp;
+                    timestamp_prev[0] = (*sample_it)->value(0).timestamp;
+                    timestamp_prev[1] = (*sample_it)->value(1).timestamp;
                     delta = geopm_time_diff(timestamp_prev + 1, &extrapolation_time);
                     factor = 1.0 / geopm_time_diff(timestamp_prev, timestamp_prev + 1);
-                    dsdt = ((*it)->value(1).progress - (*it)->value(0).progress) * factor;
+                    dsdt = ((*sample_it)->value(1).progress - (*sample_it)->value(0).progress) * factor;
                     dsdt = dsdt > 0.0 ? dsdt : 0.0; // progress does not decrease over time
-                    if ((*it)->value(1).progress == 1.0) {
+                    if ((*sample_it)->value(1).progress == 1.0) {
                         *result_it = 1.0;
                     }
-                    else if ((*it)->value(0).progress == 0.0) {
+                    else if ((*sample_it)->value(0).progress == 0.0) {
                         *result_it = 0.0;
                     }
                     else {
-                        *result_it = (*it)->value(1).progress + dsdt * delta;
+                        *result_it = (*sample_it)->value(1).progress + dsdt * delta;
                         *result_it = *result_it >= 0.0 ? *result_it : 1e-9;
                         *result_it = *result_it <= 1.0 ? *result_it : 1 - 1e-9;
                     }
@@ -149,10 +149,12 @@ namespace geopm
                     break;
             }
         }
+        return result;
     }
 
     std::vector<uint64_t> ProfileSample::per_cpu_region_id(void)
     {
-
+        std::vector<uint64_t> result;
+        return result;
     }
 }
