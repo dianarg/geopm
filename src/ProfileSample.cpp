@@ -38,20 +38,8 @@
 
 namespace geopm
 {
-    ProfileSample::ProfileSample()
+    ProfileSample::ProfileSample(const std::vector<int> &cpu_rank)
         : m_num_rank(0)
-    {
-
-    }
-
-    ProfileSample::~ProfileSample()
-    {
-        for (auto it : m_rank_sample_buffer) {
-            delete it;
-        }
-    }
-
-    void ProfileSample::cpu_rank(const std::vector<int> &cpu_rank)
     {
         std::set<int> rank_set;
         for (auto it : cpu_rank) {
@@ -66,17 +54,14 @@ namespace geopm
             ++i;
         }
 
-        // TODO fix
-        for (auto it : m_rank_sample_buffer) {
-            delete it;
-        }
-        m_rank_sample_buffer.resize(m_num_rank);
-
-        for (size_t i = 0; i < m_num_rank; ++i) {
-            // two samples are required for linear interpolation
-            m_rank_sample_buffer[i] = new CircularBuffer<struct m_rank_sample_s>(M_INTERP_TYPE_LINEAR);
-        }
+        // 2 samples for linear interpolation
+        m_rank_sample_buffer.resize(m_num_rank, CircularBuffer<struct m_rank_sample_s>(2));
         m_region_id.resize(m_num_rank, GEOPM_REGION_ID_UNMARKED);
+    }
+
+    ProfileSample::~ProfileSample()
+    {
+
     }
 
     void ProfileSample::update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
@@ -97,7 +82,7 @@ namespace geopm
 #endif
                 size_t rank_idx = rank_idx_it->second;
                 if (sample_it->second.region_id != m_region_id[rank_idx]) {
-                    m_rank_sample_buffer[rank_idx]->clear();
+                    m_rank_sample_buffer[rank_idx].clear();
                 }
                 if (rank_sample.progress == 1.0) {
                     m_region_id[rank_idx] = GEOPM_REGION_ID_UNMARKED;
@@ -105,7 +90,7 @@ namespace geopm
                 else {
                     m_region_id[rank_idx] = sample_it->second.region_id;
                 }
-                m_rank_sample_buffer[rank_idx]->insert(rank_sample);
+                m_rank_sample_buffer[rank_idx].insert(rank_sample);
             }
         }
     }
@@ -127,30 +112,30 @@ namespace geopm
         for (auto sample_it = m_rank_sample_buffer.begin();
              sample_it != m_rank_sample_buffer.end();
              ++sample_it, ++result_it) {
-            switch((*sample_it)->size()) {
+            switch(sample_it->size()) {
                 case M_INTERP_TYPE_NONE:
                     *result_it = 0.0;
                     break;
                 case M_INTERP_TYPE_NEAREST:
                     // if there is only one sample insert it directly
-                    *result_it = (*sample_it)->value(0).progress;
+                    *result_it = sample_it->value(0).progress;
                     break;
                 case M_INTERP_TYPE_LINEAR:
                     // if there are two samples, extrapolate to the given timestamp
-                    timestamp_prev[0] = (*sample_it)->value(0).timestamp;
-                    timestamp_prev[1] = (*sample_it)->value(1).timestamp;
+                    timestamp_prev[0] = sample_it->value(0).timestamp;
+                    timestamp_prev[1] = sample_it->value(1).timestamp;
                     delta = geopm_time_diff(timestamp_prev + 1, &extrapolation_time);
                     factor = 1.0 / geopm_time_diff(timestamp_prev, timestamp_prev + 1);
-                    dsdt = ((*sample_it)->value(1).progress - (*sample_it)->value(0).progress) * factor;
+                    dsdt = (sample_it->value(1).progress - sample_it->value(0).progress) * factor;
                     dsdt = dsdt > 0.0 ? dsdt : 0.0; // progress does not decrease over time
-                    if ((*sample_it)->value(1).progress == 1.0) {
+                    if (sample_it->value(1).progress == 1.0) {
                         *result_it = 1.0;
                     }
-                    else if ((*sample_it)->value(0).progress == 0.0) {
+                    else if (sample_it->value(0).progress == 0.0) {
                         *result_it = 0.0;
                     }
                     else {
-                        *result_it = (*sample_it)->value(1).progress + dsdt * delta;
+                        *result_it = sample_it->value(1).progress + dsdt * delta;
                         *result_it = *result_it >= 0.0 ? *result_it : 1e-9;
                         *result_it = *result_it <= 1.0 ? *result_it : 1 - 1e-9;
                     }

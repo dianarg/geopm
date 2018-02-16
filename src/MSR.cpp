@@ -422,19 +422,22 @@ namespace geopm
                         GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
-    double MSRSignal::sample(void) const
+    double MSRSignal::sample(void)
     {
         if (!m_is_field_mapped) {
             throw Exception("MSRSignal::sample(): must call map() method before sample() can be called",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        std::vector<double> signal_vec(num_msr());
-        auto signal_it = signal_vec.begin();
-        auto field_it = m_field_ptr.begin();
-        auto last_it = m_field_last.begin();
-        for (auto config_it = m_config.begin(); config_it != m_config.end();
-             ++config_it, ++signal_it, ++field_it, ++last_it) {
-            *signal_it = config_it->msr_obj->signal(config_it->signal_idx, *(*field_it), *last_it);
+        int total_msr = num_msr(); // TODO:
+        // TODO: assert that m_field_ptr and m_field_last and m_config are this size also
+
+        std::vector<double> signal_vec(total_msr);
+        for (int msr_idx = 0; msr_idx < total_msr; ++msr_idx) {
+            signal_vec[msr_idx] = m_config[msr_idx].msr_obj->signal(
+                m_config[msr_idx].signal_idx,
+                *(m_field_ptr[msr_idx]),
+                m_field_last[msr_idx]);
+            m_field_last[msr_idx] = *(m_field_ptr[msr_idx]);
         }
         return sample(signal_vec);
     }

@@ -175,7 +175,7 @@ namespace geopm
             /// @brief Get the value of the signal.
             /// @return The value of the parameter measured in SI
             ///         units.
-            virtual double sample(void) const = 0;
+            virtual double sample(void) = 0;
             /// @brief Get the number of MSRs required to generate the
             ///        signal.
             /// @return number of MSRs.
@@ -364,7 +364,7 @@ namespace geopm
             virtual std::string name(void) const override;
             int domain_type(void) const override;
             int domain_idx(void) const override;
-            double sample(void) const override;
+            double sample(void) override;
             int num_msr(void) const override;
             void offset(std::vector<uint64_t> &offset) const override;
             void map_field(const uint64_t *field) override;
