@@ -60,9 +60,10 @@ namespace geopm
             };
 
             enum m_function_e {
-                M_FUNCTION_SCALE,
+                M_FUNCTION_SCALE,           // Only apply scalar value (applied by all functions)
                 M_FUNCTION_LOG_HALF,        // 2.0 ^ -X
                 M_FUNCTION_7_BIT_FLOAT,     // 2 ^ Y * (1.0 + Z / 4.0) : Y in [0:5), Z in [5:7)
+                M_FUNCTION_OVERFLOW,        // Counter that may overflow
             };
 
             enum m_units_e {
@@ -127,7 +128,8 @@ namespace geopm
             /// @param [in] field the 64-bit register value to decode.
             /// @return The decoded signal in SI units.
             virtual double signal(int signal_idx,
-                                  uint64_t field) const = 0;
+                                  uint64_t field,
+                                  uint64_t last_field) const = 0;
             /// @brief Set a control bit field in a raw MSR value.
             /// @param [in] control_idx Index of the control bit
             ///        field.
@@ -302,7 +304,8 @@ namespace geopm
             int signal_index(const std::string &name) const override;
             int control_index(const std::string &name) const override;
             double signal(int signal_idx,
-                          uint64_t field) const override;
+                          uint64_t field,
+                          uint64_t last_field) const override;
             void control(int control_idx,
                          double value,
                          uint64_t &field,
@@ -379,6 +382,7 @@ namespace geopm
             std::vector<IMSRSignal::m_signal_config_s> m_config;
             std::string m_name;
             std::vector<const uint64_t *> m_field_ptr;
+            std::vector<const uint64_t> m_field_last;
             bool m_is_field_mapped;
     };
 

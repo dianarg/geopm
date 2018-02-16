@@ -117,7 +117,7 @@ namespace geopm
                 break;
             case IMSR::M_FUNCTION_OVERFLOW:
                 if (sub_field < last_field) {
-                    sub_field = sub_field + (2 << m_num_bit - 1);
+                    sub_field = sub_field + ((1 << m_num_bit) - 1);
                 }
                 break;
             default:
@@ -342,13 +342,14 @@ namespace geopm
     }
 
     double MSR::signal(int signal_idx,
-                       uint64_t field) const
+                       uint64_t field,
+                       uint64_t last_field) const
     {
         if (signal_idx < 0 || signal_idx >= num_signal()) {
             throw Exception("MSR::signal(): signal_idx out of range",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        return m_signal_encode[signal_idx]->decode(field);
+        return m_signal_encode[signal_idx]->decode(field, last_field);
     }
 
     void MSR::control(int control_idx,
