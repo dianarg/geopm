@@ -308,6 +308,8 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/Policy.hpp \
                             src/PolicyFlags.cpp \
                             src/PolicyFlags.hpp \
+                            src/ProfileSample.cpp \
+                            src/ProfileSample.hpp \
                             src/ProfileTable.cpp \
                             src/ProfileTable.hpp \
                             src/ProfileThread.cpp \

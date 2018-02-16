@@ -31,6 +31,7 @@
  */
 
 #include "ProfileSample.hpp"
+#include "CircularBuffer.hpp"
 #include "config.h"
 
 namespace geopm
@@ -62,7 +63,7 @@ namespace geopm
         }
         for (int i = 0; i < m_num_rank; ++i) {
             // two samples are required for linear interpolation
-            m_rank_sample_prev.push_back(new CircularBuffer<struct m_rank_sample_s>(M_INTERP_TYPE_LINEAR));
+            m_rank_sample_buffer.push_back(new CircularBuffer<struct m_rank_sample_s>(M_INTERP_TYPE_LINEAR));
         }
         m_region_id.resize(m_num_rank, GEOPM_REGION_ID_UNMARKED);
     }
@@ -70,30 +71,30 @@ namespace geopm
     void ProfileSample::update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                                std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end)
     {
-        for (auto it = prof_sample_begin; it != prof_sample_end; ++it) {
-            if (!geopm_region_id_is_epoch(it->second.region_id) &&
-                it->second.region_id != GEOPM_REGION_ID_UNMARKED) {
+        for (auto sample_it = prof_sample_begin; sample_it != prof_sample_end; ++sample_it) {
+            if (!geopm_region_id_is_epoch(sample_it->second.region_id) &&
+                sample_it->second.region_id != GEOPM_REGION_ID_UNMARKED) {
                 struct m_rank_sample_s rank_sample;
-                rank_sample.timestamp = it->second.timestamp;
-                rank_sample.progress = it->second.progress;
-                auto it = m_rank_idx_map.find(it->second.rank);
+                rank_sample.timestamp = sample_it->second.timestamp;
+                rank_sample.progress = sample_it->second.progress;
+                auto rank_idx_it = m_rank_idx_map.find(sample_it->second.rank);
 #ifdef GEOPM_DEBUG
-                if (it == m_rank_idx_map.end()) {
+                if (rank_idx_it == m_rank_idx_map.end()) {
                     throw Exception("ProfileSample::update(): invalid profile sample data",
                                     GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
                 }
 #endif
-                size_t rank_idx = it->second;
-                if (it->second.region_id != m_region_id[rank_idx]) {
-                    m_rank_sample_prev[rank_idx]->clear();
+                size_t rank_idx = rank_idx_it->second;
+                if (sample_it->second.region_id != m_region_id[rank_idx]) {
+                    m_rank_sample_buffer[rank_idx]->clear();
                 }
                 if (rank_sample.progress == 1.0) {
                     m_region_id[rank_idx] = GEOPM_REGION_ID_UNMARKED;
                 }
                 else {
-                    m_region_id[rank_idx] = it->second.region_id;
+                    m_region_id[rank_idx] = sample_it->second.region_id;
                 }
-                m_rank_sample_prev[rank_idx]->insert(rank_sample);
+                m_rank_sample_buffer[rank_idx]->insert(rank_sample);
             }
         }
     }
@@ -104,17 +105,21 @@ namespace geopm
         double delta;
         double factor;
         double dsdt;
-        double progress;
         geopm_time_s timestamp_prev[2];
-        m_aligned_time = extrapolation_time;
-        for (auto it = m_rank_sample_prev.begin(); it != m_rank_sample_prev.end(); ++it) {
+        std::vector<double> result(m_num_rank);
+
+        int rank_idx = 0;
+        auto result_it = result.begin();
+        for (auto sample_it = m_rank_sample_buffer.begin();
+             sample_it != m_rank_sample_buffer.end();
+             ++sample_it, ++result_it) {
             switch((*it)->size()) {
                 case M_INTERP_TYPE_NONE:
-                    m_aligned_signal[m_num_platform_signal + M_NUM_RANK_SIGNAL * i] = 0.0;
+                    *result_it = 0.0;
                     break;
                 case M_INTERP_TYPE_NEAREST:
                     // if there is only one sample insert it directly
-                    m_aligned_signal[m_num_platform_signal + M_NUM_RANK_SIGNAL * i] = (*it)->value(0).progress;
+                    *result_it = (*it)->value(0).progress;
                     break;
                 case M_INTERP_TYPE_LINEAR:
                     // if there are two samples, extrapolate to the given timestamp
@@ -123,19 +128,18 @@ namespace geopm
                     delta = geopm_time_diff(timestamp_prev + 1, &extrapolation_time);
                     factor = 1.0 / geopm_time_diff(timestamp_prev, timestamp_prev + 1);
                     dsdt = ((*it)->value(1).progress - (*it)->value(0).progress) * factor;
-                    dsdt = dsdt > 0.0 ? dsdt : 0.0; // progress is monotonically increasing
+                    dsdt = dsdt > 0.0 ? dsdt : 0.0; // progress does not decrease over time
                     if ((*it)->value(1).progress == 1.0) {
-                        progress = 1.0;
+                        *result_it = 1.0;
                     }
                     else if ((*it)->value(0).progress == 0.0) {
-                        progress = 0.0;
+                        *result_it = 0.0;
                     }
                     else {
-                        progress = (*it)->value(1).progress + dsdt * delta;
-                        progress = progress >= 0.0 ? progress : 1e-9;
-                        progress = progress <= 1.0 ? progress : 1 - 1e-9;
+                        *result_it = (*it)->value(1).progress + dsdt * delta;
+                        *result_it = *result_it >= 0.0 ? *result_it : 1e-9;
+                        *result_it = *result_it <= 1.0 ? *result_it : 1 - 1e-9;
                     }
-                    m_aligned_signal[m_num_platform_signal + M_NUM_RANK_SIGNAL * i] = progress;
                     break;
                 default:
 #ifdef GEOPM_DEBUG
@@ -144,7 +148,6 @@ namespace geopm
 #endif
                     break;
             }
-            ++i;
         }
     }
 

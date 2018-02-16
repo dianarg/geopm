@@ -36,6 +36,7 @@
 
 namespace geopm
 {
+    class ICircularBuffer;
     class ProfileSample
     {
         public:
@@ -47,6 +48,15 @@ namespace geopm
             std::vector<double> per_cpu_progress(struct geopm_time_s extrapolation_time);
             std::vector<uint64_t> per_cpu_region_id(void);
         private:
+            struct m_rank_sample_s {
+                struct geopm_time_s timestamp;
+                double progress;
+            };
+           enum m_interp_type_e {
+                M_INTERP_TYPE_NONE = 0,
+                M_INTERP_TYPE_NEAREST = 1,
+                M_INTERP_TYPE_LINEAR = 2,
+            };
             /// @brief Number of ranks running on the node.
             int m_num_rank;
             /// @brief A map from the MPI rank reported in the
@@ -59,7 +69,10 @@ namespace geopm
             std::vector<uint64_t> m_region_id;
             /// @brief Per rank record of last profile samples in
             ///        m_region_id_prev
-            std::vector<ICircularBuffer<struct m_rank_sample_s> *> m_rank_sample_prev;
+            std::vector<ICircularBuffer<struct m_rank_sample_s> *> m_rank_sample_buffer;
+            /// @brief Vector to multiply with signal_domain_matrix to
+            /// project into control domains
+            std::vector<double> m_aligned_signal;
 
 
     }
