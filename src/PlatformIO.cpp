@@ -137,6 +137,21 @@ namespace geopm
                 is_found = true;
             }
         }
+        // search platformio named signals list
+        // later will read energy into circular buffer stored in this object
+        if (!is_found && signal_name == "POWER_PACKAGE") {
+            int energy_package_idx = push_signal("ENERGY_PACKAGE", domain_type, domain_idx);
+            result = m_active_signal.size();
+            // save info needed to calculate sample. when sample is called,
+            // call sample on each index in the list, then apply the function
+            magic_save_stuff(result, {energy_package_idx}, function_of_doubles);
+            m_active_signal.emplace_back(nullptr, result);
+            is_found = true;
+        }
+        else if (!is_found && signal_name == "POWER_DRAM") {
+
+        }
+
         if (result == -1) {
             throw Exception("PlatformIO::push_signal(): signal name \"" + signal_name + "\" not found",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
@@ -183,12 +198,19 @@ namespace geopm
 
     double PlatformIO::sample(int signal_idx)
     {
+        double result = NAN;
         if (signal_idx < 0 || signal_idx >= num_signal()) {
             throw Exception("PlatformIO::sample(): signal_idx out of range",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         auto &group_idx_pair = m_active_signal[signal_idx];
-        return group_idx_pair.first->sample(group_idx_pair.second);
+        if (group_idx_pair.first) {
+            result = group_idx_pair.first->sample(group_idx_pair.second);
+        }
+        else {
+            result = magic_function(group_idx_pair.second);
+        }
+        return result;
     }
 
     void PlatformIO::adjust(int control_idx,

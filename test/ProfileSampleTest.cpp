@@ -70,3 +70,5 @@ TEST_F(ProfileSampleTest, cpu_rank)
 // update changes result of per_cpu_region_id
 // update changes result of per_cpu_progress
 // progress of 100% changes region id to GEOPM_REGION_ID_UNMARKED
+
+// look at sample regulator tests

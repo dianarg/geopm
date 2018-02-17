@@ -81,17 +81,18 @@ namespace geopm
                 register_msr_control(msr_ptr->name() + ":" + msr_ptr->control_name(idx));
             }
         }
+        // TODO: bandwidth
         switch (cpuid) {
             case M_CPUID_SNB:
             case M_CPUID_IVT:
-                
+
                 break;
             case M_CPUID_HSX:
             case M_CPUID_BDX:
 
                 break;
             case M_CPUID_KNL:
-                
+
                 break;
             default:
                 throw Exception("MSRIOGroup: Unsupported CPUID",
@@ -99,8 +100,12 @@ namespace geopm
                 break;
 
         }
+        // TODO: no tests
         register_msr_signal("FREQUENCY", {"PERF_STATUS"}, {"FREQ"});
         register_msr_control("FREQUENCY", {"PERF_CTL"}, {"FREQ"});
+
+        register_msr_signal("ENERGY_PACKAGE", {"PKG_ENERGY_STATUS"}, {"ENERGY"});
+        register_msr_signal("ENERGY_DRAM", {"DRAM_ENERGY_STATUS"}, {"ENERGY"});
     }
 
     MSRIOGroup::~MSRIOGroup()
