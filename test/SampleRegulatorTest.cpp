@@ -142,7 +142,7 @@ TEST_F(SampleRegulatorTest, align_profile)
     }
     // extrapolate one second
     struct geopm_time_s platform_time;
-    geopm_time_add(m_test_sample_time + 1, 1.0, &platform_time);
+    geopm_time_add(&(m_test_sample_time[1]), 1.0, &platform_time);
     align(platform_time);
     for (unsigned i = 24; i < m_aligned_signal.size(); ++i) {
         if ((i % 2) == 0) { // progress signal

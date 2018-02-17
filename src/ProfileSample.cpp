@@ -64,6 +64,7 @@ namespace geopm
 
     }
 
+    // TODO: could take vector& and the size
     void ProfileSample::update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                                std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end)
     {
@@ -132,6 +133,7 @@ namespace geopm
                         *result_it = 1.0;
                     }
                     else if (sample_it->value(0).progress == 0.0) {
+                        // so we don't miss region entry
                         *result_it = 0.0;
                     }
                     else {
