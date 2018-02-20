@@ -142,18 +142,23 @@ namespace geopm
         if (!is_found && signal_name == "POWER_PACKAGE") {
             int energy_package_idx = push_signal("ENERGY_PACKAGE", domain_type, domain_idx);
             int time_idx = push_signal("TIME", domain_type, domain_idx);
+            int region_id_idx = push_signal("REGION_ID", domain_type, domain_idx);
             result = m_active_signal.size();
 
             // save info needed to calculate sample. when sample is called,
             // call sample on each index in the list, then apply the function
             // TODO: this could also have default param for func that does sum
-            register_combined_signal(result, {energy_package_idx, time_idx},
+            register_combined_signal(result, {region_id_idx, time_idx, energy_package_idx},
                                      [] (std::vector<double> values) -> double {
                                          double energy = values[0];
                                          double time = values[1];
                                          result = energy * time;
                                          return result;
                                      });
+            // alternative:
+            CombinedSignal* sig = new PerRegionDerivativeCombinedSignal();
+            register_combined_signal(result, sig);
+
             m_active_signal.emplace_back(nullptr, result);  // TODO: use this instead?
             is_found = true;
         }
