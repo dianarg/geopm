@@ -90,7 +90,6 @@ namespace geopm
             case M_CPUID_HSX:
             case M_CPUID_BDX:
                 // LLC_VICTIMS, overflow type signal
-                register_msr_signal("BANDWIDTH", {"LLC_VICTIMS"}
                 break;
             case M_CPUID_KNL:
                 // M_L2_MISSES + M_HW_L2_PREFETCH
@@ -101,7 +100,7 @@ namespace geopm
                 break;
 
         }
-        // TODO: no tests
+
         register_msr_signal("FREQUENCY", {"PERF_STATUS"}, {"FREQ"});
         register_msr_control("FREQUENCY", {"PERF_CTL"}, {"FREQ"});
 
@@ -491,10 +490,9 @@ namespace geopm
         std::vector <MSRSignal *> &cpu_signal = (*(ins_ret.first)).second;
         // Check to see if the signal name has already been registered
         if (!ins_ret.second) {
-            /* delete previous signals */
-            for (auto &cs : cpu_signal) {
-                delete cs;
-            }
+            throw Exception("MSRIOGroup::register_msr_signal(): signal_name " + signal_name +
+                            " was previously registered.",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         cpu_signal.resize(m_num_cpu, NULL);
         int num_field = field_name.size();
@@ -551,10 +549,9 @@ namespace geopm
         std::vector <MSRControl *> &cpu_control = (*(ins_ret.first)).second;
         // Check to see if the control name has already been registered
         if (!ins_ret.second) {
-            /* delete previous controls */
-            for (auto &cc : cpu_control) {
-                delete cc;
-            }
+            throw Exception("MSRIOGroup::register_msr_control(): control_name " + control_name +
+                            " was previously registered.",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         cpu_control.resize(m_num_cpu, NULL);
         int num_field = field_name.size();
