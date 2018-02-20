@@ -36,6 +36,7 @@
 #include <memory>
 #include <list>
 #include <vector>
+#include <map>
 
 #include "PlatformIO.hpp"
 
@@ -76,10 +77,26 @@ namespace geopm
                                int domain_idx,
                                double setting) override;
         protected:
+            /// @brief Save a high-level signal as a combination of other signals.
+            /// @param [in] signal_idx Index a caller can use to refer to this signal.
+            /// @param [in] operands Input signal indices to be combined.  These must
+            ///             be valid pushed signals registered with PlatformIO.
+            /// @param [in] func The function that will combine the signals into
+            ///             a single result.
+            void register_combined_signal(int signal_idx,
+                                          std::vector<int> operands,
+                                          std::function<double(std::vector<double>)> func);
+            /// @brief Sample a combined signal using the saved function and operands.
+            double sample_combined(int signal_idx);
             bool m_is_active;
             std::list<std::unique_ptr<IOGroup> > m_iogroup_list;
             std::vector<std::pair<IOGroup *, int> > m_active_signal;
             std::vector<std::pair<IOGroup *, int> > m_active_control;
+
+            // TODO: make a class for this
+            // std::map<int, CombinedSignal>
+            std::map<int, std::pair<std::vector<int>,
+                                    std::function<double(std::vector<double>)> > > m_combined_signals;
     };
 }
 
