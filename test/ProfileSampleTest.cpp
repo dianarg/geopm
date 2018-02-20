@@ -37,9 +37,19 @@
 
 class ProfileSampleTest : public ::testing::Test
 {
+    public:
+        ProfileSampleTest();
     protected:
+        std::vector<int> m_rank;
         geopm::ProfileSample m_profile_sample;
 };
+
+ProfileSampleTest::ProfileSampleTest()
+    : m_profile_sample(m_rank)
+{
+
+}
+
 
 TEST_F(ProfileSampleTest, cpu_rank)
 {
@@ -49,15 +59,15 @@ TEST_F(ProfileSampleTest, cpu_rank)
     EXPECT_EQ(0u, progress1.size());
     EXPECT_EQ(0u, region1.size());
 
-    m_profile_sample.cpu_rank({23, 45});
+    //m_profile_sample.cpu_rank({23, 45});
 
     auto progress2 = m_profile_sample.per_cpu_progress(time1);
     auto region2 = m_profile_sample.per_cpu_region_id();
     EXPECT_EQ(2u, progress2.size());
     EXPECT_EQ(2u, region2.size());
 
-    // duplicate cpus
-    m_profile_sample.cpu_rank({23, 45, 45, 23});
+    // TODO: duplicate cpus
+    //m_profile_sample.cpu_rank({23, 45, 45, 23});
 
     auto progress3 = m_profile_sample.per_cpu_progress(time1);
     auto region3 = m_profile_sample.per_cpu_region_id();

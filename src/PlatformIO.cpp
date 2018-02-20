@@ -141,11 +141,20 @@ namespace geopm
         // later will read energy into circular buffer stored in this object
         if (!is_found && signal_name == "POWER_PACKAGE") {
             int energy_package_idx = push_signal("ENERGY_PACKAGE", domain_type, domain_idx);
+            int time_idx = push_signal("TIME", domain_type, domain_idx);
             result = m_active_signal.size();
+
             // save info needed to calculate sample. when sample is called,
             // call sample on each index in the list, then apply the function
-            magic_save_stuff(result, {energy_package_idx}, function_of_doubles);
-            m_active_signal.emplace_back(nullptr, result);
+            // TODO: this could also have default param for func that does sum
+            register_combined_signal(result, {energy_package_idx, time_idx},
+                                     [] (std::vector<double> values) -> double {
+                                         double energy = values[0];
+                                         double time = values[1];
+                                         result = energy * time;
+                                         return result;
+                                     });
+            m_active_signal.emplace_back(nullptr, result);  // TODO: use this instead?
             is_found = true;
         }
         else if (!is_found && signal_name == "POWER_DRAM") {
@@ -157,6 +166,13 @@ namespace geopm
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return result;
+    }
+
+    void PlatformIO::register_combined_signal(int signal_idx,
+                                              std::vector<int> operands,
+                                              std::function<double(std::vector<double>)> func)
+    {
+        m_combined_signals[signal_idx] = {operands, func};
     }
 
     int PlatformIO::push_control(const std::string &control_name,
@@ -208,8 +224,22 @@ namespace geopm
             result = group_idx_pair.first->sample(group_idx_pair.second);
         }
         else {
-            result = magic_function(group_idx_pair.second);
+            result = sample_combined(group_idx_pair.second);
         }
+        return result;
+    }
+
+    double PlatformIO::sample_combined(int signal_idx)
+    {
+        double result = NAN;
+        auto &op_func_pair = m_combined_signals.at(signal_idx);
+        std::vector<int> &operand_idx = op_func_pair.first;
+        std::function<double(std::vector<double>)> &func = op_func_pair.second;
+        std::vector<double> operands(operand_idx.size());
+        for (size_t ii = 0; ii < operands.size(); ++ii) {
+            operands[ii] = sample(operand_idx[ii]);
+        }
+        result = func(operands);
         return result;
     }
 
