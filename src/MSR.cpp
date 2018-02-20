@@ -119,12 +119,14 @@ namespace geopm
                 if (sub_field < last_field) {
                     sub_field = sub_field + ((1 << m_num_bit) - 1);
                 }
+                result = (float)sub_field;
                 break;
             case IMSR::M_FUNCTION_SCALE:
+                result = (float)sub_field;
             default:
                 break;
         }
-        result = m_scalar * sub_field;
+        result *= m_scalar;
         return result;
     }
 
