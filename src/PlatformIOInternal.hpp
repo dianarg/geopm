@@ -94,9 +94,37 @@ namespace geopm
             std::vector<std::pair<IOGroup *, int> > m_active_control;
 
             // TODO: make a class for this
-            // std::map<int, CombinedSignal>
+            // std::map<int, CombinedSignal*>
             std::map<int, std::pair<std::vector<int>,
                                     std::function<double(std::vector<double>)> > > m_combined_signals;
+    };
+
+    class CombinedSignal
+    {
+        public:
+            virtual double sample(std::vector<double> values) {
+                return std::accumulate(values.begin(), values.end(), 0.0);
+            }
+    };
+
+    class PerRegionDerivativeCombinedSignal : public CombinedSignal
+    {
+        public:
+
+
+            double sample(std::vector<double> values) override {
+                // derivative
+            }
+        protected:
+            struct m_sample_s
+            {
+                double time;
+                double energy;
+
+            };
+            //CircularBuffer<std::vector<double> > m_history;
+            // map from region ID to time+energy history for that region
+            std::map<uint64_t, CircularBuffer<sample_s> > m_history;
     };
 }
 

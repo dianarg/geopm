@@ -432,6 +432,7 @@ namespace geopm
         }
         int total_msr = num_msr(); // TODO:
         // TODO: assert that m_field_ptr and m_field_last and m_config are this size also
+        // TODO: change this back to using iterators
 
         std::vector<double> signal_vec(total_msr);
         for (int msr_idx = 0; msr_idx < total_msr; ++msr_idx) {
