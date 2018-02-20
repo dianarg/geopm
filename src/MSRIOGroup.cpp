@@ -85,14 +85,15 @@ namespace geopm
         switch (cpuid) {
             case M_CPUID_SNB:
             case M_CPUID_IVT:
-
+                // TODO: where is LLC victim MSR?
                 break;
             case M_CPUID_HSX:
             case M_CPUID_BDX:
-
+                // LLC_VICTIMS, overflow type signal
+                register_msr_signal("BANDWIDTH", {"LLC_VICTIMS"}
                 break;
             case M_CPUID_KNL:
-
+                // M_L2_MISSES + M_HW_L2_PREFETCH
                 break;
             default:
                 throw Exception("MSRIOGroup: Unsupported CPUID",
