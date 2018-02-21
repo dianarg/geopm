@@ -148,16 +148,16 @@ namespace geopm
             // save info needed to calculate sample. when sample is called,
             // call sample on each index in the list, then apply the function
             // TODO: this could also have default param for func that does sum
-            register_combined_signal(result, {region_id_idx, time_idx, energy_package_idx},
+            /*register_combined_signal(result, {region_id_idx, time_idx, energy_package_idx},
                                      [] (std::vector<double> values) -> double {
-                                         double energy = values[0];
-                                         double time = values[1];
-                                         result = energy * time;
-                                         return result;
-                                     });
+                                         double energy = values[1];
+                                         double time = values[2];
+                                         return energy * time;
+                                         });*/
             // alternative:
-            CombinedSignal* sig = new PerRegionDerivativeCombinedSignal();
-            register_combined_signal(result, sig);
+            register_combined_signal(result,
+                                     {region_id_idx, time_idx, energy_package_idx},
+                                     std::unique_ptr<CombinedSignal>(new PerRegionDerivativeCombinedSignal));
 
             m_active_signal.emplace_back(nullptr, result);  // TODO: use this instead?
             is_found = true;
@@ -175,10 +175,20 @@ namespace geopm
 
     void PlatformIO::register_combined_signal(int signal_idx,
                                               std::vector<int> operands,
+                                              std::unique_ptr<CombinedSignal> signal)
+    {
+        //auto tmp = std::make_pair(operands, signal);
+        //m_combined_signal[signal_idx] = std::move(tmp);
+    }
+
+    /*
+    void PlatformIO::register_combined_signal(int signal_idx,
+                                              std::vector<int> operands,
                                               std::function<double(std::vector<double>)> func)
     {
         m_combined_signals[signal_idx] = {operands, func};
     }
+    */
 
     int PlatformIO::push_control(const std::string &control_name,
                                  int domain_type,
@@ -237,14 +247,15 @@ namespace geopm
     double PlatformIO::sample_combined(int signal_idx)
     {
         double result = NAN;
-        auto &op_func_pair = m_combined_signals.at(signal_idx);
+        auto &op_func_pair = m_combined_signal.at(signal_idx);
         std::vector<int> &operand_idx = op_func_pair.first;
-        std::function<double(std::vector<double>)> &func = op_func_pair.second;
+        //std::function<double(std::vector<double>)> &func = op_func_pair.second;
+        auto &signal = op_func_pair.second;
         std::vector<double> operands(operand_idx.size());
         for (size_t ii = 0; ii < operands.size(); ++ii) {
             operands[ii] = sample(operand_idx[ii]);
         }
-        result = func(operands);
+        result = signal->sample(operands);
         return result;
     }
 

@@ -227,6 +227,8 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/PlatformIOTest.adjust \
               test/gtest_links/PlatformIOTest.read_signal \
               test/gtest_links/PlatformIOTest.write_control \
+              test/gtest_links/CombinedSignalTest.sample_sum \
+              test/gtest_links/CombinedSignalTest.sample_flat_derivative \
               # end
 
 if ENABLE_MPI
@@ -303,6 +305,7 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/MockPlatformTopo.hpp \
                           test/ProfileSampleTest.cpp \
                           test/ProfileIOGroupTest.cpp \
+                          test/CombinedSignalTest.cpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \
