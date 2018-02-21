@@ -65,7 +65,6 @@ namespace geopm
             m_derivative_num_fit[region_id] = 0;
         }
 
-
         double ins_time = values[1];
         double ins_signal = values[2];
         // insert time and signal

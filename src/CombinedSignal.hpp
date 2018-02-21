@@ -43,12 +43,16 @@ namespace geopm
     class CombinedSignal
     {
         public:
+            CombinedSignal() = default;
+            virtual ~CombinedSignal() = default;
             virtual double sample(std::vector<double> values);
     };
 
     class PerRegionDerivativeCombinedSignal : public CombinedSignal
     {
         public:
+            PerRegionDerivativeCombinedSignal() = default;
+            virtual ~PerRegionDerivativeCombinedSignal() = default;
             double sample(std::vector<double> values) override;
         protected:
             struct m_sample_s
