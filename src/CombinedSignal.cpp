@@ -55,36 +55,42 @@ namespace geopm
         }
 #endif
         double region_id = values[0];
-        if (m_time_buffer.find(region_id) == m_time_buffer.end()) {
-            //m_time_buffer[region_id] = CircularBuffer<m_sample_s>(M_NUM_SAMPLE_HISTORY);
-        }
-        if (m_signal_buffer.find(region_id) == m_signal_buffer.end()) {
-            //m_signal_buffer[region_id] = CircularBuffer<m_sample_s>(M_NUM_SAMPLE_HISTORY);
+        if (m_history.find(region_id) == m_history.end()) {
+            m_history[region_id] = CircularBuffer<m_sample_s>(M_NUM_SAMPLE_HISTORY);
         }
         if (m_derivative_last.find(region_id) == m_derivative_last.end()) {
             m_derivative_last[region_id] = NAN;
         }
-        /*
+        if (m_derivative_num_fit.find(region_id) == m_derivative_num_fit.end()) {
+            m_derivative_num_fit[region_id] = 0;
+        }
+
+
         double ins_time = values[1];
         double ins_signal = values[2];
         // insert time and signal
-        m_time_buffer.insert(ins_time);
-        m_signal_buffer.insert(ins_signal);
+        m_history[region_id].insert({ins_time, ins_signal});
+        if (m_derivative_num_fit.at(region_id) < M_NUM_SAMPLE_HISTORY) {
+            ++(m_derivative_num_fit[region_id]);
+        }
+
+        const CircularBuffer<m_sample_s> &history_buffer = m_history.at(region_id);
+        int num_fit = m_derivative_num_fit.at(region_id);
 
         // Least squares linear regression to approximate the
         // derivative with noisy data.
         double result = m_derivative_last.at(region_id);
-        if (m_derivative_num_fit >= 2) {
-            size_t buf_size = m_time_buffer->size();
+        if (num_fit >= 2) {
+            size_t buf_size = history_buffer.size();
             double A = 0.0, B = 0.0, C = 0.0, D = 0.0;
-            double E = 1.0 / m_derivative_num_fit;
-            double time_0 = m_time_buffer.at(region_id).value(buf_size - m_derivative_num_fit);
-            const double sig_0 = m_signal_buffer.at(region_id).value(buf_size - m_derivative_num_fit);
-            for (size_t buf_off = buf_size - m_derivative_num_fit;
+            double E = 1.0 / num_fit;
+            double time_0 = history_buffer.value(buf_size - num_fit).time;
+            const double sig_0 = history_buffer.value(buf_size - num_fit).sample;
+            for (size_t buf_off = buf_size - num_fit;
                  buf_off < buf_size; ++buf_off) {
-                double tt = m_time_buffer.at(region_id).value(buf_off);
-                double time = tt - time_0; //geopm_time_diff(&time_0, &tt);
-                double sig = m_signal_buffer.at(region_id).value(buf_off) - sig_0;
+                double tt = history_buffer.value(buf_off).time;
+                double time = tt - time_0;
+                double sig = history_buffer.value(buf_off).sample - sig_0;
                 A += time * sig;
                 B += time;
                 C += sig;
@@ -95,8 +101,6 @@ namespace geopm
             result = ssxy / ssxx;
             m_derivative_last[region_id] = result;
         }
-        return result ? result : NAN;
-        */
-        return NAN;
+        return result;
     }
 }

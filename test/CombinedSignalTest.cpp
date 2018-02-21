@@ -42,28 +42,56 @@ using geopm::Exception;
 
 TEST(CombinedSignalTest, sample_sum)
 {
-    CombinedSignal signal;
+    CombinedSignal comb_signal;
     std::vector<double> values = {0.0};
-    double result = signal.sample(values);
+    double result = comb_signal.sample(values);
     EXPECT_DOUBLE_EQ(0.0, result);
 
     values = {4.1, 5, -6, 7, 18};
-    result = signal.sample(values);
+    result = comb_signal.sample(values);
     EXPECT_DOUBLE_EQ(28.1, result);
 }
 
 TEST(CombinedSignalTest, sample_flat_derivative)
 {
-    PerRegionDerivativeCombinedSignal signal;
-    EXPECT_THROW(signal.sample({0}), Exception);
-    EXPECT_THROW(signal.sample({0, 1, 2, 3}), Exception);
+    PerRegionDerivativeCombinedSignal comb_signal;
+    EXPECT_THROW(comb_signal.sample({0}), Exception);
+    EXPECT_THROW(comb_signal.sample({0, 1, 2, 3}), Exception);
 
     // values expected: region_id, time, value
     std::vector<double> values = {1234, 0, 5};
-    double result = signal.sample(values);
-    EXPECT_DOUBLE_EQ(NAN, result);
+    double result = comb_signal.sample(values);
+    EXPECT_TRUE(std::isnan(result));
 
     values = {1234, 1, 5};
-    result = signal.sample(values);
+    result = comb_signal.sample(values);
     EXPECT_DOUBLE_EQ(0.0, result);
+
+    values = {1234, 2, 5};
+    result = comb_signal.sample(values);
+    EXPECT_DOUBLE_EQ(0.0, result);
+}
+
+TEST(CombinedSignalTest, sample_slope_derivative)
+{
+    PerRegionDerivativeCombinedSignal comb_signal;
+    // should have slope of 1.0
+    std::vector<double> sample_values = {0.000001, .999999, 2.000001,
+                                         2.999999, 4.000001, 4.999999,
+                                         6.000001, 6.999999, 8.000001,
+                                         8.999999};
+
+    double result = NAN;
+    for (size_t ii = 0; ii < sample_values.size(); ++ii) {
+        result = comb_signal.sample({12345, (double)ii, sample_values[ii]});
+    }
+    EXPECT_NEAR(1.0, result, 0.0001);
+
+    // different region
+    // should have slope of .238 with least squares fit
+    sample_values = {0, 1, 2, 3, 0, 1, 2, 3};
+    for (size_t ii = 0; ii < sample_values.size(); ++ii) {
+        result = comb_signal.sample({8080, (double)ii, sample_values[ii]});
+    }
+    EXPECT_NEAR(0.238, result, 0.001);
 }

@@ -54,14 +54,12 @@ namespace geopm
             struct m_sample_s
             {
                 double time;
-                double energy;
-
+                double sample;
             };
             // map from region ID to time+energy history for that region
-            std::map<double, CircularBuffer<m_sample_s> > m_time_buffer;
-            std::map<double, CircularBuffer<m_sample_s> > m_signal_buffer;
+            std::map<double, CircularBuffer<m_sample_s> > m_history;
             std::map<double, double> m_derivative_last;
-            int m_derivative_num_fit = 0;
+            std::map<double, int> m_derivative_num_fit;
             const int M_NUM_SAMPLE_HISTORY = 8;
     };
 }
