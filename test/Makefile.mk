@@ -117,12 +117,10 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/PolicyTest.converged \
               test/gtest_links/PolicyTest.negative_unsized_vector \
               test/gtest_links/PolicyTest.negative_index_oob \
-              test/gtest_links/BalancingDeciderTest.plugin \
               test/gtest_links/BalancingDeciderTest.name \
               test/gtest_links/BalancingDeciderTest.supported \
               test/gtest_links/BalancingDeciderTest.new_policy_message \
               test/gtest_links/BalancingDeciderTest.update_policy \
-              test/gtest_links/GoverningDeciderTest.plugin \
               test/gtest_links/GoverningDeciderTest.decider_is_supported \
               test/gtest_links/GoverningDeciderTest.name \
               test/gtest_links/GoverningDeciderTest.1_socket_under_budget \
@@ -309,6 +307,7 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/MockPlatformIO.hpp \
                           test/MockPlatformTopo.hpp \
                           test/CombinedSignalTest.cpp \
+                          test/StaticPolicyDeciderTest.cpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \
