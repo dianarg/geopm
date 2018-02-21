@@ -90,7 +90,6 @@ namespace geopm
             case M_CPUID_HSX:
             case M_CPUID_BDX:
                 // LLC_VICTIMS, overflow type signal
-                register_msr_signal("BANDWIDTH", {"LLC_VICTIMS"}
                 break;
             case M_CPUID_KNL:
                 // M_L2_MISSES + M_HW_L2_PREFETCH
@@ -101,7 +100,7 @@ namespace geopm
                 break;
 
         }
-        // TODO: no tests
+
         register_msr_signal("FREQUENCY", {"PERF_STATUS"}, {"FREQ"});
         register_msr_control("FREQUENCY", {"PERF_CTL"}, {"FREQ"});
 

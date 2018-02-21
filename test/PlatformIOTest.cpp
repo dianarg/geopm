@@ -112,6 +112,8 @@ class PlatformIOTest : public ::testing::Test
 void PlatformIOTest::SetUp()
 {
     std::list<std::unique_ptr<IOGroup>> iogroup_list;
+
+    // IOGroups for specific signals
     auto tmp = new MockIOGroup;
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
@@ -122,25 +124,41 @@ void PlatformIOTest::SetUp()
     tmp = new MockIOGroup;
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
-    tmp->set_valid_signal_names({"FREQ", "POWER"});
-    tmp->set_valid_control_names({"FREQ", "POWER"});
-    ON_CALL(*tmp, signal_domain_type("FREQ"))
-        .WillByDefault(Return(PlatformTopo::M_DOMAIN_CPU));
-    ON_CALL(*tmp, control_domain_type("FREQ"))
-        .WillByDefault(Return(PlatformTopo::M_DOMAIN_CPU));
-    ON_CALL(*tmp, signal_domain_type("POWER"))
-        .WillByDefault(Return(PlatformTopo::M_DOMAIN_PACKAGE));
-    ON_CALL(*tmp, control_domain_type("POWER"))
+    tmp->set_valid_signal_names({"ENERGY_PACKAGE"});
+    ON_CALL(*tmp, signal_domain_type("ENERGY_PACKAGE"))
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_PACKAGE));
 
     tmp = new MockIOGroup;
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
-    tmp->set_valid_signal_names({"POWER"});
-    tmp->set_valid_control_names({"POWER"});
-    ON_CALL(*tmp, signal_domain_type("POWER"))
+    tmp->set_valid_signal_names({"REGION_ID"});
+    ON_CALL(*tmp, signal_domain_type("REGION_ID"))
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_BOARD));
-    ON_CALL(*tmp, control_domain_type("POWER"))
+
+    // IOGroups with signals and controls
+    tmp = new MockIOGroup;
+    iogroup_list.emplace_back(tmp);
+    m_iogroup_ptr.push_back(tmp);
+    tmp->set_valid_signal_names({"FREQ", "MODE"});
+    tmp->set_valid_control_names({"FREQ", "MODE"});
+    ON_CALL(*tmp, signal_domain_type("FREQ"))
+        .WillByDefault(Return(PlatformTopo::M_DOMAIN_CPU));
+    ON_CALL(*tmp, control_domain_type("FREQ"))
+        .WillByDefault(Return(PlatformTopo::M_DOMAIN_CPU));
+    ON_CALL(*tmp, signal_domain_type("MODE"))
+        .WillByDefault(Return(PlatformTopo::M_DOMAIN_PACKAGE));
+    ON_CALL(*tmp, control_domain_type("MODE"))
+        .WillByDefault(Return(PlatformTopo::M_DOMAIN_PACKAGE));
+
+    // Group that overrides previous signals and controls
+    tmp = new MockIOGroup;
+    iogroup_list.emplace_back(tmp);
+    m_iogroup_ptr.push_back(tmp);
+    tmp->set_valid_signal_names({"MODE"});
+    tmp->set_valid_control_names({"MODE"});
+    ON_CALL(*tmp, signal_domain_type("MODE"))
+        .WillByDefault(Return(PlatformTopo::M_DOMAIN_BOARD));
+    ON_CALL(*tmp, control_domain_type("MODE"))
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_BOARD));
 
     m_platio.reset(new PlatformIO(std::move(iogroup_list)));
@@ -201,6 +219,59 @@ TEST_F(PlatformIOTest, push_signal)
 
     EXPECT_THROW_MESSAGE(m_platio->push_signal("TIME", PlatformTopo::M_DOMAIN_CPU, 0),
                          GEOPM_ERROR_INVALID, "pushing signals after");
+}
+
+TEST_F(PlatformIOTest, signal_power)
+{
+    for (auto &it : m_iogroup_ptr) {
+        if (it->is_valid_signal("TIME")) {
+            EXPECT_CALL(*it, push_signal("TIME", _, _));
+        }
+        if (it->is_valid_signal("ENERGY_PACKAGE")) {
+            EXPECT_CALL(*it, push_signal("ENERGY_PACKAGE", _, _))
+                .Times(2);
+        }
+        if (it->is_valid_signal("REGION_ID")) {
+            EXPECT_CALL(*it, push_signal("REGION_ID", _, _));
+        }
+    }
+
+    int idx = m_platio->push_signal("POWER_PACKAGE", PlatformTopo::M_DOMAIN_PACKAGE, 0);
+    int energy_idx = m_platio->push_signal("ENERGY_PACKAGE", PlatformTopo::M_DOMAIN_PACKAGE, 0);
+    EXPECT_NE(energy_idx, idx);
+
+    for (auto &it : m_iogroup_ptr) {
+        EXPECT_CALL(*it, read_batch()).Times(3);
+        if (it->is_valid_signal("TIME")) {
+            EXPECT_CALL(*it, sample(0))
+                .WillOnce(Return(2.0))
+                .WillOnce(Return(3.0))
+                .WillOnce(Return(4.0));
+        }
+        if (it->is_valid_signal("ENERGY_PACKAGE")) {
+            EXPECT_CALL(*it, sample(0))
+                .WillOnce(Return(777.77))
+                .WillOnce(Return(888.88))
+                .WillOnce(Return(999.99));
+        }
+        if (it->is_valid_signal("REGION_ID")) {
+            EXPECT_CALL(*it, sample(0)).Times(3)
+                .WillRepeatedly(Return(42));
+        }
+    }
+
+    m_platio->read_batch();
+    double result = m_platio->sample(idx);
+    EXPECT_DOUBLE_EQ(888.88 * 2.0, result);
+
+    m_platio->read_batch();
+    result = m_platio->sample(idx);
+    EXPECT_DOUBLE_EQ(111.11, result);
+
+    m_platio->read_batch();
+    result = m_platio->sample(idx);
+    EXPECT_DOUBLE_EQ(111.11, result);
+
 }
 
 TEST_F(PlatformIOTest, push_control)
@@ -299,14 +370,14 @@ TEST_F(PlatformIOTest, write_control)
 TEST_F(PlatformIOTest, read_signal_override)
 {
     for (auto &it : m_iogroup_ptr) {
-        EXPECT_CALL(*it, signal_domain_type("POWER"));
-        if (it->signal_domain_type("POWER") == PlatformTopo::M_DOMAIN_BOARD) {
-            EXPECT_CALL(*it, read_signal("POWER", PlatformTopo::M_DOMAIN_CPU, 0)).WillOnce(Return(5e9));
+        EXPECT_CALL(*it, signal_domain_type("MODE"));
+        if (it->signal_domain_type("MODE") == PlatformTopo::M_DOMAIN_BOARD) {
+            EXPECT_CALL(*it, read_signal("MODE", PlatformTopo::M_DOMAIN_CPU, 0)).WillOnce(Return(5e9));
         }
         else {
             EXPECT_CALL(*it, read_signal(_, _, _)).Times(0);
         }
     }
-    double freq = m_platio->read_signal("POWER", PlatformTopo::M_DOMAIN_CPU, 0);
+    double freq = m_platio->read_signal("MODE", PlatformTopo::M_DOMAIN_CPU, 0);
     EXPECT_DOUBLE_EQ(5e9, freq);
 }
