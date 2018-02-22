@@ -93,8 +93,6 @@ class MSRTest : public :: testing :: Test
         std::vector<const IMSR *> m_msrs;
 };
 
-// TODO: test of overflow counter
-
 void MSRTest::SetUp()
 {
     m_cpu_idx = 0;
