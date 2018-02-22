@@ -158,9 +158,10 @@ void PlatformIOTest::SetUp()
     ON_CALL(*tmp, control_domain_type("MODE"))
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_PACKAGE));
 
+    m_platio.reset(new PlatformIO(std::move(iogroup_list)));
+
     // Group that overrides previous signals and controls
     tmp = new MockIOGroup;
-    iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
     tmp->set_valid_signal_names({"MODE"});
     tmp->set_valid_control_names({"MODE"});
@@ -169,7 +170,8 @@ void PlatformIOTest::SetUp()
     ON_CALL(*tmp, control_domain_type("MODE"))
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_BOARD));
 
-    m_platio.reset(new PlatformIO(std::move(iogroup_list)));
+    // Alternative way to add IOGroup after construction
+    m_platio->register_iogroup(std::unique_ptr<IOGroup>(tmp));
 }
 
 TEST_F(PlatformIOTest, domain_type)
@@ -307,6 +309,7 @@ TEST_F(PlatformIOTest, push_control)
     for (auto &it : m_iogroup_ptr) {
         if (it->is_valid_control("FREQ")) {
             EXPECT_CALL(*it, push_control("FREQ", PlatformTopo::M_DOMAIN_CPU, 0));
+            EXPECT_CALL(*it, adjust(_, _));
         }
     }
 
@@ -318,6 +321,11 @@ TEST_F(PlatformIOTest, push_control)
                          GEOPM_ERROR_INVALID, "control name \"INVALID\" not found");
 
     EXPECT_EQ(1, m_platio->num_control());
+
+    m_platio->adjust(idx, 1e9);
+
+    EXPECT_THROW_MESSAGE(m_platio->push_control("MODE", PlatformTopo::M_DOMAIN_CPU, 0),
+                         GEOPM_ERROR_INVALID, "pushing controls after");
 }
 
 TEST_F(PlatformIOTest, sample)
