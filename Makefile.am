@@ -257,6 +257,7 @@ libgeopmpolicy_la_SOURCES = src/CircularBuffer.hpp \
                             src/ControlMessage.hpp \
                             src/Decider.cpp \
                             src/Decider.hpp \
+                            src/DefaultProfile.cpp \
                             src/Environment.cpp \
                             src/Exception.cpp \
                             src/Exception.hpp \
@@ -357,7 +358,6 @@ if ENABLE_MPI
     # All source files that are compiled into libgeopmpolicy are also
     # compiled into libgeopm.
     libgeopm_la_SOURCES = $(libgeopmpolicy_la_SOURCES) \
-                          src/DefaultProfile.cpp \
                           src/geopm_mpi_comm_split.h \
                           src/geopm_pmpi.h \
                           src/geopm_pmpi.c \

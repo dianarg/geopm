@@ -64,11 +64,7 @@
 
 #include "config.h"
 
-extern "C"
-{
-    // defined in geopm_pmpi.c and used only here
-    void geopm_pmpi_prof_enable(int do_profile);
-}
+static int g_pmpi_prof_enabled = 0;
 
 namespace geopm
 {
@@ -81,12 +77,12 @@ namespace geopm
     DefaultProfile::DefaultProfile(const std::string prof_name, std::unique_ptr<IComm> comm)
         : Profile(prof_name, std::move(comm))
     {
-        geopm_pmpi_prof_enable(1);
+        g_pmpi_prof_enabled = 1;
     }
 
     DefaultProfile::~DefaultProfile()
     {
-        geopm_pmpi_prof_enable(0);
+        g_pmpi_prof_enabled = 0;
     }
 }
 
@@ -99,6 +95,11 @@ static geopm::DefaultProfile &geopm_default_prof(void)
 
 extern "C"
 {
+    int geopm_is_pmpi_prof_enabled(void)
+    {
+        return g_pmpi_prof_enabled;
+    }
+
     int geopm_prof_init(void)
     {
         int err = 0;
