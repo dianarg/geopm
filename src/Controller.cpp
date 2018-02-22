@@ -99,17 +99,20 @@ extern "C"
             if (policy_config) {
                 std::string policy_config_str(policy_config);
                 geopm::IGlobalPolicy *policy = new geopm::GlobalPolicy(policy_config_str, "");
-
-                geopm::Controller ctl(policy, geopm::comm_factory().make_plugin(geopm_env_comm())->
-                        split("ctl", geopm::IComm::M_COMM_SPLIT_TYPE_PPN1));
+                std::unique_ptr<geopm::IComm> comm = geopm::comm_factory().make_plugin(geopm_env_comm());
+                std::shared_ptr<geopm::IComm> ppn1_comm = comm->split("ctl", geopm::IComm::M_COMM_SPLIT_TYPE_PPN1);
+                comm.reset();
+                geopm::Controller ctl(policy, ppn1_comm);
                 err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
                 delete policy;
             }
             //The null case is for all nodes except rank 0.
             //These controllers should assume their policy from the master.
             else {
-                geopm::Controller ctl(NULL, geopm::comm_factory().make_plugin(geopm_env_comm())->
-                        split("ctl", geopm::IComm::M_COMM_SPLIT_TYPE_PPN1));
+                std::unique_ptr<geopm::IComm> comm = geopm::comm_factory().make_plugin(geopm_env_comm());
+                std::shared_ptr<geopm::IComm> ppn1_comm = comm->split("ctl", geopm::IComm::M_COMM_SPLIT_TYPE_PPN1);
+                comm.reset();
+                geopm::Controller ctl(NULL, ppn1_comm);
                 err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
             }
         }
@@ -124,9 +127,10 @@ extern "C"
         int err = 0;
         try {
             geopm::IGlobalPolicy *global_policy = (geopm::IGlobalPolicy *)policy;
-            *ctl = (struct geopm_ctl_c *)(new geopm::Controller(global_policy,
-                        geopm::comm_factory().make_plugin(geopm_env_comm())->
-                        split("ctl", geopm::IComm::M_COMM_SPLIT_TYPE_PPN1)));
+            std::unique_ptr<geopm::IComm> comm = geopm::comm_factory().make_plugin(geopm_env_comm());
+            std::shared_ptr<geopm::IComm> ppn1_comm = comm->split("ctl", geopm::IComm::M_COMM_SPLIT_TYPE_PPN1);
+            comm.reset();
+            *ctl = (struct geopm_ctl_c *)(new geopm::Controller(global_policy, ppn1_comm));
         }
         catch (...) {
             err = geopm::exception_handler(std::current_exception());

@@ -47,16 +47,6 @@
 
 #define GEOPM_MPI_COMM_PLUGIN_NAME "MPIComm"
 
-std::unique_ptr<geopm::MPIComm> g_singleton = nullptr;
-extern "C" {
-    void pre_finalize()
-    {
-        if (g_singleton != nullptr) {
-            g_singleton.reset(nullptr);
-        }
-    }
-}
-
 namespace geopm
 {
     class CommWindow
@@ -106,12 +96,8 @@ namespace geopm
 
     std::unique_ptr<IComm> MPIComm::make_plugin(void)
     {
-        //static std::unique_ptr<MPIComm> instance(new MPIComm);
-        if (g_singleton == nullptr) {
-            //static std::unique_ptr<MPIComm, my_delete> instance(new MPIComm);
-            g_singleton.reset(new MPIComm);
-        }
-        return std::unique_ptr<MPIComm>(new MPIComm(g_singleton.get()));
+        static std::unique_ptr<MPIComm> instance(new MPIComm);
+        return std::unique_ptr<MPIComm>(new MPIComm(instance.get()));
     }
 
     MPIComm::MPIComm()

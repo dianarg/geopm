@@ -89,6 +89,7 @@ extern "C"
     }
     #define geopm_prof_exit(a) mock_geopm_prof_exit(a)
 
+    int geopm_is_pmpi_prof_enabled(void);
 
     MPI_Comm g_passed_comm_arg = MPI_COMM_WORLD;
 
@@ -172,7 +173,6 @@ void MPIInterfaceTest::reset()
 {
     // Reset globals in geopm_pmpi.c
     g_is_geopm_pmpi_ctl_enabled = 0;
-    g_is_geopm_pmpi_prof_enabled = 0;
     g_ppn1_comm = MPI_COMM_NULL;
     g_ctl = NULL;
 
@@ -181,8 +181,6 @@ void MPIInterfaceTest::reset()
     g_test_curr_region_exit_id = 0;
     g_test_curr_region_enter_count = 0;
     g_test_curr_region_exit_count = 0;
-
-    geopm_pmpi_prof_enable(1);
 
     // mock initialization
     g_geopm_comm_world_swap = MPI_COMM_WORLD + 1;
@@ -207,12 +205,6 @@ void MPIInterfaceTest::comm_swap_check(int line)
 
 TEST_F(MPIInterfaceTest, geopm_api)
 {
-    geopm_pmpi_prof_enable(0);
-    EXPECT_EQ(0, g_is_geopm_pmpi_prof_enabled);
-    geopm_pmpi_prof_enable(1);
-    EXPECT_EQ(1, g_is_geopm_pmpi_prof_enabled);
-    reset();
-
     // TODO GEOPM_PORTABLE_MPI_COMM_COMPARE_ENABLE testing
     MPI_Comm comm, result;
     MPI_Comm_dup(MPI_COMM_WORLD, &comm);
@@ -225,7 +217,6 @@ TEST_F(MPIInterfaceTest, geopm_api)
     EXPECT_EQ(g_geopm_comm_world_swap, result);
     reset();
 
-    geopm_pmpi_prof_enable(1);
     geopm_mpi_region_enter(0);
     EXPECT_EQ(GEOPM_REGION_ID_MPI, g_test_curr_region_enter_id);
     EXPECT_EQ(1, g_test_curr_region_enter_count);
@@ -233,7 +224,6 @@ TEST_F(MPIInterfaceTest, geopm_api)
     EXPECT_EQ(0, g_test_curr_region_exit_count);
     reset();
 
-    geopm_pmpi_prof_enable(1);
     geopm_mpi_region_exit(0);
     EXPECT_EQ(GEOPM_REGION_ID_MPI, g_test_curr_region_exit_id);
     EXPECT_EQ(1, g_test_curr_region_exit_count);
