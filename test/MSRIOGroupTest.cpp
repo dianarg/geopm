@@ -473,3 +473,34 @@ TEST_F(MSRIOGroupTest, cpuid)
        std::cerr << "Warning: skipping MSRIOGroupTest.cpuid because non-intel architecture detected" << std::endl;
    }
 }
+
+TEST_F(MSRIOGroupTest, register_msr_signal)
+{
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_signal("TEST"),
+                         GEOPM_ERROR_INVALID, "signal_name must be of the form \"msr_name:field_name\"");
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_signal("PERF_STATUS:FREQ"),
+                         GEOPM_ERROR_INVALID, "signal_name PERF_STATUS:FREQ was previously registered");
+
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_signal("TEST1", {"ONE"}, {}),
+                         GEOPM_ERROR_INVALID, "signal_name vector length does not match msr_name");
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_signal("TEST2", {"BAD"}, {"BAD"}),
+                         GEOPM_ERROR_INVALID, "msr_name could not be found");
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_signal("TEST3", {"PERF_STATUS"}, {"BAD"}),
+                         GEOPM_ERROR_INVALID, "field_name could not be found");
+}
+
+TEST_F(MSRIOGroupTest, register_msr_control)
+{
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_control("TEST"),
+                         GEOPM_ERROR_INVALID, "control_name must be of the form \"msr_name:field_name\"");
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_control("PERF_CTL:FREQ"),
+                         GEOPM_ERROR_INVALID, "control_name PERF_CTL:FREQ was previously registered");
+
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_control("TEST1", {"ONE"}, {}),
+                         GEOPM_ERROR_INVALID, "control_name vector length does not match msr_name");
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_control("TEST2", {"BAD"}, {"BAD"}),
+                         GEOPM_ERROR_INVALID, "msr_name could not be found");
+    EXPECT_THROW_MESSAGE(m_msrio_group->register_msr_control("TEST3", {"PERF_STATUS"}, {"BAD"}),
+                         GEOPM_ERROR_INVALID, "field_name could not be found");
+
+}
