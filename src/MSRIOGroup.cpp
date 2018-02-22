@@ -502,7 +502,8 @@ namespace geopm
         for (auto &sc : signal_config) {
             auto name_msr_it = m_name_msr_map.find(msr_name[field_idx]);
             if (name_msr_it == m_name_msr_map.end()) {
-                throw Exception("MSRIOGroup::register_msr_signal(): msr_name could not be found",
+                throw Exception("MSRIOGroup::register_msr_signal(): msr_name could not be found: " +
+                                msr_name[field_idx],
                                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
             sc.msr_obj = name_msr_it->second;

@@ -167,6 +167,33 @@ void MSRIOGroupTest::SetUp()
     close(fd);
 }
 
+TEST_F(MSRIOGroupTest, supported_cpuid)
+{
+    // Check that MSRIOGroup can be safely constructed for supported platforms
+    std::vector<uint64_t> cpuids = {
+        MSRIOGroup::M_CPUID_SNB,
+        MSRIOGroup::M_CPUID_IVT,
+        MSRIOGroup::M_CPUID_HSX,
+        MSRIOGroup::M_CPUID_BDX,
+        MSRIOGroup::M_CPUID_KNL
+    };
+    for (auto id : cpuids) {
+        std::unique_ptr<MockMSRIO> msrio(new MockMSRIO);
+        try {
+            MSRIOGroup(std::move(msrio), id);
+        }
+        catch (const std::exception &ex) {
+            FAIL() << "Could not construct MSRIOGroup for cpuid 0x"
+                   << std::hex << id << std::dec << ": " << ex.what();
+        }
+    }
+
+    // unsupported cpuid
+    std::unique_ptr<MockMSRIO> msrio(new MockMSRIO);
+    EXPECT_THROW_MESSAGE(MSRIOGroup(std::move(msrio), 0x9999),
+                         GEOPM_ERROR_RUNTIME, "Unsupported CPUID");
+}
+
 TEST_F(MSRIOGroupTest, signal)
 {
     // error cases
