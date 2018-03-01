@@ -31,8 +31,51 @@
  */
 
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
-TEST(ProfileIOGroupTest, nothing)
+#include "ProfileIOGroup.hpp"
+#include "PlatformTopo.hpp"
+#include "MockProfileIOSample.hpp"
+
+using geopm::IProfileIOSample;
+using geopm::ProfileIOGroup;
+using geopm::PlatformTopo;
+
+class ProfileIOGroupTest : public :: testing:: Test
+{
+    public:
+        ProfileIOGroupTest();
+        virtual ~ProfileIOGroupTest();
+    protected:
+        std::shared_ptr<geopm::IProfileIOSample> m_mock_pios;
+        ProfileIOGroup m_piog;
+};
+
+
+ProfileIOGroupTest::ProfileIOGroupTest()
+    : m_mock_pios(std::shared_ptr<IProfileIOSample>(new MockProfileIOSample))
+    , m_piog(m_mock_pios)
 {
 
+}
+
+ProfileIOGroupTest::~ProfileIOGroupTest()
+{
+
+}
+
+TEST_F(ProfileIOGroupTest, is_valid)
+{
+    EXPECT_TRUE(m_piog.is_valid_signal("PROFILE::REGION_ID"));
+    EXPECT_TRUE(m_piog.is_valid_signal("PROFILE::PROGRESS"));
+    EXPECT_FALSE(m_piog.is_valid_signal("PROFILE::INVALID_SIGNAL"));
+    EXPECT_FALSE(m_piog.is_valid_control("PROFILE::INVALID_CONTROL"));
+}
+
+TEST_F(ProfileIOGroupTest, domain_type)
+{
+    EXPECT_EQ(geopm::PlatformTopo::M_DOMAIN_CPU, m_piog.signal_domain_type("PROFILE::REGION_ID"));
+    EXPECT_EQ(geopm::PlatformTopo::M_DOMAIN_CPU, m_piog.signal_domain_type("PROFILE::PROGRESS"));
+    EXPECT_EQ(geopm::PlatformTopo::M_DOMAIN_INVALID, m_piog.signal_domain_type("PROFILE::INVALID_SIGNAL"));
+    EXPECT_EQ(geopm::PlatformTopo::M_DOMAIN_INVALID, m_piog.control_domain_type("PROFILE::INVALID_CONTROL"));
 }
