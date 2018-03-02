@@ -55,7 +55,7 @@ namespace geopm
 
     bool TimeIOGroup::is_valid_signal(const std::string &signal_name)
     {
-        return signal_name == m_signal_name;
+        return signal_name == m_signal_name || signal_name == "TIME";
     }
 
     bool TimeIOGroup::is_valid_control(const std::string &control_name)
@@ -81,7 +81,7 @@ namespace geopm
     {
         if (!is_valid_signal(signal_name)) {
             throw Exception("TimeIOGroup::push_signal(): signal_name " + signal_name +
-                            "not valid for TimeIOGroup",
+                            " not valid for TimeIOGroup",
                              GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         if (m_is_batch_read) {

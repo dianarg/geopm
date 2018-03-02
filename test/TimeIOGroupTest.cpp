@@ -55,6 +55,9 @@ TEST_F(TimeIOGroupTest, is_valid)
     EXPECT_EQ(PlatformTopo::M_DOMAIN_INVALID, m_group.signal_domain_type("INVALID"));
     EXPECT_EQ(PlatformTopo::M_DOMAIN_INVALID, m_group.control_domain_type("TIME::ELAPSED"));
     EXPECT_EQ(PlatformTopo::M_DOMAIN_INVALID, m_group.control_domain_type("INVALID"));
+
+    // alias
+    EXPECT_TRUE(m_group.is_valid_signal("TIME"));
 }
 
 TEST_F(TimeIOGroupTest, push)
@@ -65,6 +68,10 @@ TEST_F(TimeIOGroupTest, push)
     EXPECT_THROW(m_group.push_signal("INVALID", 0, 0), geopm::Exception);
     EXPECT_THROW(m_group.push_control("TIME::ELAPSED", 0, 0), geopm::Exception);
     EXPECT_THROW(m_group.push_control("INVALID", 0, 0), geopm::Exception);
+
+    // alias
+    int idx3 = m_group.push_signal("TIME", 0, 0);
+    EXPECT_EQ(idx3, idx1);
 }
 
 TEST_F(TimeIOGroupTest, read_nothing)
@@ -85,18 +92,25 @@ TEST_F(TimeIOGroupTest, sample)
     // Pushing time twice should result in the same signal index
     signal_idx = m_group.push_signal("TIME::ELAPSED", 0, 0);
     EXPECT_EQ(0, signal_idx);
+    // Alias will have a different signal index but the same value
+    int alias = m_group.push_signal("TIME", 0, 0);
+
     // Can't sample prior to reading
     EXPECT_THROW(m_group.sample(signal_idx), geopm::Exception);
     // Make sure that calling sample twice without calling
     // read_batch() in between results in the same answer.
     m_group.read_batch();
     double time0 = m_group.sample(signal_idx);
+    double time0a = m_group.sample(alias);
+    EXPECT_EQ(time0, time0a);
     sleep(1);
     double time1 = m_group.sample(signal_idx);
     EXPECT_EQ(time0, time1);
     m_group.read_batch();
     time1 = m_group.sample(signal_idx);
+    double time1a = m_group.sample(alias);
     EXPECT_NE(time0, time1);
+    EXPECT_EQ(time1, time1a);
     // Check that a one second spin is recorded as one second long.
     struct geopm_time_s spin0;
     struct geopm_time_s spin1;
@@ -127,11 +141,15 @@ TEST_F(TimeIOGroupTest, read_signal)
     struct geopm_time_s spin0;
     struct geopm_time_s spin1;
     double time0 = m_group.read_signal("TIME::ELAPSED", 0, 0);
+    double time0a = m_group.read_signal("TIME", 0, 0);
+    EXPECT_NEAR(time0, time0a, 1e-4);
     geopm_time(&spin0);
     do {
         geopm_time(&spin1);
     } while (geopm_time_diff(&spin0, &spin1) < 1.0);
     double time1 = m_group.read_signal("TIME::ELAPSED", 0, 0);
+    double time1a = m_group.read_signal("TIME", 0, 0);
+    EXPECT_NEAR(time1, time1a, 1e-4);
     EXPECT_NEAR(time1 - time0, 1.0, 0.001);
     EXPECT_THROW(m_group.read_signal("INVALID", 0, 0), geopm::Exception);
 }
