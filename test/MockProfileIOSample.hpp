@@ -35,7 +35,8 @@
 
 #include "ProfileIOSample.hpp"
 
-class MockProfileIOSample : public geopm::IProfileIOSample {
+class MockProfileIOSample : public geopm::IProfileIOSample
+{
     public:
         MOCK_METHOD2(update,
                      void(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
