@@ -34,16 +34,12 @@
 #include <fstream>
 #include <algorithm>
 #include <iterator>
-#include "CPUFreqLimitsIOGroup.hpp"
+#include "CpuinfoIOGroup.hpp"
 #include "PlatformTopo.hpp"
 #include "Exception.hpp"
 #include "config.h"
 
-#define GEOPM_CPU_FREQ_LIMITS_IO_GROUP_PLUGIN_NAME "CPU_FREQ_LIMITS"
-#define CPU_FREQ_LIMIT_MIN      "CPU_FREQ_LIMITS::MIN"
-#define CPU_FREQ_LIMIT_STICKER  "CPU_FREQ_LIMITS::STICKER"
-#define CPU_FREQ_LIMIT_MAX      "CPU_FREQ_LIMITS::MAX"
-#define CPU_FREQ_STEP           "CPU_FREQ_LIMITS::STEP"
+#define GEOPM_CPUINFO_IO_GROUP_PLUGIN_NAME "CPUINFO"
 
 namespace geopm
 {
@@ -112,39 +108,39 @@ namespace geopm
         return result;
     }
 
-    CPUFreqLimitsIOGroup::CPUFreqLimitsIOGroup()
-        :CPUFreqLimitsIOGroup("/proc/cpuinfo",
+    CpuinfoIOGroup::CpuinfoIOGroup()
+        :CpuinfoIOGroup("/proc/cpuinfo",
                               "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq",
                               "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq")
     {
     }
 
-    CPUFreqLimitsIOGroup::CPUFreqLimitsIOGroup(const std::string &cpu_info_path,
+    CpuinfoIOGroup::CpuinfoIOGroup(const std::string &cpu_info_path,
                          const std::string &cpu_freq_min_path,
                          const std::string &cpu_freq_max_path)
         : m_signal_value_map(
-                {{CPU_FREQ_LIMIT_MIN, read_cpu_freq(cpu_freq_min_path)},
-                 {CPU_FREQ_LIMIT_STICKER, read_cpu_freq_sticker(cpu_info_path)},
-                 {CPU_FREQ_LIMIT_MAX, read_cpu_freq(cpu_freq_max_path)},
-                 {CPU_FREQ_STEP, 100e6}})
+                {{"CPUINFO::FREQ_MIN", read_cpu_freq(cpu_freq_min_path)},
+                 {"CPUINFO::FREQ_STICKER", read_cpu_freq_sticker(cpu_info_path)},
+                 {"CPUINFO::FREQ_MAX", read_cpu_freq(cpu_freq_max_path)},
+                 {"CPUINFO::FREQ_STEP", 100e6}})
     {
     }
 
-    CPUFreqLimitsIOGroup::~CPUFreqLimitsIOGroup()
+    CpuinfoIOGroup::~CpuinfoIOGroup()
     {
     }
 
-    bool CPUFreqLimitsIOGroup::is_valid_signal(const std::string &signal_name)
+    bool CpuinfoIOGroup::is_valid_signal(const std::string &signal_name)
     {
         return m_signal_value_map.find(signal_name) != m_signal_value_map.end();
     }
 
-    bool CPUFreqLimitsIOGroup::is_valid_control(const std::string &control_name)
+    bool CpuinfoIOGroup::is_valid_control(const std::string &control_name)
     {
         return false;
     }
 
-    int CPUFreqLimitsIOGroup::signal_domain_type(const std::string &signal_name)
+    int CpuinfoIOGroup::signal_domain_type(const std::string &signal_name)
     {
         int result = PlatformTopo::M_DOMAIN_INVALID;
         if (is_valid_signal(signal_name)) {
@@ -158,41 +154,41 @@ namespace geopm
         return result;
     }
 
-    int CPUFreqLimitsIOGroup::control_domain_type(const std::string &control_name)
+    int CpuinfoIOGroup::control_domain_type(const std::string &control_name)
     {
         return PlatformTopo::M_DOMAIN_INVALID;
     }
 
-    int CPUFreqLimitsIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
+    int CpuinfoIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         if (!is_valid_signal(signal_name)) {
-            throw Exception("CPUFreqLimitsIOGroup:read_signal(): " + signal_name +
-                            "not valid for CPUFreqLimitsIOGroup",
+            throw Exception("CpuinfoIOGroup:read_signal(): " + signal_name +
+                            "not valid for CpuinfoIOGroup",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         else if (domain_type != PlatformTopo::M_DOMAIN_BOARD) {
-            throw Exception("CPUFreqLimitsIOGroup:read_signal(): domain_type " + std::to_string(domain_type) +
-                            "not valid for CPUFreqLimitsIOGroup",
+            throw Exception("CpuinfoIOGroup:read_signal(): domain_type " + std::to_string(domain_type) +
+                            "not valid for CpuinfoIOGroup",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return std::distance(m_signal_value_map.begin(), m_signal_value_map.find(signal_name));
     }
 
-    int CPUFreqLimitsIOGroup::push_control(const std::string &control_name, int domain_type, int domain_idx)
+    int CpuinfoIOGroup::push_control(const std::string &control_name, int domain_type, int domain_idx)
     {
-        throw Exception("CPUFreqLimitsIOGroup::push_control(): there are no controls supported by the CPUFreqLimitsIOGroup",
+        throw Exception("CpuinfoIOGroup::push_control(): there are no controls supported by the CpuinfoIOGroup",
                         GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }
 
-    void CPUFreqLimitsIOGroup::read_batch(void)
+    void CpuinfoIOGroup::read_batch(void)
     {
     }
 
-    void CPUFreqLimitsIOGroup::write_batch(void)
+    void CpuinfoIOGroup::write_batch(void)
     {
     }
 
-    double CPUFreqLimitsIOGroup::sample(int batch_idx)
+    double CpuinfoIOGroup::sample(int batch_idx)
     {
         double result = NAN;
         auto res_it = m_signal_value_map.begin();
@@ -201,24 +197,24 @@ namespace geopm
             result = res_it->second;
         }
         else {
-            throw Exception("CPUFreqLimitsIOGroup:sample: batch_idx " + std::to_string(batch_idx) +
-                            "not valid for CPUFreqLimitsIOGroup",
+            throw Exception("CpuinfoIOGroup:sample: batch_idx " + std::to_string(batch_idx) +
+                            "not valid for CpuinfoIOGroup",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return result;
     }
 
-    void CPUFreqLimitsIOGroup::adjust(int batch_idx, double setting)
+    void CpuinfoIOGroup::adjust(int batch_idx, double setting)
     {
-        throw Exception("CPUFreqLimitsIOGroup::adjust(): there are no controls supported by the CPUFreqLimitsIOGroup",
+        throw Exception("CpuinfoIOGroup::adjust(): there are no controls supported by the CpuinfoIOGroup",
                          GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }
 
-    double CPUFreqLimitsIOGroup::read_signal(const std::string &signal_name, int domain_type, int domain_idx)
+    double CpuinfoIOGroup::read_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         if (!is_valid_signal(signal_name)) {
-            throw Exception("CPUFreqLimitsIOGroup:read_signal(): " + signal_name +
-                            "not valid for CPUFreqLimitsIOGroup",
+            throw Exception("CpuinfoIOGroup:read_signal(): " + signal_name +
+                            "not valid for CpuinfoIOGroup",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         switch (domain_type) {
@@ -229,26 +225,26 @@ namespace geopm
                 break;
             case PlatformTopo::M_DOMAIN_INVALID:
             default:
-                throw Exception("CPUFreqLimitsIOGroup:read_signal(): domain_type " + std::to_string(domain_type) +
-                                "not valid for CPUFreqLimitsIOGroup",
+                throw Exception("CpuinfoIOGroup:read_signal(): domain_type " + std::to_string(domain_type) +
+                                "not valid for CpuinfoIOGroup",
                                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         };
         return m_signal_value_map.find(signal_name)->second;
     }
 
-    void CPUFreqLimitsIOGroup::write_control(const std::string &control_name, int domain_type, int domain_idx, double setting)
+    void CpuinfoIOGroup::write_control(const std::string &control_name, int domain_type, int domain_idx, double setting)
     {
-        throw Exception("CPUFreqLimitsIOGroup::write_control(): there are no controls supported by the CPUFreqLimitsIOGroup",
+        throw Exception("CpuinfoIOGroup::write_control(): there are no controls supported by the CpuinfoIOGroup",
                         GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }
 
-    std::string CPUFreqLimitsIOGroup::plugin_name(void)
+    std::string CpuinfoIOGroup::plugin_name(void)
     {
-        return GEOPM_CPU_FREQ_LIMITS_IO_GROUP_PLUGIN_NAME;
+        return GEOPM_CPUINFO_IO_GROUP_PLUGIN_NAME;
     }
 
-    std::unique_ptr<IOGroup> CPUFreqLimitsIOGroup::make_plugin(void)
+    std::unique_ptr<IOGroup> CpuinfoIOGroup::make_plugin(void)
     {
-        return std::unique_ptr<IOGroup>(new CPUFreqLimitsIOGroup);
+        return std::unique_ptr<IOGroup>(new CpuinfoIOGroup);
     }
 }

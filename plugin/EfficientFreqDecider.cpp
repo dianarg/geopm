@@ -70,7 +70,7 @@ namespace geopm
         , m_platform_topo(ptopo)
         , m_freq_min(cpu_freq_min())
         , m_freq_max(cpu_freq_max())
-        , m_freq_step(get_limit("CPU_FREQ_LIMITS::STEP"))
+        , m_freq_step(get_limit("CPUINFO::FREQ_STEP"))
         , m_num_cpu(m_platform_topo.num_domain(IPlatformTopo::M_DOMAIN_CPU))
         , m_last_freq(NAN)
     {
@@ -94,10 +94,10 @@ namespace geopm
         /// @todo delete line below once PlatformIO supports control for non-CPU domains.
         domain_type = IPlatformTopo::M_DOMAIN_CPU;
         double result = NAN;
-        const double sticker_freq = m_platform_io.read_signal("CPU_FREQ_LIMITS::STICKER", domain_type, 0);
-        if (sig_name == "CPU_FREQ_LIMITS::MIN") {
+        const double sticker_freq = m_platform_io.read_signal("CPUINFO::FREQ_STICKER", domain_type, 0);
+        if (sig_name == "CPUINFO::FREQ_MIN") {
             if (domain_type == IPlatformTopo::M_DOMAIN_INVALID) {
-                if (m_platform_io.signal_domain_type("CPU_FREQ_LIMITS::STICKER") == IPlatformTopo::M_DOMAIN_INVALID) {
+                if (m_platform_io.signal_domain_type("CPUINFO::FREQ_STICKER") == IPlatformTopo::M_DOMAIN_INVALID) {
                     throw Exception("EfficientFreqDecider: unable to parse min and sticker frequencies.",
                                     GEOPM_ERROR_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
                 }
@@ -107,9 +107,9 @@ namespace geopm
                 result = m_platform_io.read_signal(sig_name, domain_type, 0);
             }
         }
-        else if (sig_name == "CPU_FREQ_LIMITS::MAX") {
+        else if (sig_name == "CPUINFO::FREQ_MAX") {
             if (domain_type == IPlatformTopo::M_DOMAIN_INVALID) {
-                if (m_platform_io.signal_domain_type("CPU_FREQ_LIMITS::STICKER") == IPlatformTopo::M_DOMAIN_INVALID) {
+                if (m_platform_io.signal_domain_type("CPUINFO::FREQ_STICKER") == IPlatformTopo::M_DOMAIN_INVALID) {
                     throw Exception("EfficientFreqDecider: unable to parse max and sticker frequencies.",
                                     GEOPM_ERROR_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
                 }
@@ -288,7 +288,7 @@ namespace geopm
             }
         }
         if (isnan(result)) {
-            result = get_limit("CPU_FREQ_LIMITS::MIN");
+            result = get_limit("CPUINFO::FREQ_MIN");
         }
 
         return result;
@@ -307,7 +307,7 @@ namespace geopm
             }
         }
         if (isnan(result)) {
-            result = get_limit("CPU_FREQ_LIMITS::MAX");
+            result = get_limit("CPUINFO::FREQ_MAX");
         }
 
         return result;
