@@ -119,6 +119,15 @@ namespace geopm
                 result = m_platform_io.read_signal(sig_name, domain_type, 0);
             }
         }
+        else if (sig_name == "CPUINFO::FREQ_STEP") {
+            result = m_platform_io.read_signal(sig_name, domain_type, 0);
+        }
+#ifdef GEOPM_DEBUG
+        else {
+            throw Exception("EfficientFreqDecider: requested invalid signal name.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return result;
     }
 
