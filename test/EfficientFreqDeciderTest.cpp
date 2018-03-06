@@ -88,13 +88,13 @@ void EfficientFreqDeciderTest::SetUp()
             .WillByDefault(Return(1));
     ON_CALL(*m_platform_io, signal_domain_type(_))
             .WillByDefault(Return(geopm::PlatformTopo::M_DOMAIN_BOARD));
-    ON_CALL(*m_platform_io, read_signal(std::string("MIN"), _, _))
+    ON_CALL(*m_platform_io, read_signal(std::string("CPUINFO::FREQ_MIN"), _, _))
             .WillByDefault(Return(1.0e9));
-    ON_CALL(*m_platform_io, read_signal(std::string("STICKER"), _, _))
+    ON_CALL(*m_platform_io, read_signal(std::string("CPUINFO::FREQ_STICKER"), _, _))
             .WillByDefault(Return(1.3e9));
-    ON_CALL(*m_platform_io, read_signal(std::string("MAX"), _, _))
+    ON_CALL(*m_platform_io, read_signal(std::string("CPUINFO::FREQ_MAX"), _, _))
             .WillByDefault(Return(2.2e9));
-    ON_CALL(*m_platform_io, read_signal(std::string("STEP"), _, _))
+    ON_CALL(*m_platform_io, read_signal(std::string("CPUINFO::FREQ_STEP"), _, _))
             .WillByDefault(Return(100e6));
 
     setenv("GEOPM_PLUGIN_PATH", ".libs/", 1);
