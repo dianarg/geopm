@@ -1024,7 +1024,7 @@ namespace geopm
         const int affinity_type = affinity();
         const int num_cpu_max_perf = num_max_perf();
         const int num_small_cores_per_package = num_cpus_per_package - (num_cpu_max_perf / num_packages);
-        const std::string min_freq_signal_name = "CPU_FREQ_LIMITS::MIN";
+        const std::string min_freq_signal_name = "CPUINFO::FREQ_MIN";
         /*const*/ int domain_type = pio.signal_domain_type(min_freq_signal_name);
         /// @todo delete line below once PlatformIO supports control for non-CPU domains.
         domain_type = IPlatformTopo::M_DOMAIN_CPU;
