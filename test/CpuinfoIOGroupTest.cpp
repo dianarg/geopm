@@ -41,23 +41,23 @@
 #include "geopm_hash.h"
 
 #include "Exception.hpp"
-#include "CPUFreqLimitsIOGroup.hpp"
+#include "CpuinfoIOGroup.hpp"
 #include "PlatformTopo.hpp"
 
 using geopm::IPlatformTopo;
-using geopm::CPUFreqLimitsIOGroup;
+using geopm::CpuinfoIOGroup;
 
-class CPUFreqLimitsIOGroupTest: public :: testing :: Test
+class CpuinfoIOGroupTest: public :: testing :: Test
 {
     protected:
         void SetUp();
         void TearDown();
-        const std::string m_cpuinfo_path =     "CPUFreqLimitsIOGroupTest_cpu_info";
-        const std::string m_cpufreq_min_path = "CPUFreqLimitsIOGroupTest_cpu_freq_min";
-        const std::string m_cpufreq_max_path = "CPUFreqLimitsIOGroupTest_cpu_freq_max";
+        const std::string m_cpuinfo_path =     "CpuinfoIOGroupTest_cpu_info";
+        const std::string m_cpufreq_min_path = "CpuinfoIOGroupTest_cpu_freq_min";
+        const std::string m_cpufreq_max_path = "CpuinfoIOGroupTest_cpu_freq_max";
 };
 
-void CPUFreqLimitsIOGroupTest::SetUp()
+void CpuinfoIOGroupTest::SetUp()
 {
     std::ofstream cpufreq_min_stream(m_cpufreq_min_path);
     cpufreq_min_stream << "1000000";
@@ -68,14 +68,14 @@ void CPUFreqLimitsIOGroupTest::SetUp()
 
 }
 
-void CPUFreqLimitsIOGroupTest::TearDown()
+void CpuinfoIOGroupTest::TearDown()
 {
     std::remove(m_cpufreq_min_path.c_str());
     std::remove(m_cpufreq_max_path.c_str());
     std::remove(m_cpuinfo_path.c_str());
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info0)
+TEST_F(CpuinfoIOGroupTest, parse_cpu_info0)
 {
     // with @
     const std::string cpuinfo_str =
@@ -108,12 +108,12 @@ TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info0)
     std::ofstream cpuinfo_stream(m_cpuinfo_path);
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
-    CPUFreqLimitsIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
-    double freq = frep_limits.read_signal("CPU_FREQ_LIMITS::STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    CpuinfoIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
+    double freq = frep_limits.read_signal("CPUINFO::FREQ_STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
     EXPECT_DOUBLE_EQ(1.3e9, freq);
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info1)
+TEST_F(CpuinfoIOGroupTest, parse_cpu_info1)
 {
     // without @
     const std::string cpuinfo_str =
@@ -146,12 +146,12 @@ TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info1)
     std::ofstream cpuinfo_stream(m_cpuinfo_path);
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
-    CPUFreqLimitsIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
-    double freq = frep_limits.read_signal("CPU_FREQ_LIMITS::STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    CpuinfoIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
+    double freq = frep_limits.read_signal("CPUINFO::FREQ_STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
     EXPECT_DOUBLE_EQ(1.2e9, freq);
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info2)
+TEST_F(CpuinfoIOGroupTest, parse_cpu_info2)
 {
     // without @ with space
     const std::string cpuinfo_str =
@@ -184,12 +184,12 @@ TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info2)
     std::ofstream cpuinfo_stream(m_cpuinfo_path);
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
-    CPUFreqLimitsIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
-    double freq = frep_limits.read_signal("CPU_FREQ_LIMITS::STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    CpuinfoIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
+    double freq = frep_limits.read_signal("CPUINFO::FREQ_STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
     EXPECT_DOUBLE_EQ(1.1e9, freq);
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info3)
+TEST_F(CpuinfoIOGroupTest, parse_cpu_info3)
 {
     // missing newline
     const std::string cpuinfo_str =
@@ -202,12 +202,12 @@ TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info3)
     std::ofstream cpuinfo_stream(m_cpuinfo_path);
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
-    CPUFreqLimitsIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
-    double freq = frep_limits.read_signal("CPU_FREQ_LIMITS::STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    CpuinfoIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
+    double freq = frep_limits.read_signal("CPUINFO::FREQ_STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
     EXPECT_DOUBLE_EQ(1.1e9, freq);
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info4)
+TEST_F(CpuinfoIOGroupTest, parse_cpu_info4)
 {
     // missing number
     const std::string cpuinfo_str =
@@ -222,12 +222,12 @@ TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info4)
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
     EXPECT_THROW( {
-            CPUFreqLimitsIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
+            CpuinfoIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
         },
         geopm::Exception);
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info5)
+TEST_F(CpuinfoIOGroupTest, parse_cpu_info5)
 {
     // multiple GHz
     std::string cpuinfo_str =
@@ -241,12 +241,12 @@ TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info5)
     std::ofstream cpuinfo_stream(m_cpuinfo_path);
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
-    CPUFreqLimitsIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
-    double freq = frep_limits.read_signal("CPU_FREQ_LIMITS::STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    CpuinfoIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
+    double freq = frep_limits.read_signal("CPUINFO::FREQ_STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
     EXPECT_DOUBLE_EQ(1.5e9, freq);
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info6)
+TEST_F(CpuinfoIOGroupTest, parse_cpu_info6)
 {
     // with model name foobar
     const std::string cpuinfo_str =
@@ -280,12 +280,12 @@ TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_info6)
     std::ofstream cpuinfo_stream(m_cpuinfo_path);
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
-    CPUFreqLimitsIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
-    double freq = frep_limits.read_signal("CPU_FREQ_LIMITS::STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    CpuinfoIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
+    double freq = frep_limits.read_signal("CPUINFO::FREQ_STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0);
     EXPECT_DOUBLE_EQ(1.3e9, freq);
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_freq)
+TEST_F(CpuinfoIOGroupTest, parse_cpu_freq)
 {
     // with model name foobar
     const std::string cpuinfo_str =
@@ -319,14 +319,14 @@ TEST_F(CPUFreqLimitsIOGroupTest, parse_cpu_freq)
     std::ofstream cpuinfo_stream(m_cpuinfo_path);
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
-    CPUFreqLimitsIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
-    double freq = frep_limits.read_signal("CPU_FREQ_LIMITS::MIN", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    CpuinfoIOGroup frep_limits(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path);
+    double freq = frep_limits.read_signal("CPUINFO::FREQ_MIN", IPlatformTopo::M_DOMAIN_BOARD, 0);
     EXPECT_DOUBLE_EQ(1.0e9, freq);
-    freq = frep_limits.read_signal("CPU_FREQ_LIMITS::MAX", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    freq = frep_limits.read_signal("CPUINFO::FREQ_MAX", IPlatformTopo::M_DOMAIN_BOARD, 0);
     EXPECT_DOUBLE_EQ(2.0e9, freq);
 }
 
-TEST_F(CPUFreqLimitsIOGroupTest, plugin)
+TEST_F(CpuinfoIOGroupTest, plugin)
 {
     // with model name foobar
     const std::string cpuinfo_str =
@@ -360,5 +360,5 @@ TEST_F(CPUFreqLimitsIOGroupTest, plugin)
     std::ofstream cpuinfo_stream(m_cpuinfo_path);
     cpuinfo_stream << cpuinfo_str;
     cpuinfo_stream.close();
-    EXPECT_EQ("CPU_FREQ_LIMITS", CPUFreqLimitsIOGroup(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path).plugin_name());
+    EXPECT_EQ("CPUINFO", CpuinfoIOGroup(m_cpuinfo_path, m_cpufreq_min_path, m_cpufreq_max_path).plugin_name());
 }

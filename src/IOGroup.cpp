@@ -32,7 +32,7 @@
 
 #include "IOGroup.hpp"
 #include "MSRIOGroup.hpp"
-#include "CPUFreqLimitsIOGroup.hpp"
+#include "CpuinfoIOGroup.hpp"
 #include "TimeIOGroup.hpp"
 #include "config.h"
 
@@ -46,8 +46,8 @@ namespace geopm
                                           MSRIOGroup::make_plugin);
         g_plugin_factory->register_plugin(TimeIOGroup::plugin_name(),
                                           TimeIOGroup::make_plugin);
-        g_plugin_factory->register_plugin(CPUFreqLimitsIOGroup::plugin_name(),
-                                          CPUFreqLimitsIOGroup::make_plugin);
+        g_plugin_factory->register_plugin(CpuinfoIOGroup::plugin_name(),
+                                          CpuinfoIOGroup::make_plugin);
     }
 
     PluginFactory<IOGroup> &iogroup_factory(void)
