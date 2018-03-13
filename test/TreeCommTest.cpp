@@ -48,6 +48,9 @@ using geopm::ITreeCommLevel;
 using geopm::TreeComm;
 using geopm::IComm;
 using testing::_;
+using testing::Return;
+using testing::DoAll;
+using testing::SetArgReferee;
 
 class TreeCommTest : public ::testing::Test
 {
@@ -65,33 +68,27 @@ void TreeCommTest::SetUp()
     m_mock_comm = std::make_shared<MockComm>();
     m_fan_out = {2, 3, 4, 5};
     std::vector<std::unique_ptr<ITreeCommLevel> > temp;
-    for (size_t lvl = 0; lvl < m_fan_out.size() + 1; ++lvl) {
+    for (size_t lvl = 0; lvl < m_fan_out.size(); ++lvl) {
         m_level_ptr.push_back(new MockTreeCommLevel);
         temp.emplace_back(m_level_ptr[lvl]);
     }
 
-    //EXPECT_CALL(*m_mock_comm, split(_, _, _));
     EXPECT_CALL(*m_mock_comm, barrier());
-    m_tree_comm.reset(new TreeComm(m_mock_comm, m_fan_out, 1, 1, std::move(temp)));
+    EXPECT_CALL(*m_mock_comm, num_rank()).WillOnce(Return(120));
+    m_tree_comm.reset(new TreeComm(m_mock_comm, m_fan_out, 3, 2, std::move(temp)));
 }
 
 TEST_F(TreeCommTest, geometry)
 {
 
-    EXPECT_EQ(4, m_tree_comm->num_level());
-    EXPECT_EQ(3, m_tree_comm->root_level());
-    EXPECT_CALL(*(m_level_ptr[0]), level_rank());
-    EXPECT_EQ(888, m_tree_comm->level_rank(0));
-    EXPECT_CALL(*(m_level_ptr[1]), level_rank());
-    EXPECT_EQ(888, m_tree_comm->level_rank(1));
-    EXPECT_CALL(*(m_level_ptr[2]), level_rank());
-    EXPECT_EQ(888, m_tree_comm->level_rank(2));
-    EXPECT_CALL(*(m_level_ptr[3]), level_rank());
-    EXPECT_EQ(888, m_tree_comm->level_rank(3));
-    EXPECT_CALL(*(m_level_ptr[4]), level_rank());
-    EXPECT_EQ(888, m_tree_comm->level_rank(4));
-
-
+    EXPECT_EQ(4, m_tree_comm->num_level_controlled());
+    EXPECT_EQ(5, m_tree_comm->root_level());
+    for (int level = 0; level < 4; ++level) {
+        int rank = 5 - level;
+        EXPECT_CALL(*(m_level_ptr[level]), level_rank()).WillOnce(Return(rank));
+        EXPECT_EQ(rank, m_tree_comm->level_rank(level));
+        EXPECT_EQ(m_fan_out[m_fan_out.size() - level - 1], m_tree_comm->level_size(level));
+    }
     // errors
     GEOPM_EXPECT_THROW_MESSAGE(m_tree_comm->level_rank(-1), GEOPM_ERROR_LEVEL_RANGE,
                                "level_rank");
@@ -102,4 +99,35 @@ TEST_F(TreeCommTest, geometry)
                                "level_size");
     GEOPM_EXPECT_THROW_MESSAGE(m_tree_comm->level_size(10), GEOPM_ERROR_LEVEL_RANGE,
                                "level_size");
+}
+
+TEST_F(TreeCommTest, send_receive)
+{
+    std::vector<double> sample {10.0, 11.0, 12.0};
+    std::vector<double> recv_sample;
+    std::vector<double> policy {9.0, 8.0};
+    std::vector<double> recv_policy;
+
+    for (int level = 0; level < 4; ++level) {
+        EXPECT_CALL(*(m_level_ptr[level]), send_up(sample));
+        m_tree_comm->send_up(level, sample);
+
+        EXPECT_CALL(*(m_level_ptr[level]), send_down(policy));
+        m_tree_comm->send_down(level, policy);
+
+        if (level) {
+            EXPECT_CALL(*(m_level_ptr[level - 1]), receive_up(_)).WillOnce(
+                DoAll(SetArgReferee<0>(sample), Return(true)));
+            EXPECT_TRUE(m_tree_comm->receive_up(level, recv_sample));
+            EXPECT_EQ(sample, recv_sample);
+        }
+        else {
+            EXPECT_THROW(m_tree_comm->receive_up(level, recv_sample), geopm::Exception);
+        }
+
+        EXPECT_CALL(*(m_level_ptr[level]), receive_down(_)).WillOnce(
+            DoAll(SetArgReferee<0>(policy), Return(true)));
+        EXPECT_TRUE(m_tree_comm->receive_down(level, recv_policy));
+        EXPECT_EQ(policy, recv_policy);
+    }
 }
