@@ -93,7 +93,7 @@ namespace geopm
         int rank_cart = comm_cart->rank();
         /// @todo change coordinate() to return vector
         std::vector<int> coords(comm_cart->coordinate(rank_cart));
-        std::vector<int> parent_coords(num_level, 0);
+        std::vector<int> parent_coords(coords);
         int level = 0;
         for (; level < num_level && level < root_level; ++level) {
             parent_coords[root_level - 1 - level] = 0;
