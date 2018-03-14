@@ -31,8 +31,11 @@
  */
 
 #include <algorithm>
+#include <memory>
 
 #include "TreeComm.hpp"
+#include "TreeCommLevel.hpp"
+#include "Comm.hpp"
 #include "config.h"
 
 namespace geopm
@@ -57,21 +60,27 @@ namespace geopm
         , m_fan_out(fan_out)
         , m_num_send_up(num_send_up)
         , m_num_send_down(num_send_down)
-        , m_num_level(num_level(coords))
+          //, m_num_level(num_level(coords))  //TODO: call me
         , m_level(std::move(mock_level))
-                  
+
     {
-        if (mock_level.size() == 0) {
+        if (m_level.size() == 0) {
             std::shared_ptr<IComm> comm_cart(comm->split_cart(m_fan_out));
-            init_level(comm_cart, m_num_level, m_root_level))
+            init_level(comm_cart, m_num_level, m_root_level);
         }
+#ifdef GEOPM_DEBUG
+        if (m_level.size() != m_fan_out.size() + 1) {
+            throw Exception("Size of fan_out and level vectors inconsistent.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         std::reverse(m_fan_out.begin(), m_fan_out.end());
         comm->barrier();
     }
 
-    TreeComm::num_level(std::vector<int> coords)
+    int TreeComm::num_level(std::vector<int> coords)
     {
-        result = 1;
+        int result = 1;
         for (auto it = coords.rbegin(); it != coords.rend() && *it == 0; ++it) {
              ++result;
         }
@@ -84,12 +93,14 @@ namespace geopm
         int rank_cart = comm_cart->rank();
         /// @todo change coordinate() to return vector
         std::vector<int> coords(comm_cart->coordinate(rank_cart));
+        std::vector<int> parent_coords(num_level, 0);
         int level = 0;
         for (; level < num_level && level < root_level; ++level) {
             parent_coords[root_level - 1 - level] = 0;
             m_level.emplace_back(
                 new TreeCommLevel(comm_cart->split(
-                    comm_cart->cart_rank(parent_coords), rank_cart)));
+                    comm_cart->cart_rank(parent_coords), rank_cart),
+                    m_num_send_up, m_num_send_down));
         }
         for (; level < root_level; ++level) {
             comm_cart->split(IComm::M_SPLIT_COLOR_UNDEFINED, 0);
@@ -97,7 +108,7 @@ namespace geopm
         return result;
     }
 
-    virtual TreeComm::~TreeComm()
+    TreeComm::~TreeComm()
     {
 
     }
@@ -115,7 +126,7 @@ namespace geopm
     int TreeComm::level_rank(int level) const
     {
         if (level < 0 || level >= m_num_level) {
-            throw Exception("TreeCommunicator::level_rank()",
+            throw Exception("TreeComm::level_rank()",
                             GEOPM_ERROR_LEVEL_RANGE, __FILE__, __LINE__);
         }
         return m_level[level]->level_rank();
@@ -124,7 +135,7 @@ namespace geopm
     int TreeComm::level_size(int level) const
     {
         if (level < 0 || level >= m_root_level) {
-            throw Exception("TreeCommunicator::level_size()",
+            throw Exception("TreeComm::level_size()",
                             GEOPM_ERROR_LEVEL_RANGE, __FILE__, __LINE__);
         }
         // Size at root is one, otherwise use m_fan_out to determine

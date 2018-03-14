@@ -36,7 +36,7 @@
 namespace geopm
 {
     class IComm;
-    class TreeCommLevel;
+    class ITreeCommLevel;
 
     class ITreeComm
     {
@@ -77,6 +77,10 @@ namespace geopm
             void receive_down(int level, std::vector<double> &policy) override;
             size_t overhead_send(void) override;
         protected:
+            int num_level(std::vector<int> coords);
+            std::vector<std::unique_ptr<ITreeCommLevel> > init_level(
+                std::shared_ptr<IComm> comm_cart, int num_level, int root_level);
+            int m_root_level;
             /// Number of levels this rank participates in
             int m_num_level;
             /// @brief Number of nodes in the job.
