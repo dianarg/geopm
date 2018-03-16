@@ -115,6 +115,8 @@ src/KNLPlatformImp.cpp
 src/KNLPlatformImp.hpp
 src/Kontroller.cpp
 src/Kontroller.hpp
+src/ManagerIO.cpp
+src/ManagerIO.hpp
 src/MonitorAgent.cpp
 src/MonitorAgent.hpp
 src/MPIComm.cpp
@@ -231,6 +233,7 @@ test_integration/Makefile.mk
 test/KontrollerTest.cpp
 test/legacy_whitelist.out
 test/Makefile.mk
+test/ManagerIOTest.cpp
 test/MockAgent.hpp
 test/MockApplicationIO.hpp
 test/MockComm.hpp
