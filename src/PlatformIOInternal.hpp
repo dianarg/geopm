@@ -53,13 +53,13 @@ namespace geopm
         public:
             /// @brief Constructor for the PlatformIO class.
             PlatformIO();
-            PlatformIO(std::list<std::unique_ptr<IOGroup> > iogroup_list,
+            PlatformIO(std::list<std::shared_ptr<IOGroup> > iogroup_list,
                        IPlatformTopo &topo);
             PlatformIO(const PlatformIO &other) = delete;
             PlatformIO & operator=(const PlatformIO&) = delete;
             /// @brief Virtual destructor for the PlatformIO class.
             virtual ~PlatformIO();
-            void register_iogroup(std::unique_ptr<IOGroup> iogroup) override;
+            void register_iogroup(std::shared_ptr<IOGroup> iogroup) override;
             int signal_domain_type(const std::string &signal_name) const override;
             int control_domain_type(const std::string &control_name) const override;
             int push_signal(const std::string &signal_name,
@@ -82,11 +82,11 @@ namespace geopm
                                int domain_idx,
                                double setting) override;
             std::function<double(const std::vector<double> &)> agg_function(std::string signal_name) override;
-        protected:
             int push_combined_signal(const std::string &signal_name,
                                      int domain_type,
                                      int domain_idx,
                                      const std::vector<int> &sub_signal_idx) override;
+        protected:
             /// @brief Save a high-level signal as a combination of other signals.
             /// @param [in] signal_idx Index a caller can use to refer to this signal.
             /// @param [in] operands Input signal indices to be combined.  These must
@@ -106,7 +106,7 @@ namespace geopm
             double sample_combined(int signal_idx);
             bool m_is_active;
             IPlatformTopo &m_platform_topo;
-            std::list<std::unique_ptr<IOGroup> > m_iogroup_list;
+            std::list<std::shared_ptr<IOGroup> > m_iogroup_list;
             std::vector<std::pair<IOGroup *, int> > m_active_signal;
             std::vector<std::pair<IOGroup *, int> > m_active_control;
             std::map<int, std::pair<std::vector<int>,

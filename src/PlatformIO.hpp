@@ -50,7 +50,7 @@ namespace geopm
         public:
             IPlatformIO() {}
             virtual ~IPlatformIO() {}
-            virtual void register_iogroup(std::unique_ptr<IOGroup> iogroup) = 0;
+            virtual void register_iogroup(std::shared_ptr<IOGroup> iogroup) = 0;
             /// @brief Query the domain for a named signal.
             /// @param [in] signal_name The name of the signal.
             /// @return One of the PlatformTopo::m_domain_e values
@@ -80,6 +80,9 @@ namespace geopm
             virtual int push_signal(const std::string &signal_name,
                                     int domain_type,
                                     int domain_idx) = 0;
+            virtual int push_region_signal(int signal_idx,
+                                           int domain_type,
+                                           int domain_idx) = 0;
             virtual int push_combined_signal(const std::string &signal_name,
                                              int domain_type,
                                              int domain_idx,
@@ -156,6 +159,7 @@ namespace geopm
                                        int domain_type,
                                        int domain_idx,
                                        double setting) = 0;
+            virtual double region_sample(int signal_idx, uint64_t region_id) = 0;
 
             virtual std::function<double(const std::vector<double> &)> agg_function(std::string signal_name) = 0;
             static double agg_sum(const std::vector<double> &operand);

@@ -77,58 +77,52 @@ namespace geopm
         }
     }
 
-    bool ApplicationIO::do_sample(void)
-    {
-        /// @todo implement me
-        return false;
-    }
-
-    bool ApplicationIO::do_shutdown(void)
+    bool ApplicationIO::do_shutdown(void) const
     {
         return m_sampler->do_shutdown();
     }
 
-    std::string ApplicationIO::report_name(void)
+    std::string ApplicationIO::report_name(void) const
     {
         /// @todo implement me
         return "";
     }
 
-    std::string ApplicationIO::profile_name(void)
+    std::string ApplicationIO::profile_name(void) const
     {
         /// @todo implement me
         return "";
     }
 
-    std::set<std::string> ApplicationIO::region_name_set(void)
+    std::set<std::string> ApplicationIO::region_name_set(void) const
     {
         /// @todo implement me
         return {};
     }
 
-    void ApplicationIO::update_short_regions(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
-                                             std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end)
+    double ApplicationIO::total_runtime(uint64_t region_id) const
     {
-        m_short_region.clear();
-        /// @todo implement me
+        return NAN;
     }
 
-    void ApplicationIO::update_epoch(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
-                                     std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end)
+    double ApplicationIO::total_mpi_runtime(uint64_t region_id) const
     {
-        /// @todo implement me
+        return NAN;
     }
 
-    std::vector<std::pair<uint64_t, double> > ApplicationIO::short_region(void)
+    double ApplicationIO::total_epoch_runtime(void) const
     {
-        /// @todo implement me
-        return {};
+        return NAN;
     }
 
-    bool ApplicationIO::epoch_time(struct geopm_time_s &time)
+    int ApplicationIO::total_count(uint64_t region_id) const
     {
-        /// @todo implement me
-        return false;
+        return -1;
+    }
+
+    std::shared_ptr<IOGroup> ApplicationIO::profile_io_group(void)
+    {
+        return nullptr;
     }
 
     void ApplicationIO::update(std::shared_ptr<IComm> comm)

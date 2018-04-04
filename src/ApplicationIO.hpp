@@ -46,20 +46,23 @@
 namespace geopm
 {
     class IComm;
+    class IOGroup;
 
     class IApplicationIO
     {
         public:
             IApplicationIO() = default;
             virtual ~IApplicationIO() = default;
-            virtual bool do_sample(void) = 0;
-            virtual bool do_shutdown(void) = 0;
-            virtual std::string report_name(void) = 0;
-            virtual std::string profile_name(void) = 0;
-            virtual std::set<std::string> region_name_set(void) = 0;
-            virtual std::vector<std::pair<uint64_t, double> > short_region(void) = 0;
-            virtual bool epoch_time(struct geopm_time_s &epoch_time) = 0;
+            virtual bool do_shutdown(void) const = 0;
+            virtual std::string report_name(void) const = 0;
+            virtual std::string profile_name(void) const = 0;
+            virtual std::set<std::string> region_name_set(void) const = 0;
+            virtual double total_runtime(uint64_t region_id) const = 0;
+            virtual double total_mpi_runtime(uint64_t region_id) const = 0;
+            virtual double total_epoch_runtime(void) const = 0;
+            virtual int total_count(uint64_t region_id) const = 0;
             virtual void update(std::shared_ptr<IComm> comm) = 0;
+            virtual std::shared_ptr<IOGroup> profile_io_group(void) = 0;
     };
 
     class IProfileSampler;
@@ -73,14 +76,16 @@ namespace geopm
         public:
             ApplicationIO(const std::string &shm_key);
             virtual ~ApplicationIO();
-            bool do_sample(void) override;
-            bool do_shutdown(void) override;
-            std::string report_name(void) override;
-            std::string profile_name(void) override;
-            std::set<std::string> region_name_set(void) override;
-            std::vector<std::pair<uint64_t, double> > short_region(void) override;
-            bool epoch_time(struct geopm_time_s &epoch_time) override;
+            bool do_shutdown(void) const override;
+            std::string report_name(void) const override;
+            std::string profile_name(void) const override;
+            std::set<std::string> region_name_set(void) const override;
+            double total_runtime(uint64_t region_id) const override;
+            double total_mpi_runtime(uint64_t region_id) const override;
+            double total_epoch_runtime(void) const override;
+            int total_count(uint64_t region_id) const override;
             void update(std::shared_ptr<IComm> comm) override;
+            std::shared_ptr<IOGroup> profile_io_group(void) override;
         private:
             static constexpr size_t M_SHMEM_REGION_SIZE = 12288;
 

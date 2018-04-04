@@ -52,11 +52,6 @@ namespace geopm
         public:
             IReporter() = default;
             virtual ~IReporter() = default;
-            virtual std::vector<std::string> signal_names(void) = 0;
-            virtual void update(std::vector<double> signal,
-                                std::vector<std::pair<uint64_t, double> > short_region,
-                                bool is_epoch,
-                                struct geopm_time_s &epoch_time) = 0;
             virtual void generate(const std::string &report_name,
                                   const std::string &profile_name,
                                   const std::string &agent_name,
@@ -64,19 +59,16 @@ namespace geopm
                                   const std::string &agent_node_report,
                                   const std::map<uint64_t, std::string> &agent_region_report,
                                   const std::set<std::string> &region_name_set,
+                                  const ApplicationIO &application_io,
                                   std::shared_ptr<IComm> comm) = 0;
     };
 
     class Reporter : public IReporter
     {
         public:
-            Reporter(const std::string &report_name, int verbosity);
+            Reporter(const std::string &report_name);
             virtual ~Reporter() = default;
             std::vector<std::string> signal_names(void) override;
-            void update(std::vector<double> signal,
-                        std::vector<std::pair<uint64_t, double> > short_region,
-                        bool is_epoch,
-                        struct geopm_time_s &epoch_time) override;
             void generate(const std::string &report_name,
                           const std::string &profile_name,
                           const std::string &agent_name,
@@ -85,14 +77,10 @@ namespace geopm
                           const std::map<uint64_t, std::string> &agent_region_report,
                           const std::set<std::string> &region_name_set,
                           std::shared_ptr<IComm> comm) override;
-
         private:
             std::string get_max_memory(void);
 
             std::string m_report_name;
-            double m_mpi_agg_time; // app total mpi-runtime
-            double m_ignore_agg_time; // app total ignore-time
-            struct geopm_time_s m_app_start_time; // for app total runtime
             double m_counter_energy_start; // for app total energy
             uint64_t m_sample_count;
             uint64_t m_throttle_count; // for app total throttle time

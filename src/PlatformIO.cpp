@@ -79,9 +79,9 @@ namespace geopm
 
     }
 
-    void PlatformIO::register_iogroup(std::unique_ptr<IOGroup> iogroup)
+    void PlatformIO::register_iogroup(std::shared_ptr<IOGroup> iogroup)
     {
-        m_iogroup_list.push_back(std::move(iogroup));
+        m_iogroup_list.push_back(iogroup);
     }
 
     int PlatformIO::signal_domain_type(const std::string &signal_name) const

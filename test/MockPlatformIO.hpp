@@ -39,12 +39,8 @@
 class MockPlatformIO : public geopm::IPlatformIO
 {
     public:
-        // workaround for noncopyable parameter with gmock
-        void register_iogroup(std::unique_ptr<geopm::IOGroup> iogroup) override {
-            register_iogroup_mock(iogroup.get());
-        }
-        MOCK_METHOD1(register_iogroup_mock,
-                     void(geopm::IOGroup *iogroup));
+        MOCK_METHOD1(register_iogroup,
+                     void(std::shared_ptr<geopm::IOGroup> iogroup));
         MOCK_CONST_METHOD1(signal_domain_type,
                            int(const std::string &signal_name));
         MOCK_CONST_METHOD1(control_domain_type,
