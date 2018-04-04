@@ -209,7 +209,8 @@ namespace geopm
     {
         walk_down();
         geopm_signal_handler_check();
-        std::vector<uint64_t> short_region = m_application_io->short_region();
+        m_application_io->update(m_comm);
+        std::vector<std::pair<uint64_t, double> > short_region = m_application_io->short_region();
         struct geopm_time_s epoch_time;
         bool is_epoch = m_application_io->epoch_time(epoch_time);
         auto reporter_it = m_reporter_sample.begin();
@@ -227,7 +228,7 @@ namespace geopm
         }
         // Pass short_region and is_epoch to add extra entries into
         // trace for each.
-        m_tracer->update(m_tracer_sample, short_region, is_epoch);
+        m_tracer->update(m_tracer_sample, is_epoch);
         walk_up();
         geopm_signal_handler_check();
         m_agent[0]->wait();
