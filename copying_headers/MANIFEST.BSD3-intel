@@ -238,6 +238,7 @@ test/KontrollerTest.cpp
 test/legacy_whitelist.out
 test/legacy_whitelist.out
 test/Makefile.mk
+test/MockApplicationIO.hpp
 test/MockComm.hpp
 test/MockControlMessage.hpp
 test/MockGlobalPolicy.hpp

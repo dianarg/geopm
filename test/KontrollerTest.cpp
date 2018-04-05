@@ -43,12 +43,13 @@
 #include "StaticPolicyAgent.hpp"
 #include "MockPlatformTopo.hpp"
 #include "MockPlatformIO.hpp"
+#include "MockComm.hpp"
+#include "MockApplicationIO.hpp"
 //#include "MockTreeComm.hpp"
 #include "Helper.hpp"
 
 // for mocks
 #include "TreeComm.hpp"
-#include "ApplicationIO.hpp"
 #include "Reporter.hpp"
 #include "Tracer.hpp"
 #include "PlatformIO.hpp"
@@ -116,24 +117,6 @@ class MockTreeComm : public geopm::ITreeComm
         std::map<int, std::vector<double> > m_data_sent_up;
         std::map<int, std::vector<double> > m_data_sent_down;
 
-};
-
-class MockApplicationIO : public geopm::IApplicationIO
-{
-    public:
-        bool do_shutdown(void) const override {return true;}
-        std::string report_name(void) const override {return "test.report";}
-        std::string profile_name(void) const override {return "profile";}
-        std::set<std::string> region_name_set(void) const override
-        {
-            return {"region A", "region B"};
-        }
-        double total_runtime(uint64_t region_id) const override {return NAN;}
-        double total_mpi_runtime(uint64_t region_id) const override {return NAN;}
-        double total_epoch_runtime(void) const override {return NAN;}
-        int total_count(uint64_t region_id) const override {return -1;}
-        void update(std::shared_ptr<IComm> comm) override {}
-        std::shared_ptr<geopm::IOGroup> profile_io_group(void) override {return nullptr;}
 };
 
 class MockReporter : public geopm::IReporter
@@ -343,11 +326,12 @@ void KontrollerTest::SetUp()
 
 TEST_F(KontrollerTest, main)
 {
-    Kontroller kontroller(m_topo, m_platform_io,
+    auto m_application_io = std::make_shared<MockApplicationIO>();
+    Kontroller kontroller(m_comm, m_topo, m_platform_io,
                           m_agent_name, m_num_send_down, m_num_send_up,
                           geopm::make_unique<MockTreeComm>(),
                           m_num_level_ctl, m_root_level,
-                          geopm::make_unique<NiceMock<MockApplicationIO> >(),
+                          m_application_io,
                           geopm::make_unique<NiceMock<MockReporter> >(),
                           geopm::make_unique<NiceMock<MockTracer> >(),
                           std::move(m_level_agent),
@@ -360,6 +344,10 @@ TEST_F(KontrollerTest, main)
     for (int step = 0; step < m_num_step; ++step) {
         kontroller.step();
     }
+
+    // called by mock reporter
+    EXPECT_CALL(*m_application_io, region_name_set())
+        .WillOnce(Return(std::set<std::string>()));
     kontroller.generate();
 
 }

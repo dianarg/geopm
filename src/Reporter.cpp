@@ -81,6 +81,7 @@
 
 #include "Reporter.hpp"
 #include "PlatformIO.hpp"
+#include "PlatformTopo.hpp"
 #include "ApplicationIO.hpp"
 #include "Comm.hpp"
 #include "Exception.hpp"
@@ -97,9 +98,25 @@ namespace geopm
         : m_report_name(report_name)
         , m_platform_io(platform_io)
     {
-        // TODO: push region energy signal on platformio
+        int energy = m_platform_io.push_signal("ENERGY", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_energy_idx = m_platform_io.push_region_signal(energy, IPlatformTopo::M_DOMAIN_BOARD, 0);
+        int clk_core = m_platform_io.push_signal("CLK_UNHALTED_CORE", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        int clk_ref = m_platform_io.push_signal("CLK_UNHALTED_REF", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_clk_core_idx = m_platform_io.push_region_signal(clk_core, IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_clk_ref_idx = m_platform_io.push_region_signal(clk_ref, IPlatformTopo::M_DOMAIN_BOARD, 0);
 
-        /// @todo why report_name here? I guess we can check if file can be created early
+        if (true) { // @todo if we are the root of the tree
+            // check if report file can be created
+            if (!m_report_name.empty()) {
+                std::ofstream test_open(m_report_name);
+                if (!test_open.good()) {
+                    std::cerr << "Warning: unable to open report file '" << m_report_name
+                              << "' for writing: " << strerror(errno) << std::endl;
+                }
+                std::remove(m_report_name.c_str());
+            }
+        }
+
     }
 
     void Reporter::generate(const std::string &agent_name,
@@ -136,11 +153,14 @@ namespace geopm
             /// these two special regions go at the end
             uint64_t region_id = geopm_crc32_str(0, region.c_str());
             report << "Region " << region << " (" << region_id << "):" << std::endl;
-            report << "\truntime (sec): " << 777 << std::endl;
-            report << "\tenergy (joules): " << 888 << std::endl; // from platformio
-            report << "\tfrequency (%): " << 999 << std::endl; // clk_unhalted_core / clk_unhalted_ref
-            report << "\tmpi-runtime (sec): " << 222 << std::endl;
-            report << "\tcount: " << 333 << std::endl;
+            report << "\truntime (sec): " << application_io.total_runtime(region_id) << std::endl;
+            report << "\tenergy (joules): " << m_platform_io.region_sample(m_energy_idx, region_id) << std::endl; // from platformio
+            double numer = m_platform_io.region_sample(m_clk_core_idx, region_id);
+            double denom = m_platform_io.region_sample(m_clk_ref_idx, region_id);
+            double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
+            report << "\tfrequency (%): " << freq << std::endl;
+            report << "\tmpi-runtime (sec): " << application_io.total_mpi_runtime(region_id) << std::endl;
+            report << "\tcount: " << application_io.total_count(region_id) << std::endl;
         }
 
         report << "Application Totals:" << std::endl

@@ -38,51 +38,165 @@
 
 #include "Reporter.hpp"
 #include "MockPlatformIO.hpp"
-#include "ApplicationIO.hpp" // TODO: replace with mock
+#include "MockApplicationIO.hpp"
+#include "Helper.hpp"
+#include "geopm_hash.h"
+#include "config.h"
 
 using geopm::Reporter;
 using testing::HasSubstr;
-
-// TODO add own file
-class MockApplicationIO : public geopm::IApplicationIO
-{
-    public:
-        bool do_shutdown(void) const override {return true;}
-        std::string report_name(void) const override {return "test.report";}
-        std::string profile_name(void) const override {return "profile";}
-        std::set<std::string> region_name_set(void) const override
-        {
-            return {"all2all", "model-init"};
-        }
-        double total_runtime(uint64_t region_id) const override {return NAN;}
-        double total_mpi_runtime(uint64_t region_id) const override {return NAN;}
-        double total_epoch_runtime(void) const override {return NAN;}
-        int total_count(uint64_t region_id) const override {return -1;}
-        void update(std::shared_ptr<geopm::IComm> comm) override {}
-        std::shared_ptr<geopm::IOGroup> profile_io_group(void) override {return nullptr;}
-};
+using testing::Return;
+using testing::_;
 
 class ReporterTest : public testing::Test
 {
     protected:
+        enum {
+            M_ENERGY_IDX,
+            M_REGION_ENERGY_IDX,
+            M_CLK_CORE_IDX,
+            M_CLK_REF_IDX,
+            M_REGION_CLK_CORE_IDX,
+            M_REGION_CLK_REF_IDX,
+        };
         ReporterTest();
         void TearDown(void);
         std::string m_report_name = "test_reporter.out";
 
         MockPlatformIO m_platform_io;
         MockApplicationIO m_application_io;
-        Reporter m_reporter;
+        std::unique_ptr<Reporter> m_reporter;
+        std::string m_profile_name = "my profile";
+        std::set<std::string> m_region_set = {"all2all", "model-init"};
+        std::map<uint64_t, double> m_region_runtime = {
+            {geopm_crc32_str(0, "all2all"), 33.33},
+            {geopm_crc32_str(0, "model-init"), 22.11}
+        };
+        std::map<uint64_t, double> m_region_mpi_time = {
+            {geopm_crc32_str(0, "all2all"), 3.4},
+            {geopm_crc32_str(0, "model-init"), 5.6}
+        };
+        std::map<uint64_t, double> m_region_count = {
+            {geopm_crc32_str(0, "all2all"), 20},
+            {geopm_crc32_str(0, "model-init"), 1}
+        };
+
+        std::map<uint64_t, double> m_region_energy = {
+            {geopm_crc32_str(0, "all2all"), 777},
+            {geopm_crc32_str(0, "model-init"), 888}
+        };
+        std::map<uint64_t, double> m_region_clk_core = {
+            {geopm_crc32_str(0, "all2all"), 4545},
+            {geopm_crc32_str(0, "model-init"), 5656}
+        };
+        std::map<uint64_t, double> m_region_clk_ref = {
+            {geopm_crc32_str(0, "all2all"), 5555},
+            {geopm_crc32_str(0, "model-init"), 6666}
+        };
 };
 
 ReporterTest::ReporterTest()
-    : m_reporter(m_report_name, m_platform_io)
 {
+    ON_CALL(m_application_io, profile_name())
+        .WillByDefault(Return(m_profile_name));
+    ON_CALL(m_application_io, region_name_set())
+        .WillByDefault(Return(m_region_set));
 
+    EXPECT_CALL(m_platform_io, push_signal("ENERGY", _, _))
+        .WillOnce(Return(M_ENERGY_IDX));
+    EXPECT_CALL(m_platform_io, push_region_signal(M_ENERGY_IDX, _, _))
+        .WillOnce(Return(M_REGION_ENERGY_IDX));
+    EXPECT_CALL(m_platform_io, push_signal("CLK_UNHALTED_REF", _, _))
+        .WillOnce(Return(M_CLK_REF_IDX));
+    EXPECT_CALL(m_platform_io, push_region_signal(M_CLK_REF_IDX, _, _))
+        .WillOnce(Return(M_REGION_CLK_REF_IDX));
+    EXPECT_CALL(m_platform_io, push_signal("CLK_UNHALTED_CORE", _, _))
+        .WillOnce(Return(M_CLK_CORE_IDX));
+    EXPECT_CALL(m_platform_io, push_region_signal(M_CLK_CORE_IDX, _, _))
+        .WillOnce(Return(M_REGION_CLK_CORE_IDX));
+
+
+    m_reporter = geopm::make_unique<Reporter>(m_report_name, m_platform_io);
 }
 
 void ReporterTest::TearDown(void)
 {
     //std::remove(m_report_name.c_str());
+}
+
+void check_report(std::istream &expected, std::istream &result);
+
+TEST_F(ReporterTest, generate)
+{
+    EXPECT_CALL(m_application_io, profile_name());
+    EXPECT_CALL(m_application_io, region_name_set());
+    for (auto rid : m_region_runtime) {
+        EXPECT_CALL(m_application_io, total_runtime(rid.first))
+            .WillOnce(Return(rid.second));
+    }
+    for (auto rid : m_region_mpi_time) {
+        EXPECT_CALL(m_application_io, total_mpi_runtime(rid.first))
+            .WillOnce(Return(rid.second));
+    }
+    for (auto rid : m_region_count) {
+        EXPECT_CALL(m_application_io, total_count(rid.first))
+            .WillOnce(Return(rid.second));
+    }
+
+    for (auto rid : m_region_energy) {
+        EXPECT_CALL(m_platform_io, region_sample(M_REGION_ENERGY_IDX, rid.first))
+            .WillOnce(Return(rid.second));
+    }
+    for (auto rid : m_region_clk_core) {
+        EXPECT_CALL(m_platform_io, region_sample(M_REGION_CLK_CORE_IDX, rid.first))
+            .WillOnce(Return(rid.second));
+    }
+    for (auto rid : m_region_clk_ref) {
+        EXPECT_CALL(m_platform_io, region_sample(M_REGION_CLK_REF_IDX, rid.first))
+            .WillOnce(Return(rid.second));
+    }
+
+
+    // Check for labels at start of line but ignore numbers
+    // Note that region lines start with tab
+    std::string expected = "#####\n"
+        "Profile: " + m_profile_name + "\n"
+        "Agent: my_agent\n"
+        "Policy Mode:\n"
+        "Tree Decider:\n"
+        "Leaf Decider:\n"
+        "Power Budget:\n"
+        "\n"
+        "Host:\n"
+        "Region all2all (\n"
+        "	runtime (sec): 33.33\n"
+        "	energy (joules): 777\n"
+        "	frequency (%): 81.81\n"
+        "	mpi-runtime (sec): 3.4\n"
+        "	count: 20\n"
+        "Region model-init (\n"
+        "	runtime (sec): 22.11\n"
+        "	energy (joules): 888\n"
+        "	frequency (%): 84.84\n"
+        "	mpi-runtime (sec): 5.6\n"
+        "	count: 1\n"
+        "Application Totals:\n"
+        "	runtime (sec):\n"
+        "	energy (joules):\n"
+        "	mpi-runtime (sec):\n"
+        "	ignore-time (sec):\n"
+        "	throttle time (%):\n"
+        "	geopmctl memory HWM:\n"
+        "	geopmctl network BW (B/sec):\n"
+        "\n";
+
+    std::istringstream exp_stream(expected);
+
+    m_reporter->generate("my_agent", "agent_header", "node_report", {},
+                        m_application_io,
+                        nullptr); // TODO: mock comm
+    std::ifstream report(m_report_name);
+    check_report(exp_stream, report);
 }
 
 void check_report(std::istream &expected, std::istream &result)
@@ -118,104 +232,3 @@ void check_report(std::istream &expected, std::istream &result)
         FAIL() << message.str();
     }
 }
-
-TEST_F(ReporterTest, generate)
-{
-    // Check for labels at start of line but ignore numbers
-    // Note that region lines start with tab
-    std::string expected = R"raw(#####
-Profile: profile
-Agent: my_agent
-Policy Mode:
-Tree Decider:
-Leaf Decider:
-Power Budget:
-
-Host:
-Region all2all (
-	runtime (sec):
-	energy (joules):
-	frequency (%):
-	mpi-runtime (sec):
-	count:
-Region model-init (
-	runtime (sec):
-	energy (joules):
-	frequency (%):
-	mpi-runtime (sec):
-	count:
-Application Totals:
-	runtime (sec):
-	energy (joules):
-	mpi-runtime (sec):
-	ignore-time (sec):
-	throttle time (%):
-	geopmctl memory HWM:
-	geopmctl network BW (B/sec):
-
-)raw";
-    std::istringstream exp_stream(expected);
-
-    m_reporter.generate("my_agent", "agent_header", "node_report", {},
-                        m_application_io,
-                        nullptr); // TODO: mock comm
-    std::ifstream report(m_report_name);
-    check_report(exp_stream, report);
-}
-
-/*
-std::string example_report = R"raw(##### geopm 0.4.0+dev103g7639afc #####
-Profile: test_plugin_efficient_freq_offline_offline
-Policy Mode: DYNAMIC
-Tree Decider: static_policy
-Leaf Decider: efficient_freq
-Power Budget: 400
-
-Host: mr-fusion2
-Region all2all (35397599679):
-        runtime (sec): 44.891
-        energy (joules): 4767.17
-        frequency (%): 100
-        mpi-runtime (sec): 54.9077
-        count: 60
-Region model-init (5977905031):
-        runtime (sec): 4.90595
-        energy (joules): 692.315
-        frequency (%): 77.23
-        mpi-runtime (sec): 0
-        count: 1
-Region dgemm (11396693813):
-        runtime (sec): 264.722
-        energy (joules): 43340.5
-        frequency (%): 84.813
-        mpi-runtime (sec): 1.17775
-        count: 60
-Region stream (20779751936):
-        runtime (sec): 48.7621
-        energy (joules): 8748.3
-        frequency (%): 99.8746
-        mpi-runtime (sec): 0
-        count: 60
-Region unmarked-region (2305843009213693952):
-        runtime (sec): 54.9608
-        energy (joules): 9277.61
-        frequency (%): 97.3734
-        mpi-runtime (sec): 0
-        count: 0
-Region epoch (9223372036854775808):
-        runtime (sec): 413.234
-        energy (joules): 66120.7
-        frequency (%): 89.3575
-        mpi-runtime (sec): 56.0855
-        count: 60
-Application Totals:
-        runtime (sec): 418.321
-        energy (joules): 66833.2
-        mpi-runtime (sec): 56.0855
-        ignore-time (sec): 0
-        throttle time (%): 0
-        geopmctl memory HWM: 57136 kB
-        geopmctl network BW (B/sec): 0
-)raw";
-
-*/
