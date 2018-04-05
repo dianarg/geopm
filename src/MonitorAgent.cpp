@@ -152,11 +152,7 @@ namespace geopm
 
     std::vector<std::string> MonitorAgent::sample_names(void)
     {
-        std::vector<std::string> result;
-        for (auto &col : trace_columns()) {
-            result.emplace_back(col.name);
-        }
-        return result;
+        return {"TIME", "POWER_PACKAGE", "FREQUENCY", "REGION_PROGRESS"};
     }
 
     std::string MonitorAgent::report_header(void)

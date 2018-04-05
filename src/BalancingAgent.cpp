@@ -36,6 +36,7 @@
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
 #include "Exception.hpp"
+#include "Helper.hpp"
 #include "config.h"
 
 namespace geopm
@@ -136,6 +137,11 @@ namespace geopm
 
     }
 
+    void BalancingAgent::wait()
+    {
+
+    }
+
     void BalancingAgent::split_budget(double total_power_budget,
                                       const std::vector<double> &power_used,
                                       const std::vector<double> &runtime,
@@ -148,16 +154,6 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-    }
-
-    std::vector<std::string> BalancingAgent::policy_names(void)
-    {
-        return {};
-    }
-
-    std::vector<std::string> BalancingAgent::sample_names(void)
-    {
-        return {};
     }
 
     std::string BalancingAgent::report_header(void)
@@ -176,6 +172,26 @@ namespace geopm
     }
 
     std::vector<IPlatformIO::m_request_s> BalancingAgent::trace_columns(void)
+    {
+        return {};
+    }
+
+    std::string BalancingAgent::plugin_name(void)
+    {
+        return "BALANCING";
+    }
+
+    std::unique_ptr<IAgent> BalancingAgent::make_plugin(void)
+    {
+        return geopm::make_unique<BalancingAgent>();
+    }
+
+    std::vector<std::string> BalancingAgent::policy_names(void)
+    {
+        return {};
+    }
+
+    std::vector<std::string> BalancingAgent::sample_names(void)
     {
         return {};
     }
