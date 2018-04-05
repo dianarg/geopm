@@ -413,8 +413,7 @@ namespace geopm
             m_sample_regulator = new SampleRegulator(cpu_rank);
             m_profile_io_sample = std::make_shared<ProfileIOSample>(cpu_rank);
             m_profile_io_runtime = std::make_shared<ProfileIORuntime>(cpu_rank);
-            platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample,
-                                                                              m_profile_io_runtime));
+            platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample));
             m_is_connected = true;
         }
     }
@@ -603,6 +602,7 @@ namespace geopm
                 // the current region. Then we can enforce the policy
                 // by adjusting RAPL power domain limits.
                 m_sampler->sample(m_prof_sample, length, m_ppn1_comm);
+                m_profile_io_sample->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
 
                 double region_mpi_time = 0.0;
                 uint64_t base_region_id = 0;
@@ -651,7 +651,14 @@ namespace geopm
                             }
                             else if ((*sample_it).second.progress == 1.0 &&
                                      !geopm_region_id_hint_is_equal(GEOPM_REGION_HINT_IGNORE, base_region_id)) {
-                                m_rid_regulator_map[base_region_id].record_exit(local_rank, (*sample_it).second.timestamp);
+                                auto rid_it = m_rid_regulator_map.find(m_telemetry_sample[0].region_id);
+#ifdef GEOPM_DEBUG
+                                if (rid_it == m_rid_regulator_map.end()) {
+                                    throw Exception("Controller::walk_up(): could not find region id in regulator map",
+                                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+                                }
+#endif
+                                rid_it->second.record_exit(local_rank, (*sample_it).second.timestamp);
                             }
                         }
                     }
@@ -755,7 +762,14 @@ namespace geopm
                 }
 
                 m_platform->transform_rank_data(region_id_all, m_msr_sample[0].timestamp, aligned_signal, m_telemetry_sample);
-                m_rid_regulator_map[geopm_region_id_unset_mpi(m_telemetry_sample[0].region_id)].insert_runtime_signal(m_telemetry_sample);
+                auto rid_it = m_rid_regulator_map.find(m_telemetry_sample[0].region_id);
+#ifdef GEOPM_DEBUG
+                if (rid_it == m_rid_regulator_map.end()) {
+                    throw Exception("Controller::walk_up(): could not find region id in regulator map",
+                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+                }
+#endif
+                rid_it->second.insert_runtime_signal(m_telemetry_sample);
 
                 // First entry into any region
                 if (m_region_id_all == GEOPM_REGION_ID_UNDEFINED &&
@@ -866,7 +880,15 @@ namespace geopm
             (*it).region_id = m_region_id_all;
             (*it).signal[GEOPM_TELEMETRY_TYPE_PROGRESS] = progress;
         }
-        m_rid_regulator_map[geopm_region_id_unset_mpi(m_region_id_all)].insert_runtime_signal(m_telemetry_sample);
+
+        auto rid_it = m_rid_regulator_map.find(m_region_id_all);
+#ifdef GEOPM_DEBUG
+        if (rid_it == m_rid_regulator_map.end()) {
+            throw Exception("Controller::walk_up(): could not find region id in regulator map",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+        rid_it->second.insert_runtime_signal(m_telemetry_sample);
     }
 
     void Controller::update_region(void)

@@ -34,7 +34,6 @@
 #include "ProfileIOGroup.hpp"
 #include "PlatformTopo.hpp"
 #include "ProfileIOSample.hpp"
-#include "ProfileIORuntime.hpp"
 #include "Exception.hpp"
 #include "geopm_hash.h"
 #include "config.h"
@@ -43,18 +42,15 @@
 
 namespace geopm
 {
-    ProfileIOGroup::ProfileIOGroup(std::shared_ptr<IProfileIOSample> profile_sample,
-                                   std::shared_ptr<IProfileIORuntime> profile_runtime)
-        : ProfileIOGroup(profile_sample, profile_runtime, platform_topo())
+    ProfileIOGroup::ProfileIOGroup(std::shared_ptr<IProfileIOSample> profile_sample)
+        : ProfileIOGroup(profile_sample, platform_topo())
     {
 
     }
 
     ProfileIOGroup::ProfileIOGroup(std::shared_ptr<IProfileIOSample> profile_sample,
-                                   std::shared_ptr<IProfileIORuntime> profile_runtime,
                                    IPlatformTopo &topo)
         : m_profile_sample(profile_sample)
-        , m_profile_runtime(profile_runtime)
         , m_signal_idx_map{{plugin_name() + "::REGION_ID#", M_SIGNAL_REGION_ID},
                            {plugin_name() + "::REGION_PROGRESS", M_SIGNAL_PROGRESS},
                            {"REGION_ID#", M_SIGNAL_REGION_ID},
@@ -160,7 +156,7 @@ namespace geopm
                 if (it == cache.end()) {
                     cache.emplace(std::piecewise_construct,
                                   std::forward_as_tuple(rid),
-                                  std::forward_as_tuple(m_profile_runtime->per_cpu_runtime(rid)));
+                                  std::forward_as_tuple(m_profile_sample->per_cpu_runtime(rid)));
                 }
             }
             for (size_t cpu = 0; cpu < m_per_cpu_runtime.size(); ++cpu) {
@@ -234,7 +230,7 @@ namespace geopm
                 break;
             case M_SIGNAL_RUNTIME:
                 region_id = m_profile_sample->per_cpu_region_id()[cpu_idx];
-                result = m_profile_runtime->per_cpu_runtime(region_id)[cpu_idx];
+                result = m_profile_sample->per_cpu_runtime(region_id)[cpu_idx];
                 break;
             default:
 #ifdef GEOPM_DEBUG

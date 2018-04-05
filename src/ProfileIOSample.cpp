@@ -35,6 +35,8 @@
 #include "ProfileIOSample.hpp"
 #include "ProfileIO.hpp"
 #include "CircularBuffer.hpp"
+#include "RuntimeRegulator.hpp"
+#include "Helper.hpp"
 #include "config.h"
 
 namespace geopm
@@ -62,26 +64,6 @@ namespace geopm
             if (!geopm_region_id_is_epoch(sample_it->second.region_id) &&
                 sample_it->second.region_id != GEOPM_REGION_ID_UNMARKED) {
 
-                uint64_t region_id_hash = geopm_region_id_hash(sample_it->second.region_id);
-                auto rid_it = m_rid_regulator_map.find(region_id_hash);
-                if (rid_it == m_rid_regulator_map.end()) {
-                    auto tmp = m_rid_regulator_map.emplace(
-                                   std::pair<uint64_t, std::unique_ptr<IRuntimeRegulator> >(
-                                       region_id_hash, new RuntimeRegulator(m_num_rank));
-                    rid_it = tmp.first;
-                }
-                if (m_region_id[rank_idx] != region_id_hash) {
-                    if ((*sample_it).second.progress == 0.0) {
-                        rid_it->second.record_entry(rank_idx, sample_it->second.timestamp);
-                    }
-                    else if ((*sample_it).second.progress == 1.0) {
-                        rid_it->second.record_exit(rank_idx, sample_it->second.timestamp);
-                    }
-                }
-
-                struct m_rank_sample_s rank_sample;
-                rank_sample.timestamp = sample_it->second.timestamp;
-                rank_sample.progress = sample_it->second.progress;
                 auto rank_idx_it = m_rank_idx_map.find(sample_it->second.rank);
 #ifdef GEOPM_DEBUG
                 if (rank_idx_it == m_rank_idx_map.end()) {
@@ -90,6 +72,27 @@ namespace geopm
                 }
 #endif
                 size_t rank_idx = rank_idx_it->second;
+
+                uint64_t region_id = sample_it->second.region_id;
+                auto rid_it = m_rid_regulator_map.find(region_id);
+                if (rid_it == m_rid_regulator_map.end()) {
+                    auto tmp = m_rid_regulator_map.emplace(
+                                   std::pair<uint64_t, std::unique_ptr<IRuntimeRegulator> >(
+                                       region_id, geopm::make_unique<RuntimeRegulator>(m_num_rank)));
+                    rid_it = tmp.first;
+                }
+                if (m_region_id[rank_idx] != region_id &&
+                    sample_it->second.progress == 0.0) {
+                        rid_it->second->record_entry(rank_idx, sample_it->second.timestamp);
+                }
+                if (m_region_id[rank_idx] == region_id &&
+                    sample_it->second.progress == 1.0) {
+                    rid_it->second->record_exit(rank_idx, sample_it->second.timestamp);
+                }
+
+                struct m_rank_sample_s rank_sample;
+                rank_sample.timestamp = sample_it->second.timestamp;
+                rank_sample.progress = sample_it->second.progress;
                 if (sample_it->second.region_id != m_region_id[rank_idx]) {
                     m_rank_sample_buffer[rank_idx].clear();
                 }
@@ -97,14 +100,14 @@ namespace geopm
                     m_region_id[rank_idx] = GEOPM_REGION_ID_UNMARKED;
                 }
                 else {
-                    m_region_id[rank_idx] = region_id_hash;
+                    m_region_id[rank_idx] = region_id;
                 }
                 m_rank_sample_buffer[rank_idx].insert(rank_sample);
             }
         }
     }
 
-    std::vector<double> ProfileIOSample::per_cpu_progress(const struct geopm_time_s &extrapolation_time)
+    std::vector<double> ProfileIOSample::per_cpu_progress(const struct geopm_time_s &extrapolation_time) const
     {
         std::vector<double> result(m_cpu_rank.size(), 0.0);
         std::vector<double> rank_progress = per_rank_progress(extrapolation_time);
@@ -116,7 +119,7 @@ namespace geopm
         return result;
     }
 
-    std::vector<double> ProfileIOSample::per_rank_progress(const struct geopm_time_s &extrapolation_time)
+    std::vector<double> ProfileIOSample::per_rank_progress(const struct geopm_time_s &extrapolation_time) const
     {
         double delta;
         double factor;
@@ -173,7 +176,7 @@ namespace geopm
         return result;
     }
 
-    std::vector<uint64_t> ProfileIOSample::per_cpu_region_id(void)
+    std::vector<uint64_t> ProfileIOSample::per_cpu_region_id(void) const
     {
         std::vector<uint64_t> result(m_cpu_rank.size(), GEOPM_REGION_ID_UNMARKED);
         int cpu_idx = 0;
@@ -187,10 +190,9 @@ namespace geopm
     std::vector<double> ProfileIOSample::per_cpu_runtime(uint64_t region_id) const
     {
         std::vector<double> result(m_cpu_rank.size(), 0.0);
-        uint64_t region_id_hash = geopm_region_id_hash(region_id);
-        auto regulator_it = m_rid_regulator_map.find(region_id_hash);
+        auto regulator_it = m_rid_regulator_map.find(region_id);
         if (regulator_it != m_rid_regulator_map.end()) {
-            const std::vector<double> &rank_runtimes = regulator_it->runtimes();
+            const std::vector<double> &rank_runtimes = regulator_it->second->per_rank_last_runtime();
             int cpu_idx = 0;
             for (auto rank : m_cpu_rank) {
 #ifdef GEOPM_DEBUG

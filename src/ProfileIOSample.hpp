@@ -35,6 +35,7 @@
 
 #include <vector>
 #include <map>
+#include <memory>
 
 #include "geopm_message.h"
 
@@ -50,9 +51,9 @@ namespace geopm
             virtual ~IProfileIOSample() {}
             virtual void update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                                 std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end) = 0;
-            virtual std::vector<uint64_t> per_cpu_region_id(void) = 0;
-            virtual std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) = 0;
-            virtual std::vector<double> per_cpu_runtime(uint64_t region_id) const;
+            virtual std::vector<uint64_t> per_cpu_region_id(void) const = 0;
+            virtual std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) const = 0;
+            virtual std::vector<double> per_cpu_runtime(uint64_t region_id) const = 0;
     };
 
     class ProfileIOSample : public IProfileIOSample
@@ -62,9 +63,9 @@ namespace geopm
             virtual ~ProfileIOSample();
             void update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                         std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end) override;
-            std::vector<uint64_t> per_cpu_region_id(void) override;
-            std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) override;
-            std::vector<double> per_cpu_runtime(uint64_t region_id) const;
+            std::vector<uint64_t> per_cpu_region_id(void) const override;
+            std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) const override;
+            std::vector<double> per_cpu_runtime(uint64_t region_id) const override;
         private:
             struct m_rank_sample_s {
                 struct geopm_time_s timestamp;
@@ -75,7 +76,7 @@ namespace geopm
                 M_INTERP_TYPE_NEAREST = 1,
                 M_INTERP_TYPE_LINEAR = 2,
             };
-            std::vector<double> per_rank_progress(const struct geopm_time_s &extrapolation_time);
+            std::vector<double> per_rank_progress(const struct geopm_time_s &extrapolation_time) const;
             /// @brief Number of ranks running on the node.
             size_t m_num_rank;
             /// @brief The rank index of the rank running on each CPU.

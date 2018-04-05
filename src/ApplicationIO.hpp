@@ -57,8 +57,10 @@ namespace geopm
             virtual std::string report_name(void) const = 0;
             virtual std::string profile_name(void) const = 0;
             virtual std::set<std::string> region_name_set(void) const = 0;
-            virtual double total_runtime(uint64_t region_id) const = 0;
-            virtual double total_mpi_runtime(uint64_t region_id) const = 0;
+            virtual double total_region_runtime(uint64_t region_id) const = 0;
+            virtual double total_region_mpi_runtime(uint64_t region_id) const = 0;
+            virtual double total_app_runtime(void) const = 0;
+            virtual double total_app_mpi_runtime(void) const = 0;
             virtual double total_epoch_runtime(void) const = 0;
             virtual int total_count(uint64_t region_id) const = 0;
             virtual void update(std::shared_ptr<IComm> comm) = 0;
@@ -67,7 +69,7 @@ namespace geopm
 
     class IProfileSampler;
     class ISampleRegulator;
-    class RuntimeRegulator;
+    class IRuntimeRegulator;
     class IProfileIOSample;
     class IProfileIORuntime;
 
@@ -80,8 +82,10 @@ namespace geopm
             std::string report_name(void) const override;
             std::string profile_name(void) const override;
             std::set<std::string> region_name_set(void) const override;
-            double total_runtime(uint64_t region_id) const override;
-            double total_mpi_runtime(uint64_t region_id) const override;
+            double total_region_runtime(uint64_t region_id) const override;
+            double total_region_mpi_runtime(uint64_t region_id) const override;
+            double total_app_runtime(void) const override;
+            double total_app_mpi_runtime(void) const override;
             double total_epoch_runtime(void) const override;
             int total_count(uint64_t region_id) const override;
             void update(std::shared_ptr<IComm> comm) override;
@@ -101,7 +105,7 @@ namespace geopm
             bool m_do_shutdown;
             bool m_is_connected;
             int m_rank_per_node;
-            std::map<uint64_t, std::unique_ptr<RuntimeRegulator> > m_rid_regulator_map;
+            std::map<uint64_t, std::unique_ptr<IRuntimeRegulator> > m_rid_regulator_map;
             std::shared_ptr<IProfileIOSample> m_profile_io_sample;
             std::shared_ptr<IProfileIORuntime> m_profile_io_runtime;
             std::vector<std::pair<uint64_t, double> > m_short_region;

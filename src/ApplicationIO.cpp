@@ -70,9 +70,7 @@ namespace geopm
             m_prof_sample.resize(m_sampler->capacity());
             std::vector<int> cpu_rank = m_sampler->cpu_rank();
             m_profile_io_sample = std::make_shared<ProfileIOSample>(cpu_rank);
-            m_profile_io_runtime = std::make_shared<ProfileIORuntime>(cpu_rank);
-            platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample,
-                                                                              m_profile_io_runtime));
+            platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample));
             m_is_connected = true;
         }
     }
@@ -100,17 +98,27 @@ namespace geopm
         return {};
     }
 
-    double ApplicationIO::total_runtime(uint64_t region_id) const
+    double ApplicationIO::total_region_runtime(uint64_t region_id) const
     {
         return NAN;
     }
 
-    double ApplicationIO::total_mpi_runtime(uint64_t region_id) const
+    double ApplicationIO::total_region_mpi_runtime(uint64_t region_id) const
     {
         return NAN;
     }
 
     double ApplicationIO::total_epoch_runtime(void) const
+    {
+        return NAN;
+    }
+
+    double ApplicationIO::total_app_runtime(void) const
+    {
+        return NAN;
+    }
+
+    double ApplicationIO::total_app_mpi_runtime(void) const
     {
         return NAN;
     }
@@ -130,6 +138,5 @@ namespace geopm
         size_t length = 0; /// @todo fix
         m_sampler->sample(m_prof_sample, length, comm);
         m_profile_io_sample->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
-        m_profile_io_runtime->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
     }
 }

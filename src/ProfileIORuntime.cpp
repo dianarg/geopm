@@ -57,7 +57,7 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        auto rank_runtimes = m_regulator.at(region_id).runtimes();
+        auto rank_runtimes = m_regulator.at(region_id).per_rank_last_runtime();
         int cpu_idx = 0;
         for (auto rank : m_cpu_rank) {
 #ifdef GEOPM_DEBUG

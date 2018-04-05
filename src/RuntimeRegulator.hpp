@@ -49,29 +49,45 @@ namespace geopm
             virtual void record_entry(int rank, struct geopm_time_s entry_time) = 0;
             virtual void record_exit(int rank, struct geopm_time_s exit_time) = 0;
             virtual void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) = 0;
-            virtual std::vector<double> runtimes(void) const = 0;
+            virtual std::vector<double> per_rank_last_runtime(void) const = 0;
+            virtual std::vector<double> per_rank_total_runtime(void) const = 0;
+            virtual std::vector<size_t> per_rank_count(void) const = 0;
     };
+
     class RuntimeRegulator : public IRuntimeRegulator
     {
         public:
-            RuntimeRegulator();
-            RuntimeRegulator(int max_rank_count);
-            virtual ~RuntimeRegulator() override;
+            RuntimeRegulator() = delete;
+            RuntimeRegulator(int num_rank);
+            virtual ~RuntimeRegulator() = default;
             void record_entry(int rank, struct geopm_time_s entry_time) override;
             void record_exit(int rank, struct geopm_time_s exit_time) override;
-            void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) override;
-            std::vector<double> runtimes(void) const override;
-
+            virtual void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) override;
+            std::vector<double> per_rank_last_runtime(void) const override;
+            std::vector<double> per_rank_total_runtime(void) const override;
+            std::vector<size_t> per_rank_count(void) const override;
         protected:
-            void update_average(void);
             const struct geopm_time_s M_TIME_ZERO;
             enum m_num_rank_signal_e {
                 M_NUM_RANK_SIGNAL = 2,
             };
-            int m_max_rank_count;
-            double m_last_avg;
-            // per rank vector of last entry and recorded runtime pairs
-            std::vector<std::pair<struct geopm_time_s, double> > m_runtimes;
+            struct m_log_s {
+                struct geopm_time_s enter_time;
+                double last_runtime;
+                double total_runtime;
+                size_t count;
+            };
+            int m_num_rank;
+            std::vector<struct m_log_s> m_rank_log;
+    };
+
+    class MPIRuntimeRegulator : public RuntimeRegulator
+    {
+        public:
+            MPIRuntimeRegulator() = delete;
+            MPIRuntimeRegulator(int num_rank);
+            virtual ~MPIRuntimeRegulator() = default;
+            void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) override;
     };
 }
 
