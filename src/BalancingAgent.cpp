@@ -35,7 +35,6 @@
 #include "BalancingAgent.hpp"
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
-#include "TreeComm.hpp"
 #include "Exception.hpp"
 #include "config.h"
 

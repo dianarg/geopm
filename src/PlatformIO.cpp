@@ -65,7 +65,7 @@ namespace geopm
          }
     }
 
-    PlatformIO::PlatformIO(std::list<std::unique_ptr<IOGroup> > iogroup_list,
+    PlatformIO::PlatformIO(std::list<std::shared_ptr<IOGroup> > iogroup_list,
                            IPlatformTopo &topo)
         : m_is_active(false)
         , m_platform_topo(topo)
@@ -228,6 +228,12 @@ namespace geopm
         m_combined_signal[signal_idx] = std::move(tmp);
     }
 
+    int PlatformIO::push_region_signal(int signal_idx, int domain_type, int domain_idx)
+    {
+        /// @todo push region ID signal for given domain, then save mapping to be used by sample_region
+        return -1;
+    }
+
     int PlatformIO::push_control(const std::string &control_name,
                                  int domain_type,
                                  int domain_idx)
@@ -281,6 +287,12 @@ namespace geopm
             result = sample_combined(group_idx_pair.second);
         }
         return result;
+    }
+
+    double PlatformIO::region_sample(int signal_idx, uint64_t region_id)
+    {
+        /// @todo implement me
+        return NAN;
     }
 
     double PlatformIO::sample_combined(int signal_idx)

@@ -121,50 +121,40 @@ class MockTreeComm : public geopm::ITreeComm
 class MockApplicationIO : public geopm::IApplicationIO
 {
     public:
-        bool do_sample(void) override {return true;}
-        bool do_shutdown(void) override {return true;}
-        std::string report_name(void) override {return "test.report";}
-        std::string profile_name(void) override {return "profile";}
-        std::set<std::string> region_name_set(void) override
+        bool do_shutdown(void) const override {return true;}
+        std::string report_name(void) const override {return "test.report";}
+        std::string profile_name(void) const override {return "profile";}
+        std::set<std::string> region_name_set(void) const override
         {
             return {"region A", "region B"};
         }
-        std::vector<std::pair<uint64_t, double> > short_region(void) override {return {};}
-        bool epoch_time(struct geopm_time_s &epoch_time) override {return true;}
+        double total_runtime(uint64_t region_id) const override {return NAN;}
+        double total_mpi_runtime(uint64_t region_id) const override {return NAN;}
+        double total_epoch_runtime(void) const override {return NAN;}
+        int total_count(uint64_t region_id) const override {return -1;}
         void update(std::shared_ptr<IComm> comm) override {}
-
+        std::shared_ptr<geopm::IOGroup> profile_io_group(void) override {return nullptr;}
 };
 
 class MockReporter : public geopm::IReporter
 {
     public:
-        std::vector<std::string> signal_names(void) override {return {};};
-        void update(std::vector<double> signal,
-                    std::vector<std::pair<uint64_t, double> > short_region,
-                    bool is_epoch,
-                    struct geopm_time_s &epoch_time) override
-        {
-
-        }
-        void generate(const std::string &report_name,
-                      const std::string &profile_name,
-                      const std::string &agent_name,
+        void generate(const std::string &agent_name,
                       const std::string &agent_report_header,
                       const std::string &agent_node_report,
                       const std::map<uint64_t, std::string> &agent_region_report,
-                      const std::set<std::string> &region_name_set,
-                      std::shared_ptr<IComm> comm) override
+                      const geopm::IApplicationIO &application_io,
+                      std::shared_ptr<geopm::IComm> comm) override
         {
             std::ostringstream oss;
             oss << "----" << std::endl;
             oss << "my report" << std::endl;
-            oss << report_name << std::endl;
-            oss << "profile: " << profile_name << std::endl;
+            oss << "profile: " << std::endl;
             oss << "agent: " << agent_name << std::endl;
             oss << "  " << agent_report_header << std::endl;
             oss << "node" << std::endl;
             oss << agent_node_report << std::endl;
-            for (auto region_name : region_name_set) {
+            for (auto region_name : application_io.region_name_set()) {
                 uint64_t region_id = geopm_crc32_str(0, region_name.c_str());
                 oss << region_name << " (" << region_id << ")" << std::endl;
                 if (agent_region_report.find(region_id) != agent_region_report.end()) {

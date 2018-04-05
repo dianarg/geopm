@@ -68,7 +68,7 @@ namespace geopm
                        std::unique_ptr<ITreeComm> tree_comm,
                        int num_level_ctl,
                        int root_level,
-                       std::unique_ptr<IApplicationIO> application_io,
+                       std::shared_ptr<IApplicationIO> application_io,
                        std::unique_ptr<IReporter> reporter,
                        std::unique_ptr<ITracer> tracer,
                        std::vector<std::unique_ptr<IAgent> > level_agent,
@@ -92,7 +92,7 @@ namespace geopm
             std::unique_ptr<ITreeComm> m_tree_comm;
             int m_num_level_ctl;
             int m_root_level;
-            std::unique_ptr<IApplicationIO> m_application_io;
+            std::shared_ptr<IApplicationIO> m_application_io;
             std::unique_ptr<IReporter> m_reporter;
             std::unique_ptr<ITracer> m_tracer;
             std::vector<std::unique_ptr<IAgent> > m_agent;
@@ -102,10 +102,6 @@ namespace geopm
             std::vector<std::vector<std::vector<double> > > m_in_sample;
             std::vector<double> m_out_sample;
             std::map<std::string, double> m_manager_values;
-            //std::vector<int> m_manager_policy_idx;
-            //std::vector<int> m_manager_sample_idx;
-            std::vector<int> m_reporter_sample_idx;
-            std::vector<double> m_reporter_sample;
             std::vector<int> m_tracer_sample_idx;
             std::vector<double> m_tracer_sample;
 

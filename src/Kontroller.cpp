@@ -76,8 +76,8 @@ namespace geopm
                      std::unique_ptr<ITreeComm>(new TreeComm(ppn1_comm, m_num_send_up, m_num_send_down)),
                      m_tree_comm->num_level_controlled(),
                      m_tree_comm->root_level(),
-                     std::unique_ptr<IApplicationIO>(new ApplicationIO(geopm_env_shmkey())),
-                     std::unique_ptr<IReporter>(new Reporter(geopm_env_report(), geopm_env_report_verbosity())),
+                     std::shared_ptr<IApplicationIO>(new ApplicationIO(geopm_env_shmkey())),
+                     std::unique_ptr<IReporter>(new Reporter(geopm_env_report(), platform_io())),
                      std::unique_ptr<ITracer>(new Tracer(geopm_env_trace())),
                      std::vector<std::unique_ptr<IAgent> >{},
                      {})
@@ -97,7 +97,7 @@ namespace geopm
                            std::unique_ptr<ITreeComm> tree_comm,
                            int num_level_ctl,
                            int root_level,
-                           std::unique_ptr<IApplicationIO> application_io,
+                           std::shared_ptr<IApplicationIO> application_io,
                            std::unique_ptr<IReporter> reporter,
                            std::unique_ptr<ITracer> tracer,
                            std::vector<std::unique_ptr<IAgent> > level_agent,
@@ -121,10 +121,6 @@ namespace geopm
         , m_out_sample(m_num_send_up)
         , m_manager_values(manager_values)
     {
-        for (const auto &name : m_reporter->signal_names()) {
-            m_reporter_sample_idx.push_back(m_platform_io.push_signal(name, IPlatformTopo::M_DOMAIN_BOARD, 0));
-        }
-        m_reporter_sample.resize(m_reporter_sample_idx.size());
 
         // Three dimensional vector over levels, children, and message
         // index.  These are used as temporary storage when passing
@@ -194,13 +190,13 @@ namespace geopm
             agent_node_report << m_agent[level]->report_node();
         }
 
-        m_reporter->generate(m_application_io->report_name(),
-                             m_application_io->profile_name(),
-                             m_agent_name,
+        //std::shared_ptr<const ApplicationIO> app_io = m_application_io;
+
+        m_reporter->generate(m_agent_name,
                              agent_report_header,
                              agent_node_report.str(),
                              m_agent[0]->report_region(),
-                             m_application_io->region_name_set(),
+                             *m_application_io,
                              nullptr); /// @todo get the IComm from somwhere
         m_tracer->flush();
     }
@@ -210,17 +206,7 @@ namespace geopm
         walk_down();
         geopm_signal_handler_check();
         m_application_io->update(m_comm);
-        std::vector<std::pair<uint64_t, double> > short_region = m_application_io->short_region();
-        struct geopm_time_s epoch_time;
-        bool is_epoch = m_application_io->epoch_time(epoch_time);
-        auto reporter_it = m_reporter_sample.begin();
-        for (auto pio_idx : m_reporter_sample_idx) {
-            *reporter_it = m_platform_io.sample(pio_idx);
-            ++reporter_it;
-        }
-        // Pass short_region and is_epoch to increment the count and
-        // epoch_time to track epoch time
-        m_reporter->update(m_reporter_sample, short_region, is_epoch, epoch_time);
+
         auto tracer_it = m_tracer_sample.begin();
         for (auto pio_idx : m_tracer_sample_idx) {
             *tracer_it = m_platform_io.sample(pio_idx);
@@ -228,7 +214,7 @@ namespace geopm
         }
         // Pass short_region and is_epoch to add extra entries into
         // trace for each.
-        m_tracer->update(m_tracer_sample, is_epoch);
+        //m_tracer->update(m_tracer_sample, is_epoch);
         walk_up();
         geopm_signal_handler_check();
         m_agent[0]->wait();

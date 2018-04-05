@@ -46,54 +46,38 @@
 namespace geopm
 {
     class IComm;
+    class IApplicationIO;
+    class IPlatformIO;
 
     class IReporter
     {
         public:
             IReporter() = default;
             virtual ~IReporter() = default;
-            virtual void generate(const std::string &report_name,
-                                  const std::string &profile_name,
-                                  const std::string &agent_name,
+            virtual void generate(const std::string &agent_name,
                                   const std::string &agent_report_header,
                                   const std::string &agent_node_report,
                                   const std::map<uint64_t, std::string> &agent_region_report,
-                                  const std::set<std::string> &region_name_set,
-                                  const ApplicationIO &application_io,
+                                  const IApplicationIO &application_io,
                                   std::shared_ptr<IComm> comm) = 0;
     };
 
     class Reporter : public IReporter
     {
         public:
-            Reporter(const std::string &report_name);
+            Reporter(const std::string &report_name, IPlatformIO &platform_io);
             virtual ~Reporter() = default;
-            std::vector<std::string> signal_names(void) override;
-            void generate(const std::string &report_name,
-                          const std::string &profile_name,
-                          const std::string &agent_name,
+            void generate(const std::string &agent_name,
                           const std::string &agent_report_header,
                           const std::string &agent_node_report,
                           const std::map<uint64_t, std::string> &agent_region_report,
-                          const std::set<std::string> &region_name_set,
+                          const IApplicationIO &application_io,
                           std::shared_ptr<IComm> comm) override;
         private:
             std::string get_max_memory(void);
 
             std::string m_report_name;
-            double m_counter_energy_start; // for app total energy
-            uint64_t m_sample_count;
-            uint64_t m_throttle_count; // for app total throttle time
-
-
-
-            double m_mpi_sync_time;
-            double m_epoch_time;
-
-            double m_hint_ignore_time;
-
-
-
+            IPlatformIO &m_platform_io;
     };
 }
 

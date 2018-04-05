@@ -130,8 +130,7 @@ namespace geopm
         size_t length = 0; /// @todo fix
         m_sampler->sample(m_prof_sample, length, comm);
         m_profile_io_sample->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
+        // update runtime regulators
         //m_profile_io_runtime->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
-        update_short_regions(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
-        update_epoch(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
     }
 }

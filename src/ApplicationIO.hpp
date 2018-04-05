@@ -90,10 +90,6 @@ namespace geopm
             static constexpr size_t M_SHMEM_REGION_SIZE = 12288;
 
             void connect(void);
-            void update_short_regions(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
-                                      std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end);
-            void update_epoch(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
-                              std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end);
 
             std::unique_ptr<IProfileSampler> m_sampler;
             std::unique_ptr<ISampleRegulator> m_sample_regulator;

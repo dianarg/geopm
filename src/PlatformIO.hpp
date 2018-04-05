@@ -80,6 +80,17 @@ namespace geopm
             virtual int push_signal(const std::string &signal_name,
                                     int domain_type,
                                     int domain_idx) = 0;
+            /// @brief Push a previously registered signal to be
+            ///        accumulated as a new per-region version of the
+            ///        signal.
+            /// @param [in] signal_idx Index returned by a previous
+            ///        call to push_signal.
+            /// @param [in] domain_type Domain type over which the
+            ///        region ID should be sampled. This must match
+            ///        the domain type of the signal.
+            /// @param [in] domain_idx Domain over which the region ID
+            ///        should be sampled. This must match the domain
+            ///        index of the signal.
             virtual int push_region_signal(int signal_idx,
                                            int domain_type,
                                            int domain_idx) = 0;
@@ -112,6 +123,13 @@ namespace geopm
             ///        to the push_signal() method.
             /// @return Signal value measured from the platform in SI units.
             virtual double sample(int signal_idx) = 0;
+            /// @brief Sample a signal that has been pushed to
+            ///        accumlate as per-region values.
+            /// @param [in] signal_idx Index returned by a previous call to
+            ///        push_region_signal.
+            /// @param [in] region_id The region ID to look up data for.
+            /// @return Total accumlated value for the signal for one region.
+            virtual double region_sample(int signal_idx, uint64_t region_id) = 0;
             /// @brief Adjust a single control that has been pushed on
             ///        to the control stack.  This control will not
             ///        take effect until the next call to
@@ -159,7 +177,6 @@ namespace geopm
                                        int domain_type,
                                        int domain_idx,
                                        double setting) = 0;
-            virtual double region_sample(int signal_idx, uint64_t region_id) = 0;
 
             virtual std::function<double(const std::vector<double> &)> agg_function(std::string signal_name) = 0;
             static double agg_sum(const std::vector<double> &operand);

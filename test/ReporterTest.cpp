@@ -37,9 +37,30 @@
 #include "gmock/gmock.h"
 
 #include "Reporter.hpp"
+#include "MockPlatformIO.hpp"
+#include "ApplicationIO.hpp" // TODO: replace with mock
 
 using geopm::Reporter;
 using testing::HasSubstr;
+
+// TODO add own file
+class MockApplicationIO : public geopm::IApplicationIO
+{
+    public:
+        bool do_shutdown(void) const override {return true;}
+        std::string report_name(void) const override {return "test.report";}
+        std::string profile_name(void) const override {return "profile";}
+        std::set<std::string> region_name_set(void) const override
+        {
+            return {"all2all", "model-init"};
+        }
+        double total_runtime(uint64_t region_id) const override {return NAN;}
+        double total_mpi_runtime(uint64_t region_id) const override {return NAN;}
+        double total_epoch_runtime(void) const override {return NAN;}
+        int total_count(uint64_t region_id) const override {return -1;}
+        void update(std::shared_ptr<geopm::IComm> comm) override {}
+        std::shared_ptr<geopm::IOGroup> profile_io_group(void) override {return nullptr;}
+};
 
 class ReporterTest : public testing::Test
 {
@@ -48,11 +69,13 @@ class ReporterTest : public testing::Test
         void TearDown(void);
         std::string m_report_name = "test_reporter.out";
 
+        MockPlatformIO m_platform_io;
+        MockApplicationIO m_application_io;
         Reporter m_reporter;
 };
 
 ReporterTest::ReporterTest()
-    : m_reporter(m_report_name, 0)
+    : m_reporter(m_report_name, m_platform_io)
 {
 
 }
@@ -62,30 +85,7 @@ void ReporterTest::TearDown(void)
     //std::remove(m_report_name.c_str());
 }
 
-void check_report(const std::string &expected, const std::string &result)
-{
-    auto exp_it = 0;
-    auto res_it = 0;
-    auto exp_end = expected.find("\n", exp_it);
-    auto res_end = result.find("\n", res_it);
-    int line = 1;
-    while (exp_end != std::string::npos && res_end != std::string::npos) {
-        std::string exp = expected.substr(exp_it, exp_end - exp_it);
-        std::string res = result.substr(res_it, res_end - res_it);
-        ASSERT_EQ(exp, res) << " on line " << line;
-        exp_it = exp_end + 1;
-        res_it = res_end + 1;
-        exp_end = expected.find("\n", exp_it);
-        res_end = result.find("\n", res_it);
-        ++line;
-    }
-
-    if (exp_end != res_end) {
-        FAIL() << "different length strings";
-    }
-}
-
-void check_report2(std::istream &expected, std::istream &result)
+void check_report(std::istream &expected, std::istream &result)
 {
     char exp_line[1024];
     char res_line[1024];
@@ -124,7 +124,7 @@ TEST_F(ReporterTest, generate)
     // Check for labels at start of line but ignore numbers
     // Note that region lines start with tab
     std::string expected = R"raw(#####
-Profile: my_prof
+Profile: profile
 Agent: my_agent
 Policy Mode:
 Tree Decider:
@@ -156,10 +156,11 @@ Application Totals:
 )raw";
     std::istringstream exp_stream(expected);
 
-    m_reporter.generate(m_report_name, "my_profile", "my_agent", "agent_header",
-                        "agent_node", {}, {"all2all", "model-init"}, nullptr);
+    m_reporter.generate("my_agent", "agent_header", "node_report", {},
+                        m_application_io,
+                        nullptr); // TODO: mock comm
     std::ifstream report(m_report_name);
-    check_report2(exp_stream, report);
+    check_report(exp_stream, report);
 }
 
 /*

@@ -88,7 +88,7 @@ class PlatformIOTest : public ::testing::Test
 {
     protected:
         void SetUp();
-        std::list<PlatformIOTestMockIOGroup *> m_iogroup_ptr;
+        std::list<std::shared_ptr<PlatformIOTestMockIOGroup> > m_iogroup_ptr;
         std::unique_ptr<PlatformIO> m_platio;
         MockPlatformTopo m_topo;
         const int M_NUM_CPU = 4;
@@ -96,32 +96,32 @@ class PlatformIOTest : public ::testing::Test
 
 void PlatformIOTest::SetUp()
 {
-    std::list<std::unique_ptr<IOGroup>> iogroup_list;
+    std::list<std::shared_ptr<IOGroup>> iogroup_list;
 
     // IOGroups for specific signals
     // Not realistic, but easier to set expectations for testing
-    auto tmp = new PlatformIOTestMockIOGroup;
+    auto tmp = std::make_shared<PlatformIOTestMockIOGroup>();
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
     tmp->set_valid_signal_names({"TIME"});
     ON_CALL(*tmp, signal_domain_type("TIME"))
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_BOARD));
 
-    tmp = new PlatformIOTestMockIOGroup;
+    tmp = std::make_shared<PlatformIOTestMockIOGroup>();
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
     tmp->set_valid_signal_names({"ENERGY_PACKAGE"});
     ON_CALL(*tmp, signal_domain_type("ENERGY_PACKAGE"))
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_PACKAGE));
 
-    tmp = new PlatformIOTestMockIOGroup;
+    tmp = std::make_shared<PlatformIOTestMockIOGroup>();
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
     tmp->set_valid_signal_names({"ENERGY_DRAM"});
     ON_CALL(*tmp, signal_domain_type("ENERGY_DRAM"))
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_BOARD_MEMORY));
 
-    tmp = new PlatformIOTestMockIOGroup;
+    tmp = std::make_shared<PlatformIOTestMockIOGroup>();
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
     tmp->set_valid_signal_names({"REGION_ID#"});
@@ -129,7 +129,7 @@ void PlatformIOTest::SetUp()
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_CPU));
 
     // IOGroups with signals and controls
-    tmp = new PlatformIOTestMockIOGroup;
+    tmp = std::make_shared<PlatformIOTestMockIOGroup>();
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
     tmp->set_valid_signal_names({"FREQ", "MODE"});
@@ -144,7 +144,7 @@ void PlatformIOTest::SetUp()
         .WillByDefault(Return(PlatformTopo::M_DOMAIN_PACKAGE));
 
     // Group that overrides previous signals and controls
-    tmp = new PlatformIOTestMockIOGroup;
+    tmp = std::make_shared<PlatformIOTestMockIOGroup>();
     iogroup_list.emplace_back(tmp);
     m_iogroup_ptr.push_back(tmp);
     tmp->set_valid_signal_names({"MODE"});
@@ -167,7 +167,7 @@ void PlatformIOTest::SetUp()
     ON_CALL(m_topo, domain_idx(PlatformTopo::M_DOMAIN_CPU, _))
         .WillByDefault(testing::ReturnArg<1>());
 
-    m_platio.reset(new PlatformIO(std::move(iogroup_list), m_topo));
+    m_platio.reset(new PlatformIO(iogroup_list, m_topo));
 }
 
 TEST_F(PlatformIOTest, domain_type)

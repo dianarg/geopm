@@ -80,6 +80,8 @@
 
 
 #include "Reporter.hpp"
+#include "PlatformIO.hpp"
+#include "ApplicationIO.hpp"
 #include "Comm.hpp"
 #include "Exception.hpp"
 #include "config.h"
@@ -88,45 +90,32 @@
 #include <xmmintrin.h>
 #endif
 
-
 namespace geopm
 {
     /// @todo remove verbosity
-    Reporter::Reporter(const std::string &report_name, int verbosity)
+    Reporter::Reporter(const std::string &report_name, IPlatformIO &platform_io)
         : m_report_name(report_name)
+        , m_platform_io(platform_io)
     {
+        // TODO: push region energy signal on platformio
 
-    }
-    std::vector<std::string> Reporter::signal_names(void)
-    {
-        //signal: region_id, runtime, ...
-        return {"EPOCH_MPI_TIME"};
+        /// @todo why report_name here? I guess we can check if file can be created early
     }
 
-    void Reporter::update(std::vector<double> signal,
-                          std::vector<std::pair<uint64_t, double> > short_region,
-                          bool is_epoch,
-                          struct geopm_time_s &epoch_time)
-    {
-
-
-    }
-    void Reporter::generate(const std::string &report_name,
-                            const std::string &profile_name,
-                            const std::string &agent_name,
+    void Reporter::generate(const std::string &agent_name,
                             const std::string &agent_report_header,
                             const std::string &agent_node_report,
                             const std::map<uint64_t, std::string> &agent_region_report,
-                            const std::set<std::string> &region_name_set,
+                            const IApplicationIO &application_io,
                             std::shared_ptr<IComm> comm)
     {
-        std::ofstream master_report(report_name);
+        std::ofstream master_report(m_report_name);
         if (!master_report.good()) {
             throw Exception("Failed to open report file", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         // make header
         master_report << "#####" << std::endl;
-        master_report << "Profile: " << profile_name << std::endl;
+        master_report << "Profile: " << application_io.profile_name() << std::endl;
         master_report << "Agent: " << agent_name << std::endl;
         master_report << "Policy Mode: deprecated" << std::endl;
         master_report << "Tree Decider: deprecated" << std::endl;
@@ -139,6 +128,7 @@ namespace geopm
         gethostname(hostname, NAME_MAX);
         report << "\nHost:" << hostname << std::endl;
         /// @todo order by runtime
+        auto region_name_set = application_io.region_name_set();
         for (auto region : region_name_set) {
             /// @todo Put hash only in reports, not full region ID. Current report is wrong
             /// also should match in trace
@@ -147,8 +137,8 @@ namespace geopm
             uint64_t region_id = geopm_crc32_str(0, region.c_str());
             report << "Region " << region << " (" << region_id << "):" << std::endl;
             report << "\truntime (sec): " << 777 << std::endl;
-            report << "\tenergy (joules): " << 888 << std::endl;
-            report << "\tfrequency (%): " << 999 << std::endl;
+            report << "\tenergy (joules): " << 888 << std::endl; // from platformio
+            report << "\tfrequency (%): " << 999 << std::endl; // clk_unhalted_core / clk_unhalted_ref
             report << "\tmpi-runtime (sec): " << 222 << std::endl;
             report << "\tcount: " << 333 << std::endl;
         }
