@@ -41,6 +41,7 @@
 namespace geopm
 {
     template <typename T> class CircularBuffer;
+    class IRuntimeRegulator;
 
     class IProfileIOSample
     {
@@ -51,6 +52,7 @@ namespace geopm
                                 std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end) = 0;
             virtual std::vector<uint64_t> per_cpu_region_id(void) = 0;
             virtual std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) = 0;
+            virtual std::vector<double> per_cpu_runtime(uint64_t region_id) const;
     };
 
     class ProfileIOSample : public IProfileIOSample
@@ -62,6 +64,7 @@ namespace geopm
                         std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end) override;
             std::vector<uint64_t> per_cpu_region_id(void) override;
             std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) override;
+            std::vector<double> per_cpu_runtime(uint64_t region_id) const;
         private:
             struct m_rank_sample_s {
                 struct geopm_time_s timestamp;
@@ -91,6 +94,7 @@ namespace geopm
             /// @brief Vector to multiply with signal_domain_matrix to
             /// project into control domains
             std::vector<double> m_aligned_signal;
+            std::map<uint64_t, std::unique_ptr<IRuntimeRegulator> > m_regulator;
     };
 }
 

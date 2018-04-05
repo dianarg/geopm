@@ -61,6 +61,24 @@ namespace geopm
         for (auto sample_it = prof_sample_begin; sample_it != prof_sample_end; ++sample_it) {
             if (!geopm_region_id_is_epoch(sample_it->second.region_id) &&
                 sample_it->second.region_id != GEOPM_REGION_ID_UNMARKED) {
+
+                uint64_t region_id_hash = geopm_region_id_hash(sample_it->second.region_id);
+                auto rid_it = m_regulator.find(region_id_hash);
+                if (rid_it == m_regulator.end()) {
+                    auto tmp = m_regulator.emplace(
+                                   std::pair<uint64_t, std::unique_ptr<IRuntimeRegulator> >(
+                                       region_id_hash, new RuntimeRegulator(m_num_rank));
+                    rid_it = tmp.first;
+                }
+                if (m_region_id[rank_idx] != region_id_hash) {
+                    if ((*sample_it).second.progress == 0.0) {
+                        rid_it->second.record_entry(rank_idx, sample_it->second.timestamp);
+                    }
+                    else if ((*sample_it).second.progress == 1.0) {
+                        rid_it->second.record_exit(rank_idx, sample_it->second.timestamp);
+                    }
+                }
+
                 struct m_rank_sample_s rank_sample;
                 rank_sample.timestamp = sample_it->second.timestamp;
                 rank_sample.progress = sample_it->second.progress;
@@ -79,7 +97,7 @@ namespace geopm
                     m_region_id[rank_idx] = GEOPM_REGION_ID_UNMARKED;
                 }
                 else {
-                    m_region_id[rank_idx] = sample_it->second.region_id;
+                    m_region_id[rank_idx] = region_id_hash;;
                 }
                 m_rank_sample_buffer[rank_idx].insert(rank_sample);
             }
@@ -161,6 +179,33 @@ namespace geopm
         int cpu_idx = 0;
         for (auto rank : m_cpu_rank) {
             result[cpu_idx] = m_region_id[rank];
+            ++cpu_idx;
+        }
+        return result;
+    }
+
+    std::vector<double> ProfileIOSample::per_cpu_runtime(uint64_t region_id) const
+    {
+        std::vector<double> result(m_cpu_rank.size(), 0.0);
+        uint64_t region_id_hash = ; // FIXME
+#ifdef GEOPM_DEBUG
+        if (m_regulator.find(region_id) == m_regulator.end()) {
+            throw Exception("ProfileIORuntime::per_cpu_runtime: No regulator set "
+                            "for region " + std::to_string(region_id),
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+        auto rank_runtimes = m_regulator.at(region_id).runtimes();
+        int cpu_idx = 0;
+        for (auto rank : m_cpu_rank) {
+#ifdef GEOPM_DEBUG
+            if (rank > (int)rank_runtimes.size() - 1) {
+                throw Exception("ProfileIORuntime::per_cpu_runtime: node-local rank "
+                                "for rank " + std::to_string(rank) + " not found in map.",
+                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+            result[cpu_idx] = rank_runtimes[rank];
             ++cpu_idx;
         }
         return result;
