@@ -94,7 +94,7 @@ namespace geopm
             /// @brief Vector to multiply with signal_domain_matrix to
             /// project into control domains
             std::vector<double> m_aligned_signal;
-            std::map<uint64_t, std::unique_ptr<IRuntimeRegulator> > m_regulator;
+            std::map<uint64_t, std::unique_ptr<IRuntimeRegulator> > m_rid_regulator_map;
     };
 }
 
