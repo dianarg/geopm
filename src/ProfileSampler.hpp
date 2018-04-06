@@ -104,10 +104,12 @@ namespace geopm
             /// we can return. This value can be queried with the capacity()
             /// method.
             ///
-            /// @param [in] content Vector to be filled with per-node
+            /// @param [out] content Vector to be filled with per-node
             ///        sample messages.
             ///
             /// @param [out] length The number of samples that were inserted.
+            /// @param [in] comm Comm object required for barriers in
+            ///        handshake with application.
             virtual void sample(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> > &content,
                                 size_t &length, std::shared_ptr<IComm> comm) = 0;
             /// @brief Check if the application is shutting down.

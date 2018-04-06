@@ -72,8 +72,9 @@ namespace geopm
                 }
 #endif
                 size_t rank_idx = rank_idx_it->second;
-
                 uint64_t region_id = sample_it->second.region_id;
+                struct m_rank_sample_s rank_sample {.timestamp = sample_it->second.timestamp,
+                                                    .progress = sample_it->second.progress};
                 auto rid_it = m_rid_regulator_map.find(region_id);
                 if (rid_it == m_rid_regulator_map.end()) {
                     auto tmp = m_rid_regulator_map.emplace(
@@ -82,17 +83,13 @@ namespace geopm
                     rid_it = tmp.first;
                 }
                 if (m_region_id[rank_idx] != region_id &&
-                    sample_it->second.progress == 0.0) {
-                        rid_it->second->record_entry(rank_idx, sample_it->second.timestamp);
+                    rank_sample.progress == 0.0) {
+                        rid_it->second->record_entry(rank_idx, rank_sample.timestamp);
                 }
                 if (m_region_id[rank_idx] == region_id &&
-                    sample_it->second.progress == 1.0) {
-                    rid_it->second->record_exit(rank_idx, sample_it->second.timestamp);
+                    rank_sample.progress == 1.0) {
+                    rid_it->second->record_exit(rank_idx, rank_sample.timestamp);
                 }
-
-                struct m_rank_sample_s rank_sample;
-                rank_sample.timestamp = sample_it->second.timestamp;
-                rank_sample.progress = sample_it->second.progress;
                 if (sample_it->second.region_id != m_region_id[rank_idx]) {
                     m_rank_sample_buffer[rank_idx].clear();
                 }
@@ -207,5 +204,36 @@ namespace geopm
             }
         }
         return result;
+    }
+
+    double ProfileIOSample::total_region_runtime(uint64_t region_id) const
+    {
+        double result = 0.0;
+        auto regulator_it = m_rid_regulator_map.find(region_id);
+        if (regulator_it != m_rid_regulator_map.end()) {
+            result = IPlatformIO::agg_average(regulator_it->per_rank_total_runtime());
+        }
+        return result;
+    }
+
+    double ProfileIOSample::total_region_mpi_time(uint64_t region_id) const
+    {
+        region_id = geopm_region_id_set_mpi(region_id);
+        return total_region_runtime(region_id);
+    }
+
+    double ProfileIOSample::total_epoch_runtime(void) const
+    {
+
+    }
+
+    double ProfileIOSample::total_app_mpi_runtime(void) const
+    {
+
+    }
+
+    int ProfileIOSample::total_count(uint64_t region_id) const
+    {
+
     }
 }

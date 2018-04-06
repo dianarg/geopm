@@ -63,6 +63,7 @@ namespace geopm
         , m_do_shutdown(false)
         , m_is_connected(false)
         , m_rank_per_node(-1)
+        , m_app_start_time{{0, 0}}
     {
 
     }
@@ -76,6 +77,7 @@ namespace geopm
     {
         if (!m_is_connected) {
             m_sampler->initialize();
+            geopm_time(&m_app_start_time);
             m_rank_per_node = m_sampler->rank_per_node();
             m_prof_sample.resize(m_sampler->capacity());
             std::vector<int> cpu_rank = m_sampler->cpu_rank();
@@ -107,42 +109,39 @@ namespace geopm
 
     double ApplicationIO::total_region_runtime(uint64_t region_id) const
     {
-        return NAN;
+        return m_profile_io_sample->total_region_runtime(region_id);
     }
 
     double ApplicationIO::total_region_mpi_runtime(uint64_t region_id) const
     {
-        return NAN;
+        return m_profile_io_sample->total_region_mpi_time(region_id);
     }
 
     double ApplicationIO::total_epoch_runtime(void) const
     {
-        return NAN;
+        return m_profile_io_sample->total_epoch_runtime();
     }
 
     double ApplicationIO::total_app_runtime(void) const
     {
-        return NAN;
+        geopm_time_s curr_time{{0, 0}};
+        geopm_time(&curr_time);
+        return geopm_time_diff(m_app_start_time, curr_time);
     }
 
     double ApplicationIO::total_app_mpi_runtime(void) const
     {
-        return NAN;
+        return m_profile_io_sample->total_app_mpi_runtime();
     }
 
     int ApplicationIO::total_count(uint64_t region_id) const
     {
-        return -1;
-    }
-
-    std::shared_ptr<IOGroup> ApplicationIO::profile_io_group(void)
-    {
-        return nullptr;
+        return m_profile_io_sample->total_count(region_id);
     }
 
     void ApplicationIO::update(std::shared_ptr<IComm> comm)
     {
-        size_t length = 0; /// @todo fix
+        size_t length = 0;
         m_sampler->sample(m_prof_sample, length, comm);
         m_profile_io_sample->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
     }

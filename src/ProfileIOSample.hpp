@@ -54,6 +54,11 @@ namespace geopm
             virtual std::vector<uint64_t> per_cpu_region_id(void) const = 0;
             virtual std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) const = 0;
             virtual std::vector<double> per_cpu_runtime(uint64_t region_id) const = 0;
+            virtual double total_region_runtime(uint64_t region_id) const = 0;
+            virtual double total_region_mpi_time(uint64_t region_id) const = 0;
+            virtual double total_epoch_runtime(void) const = 0;
+            virtual double total_app_mpi_runtime(void) const = 0;
+            virtual int total_count(uint64_t region_id) const = 0;
     };
 
     class ProfileIOSample : public IProfileIOSample
@@ -66,6 +71,11 @@ namespace geopm
             std::vector<uint64_t> per_cpu_region_id(void) const override;
             std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) const override;
             std::vector<double> per_cpu_runtime(uint64_t region_id) const override;
+            double total_region_runtime(uint64_t region_id) const override;
+            double total_region_mpi_time(uint64_t region_id) const override;
+            double total_epoch_runtime(void) const override;
+            double total_app_mpi_runtime(void) const override;
+            int total_count(uint64_t region_id) const override;
         private:
             struct m_rank_sample_s {
                 struct geopm_time_s timestamp;
