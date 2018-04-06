@@ -36,7 +36,6 @@
 #include "geopm_hash.h"
 #include "geopm_test.hpp"
 #include "ProfileIOGroup.hpp"
-#include "ProfileIORuntime.hpp"
 #include "ProfileIOSample.hpp"
 #include "PlatformTopo.hpp"
 #include "MockProfileIOSample.hpp"

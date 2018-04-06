@@ -197,7 +197,7 @@ namespace geopm
             for (auto rank : m_cpu_rank) {
 #ifdef GEOPM_DEBUG
                 if (rank >= (int)rank_runtimes.size()) {
-                    throw Exception("ProfileIORuntime::per_cpu_runtime: node-local rank "
+                    throw Exception("ProfileIOSample::per_cpu_runtime: node-local rank "
                                     "for rank " + std::to_string(rank) + " not found in map.",
                                     GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
                 }

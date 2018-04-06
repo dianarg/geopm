@@ -155,8 +155,6 @@ src/ProfileIO.cpp
 src/ProfileIOGroup.cpp
 src/ProfileIOGroup.hpp
 src/ProfileIO.hpp
-src/ProfileIORuntime.cpp
-src/ProfileIORuntime.hpp
 src/ProfileIOSample.cpp
 src/ProfileIOSample.hpp
 src/ProfileSampler.cpp
@@ -249,7 +247,6 @@ test/MockPlatformIO.hpp
 test/MockPlatformTopo.hpp
 test/MockPlatformTopology.hpp
 test/MockPolicy.hpp
-test/MockProfileIORuntime.hpp
 test/MockProfileIOSample.hpp
 test/MockProfileSampler.hpp
 test/MockProfileTable.hpp
@@ -278,7 +275,6 @@ test/PlatformTopoTest.cpp
 test/pmpi_mock.c
 test/PolicyTest.cpp
 test/ProfileIOGroupTest.cpp
-test/ProfileIORuntimeTest.cpp
 test/ProfileIOSampleTest.cpp
 test/ProfileTableTest.cpp
 test/ProfileTest.cpp

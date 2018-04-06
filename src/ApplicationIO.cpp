@@ -36,7 +36,6 @@
 #include "SampleRegulator.hpp"
 #include "RuntimeRegulator.hpp"
 #include "ProfileIOSample.hpp"
-#include "ProfileIORuntime.hpp"
 #include "ProfileIOGroup.hpp"
 #include "Helper.hpp"
 #include "config.h"

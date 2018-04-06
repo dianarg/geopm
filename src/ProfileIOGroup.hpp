@@ -42,7 +42,6 @@
 namespace geopm
 {
     class IProfileIOSample;
-    class IProfileIORuntime;
     class IPlatformTopo;
 
     class ProfileIOGroup : public IOGroup

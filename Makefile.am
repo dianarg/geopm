@@ -334,8 +334,6 @@ libgeopmpolicy_la_SOURCES = src/Agent.cpp \
                             src/ProfileIO.hpp \
                             src/ProfileIOGroup.cpp \
                             src/ProfileIOGroup.hpp \
-                            src/ProfileIORuntime.cpp \
-                            src/ProfileIORuntime.hpp \
                             src/ProfileIOSample.cpp \
                             src/ProfileIOSample.hpp \
                             src/ProfileTable.cpp \

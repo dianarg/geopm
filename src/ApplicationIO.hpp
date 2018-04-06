@@ -71,7 +71,6 @@ namespace geopm
     class ISampleRegulator;
     class IRuntimeRegulator;
     class IProfileIOSample;
-    class IProfileIORuntime;
 
     class ApplicationIO : public IApplicationIO
     {
@@ -107,7 +106,6 @@ namespace geopm
             int m_rank_per_node;
             std::map<uint64_t, std::unique_ptr<IRuntimeRegulator> > m_rid_regulator_map;
             std::shared_ptr<IProfileIOSample> m_profile_io_sample;
-            std::shared_ptr<IProfileIORuntime> m_profile_io_runtime;
             std::vector<std::pair<uint64_t, double> > m_short_region;
     };
 }

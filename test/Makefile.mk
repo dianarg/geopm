@@ -247,7 +247,6 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/CombinedSignalTest.sample_sum \
               test/gtest_links/CombinedSignalTest.sample_flat_derivative \
               test/gtest_links/CombinedSignalTest.sample_slope_derivative \
-              test/gtest_links/ProfileIORuntimeTest.per_cpu_runtime \
               test/gtest_links/ProfileTestIntegration.config \
               test/gtest_links/ProfileTestIntegration.misconfig_ctl_shmem \
               test/gtest_links/ProfileTestIntegration.misconfig_tprof_shmem \
@@ -362,9 +361,7 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/ProfileIOGroupTest.cpp \
                           test/MockProfileIOSample.hpp \
                           test/CombinedSignalTest.cpp \
-                          test/ProfileIORuntimeTest.cpp \
                           test/MockRuntimeRegulator.hpp \
-                          test/MockProfileIORuntime.hpp \
                           test/ProfileTest.cpp \
                           test/TreeCommLevelTest.cpp \
                           test/TreeCommTest.cpp \
