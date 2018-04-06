@@ -30,43 +30,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MOCKPROFILESAMPLER_HPP_INCLUDE
-#define MOCKPROFILESAMPLER_HPP_INCLUDE
+#include <memory>
 
-#include "Comm.hpp"
-#include "geopm_message.h"
-#include "ProfileThread.hpp"
-#include "ProfileSampler.hpp"
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
-class MockProfileSampler : public geopm::IProfileSampler
+#include "ApplicationIO.hpp"
+#include "Helper.hpp"
+#include "MockProfileSampler.hpp"
+
+using geopm::ApplicationIO;
+using testing::Return;
+
+class ApplicationIOTest : public ::testing::Test
 {
-    public:
-        MOCK_METHOD0(capacity,
-            size_t (void));
-        MOCK_METHOD3(sample,
-            void (std::vector<std::pair<uint64_t, struct geopm_prof_message_s> > &content,
-                  size_t &length,
-                  std::shared_ptr<geopm::IComm> comm));
-        MOCK_METHOD0(do_shutdown,
-            bool (void));
-        MOCK_METHOD0(do_report,
-            bool (void));
-        MOCK_METHOD0(region_names,
-            void (void));
-        MOCK_METHOD0(initialize,
-            void (void));
-        MOCK_METHOD0(rank_per_node,
-            int (void));
-        MOCK_METHOD0(cpu_rank,
-            std::vector<int> (void));
-        MOCK_METHOD0(name_set,
-            std::set<std::string> (void));
-        MOCK_METHOD0(report_name,
-            std::string (void));
-        MOCK_METHOD0(profile_name,
-            std::string (void));
-        MOCK_METHOD0(tprof_table,
-            std::shared_ptr<geopm::IProfileThreadTable>(void));
+    protected:
+        void SetUp();
+        std::string m_shm_key = "test_shm";
+        MockProfileSampler *m_sampler;
+        std::unique_ptr<ApplicationIO> m_app_io;
 };
 
-#endif
+void ApplicationIOTest::SetUp()
+{
+    m_sampler = new MockProfileSampler;
+    auto tmp = std::unique_ptr<MockProfileSampler>(m_sampler);
+    m_app_io = geopm::make_unique<ApplicationIO>(m_shm_key, std::move(tmp));
+}
+
+TEST_F(ApplicationIOTest, passthrough)
+{
+    EXPECT_CALL(*m_sampler, do_shutdown()).WillOnce(Return(false));
+    EXPECT_FALSE(m_app_io->do_shutdown());
+
+    EXPECT_CALL(*m_sampler, report_name()).WillOnce(Return("my_report"));
+    EXPECT_EQ("my_report", m_app_io->report_name());
+
+    EXPECT_CALL(*m_sampler, profile_name()).WillOnce(Return("my_profile"));
+    EXPECT_EQ("my_profile", m_app_io->profile_name());
+
+    std::set<std::string> regions = {"region A", "region B"};
+    EXPECT_CALL(*m_sampler, name_set()).WillOnce(Return(regions));
+    EXPECT_EQ(regions, m_app_io->region_name_set());
+
+}

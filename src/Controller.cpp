@@ -971,9 +971,9 @@ namespace geopm
                 energy_exit += it->signal;
             }
         }
-        m_sampler->report_name(report_name);
-        m_sampler->profile_name(profile_name);
-        m_sampler->name_set(region_name);
+        report_name = m_sampler->report_name();
+        profile_name = m_sampler->profile_name();
+        region_name = m_sampler->name_set();
 
         if (report_name.empty() || profile_name.empty()) {
             throw Exception("Controller::generate_report(): Invalid report data", GEOPM_ERROR_INVALID, __FILE__, __LINE__);

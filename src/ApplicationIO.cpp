@@ -30,6 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <utility>
+
 #include "ApplicationIO.hpp"
 #include "PlatformIO.hpp"
 #include "ProfileSampler.hpp"
@@ -46,12 +48,21 @@
 
 namespace geopm
 {
+    constexpr size_t ApplicationIO::M_SHMEM_REGION_SIZE;
+
     ApplicationIO::ApplicationIO(const std::string &shm_key)
-        : m_sampler(new ProfileSampler(M_SHMEM_REGION_SIZE))
+        : ApplicationIO(shm_key, geopm::make_unique<ProfileSampler>(M_SHMEM_REGION_SIZE))
+    {
+
+    }
+
+    ApplicationIO::ApplicationIO(const std::string &shm_key,
+                                 std::unique_ptr<IProfileSampler> sampler)
+        : m_sampler(std::move(sampler))
         , m_sample_regulator(nullptr)
         , m_do_shutdown(false)
         , m_is_connected(false)
-        , m_rank_per_node(-1)  /// @todo
+        , m_rank_per_node(-1)
     {
 
     }
@@ -81,20 +92,17 @@ namespace geopm
 
     std::string ApplicationIO::report_name(void) const
     {
-        /// @todo implement me
-        return "";
+        return m_sampler->report_name();
     }
 
     std::string ApplicationIO::profile_name(void) const
     {
-        /// @todo implement me
-        return "";
+        return m_sampler->profile_name();
     }
 
     std::set<std::string> ApplicationIO::region_name_set(void) const
     {
-        /// @todo implement me
-        return {};
+        return m_sampler->name_set();
     }
 
     double ApplicationIO::total_region_runtime(uint64_t region_id) const

@@ -76,6 +76,8 @@ namespace geopm
     {
         public:
             ApplicationIO(const std::string &shm_key);
+            ApplicationIO(const std::string &shm_key,
+                          std::unique_ptr<IProfileSampler> sampler);
             virtual ~ApplicationIO();
             bool do_shutdown(void) const override;
             std::string report_name(void) const override;

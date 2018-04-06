@@ -240,19 +240,19 @@ namespace geopm
         m_ctl_msg->wait();
     }
 
-    void ProfileSampler::name_set(std::set<std::string> &region_name)
+    std::set<std::string> ProfileSampler::name_set(void)
     {
-        region_name = m_name_set;
+        return m_name_set;
     }
 
-    void ProfileSampler::report_name(std::string &report_str)
+    std::string ProfileSampler::report_name(void)
     {
-        report_str = m_report_name;
+        return m_report_name;
     }
 
-    void ProfileSampler::profile_name(std::string &prof_str)
+    std::string ProfileSampler::profile_name(void)
     {
-        prof_str = m_profile_name;
+        return m_profile_name;
     }
 
     std::shared_ptr<IProfileThreadTable> ProfileSampler::tprof_table(void)

@@ -148,9 +148,9 @@ namespace geopm
             ///         Linux CPU, set to -1 if no MPI rank is
             ///         affinitized.
             virtual std::vector<int> cpu_rank(void) = 0;
-            virtual void name_set(std::set<std::string> &region_name) = 0;
-            virtual void report_name(std::string &report_str) = 0;
-            virtual void profile_name(std::string &prof_str) = 0;
+            virtual std::set<std::string> name_set(void) = 0;
+            virtual std::string report_name(void) = 0;
+            virtual std::string profile_name(void) = 0;
             virtual std::shared_ptr<IProfileThreadTable> tprof_table(void) = 0;
     };
 
@@ -251,9 +251,9 @@ namespace geopm
             void initialize(void) override;
             int rank_per_node(void) override;
             std::vector<int> cpu_rank(void) override;
-            void name_set(std::set<std::string> &region_name) override;
-            void report_name(std::string &report_str) override;
-            void profile_name(std::string &prof_str) override;
+            std::set<std::string> name_set(void) override;
+            std::string report_name(void) override;
+            std::string profile_name(void) override;
             std::shared_ptr<IProfileThreadTable> tprof_table(void) override;
         protected:
             /// Holds the shared memory region used for application coordination
