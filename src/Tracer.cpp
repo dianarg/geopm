@@ -137,16 +137,16 @@ namespace geopm
                                                              col.domain_type,
                                                              col.domain_idx));
         }
+        m_sample.resize(m_column_idx.size());
     }
-    void Tracer::update(std::vector<double> sample,
-                        bool is_epoch)
+    void Tracer::update(bool is_epoch)
     {
-        if (sample.size()) {
-            m_buffer << sample[0];
-            for (auto sample_it = sample.begin();
-                 sample_it < sample.end() - 1;
-                 ++sample_it) {
-                m_buffer << " | " << *sample_it;
+        double sample;
+        for (size_t col_idx = 0; col_idx < m_column_idx.size(); ++col_idx) {
+            sample = m_platform_io.sample(m_column_idx[col_idx]);
+            m_buffer << sample;
+            if (col_idx != m_column_idx.size() - 1) {
+                m_buffer << "|";
             }
         }
         m_buffer << "\n";

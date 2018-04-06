@@ -192,11 +192,6 @@ namespace geopm
         geopm_signal_handler_check();
         m_application_io->update(m_comm);
 
-        auto tracer_it = m_tracer_sample.begin();
-        for (auto pio_idx : m_tracer_sample_idx) {
-            *tracer_it = m_platform_io.sample(pio_idx);
-            ++tracer_it;
-        }
         // Pass short_region and is_epoch to add extra entries into
         // trace for each.
         //m_tracer->update(m_tracer_sample, is_epoch);

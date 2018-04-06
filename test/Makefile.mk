@@ -372,6 +372,11 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/KontrollerTest.cpp \
                           test/MockApplicationIO.hpp \
                           test/ApplicationIOTest.cpp \
+                          test/KontrollerIntegrationTest.cpp \
+                          test/MockAgent.hpp \
+                          test/MockReporter.hpp \
+                          test/MockTracer.hpp \
+                          test/MockTreeComm.hpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \
