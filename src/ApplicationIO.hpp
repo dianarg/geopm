@@ -46,7 +46,6 @@
 namespace geopm
 {
     class IComm;
-    class IOGroup;
 
     class IApplicationIO
     {
@@ -67,8 +66,6 @@ namespace geopm
     };
 
     class IProfileSampler;
-    class ISampleRegulator;
-    class IRuntimeRegulator;
     class IProfileIOSample;
 
     class ApplicationIO : public IApplicationIO
@@ -76,7 +73,8 @@ namespace geopm
         public:
             ApplicationIO(const std::string &shm_key);
             ApplicationIO(const std::string &shm_key,
-                          std::unique_ptr<IProfileSampler> sampler);
+                          std::unique_ptr<IProfileSampler> sampler,
+                          std::shared_ptr<IProfileIOSample> pio_sample);
             virtual ~ApplicationIO();
             bool do_shutdown(void) const override;
             std::string report_name(void) const override;
@@ -95,7 +93,7 @@ namespace geopm
             void connect(void);
 
             std::unique_ptr<IProfileSampler> m_sampler;
-            std::unique_ptr<ISampleRegulator> m_sample_regulator;
+            std::shared_ptr<IProfileIOSample> m_profile_io_sample;
             std::vector<std::pair<uint64_t, struct geopm_prof_message_s> > m_prof_sample;
             std::vector<uint64_t> m_region_id;
             // Per rank vector counting number of entries into MPI.
@@ -104,8 +102,7 @@ namespace geopm
             bool m_do_shutdown;
             bool m_is_connected;
             int m_rank_per_node;
-            std::map<uint64_t, std::unique_ptr<IRuntimeRegulator> > m_rid_regulator_map;
-            std::shared_ptr<IProfileIOSample> m_profile_io_sample;
+
             std::vector<std::pair<uint64_t, double> > m_short_region;
     };
 }

@@ -38,6 +38,7 @@
 #include "ApplicationIO.hpp"
 #include "Helper.hpp"
 #include "MockProfileSampler.hpp"
+#include "MockProfileIOSample.hpp"
 
 using geopm::ApplicationIO;
 using testing::Return;
@@ -48,14 +49,23 @@ class ApplicationIOTest : public ::testing::Test
         void SetUp();
         std::string m_shm_key = "test_shm";
         MockProfileSampler *m_sampler;
+        MockProfileIOSample *m_pio_sample;
         std::unique_ptr<ApplicationIO> m_app_io;
 };
 
 void ApplicationIOTest::SetUp()
 {
     m_sampler = new MockProfileSampler;
-    auto tmp = std::unique_ptr<MockProfileSampler>(m_sampler);
-    m_app_io = geopm::make_unique<ApplicationIO>(m_shm_key, std::move(tmp));
+    auto tmp_s = std::unique_ptr<MockProfileSampler>(m_sampler);
+    m_pio_sample = new MockProfileIOSample;
+    auto tmp_pio = std::shared_ptr<MockProfileIOSample>(m_pio_sample);
+
+    EXPECT_CALL(*m_sampler, initialize());
+    EXPECT_CALL(*m_sampler, rank_per_node());
+    EXPECT_CALL(*m_sampler, capacity());
+    std::vector<int> ranks {1, 2, 3, 4};
+    EXPECT_CALL(*m_sampler, cpu_rank()).WillOnce(Return(ranks));
+    m_app_io = geopm::make_unique<ApplicationIO>(m_shm_key, std::move(tmp_s), tmp_pio);
 }
 
 TEST_F(ApplicationIOTest, passthrough)
@@ -73,4 +83,28 @@ TEST_F(ApplicationIOTest, passthrough)
     EXPECT_CALL(*m_sampler, name_set()).WillOnce(Return(regions));
     EXPECT_EQ(regions, m_app_io->region_name_set());
 
+    uint64_t rid = 0x8888;
+    EXPECT_CALL(*m_pio_sample, total_region_runtime(rid))
+        .WillOnce(Return(8080));
+    EXPECT_EQ(8080, m_app_io->total_region_runtime(rid));
+
+    EXPECT_CALL(*m_pio_sample, total_region_mpi_time(rid))
+        .WillOnce(Return(909));
+    EXPECT_EQ(909, m_app_io->total_region_mpi_runtime(rid));
+
+    EXPECT_CALL(*m_pio_sample, total_epoch_runtime())
+        .WillOnce(Return(123));
+    EXPECT_EQ(123, m_app_io->total_epoch_runtime());
+
+    EXPECT_CALL(*m_pio_sample, total_app_runtime())
+        .WillOnce(Return(345));
+    EXPECT_EQ(345, m_app_io->total_app_runtime());
+
+    EXPECT_CALL(*m_pio_sample, total_app_mpi_time())
+        .WillOnce(Return(456));
+    EXPECT_EQ(456, m_app_io->total_app_mpi_runtime());
+
+    EXPECT_CALL(*m_pio_sample, total_count(rid))
+        .WillOnce(Return(77));
+    EXPECT_EQ(77, m_app_io->total_count(rid));
 }

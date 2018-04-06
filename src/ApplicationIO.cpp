@@ -35,8 +35,6 @@
 #include "ApplicationIO.hpp"
 #include "PlatformIO.hpp"
 #include "ProfileSampler.hpp"
-#include "SampleRegulator.hpp"
-#include "RuntimeRegulator.hpp"
 #include "ProfileIOSample.hpp"
 #include "ProfileIOGroup.hpp"
 #include "Helper.hpp"
@@ -51,21 +49,23 @@ namespace geopm
     constexpr size_t ApplicationIO::M_SHMEM_REGION_SIZE;
 
     ApplicationIO::ApplicationIO(const std::string &shm_key)
-        : ApplicationIO(shm_key, geopm::make_unique<ProfileSampler>(M_SHMEM_REGION_SIZE))
+        : ApplicationIO(shm_key,
+                        geopm::make_unique<ProfileSampler>(M_SHMEM_REGION_SIZE),
+                        nullptr)
     {
 
     }
 
     ApplicationIO::ApplicationIO(const std::string &shm_key,
-                                 std::unique_ptr<IProfileSampler> sampler)
+                                 std::unique_ptr<IProfileSampler> sampler,
+                                 std::shared_ptr<IProfileIOSample> pio_sample)
         : m_sampler(std::move(sampler))
-        , m_sample_regulator(nullptr)
+        , m_profile_io_sample(pio_sample)
         , m_do_shutdown(false)
         , m_is_connected(false)
         , m_rank_per_node(-1)
-        , m_app_start_time{{0, 0}}
     {
-
+        connect();
     }
 
     ApplicationIO::~ApplicationIO()
@@ -77,70 +77,146 @@ namespace geopm
     {
         if (!m_is_connected) {
             m_sampler->initialize();
-            geopm_time(&m_app_start_time);
             m_rank_per_node = m_sampler->rank_per_node();
             m_prof_sample.resize(m_sampler->capacity());
             std::vector<int> cpu_rank = m_sampler->cpu_rank();
-            m_profile_io_sample = std::make_shared<ProfileIOSample>(cpu_rank);
-            platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample));
+            if (m_profile_io_sample == nullptr) {
+                m_profile_io_sample = std::make_shared<ProfileIOSample>(cpu_rank);
+                platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample));
+            }
             m_is_connected = true;
         }
     }
 
     bool ApplicationIO::do_shutdown(void) const
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return m_sampler->do_shutdown();
     }
 
     std::string ApplicationIO::report_name(void) const
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return m_sampler->report_name();
     }
 
     std::string ApplicationIO::profile_name(void) const
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return m_sampler->profile_name();
     }
 
     std::set<std::string> ApplicationIO::region_name_set(void) const
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return m_sampler->name_set();
     }
 
     double ApplicationIO::total_region_runtime(uint64_t region_id) const
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return m_profile_io_sample->total_region_runtime(region_id);
     }
 
     double ApplicationIO::total_region_mpi_runtime(uint64_t region_id) const
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return m_profile_io_sample->total_region_mpi_time(region_id);
     }
 
     double ApplicationIO::total_epoch_runtime(void) const
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return m_profile_io_sample->total_epoch_runtime();
     }
 
     double ApplicationIO::total_app_runtime(void) const
     {
-        geopm_time_s curr_time{{0, 0}};
-        geopm_time(&curr_time);
-        return geopm_time_diff(m_app_start_time, curr_time);
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+        return m_profile_io_sample->total_app_runtime();
     }
 
     double ApplicationIO::total_app_mpi_runtime(void) const
     {
-        return m_profile_io_sample->total_app_mpi_runtime();
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+        return m_profile_io_sample->total_app_mpi_time();
     }
 
     int ApplicationIO::total_count(uint64_t region_id) const
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         return m_profile_io_sample->total_count(region_id);
     }
 
     void ApplicationIO::update(std::shared_ptr<IComm> comm)
     {
+#ifdef GEOPM_DEBUG
+        if (!m_is_connected) {
+            throw Exception("ApplicationIO::" + std::string(__func__) +
+                            " called before connect().",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
         size_t length = 0;
         m_sampler->sample(m_prof_sample, length, comm);
         m_profile_io_sample->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
