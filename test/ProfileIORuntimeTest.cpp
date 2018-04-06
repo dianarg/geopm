@@ -57,9 +57,9 @@ TEST(ProfileIORuntimeTest, per_cpu_runtime)
     std::vector<double> expected_runtime_1{8, 8, 6, 6, 8, 8, 5, 5};
     std::vector<double> expected_runtime_2{9, 9, 7, 7, 5, 5, 4, 4};
 
-    EXPECT_CALL(mock_reg_1, runtimes())
+    EXPECT_CALL(mock_reg_1, per_rank_last_runtime())
         .WillOnce(Return(rank_runtime_1));
-    EXPECT_CALL(mock_reg_2, runtimes())
+    EXPECT_CALL(mock_reg_2, per_rank_last_runtime())
         .WillOnce(Return(rank_runtime_2));
 
     std::vector<double> runtime = m_profile_runtime.per_cpu_runtime(region_id_1);

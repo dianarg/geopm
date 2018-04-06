@@ -40,7 +40,7 @@
 
 #include "Kontroller.hpp"
 #include "Agent.hpp"
-#include "StaticPolicyAgent.hpp"
+#include "MonitorAgent.hpp"
 #include "MockPlatformTopo.hpp"
 #include "MockPlatformIO.hpp"
 #include "MockComm.hpp"
@@ -290,6 +290,7 @@ class KontrollerTest : public ::testing::Test
         int m_num_send_down = 2;
         int m_num_level_ctl = 2;
         int m_root_level = 1;
+        std::shared_ptr<MockComm> m_comm;
         std::vector<std::unique_ptr<geopm::IAgent> > m_level_agent;
         std::map<std::string, double> m_manager_policy;
 
@@ -298,6 +299,7 @@ class KontrollerTest : public ::testing::Test
 
 void KontrollerTest::SetUp()
 {
+    m_comm = std::make_shared<MockComm>();
     // static policy agent signals
     m_platform_io.add_supported_signal({"TIME", IPlatformTopo::M_DOMAIN_BOARD, 0}, 99);
     m_platform_io.add_supported_signal({"POWER_PACKAGE", IPlatformTopo::M_DOMAIN_BOARD, 0}, 4545);
@@ -315,7 +317,7 @@ void KontrollerTest::SetUp()
 #endif
 
     for (int level = 0; level < m_num_level_ctl; ++level) {
-        auto tmp = new geopm::StaticPolicyAgent(m_platform_io, m_topo);
+        auto tmp = new geopm::MonitorAgent(m_platform_io, m_topo);
         //auto tmp = new MockAgent();
         tmp->init(level);
         m_level_agent.emplace_back(tmp);

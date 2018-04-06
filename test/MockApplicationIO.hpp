@@ -30,9 +30,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "gtest/gtest.h"
-#include "gmock/gmock.h"
-
 #ifndef MOCKAPPLICATIONIO_HPP_INCLUDE
 #define MOCKAPPLICATIONIO_HPP_INCLUDE
 
@@ -49,10 +46,14 @@ class MockApplicationIO : public geopm::IApplicationIO
                            std::string(void));
         MOCK_CONST_METHOD0(region_name_set,
                            std::set<std::string>(void));
-        MOCK_CONST_METHOD1(total_runtime,
+        MOCK_CONST_METHOD1(total_region_runtime,
                            double(uint64_t region_id));
-        MOCK_CONST_METHOD1(total_mpi_runtime,
+        MOCK_CONST_METHOD1(total_region_mpi_runtime,
                            double(uint64_t region_id));
+        MOCK_CONST_METHOD0(total_app_runtime,
+                           double(void));
+        MOCK_CONST_METHOD0(total_app_mpi_runtime,
+                           double(void));
         MOCK_CONST_METHOD0(total_epoch_runtime,
                            double(void));
         MOCK_CONST_METHOD1(total_count,

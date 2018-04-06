@@ -131,11 +131,11 @@ TEST_F(ReporterTest, generate)
     EXPECT_CALL(m_application_io, profile_name());
     EXPECT_CALL(m_application_io, region_name_set());
     for (auto rid : m_region_runtime) {
-        EXPECT_CALL(m_application_io, total_runtime(rid.first))
+        EXPECT_CALL(m_application_io, total_region_runtime(rid.first))
             .WillOnce(Return(rid.second));
     }
     for (auto rid : m_region_mpi_time) {
-        EXPECT_CALL(m_application_io, total_mpi_runtime(rid.first))
+        EXPECT_CALL(m_application_io, total_region_mpi_runtime(rid.first))
             .WillOnce(Return(rid.second));
     }
     for (auto rid : m_region_count) {
