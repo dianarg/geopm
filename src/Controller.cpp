@@ -57,6 +57,7 @@
 #include "geopm_hash.h"
 #include "Comm.hpp"
 #include "Controller.hpp"
+#include "Kontroller.hpp"
 #include "Exception.hpp"
 #include "SampleRegulator.hpp"
 #include "TreeCommunicator.hpp"
@@ -113,7 +114,7 @@ extern "C"
     int geopm_ctl_destroy(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        geopm::Controller *ctl_obj = (geopm::Kontroller *)ctl;
+        geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
         try {
             delete ctl_obj;
         }
@@ -126,12 +127,13 @@ extern "C"
     int geopm_ctl_run(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        geopm::Controller *ctl_obj = (geopm::Kontroller *)ctl;
+        geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
         try {
             ctl_obj->run();
         }
         catch (...) {
-            ctl_obj->reset();
+            /// @todo need this feature to be added to the Kontroller.
+            //ctl_obj->reset();
             err = geopm::exception_handler(std::current_exception());
         }
         return err;
