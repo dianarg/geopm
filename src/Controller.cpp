@@ -100,21 +100,9 @@ extern "C"
     {
         int err = 0;
         try {
-            if (policy_config) {
-                std::string policy_config_str(policy_config);
-                geopm::IGlobalPolicy *policy = new geopm::GlobalPolicy(policy_config_str, "");
-                auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
-                geopm::Controller ctl(policy, std::move(tmp_comm));
-                err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
-                delete policy;
-            }
-            //The null case is for all nodes except rank 0.
-            //These controllers should assume their policy from the master.
-            else {
-                auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
-                geopm::Controller ctl(NULL, std::move(tmp_comm));
-                err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
-            }
+            auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
+            geopm::Kontroller ctl(std::move(tmp_comm), geopm_env_policy());
+            err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
         }
         catch (...) {
             err = geopm::exception_handler(std::current_exception());
@@ -125,7 +113,7 @@ extern "C"
     int geopm_ctl_destroy(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
+        geopm::Controller *ctl_obj = (geopm::Kontroller *)ctl;
         try {
             delete ctl_obj;
         }
@@ -138,7 +126,7 @@ extern "C"
     int geopm_ctl_run(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
+        geopm::Controller *ctl_obj = (geopm::Kontroller *)ctl;
         try {
             ctl_obj->run();
         }

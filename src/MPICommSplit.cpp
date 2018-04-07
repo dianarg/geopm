@@ -38,6 +38,7 @@
 #include "geopm_mpi_comm_split.h"
 #include "Exception.hpp"
 #include "Controller.hpp"
+#include "Kontroller.hpp"
 #include "GlobalPolicy.hpp"
 #include "Comm.hpp"
 #include "MPIComm.hpp"
@@ -61,9 +62,8 @@ extern "C"
     {
         int err = 0;
         try {
-            geopm::IGlobalPolicy *global_policy = (geopm::IGlobalPolicy *)policy;
             auto tmp_comm = std::unique_ptr<geopm::IComm>(new geopm::MPIComm(comm));
-            *ctl = (struct geopm_ctl_c *)(new geopm::Controller(global_policy, std::move(tmp_comm)));
+            *ctl = (struct geopm_ctl_c *)(new geopm::Kontroller(std::move(tmp_comm), geopm_env_policy()));
         }
         catch (...) {
             err = geopm::exception_handler(std::current_exception());
