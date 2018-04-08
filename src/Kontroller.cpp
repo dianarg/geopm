@@ -167,16 +167,14 @@ namespace geopm
     void Kontroller::generate(void)
     {
         std::string agent_report_header;
-        if (m_num_level_ctl == m_root_level) {
-            agent_report_header = m_agent[m_root_level - 1]->report_header();
+        if (m_num_level_ctl == m_root_level+1) {
+            agent_report_header = m_agent[m_root_level]->report_header();
         }
         /// @todo why get node reports from each level of the tree?
         std::ostringstream agent_node_report;
         for (int level = 0; level != m_num_level_ctl; ++level) {
             agent_node_report << m_agent[level]->report_node();
         }
-
-        //std::shared_ptr<const ApplicationIO> app_io = m_application_io;
 
         m_reporter->generate(m_agent_name,
                              agent_report_header,
@@ -204,7 +202,7 @@ namespace geopm
 
     void Kontroller::walk_down(void)
     {
-        int level = m_num_level_ctl - 1;//m_tree_comm->num_level_controlled() - 1;
+        int level = m_root_level;//m_tree_comm->num_level_controlled() - 1;
         if (m_is_root) {
             std::cout << "KON sample manager" << std::endl;
             // TODO Check ManagerIOSampler for available updates, and selectively call read_batch();

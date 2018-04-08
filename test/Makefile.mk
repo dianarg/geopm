@@ -280,7 +280,6 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/ManagerIOTest.write_shm \
               test/gtest_links/ManagerIOTest.negative_write_json_file \
               test/gtest_links/ManagerIOTestIntegration.write_shm \
-              test/gtest_links/ManagerIOTestIntegration.negative_write_shm \
               test/gtest_links/ManagerIOSamplerTest.parse_json_file \
               test/gtest_links/ManagerIOSamplerTest.negative_parse_json_file \
               test/gtest_links/ManagerIOSamplerTest.parse_shm \
@@ -385,11 +384,11 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/KontrollerTest.cpp \
                           test/MockApplicationIO.hpp \
                           test/ApplicationIOTest.cpp \
-                          test/KontrollerIntegrationTest.cpp \
                           test/MockAgent.hpp \
                           test/MockReporter.hpp \
                           test/MockTracer.hpp \
                           test/MockTreeComm.hpp \
+                          test/MockManagerIOSampler.hpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \

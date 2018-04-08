@@ -44,6 +44,7 @@
 #include "MockPlatformIO.hpp"
 #include "MockComm.hpp"
 #include "MockApplicationIO.hpp"
+#include "MockManagerIOSampler.hpp"
 #include "MockAgent.hpp"
 #include "MockTreeComm.hpp"
 #include "MockReporter.hpp"
@@ -98,24 +99,27 @@ class KontrollerTest : public ::testing::Test
     protected:
         void SetUp();
 
-        NiceMock<MockPlatformTopo> m_topo;
-        //NiceMock<MockPlatformIO> m_platform_io;
-        KontrollerTestMockPlatformIO m_platform_io;
         std::string m_agent_name = "temp";
         int m_num_send_up = 4;//3;
         int m_num_send_down = 2;
         int m_num_level_ctl = 2;
         int m_root_level = 1;
         std::shared_ptr<MockComm> m_comm;
+        MockPlatformTopo m_topo;
+        KontrollerTestMockPlatformIO m_platform_io;
+        std::shared_ptr<MockApplicationIO> m_application_io;
+        MockTreeComm *m_tree_comm;
+        MockReporter *m_reporter;
+        MockTracer *m_tracer;
         std::vector<MockAgent*> m_level_agent;
-        std::map<std::string, double> m_manager_policy;
+        std::vector<std::unique_ptr<IAgent> > m_agents;
+        MockManagerIOSampler *m_manager_io;
 
         int m_num_step = 3;
 };
 
 void KontrollerTest::SetUp()
 {
-    m_comm = std::make_shared<MockComm>();
     // static policy agent signals
     m_platform_io.add_supported_signal({"TIME", IPlatformTopo::M_DOMAIN_BOARD, 0}, 99);
     m_platform_io.add_supported_signal({"POWER_PACKAGE", IPlatformTopo::M_DOMAIN_BOARD, 0}, 4545);
@@ -132,33 +136,28 @@ void KontrollerTest::SetUp()
     EXPECT_CALL(m_platform_io, adjust(_, _)).Times(AtLeast(0));
 #endif
 
+    m_comm = std::make_shared<MockComm>();
+    m_application_io = std::make_shared<MockApplicationIO>();
+    m_tree_comm = new MockTreeComm();
+    m_manager_io = new MockManagerIOSampler();
+    m_reporter = new MockReporter();
+    m_tracer = new MockTracer();
+
     for (int level = 0; level < m_num_level_ctl; ++level) {
         auto tmp = new MockAgent();
         EXPECT_CALL(*tmp, init(level));
         tmp->init(level);
         m_level_agent.push_back(tmp);
-    }
 
-    m_manager_policy = {{"FREQUENCY", 2.3e9}, {"POWER", 222}};
+        EXPECT_CALL(*m_tree_comm, level_size(level)).WillOnce(Return(1));
+        m_agents.emplace_back(m_level_agent[level]);
+    }
 }
 
 // TODO: single node kontroller test
 
 TEST_F(KontrollerTest, main)
 {
-    auto m_application_io = std::make_shared<MockApplicationIO>();
-    auto m_tree_comm = new MockTreeComm();
-
-    std::vector<std::unique_ptr<IAgent> > agents;
-    for (int level = 0; level < m_num_level_ctl; ++level) {
-        EXPECT_CALL(*m_tree_comm, level_size(level)).WillOnce(Return(1));
-        agents.emplace_back(m_level_agent[level]);
-    }
-    auto m_reporter = new MockReporter();
-    auto m_tracer = new MockTracer();
-
-
-
     Kontroller kontroller(m_comm, m_topo, m_platform_io,
                           m_agent_name, m_num_send_down, m_num_send_up,
                           std::unique_ptr<MockTreeComm>(m_tree_comm),
@@ -166,8 +165,8 @@ TEST_F(KontrollerTest, main)
                           m_application_io,
                           std::unique_ptr<MockReporter>(m_reporter),
                           std::unique_ptr<MockTracer>(m_tracer),
-                          std::move(agents),
-                          m_manager_policy);
+                          std::move(m_agents),
+                          std::unique_ptr<MockManagerIOSampler>(m_manager_io));
 
     std::vector<IPlatformIO::m_request_s> m_trace_cols {
         {"COL1", IPlatformTopo::M_DOMAIN_BOARD, 0},
@@ -182,7 +181,14 @@ TEST_F(KontrollerTest, main)
     EXPECT_CALL(m_platform_io, read_batch()).Times(m_num_step);
     EXPECT_CALL(m_platform_io, write_batch()).Times(m_num_step);
     EXPECT_CALL(*m_application_io, update(_)).Times(m_num_step);
-
+    std::vector<double> manager_sample = {8.8, 9.9};
+    ASSERT_EQ(m_num_send_down, manager_sample.size());
+    EXPECT_CALL(*m_manager_io, sample()).Times(m_num_step)
+        .WillRepeatedly(Return(manager_sample));
+    EXPECT_CALL(*m_level_agent[0], adjust_platform(_)).Times(m_num_step);
+    EXPECT_CALL(*m_level_agent[0], sample_platform(_)).Times(m_num_step);
+    EXPECT_CALL(*m_level_agent[0], wait()).Times(m_num_step);
+    /// @todo set expectations for which agents should call ascend/descend
 
     for (int step = 0; step < m_num_step; ++step) {
         kontroller.step();
@@ -195,6 +201,7 @@ TEST_F(KontrollerTest, main)
     std::map<uint64_t, std::string> region_names {};
     EXPECT_CALL(*m_level_agent[0], report_region()).WillOnce(Return(region_names));
     EXPECT_CALL(*m_reporter, generate(_, _, _, _, _, _));
+    EXPECT_CALL(*m_tracer, flush());
     kontroller.generate();
 
 }
