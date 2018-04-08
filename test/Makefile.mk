@@ -287,6 +287,8 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/ManagerIOSamplerTest.negative_shm_setup_mutex \
               test/gtest_links/ManagerIOSamplerTest.negative_bad_files \
               test/gtest_links/ManagerIOSamplerTestIntegration.parse_shm \
+              test/gtest_links/TracerTest.columns \
+              test/gtest_links/TracerTest.update_samples \
               # end
 
 if ENABLE_MPI
@@ -389,6 +391,7 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/MockTracer.hpp \
                           test/MockTreeComm.hpp \
                           test/MockManagerIOSampler.hpp \
+                          test/TracerTest.cpp \
                           # end
 
 test_geopm_test_LDADD = libgtest.a \

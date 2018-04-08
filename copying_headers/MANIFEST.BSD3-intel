@@ -285,6 +285,7 @@ test/TreeCommTest.cpp
 test/TreeCommLevelTest.cpp
 test/TreeCommunicatorTest.cpp
 test/TimeIOGroupTest.cpp
+test/TracerTest.cpp
 test/TreeCommunicatorTest.cpp
 tracker/track
 .travis_obs.sh

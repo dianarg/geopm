@@ -57,7 +57,7 @@ namespace geopm
             virtual void columns(const std::vector<IPlatformIO::m_request_s> &cols) = 0;
             virtual void update(bool is_epoch) = 0;
             virtual void flush(void) = 0;
-            static std::string pretty_name(IPlatformIO::m_request_s col);
+            static std::string pretty_name(const IPlatformIO::m_request_s &col);
     };
 
     class IPlatformIO;
@@ -68,6 +68,11 @@ namespace geopm
         public:
             /// @brief Tracer constructor.
             Tracer(std::string header);
+            Tracer();
+            Tracer(const std::string &file_path,
+                   const std::string &hostname,
+                   bool do_trace,
+                   IPlatformIO &platform_io);
             /// @brief Tracer destructor, virtual.
             virtual ~Tracer();
             void columns(const std::vector<IPlatformIO::m_request_s> &cols) override;
@@ -76,6 +81,8 @@ namespace geopm
             void update(const struct geopm_policy_message_s &policy) override;
             void flush(void) override;
         protected:
+            static std::string hostname(void);
+            std::string m_file_path;
             std::string m_header;
             std::string m_hostname;
             bool m_is_trace_enabled;
@@ -88,7 +95,6 @@ namespace geopm
 
             IPlatformIO &m_platform_io;
             std::vector<int> m_column_idx;
-            std::vector<double> m_sample;
     };
 }
 
