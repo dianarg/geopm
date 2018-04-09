@@ -98,14 +98,14 @@ namespace geopm
         : m_report_name(report_name)
         , m_platform_io(platform_io)
     {
-        int energy = m_platform_io.push_signal("ENERGY", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        int energy = m_platform_io.push_signal("ENERGY_PACKAGE", IPlatformTopo::M_DOMAIN_BOARD, 0);
         m_energy_idx = m_platform_io.push_region_signal(energy, IPlatformTopo::M_DOMAIN_BOARD, 0);
-        int clk_core = m_platform_io.push_signal("CLK_UNHALTED_CORE", IPlatformTopo::M_DOMAIN_BOARD, 0);
-        int clk_ref = m_platform_io.push_signal("CLK_UNHALTED_REF", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        int clk_core = m_platform_io.push_signal("MSR::PERF_FIXED_CTR1:CPU_CLK_UNHALTED_THREAD", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        int clk_ref = m_platform_io.push_signal("MSR::PERF_FIXED_CTR1:CPU_CLK_UNHALTED_REF", IPlatformTopo::M_DOMAIN_BOARD, 0);
         m_clk_core_idx = m_platform_io.push_region_signal(clk_core, IPlatformTopo::M_DOMAIN_BOARD, 0);
         m_clk_ref_idx = m_platform_io.push_region_signal(clk_ref, IPlatformTopo::M_DOMAIN_BOARD, 0);
 
-        if (true) { // @todo if we are the root of the tree
+        if (false) { // @todo if we are the root of the tree
             // check if report file can be created
             if (!m_report_name.empty()) {
                 std::ofstream test_open(m_report_name);
