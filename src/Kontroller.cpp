@@ -73,22 +73,23 @@ namespace geopm
                      platform_topo(),
                      platform_io(),
                      geopm_env_agent(),
-                     IAgent::num_policy(agent_factory().dictionary(m_agent_name)),
-                     IAgent::num_sample(agent_factory().dictionary(m_agent_name)),
-                     std::unique_ptr<ITreeComm>(new TreeComm(ppn1_comm, m_num_send_up, m_num_send_down)),
-                     m_tree_comm->num_level_controlled(),
-                     m_tree_comm->root_level(),
+                     IAgent::num_policy(agent_factory().dictionary(geopm_env_agent())),
+                     IAgent::num_sample(agent_factory().dictionary(geopm_env_agent())),
+                     std::unique_ptr<ITreeComm>(new TreeComm(ppn1_comm,
+                         IAgent::num_policy(agent_factory().dictionary(geopm_env_agent())),
+                         IAgent::num_sample(agent_factory().dictionary(geopm_env_agent())))),
                      std::shared_ptr<IApplicationIO>(new ApplicationIO(geopm_env_shmkey())),
                      std::unique_ptr<IReporter>(new Reporter(geopm_env_report(), platform_io())),
                      std::unique_ptr<ITracer>(new Tracer(geopm_env_trace())),
                      std::vector<std::unique_ptr<IAgent> >{},
                      std::unique_ptr<IManagerIOSampler>(new ManagerIOSampler(global_policy_path, true)))
     {
-        for (int level = 0; level != m_num_level_ctl; ++level) {
+        m_agent.push_back(agent_factory().make_plugin(m_agent_name));
+        m_agent.back()->init(0);
+        for (int level = 1; level < m_num_level_ctl; ++level) {
             m_agent.push_back(agent_factory().make_plugin(m_agent_name));
             m_agent.back()->init(level);
         }
-
     }
 
     Kontroller::Kontroller(std::shared_ptr<IComm> comm,
@@ -98,8 +99,6 @@ namespace geopm
                            int num_send_down,
                            int num_send_up,
                            std::unique_ptr<ITreeComm> tree_comm,
-                           int num_level_ctl,
-                           int root_level,
                            std::shared_ptr<IApplicationIO> application_io,
                            std::unique_ptr<IReporter> reporter,
                            std::unique_ptr<ITracer> tracer,
@@ -112,8 +111,6 @@ namespace geopm
         , m_num_send_down(num_send_down)
         , m_num_send_up(num_send_up)
         , m_tree_comm(std::move(tree_comm))
-        , m_num_level_ctl(num_level_ctl)
-        , m_root_level(root_level)
         , m_application_io(std::move(application_io))
         , m_reporter(std::move(reporter))
         , m_tracer(std::move(tracer))
@@ -125,6 +122,9 @@ namespace geopm
         , m_out_sample(m_num_send_up)
         , m_manager_io_sampler(std::move(manager_io_sampler))
     {
+
+        m_num_level_ctl = m_tree_comm->num_level_controlled();
+        m_root_level = m_tree_comm->root_level();
 
         // Three dimensional vector over levels, children, and message
         // index.  These are used as temporary storage when passing

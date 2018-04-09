@@ -72,7 +72,7 @@ namespace geopm
 
     std::string MonitorAgent::plugin_name(void)
     {
-        return "STATIC_POLICY";
+        return "monitor";
     }
 
     std::unique_ptr<IAgent> MonitorAgent::make_plugin(void)
@@ -146,8 +146,7 @@ namespace geopm
 
     std::vector<std::string> MonitorAgent::policy_names(void)
     {
-        /// @todo remove these - this agent is sampling only; no control
-        return {"POWER", "FREQUENCY"};
+        return {};
     }
 
     std::vector<std::string> MonitorAgent::sample_names(void)

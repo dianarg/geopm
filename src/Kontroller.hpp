@@ -68,8 +68,6 @@ namespace geopm
                        int num_send_up,
                        int num_send_down,
                        std::unique_ptr<ITreeComm> tree_comm,
-                       int num_level_ctl,
-                       int root_level,
                        std::shared_ptr<IApplicationIO> application_io,
                        std::unique_ptr<IReporter> reporter,
                        std::unique_ptr<ITracer> tracer,

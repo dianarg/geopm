@@ -120,7 +120,7 @@ namespace geopm
         m_report = "";
         m_comm = "MPIComm";
         m_policy = "";
-        m_agent = "static_policy";
+        m_agent = "monitor";
         m_shmkey = "/geopm-shm-" + std::to_string(geteuid());
         m_trace = "";
         m_plugin_path = "";
