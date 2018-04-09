@@ -84,12 +84,7 @@ namespace geopm
                      std::vector<std::unique_ptr<IAgent> >{},
                      std::unique_ptr<IManagerIOSampler>(new ManagerIOSampler(global_policy_path, true)))
     {
-        m_agent.push_back(agent_factory().make_plugin(m_agent_name));
-        m_agent.back()->init(0);
-        for (int level = 1; level < m_num_level_ctl; ++level) {
-            m_agent.push_back(agent_factory().make_plugin(m_agent_name));
-            m_agent.back()->init(level);
-        }
+
     }
 
     Kontroller::Kontroller(std::shared_ptr<IComm> comm,
@@ -135,6 +130,15 @@ namespace geopm
                                                                     std::vector<double>(m_num_send_down));
             m_in_sample[level] = std::vector<std::vector<double> >(num_children,
                                                                    std::vector<double>(m_num_send_up));
+        }
+
+        if (m_agent.size() == 0) {
+            m_agent.push_back(agent_factory().make_plugin(m_agent_name));
+            m_agent.back()->init(0);
+            for (int level = 1; level < m_num_level_ctl; ++level) {
+                m_agent.push_back(agent_factory().make_plugin(m_agent_name));
+                m_agent.back()->init(level);
+            }
         }
 
         /// @todo move somewhere else: need to happen after Agents are constructed
@@ -254,11 +258,9 @@ namespace geopm
     {
         std::vector<IPlatformIO::m_request_s> columns {{"TIME", PlatformTopo::M_DOMAIN_BOARD, 0},
                                                        {"REGION_ID#", PlatformTopo::M_DOMAIN_BOARD, 0},
-                                                       {"ENERGY", PlatformTopo::M_DOMAIN_BOARD, 0},
-                                                       {"POWER", PlatformTopo::M_DOMAIN_BOARD, 0},
-                                                       {"FREQUENCY_MIN", PlatformTopo::M_DOMAIN_BOARD, 0},
-                                                       {"FREQUENCY_MAX", PlatformTopo::M_DOMAIN_BOARD, 0},
-                                                       {"FREQUENCY_AVG", PlatformTopo::M_DOMAIN_BOARD, 0}};
+                                                       {"ENERGY_PACKAGE", PlatformTopo::M_DOMAIN_BOARD, 0},
+                                                       {"POWER_PACKAGE", PlatformTopo::M_DOMAIN_BOARD, 0},
+                                                       {"FREQUENCY", PlatformTopo::M_DOMAIN_BOARD, 0}};
         std::vector<IPlatformIO::m_request_s> agent_columns = m_agent[0]->trace_columns();
         columns.insert(columns.end(), agent_columns.begin(), agent_columns.end());
         m_tracer->columns(columns);

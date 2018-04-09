@@ -391,6 +391,7 @@ namespace geopm
             {"IS_CONVERGED", IPlatformIO::agg_and},
             {"IS_UPDATED", IPlatformIO::agg_and},
 	    {"REGION_ID#", IPlatformIO::agg_region_id},
+            {"FREQUENCY", IPlatformIO::agg_average},
         };
         auto it = fn_map.find(signal_name);
         if (it == fn_map.end()) {

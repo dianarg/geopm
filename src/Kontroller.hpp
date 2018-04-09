@@ -85,8 +85,6 @@ namespace geopm
             std::shared_ptr<IComm> m_comm;
             IPlatformTopo &m_platform_topo;
             IPlatformIO &m_platform_io;
-            int m_ppn1_rank;
-            int m_num_node;
             std::string m_agent_name;
             int m_num_send_down;
             int m_num_send_up;

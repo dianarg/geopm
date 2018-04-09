@@ -70,7 +70,7 @@ namespace geopm
             m_level_ctl = init_level(comm_cart, m_root_level);
         }
 #ifdef GEOPM_DEBUG
-        if (m_num_level_ctl >= m_root_level) {
+        if (m_num_level_ctl > m_root_level) {
             throw Exception("Number of controlled levels greater than tree depth.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
@@ -92,7 +92,7 @@ namespace geopm
     {
         std::vector<std::unique_ptr<ITreeCommLevel> > result;
         int rank_cart = comm_cart->rank();
-        std::vector<int> coords(comm_cart->coordinate(rank_cart, root_level - 1)); // fan_out.size()
+        std::vector<int> coords(comm_cart->coordinate(rank_cart));
         m_num_level_ctl = num_level_controlled(coords);
         std::vector<int> parent_coords(coords);
         int level = 0;

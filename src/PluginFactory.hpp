@@ -82,13 +82,13 @@ namespace geopm
                 }
                 return result;
             }
-            const std::map<std::string, std::string> &dictionary(std::string plugin_name)
+            const std::map<std::string, std::string> &dictionary(const std::string &plugin_name)
             {
                 return m_dictionary.at(plugin_name);
             }
         private:
             std::map<std::string, std::function<std::unique_ptr<T>()> > m_name_func_map;
-            std::map<std::string, const std::map<std::string, std::string> &> m_dictionary;
+            std::map<std::string, const std::map<std::string, std::string> > m_dictionary;
             static const std::map<std::string, std::string> m_empty_dictionary;
     };
 
