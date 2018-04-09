@@ -118,7 +118,7 @@ namespace geopm
         , m_reporter(std::move(reporter))
         , m_tracer(std::move(tracer))
         , m_agent(std::move(level_agent))
-        , m_is_root(m_num_level_ctl - 1 == m_root_level)
+        , m_is_root(m_num_level_ctl == m_root_level)
         , m_in_policy(m_num_send_down)
         , m_out_policy(m_num_level_ctl)
         , m_in_sample(m_num_level_ctl)
@@ -167,7 +167,7 @@ namespace geopm
     void Kontroller::generate(void)
     {
         std::string agent_report_header;
-        if (m_num_level_ctl == m_root_level+1) {
+        if (m_is_root) {
             agent_report_header = m_agent[m_root_level]->report_header();
         }
         /// @todo why get node reports from each level of the tree?
@@ -202,45 +202,36 @@ namespace geopm
 
     void Kontroller::walk_down(void)
     {
-        int level = m_root_level;//m_tree_comm->num_level_controlled() - 1;
         if (m_is_root) {
             std::cout << "KON sample manager" << std::endl;
-            // TODO Check ManagerIOSampler for available updates, and selectively call read_batch();
             m_in_policy = m_manager_io_sampler->sample();
         }
         else {
-            m_tree_comm->receive_down(level, m_in_policy);
+            m_tree_comm->receive_down(m_num_level_ctl, m_in_policy);
         }
-        m_agent[level]->descend(m_in_policy, m_out_policy[level]);
-        m_tree_comm->send_down(level, m_out_policy[level]);
-        --level;
-        for (; level > 1; --level) {
-            m_tree_comm->receive_down(level, m_in_policy);
+        for (int level = m_num_level_ctl - 1; level != -1; --level) {
             m_agent[level]->descend(m_in_policy, m_out_policy[level]);
             m_tree_comm->send_down(level, m_out_policy[level]);
+            m_tree_comm->receive_down(level, m_in_policy);
         }
-        m_tree_comm->receive_down(level, m_in_policy);
-        m_agent[level]->adjust_platform(m_in_policy);
+        m_agent[0]->adjust_platform(m_in_policy);
         m_platform_io.write_batch();
     }
 
     void Kontroller::walk_up(void)
     {
-        int level = 0;
         m_platform_io.read_batch();
-        m_agent[level]->sample_platform(m_out_sample);
-        m_tree_comm->send_up(level, m_out_sample);
-        ++level;
-        for (; level != m_num_level_ctl; ++level) {
+        m_agent[0]->sample_platform(m_out_sample);
+        for (int level = 0; level != m_num_level_ctl; ++level) {
+            m_tree_comm->send_up(level, m_out_sample);
             m_tree_comm->receive_up(level, m_in_sample[level]);
             m_agent[level]->ascend(m_in_sample[level], m_out_sample);
-            if (level != m_num_level_ctl - 1) {
-                std::cout << "KON level " << level << " send up" << std::endl;
-                m_tree_comm->send_up(level, m_out_sample);
-            }
         }
-        if (m_is_root) {
-            std::cout << "KON level " << level << " send to manager: ";
+        if (!m_is_root) {
+            m_tree_comm->send_up(m_num_level_ctl, m_out_sample);
+        }
+        else {
+            std::cout << "KON level " << m_num_level_ctl << " send to manager: ";
             for (auto sample : m_out_sample) {
                 std::cout << sample << " ";
             }

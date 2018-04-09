@@ -58,7 +58,7 @@ namespace geopm
                         const std::vector<int> &fan_out,
                         std::vector<std::unique_ptr<ITreeCommLevel> > mock_level)
         : m_comm(comm)
-        , m_root_level(fan_out.size() + 1)
+        , m_root_level(fan_out.size())
         , m_num_node(comm->num_rank()) // Assume that comm has one rank per node
         , m_fan_out(fan_out)
         , m_num_send_up(num_send_up)
@@ -69,7 +69,6 @@ namespace geopm
             std::shared_ptr<IComm> comm_cart(comm->split_cart(m_fan_out));
             m_level_ctl = init_level(comm_cart, m_root_level);
         }
-        m_num_level_ctl = m_level_ctl.size();
 #ifdef GEOPM_DEBUG
         if (m_num_level_ctl >= m_root_level) {
             throw Exception("Number of controlled levels greater than tree depth.",
@@ -82,7 +81,7 @@ namespace geopm
 
     int TreeComm::num_level_controlled(std::vector<int> coords)
     {
-        int result = 1;
+        int result = 0;
         for (auto it = coords.rbegin(); it != coords.rend() && *it == 0; ++it) {
              ++result;
         }
@@ -94,10 +93,10 @@ namespace geopm
         std::vector<std::unique_ptr<ITreeCommLevel> > result;
         int rank_cart = comm_cart->rank();
         std::vector<int> coords(comm_cart->coordinate(rank_cart, root_level - 1)); // fan_out.size()
-        int num_level_ctl = num_level_controlled(coords);
+        m_num_level_ctl = num_level_controlled(coords);
         std::vector<int> parent_coords(coords);
         int level = 0;
-        for (; level < num_level_ctl; ++level) {
+        for (; level < m_num_level_ctl; ++level) {
             parent_coords[root_level - 1 - level] = 0;
             m_level_ctl.emplace_back(
                 new TreeCommLevel(comm_cart->split(
