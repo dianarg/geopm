@@ -37,9 +37,11 @@
 
 namespace geopm
 {
+
+    const geopm_time_s IRuntimeRegulator::M_TIME_ZERO = {{0,0}};
+
     RuntimeRegulator::RuntimeRegulator(int num_rank)
-        : M_TIME_ZERO((struct geopm_time_s){{0, 0}})
-        , m_num_rank(num_rank)
+        :  m_num_rank(num_rank)
         , m_rank_log(m_num_rank, m_log_s {M_TIME_ZERO, 0.0, 0.0, 0})
     {
         if (m_num_rank <= 0) {

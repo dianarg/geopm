@@ -675,14 +675,7 @@ namespace geopm
                             }
                             else if ((*sample_it).second.progress == 1.0 &&
                                      !geopm_region_id_hint_is_equal(GEOPM_REGION_HINT_IGNORE, base_region_id)) {
-                                auto rid_it = m_rid_regulator_map.find(m_telemetry_sample[0].region_id);
-#ifdef GEOPM_DEBUG
-                                if (rid_it == m_rid_regulator_map.end()) {
-                                    throw Exception("Controller::walk_up(): could not find region id in regulator map",
-                                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-                                }
-#endif
-                                rid_it->second.record_exit(local_rank, (*sample_it).second.timestamp);
+                                m_rid_regulator_map[base_region_id].record_exit(local_rank, (*sample_it).second.timestamp);
                             }
                         }
                     }
@@ -786,18 +779,10 @@ namespace geopm
                 }
 
                 m_platform->transform_rank_data(region_id_all, m_msr_sample[0].timestamp, aligned_signal, m_telemetry_sample);
-                auto rid_it = m_rid_regulator_map.find(geopm_region_id_unset_mpi(m_telemetry_sample[0].region_id));
-#ifdef GEOPM_DEBUG
-                if (rid_it == m_rid_regulator_map.end()) {
-                    throw Exception("Controller::walk_up(): could not find region id in regulator map",
-                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-                }
-#endif
-                rid_it->second.insert_runtime_signal(m_telemetry_sample);
+                m_rid_regulator_map[geopm_region_id_unset_mpi(m_telemetry_sample[0].region_id)].insert_runtime_signal(m_telemetry_sample);
 
                 // First entry into any region
-                if (m_region_id_all == GEOPM_REGION_ID_UNDEFINED &&
-                    region_id_all != GEOPM_REGION_ID_UNDEFINED) {
+                if (m_region_id_all == GEOPM_REGION_ID_UNDEFINED && region_id_all != m_region_id_all) {
                     m_region_id_all = region_id_all;
                     override_telemetry(0.0);
                     update_region();
@@ -904,15 +889,7 @@ namespace geopm
             (*it).region_id = m_region_id_all;
             (*it).signal[GEOPM_TELEMETRY_TYPE_PROGRESS] = progress;
         }
-
-        auto rid_it = m_rid_regulator_map.find(geopm_region_id_unset_mpi(m_region_id_all));
-#ifdef GEOPM_DEBUG
-        if (rid_it == m_rid_regulator_map.end()) {
-            throw Exception("Controller::walk_up(): could not find region id in regulator map",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        rid_it->second.insert_runtime_signal(m_telemetry_sample);
+        m_rid_regulator_map[geopm_region_id_unset_mpi(m_telemetry_sample[0].region_id)].insert_runtime_signal(m_telemetry_sample);
     }
 
     void Controller::update_region(void)
