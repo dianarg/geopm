@@ -106,6 +106,8 @@ namespace geopm
         , m_num_send_down(num_send_down)
         , m_num_send_up(num_send_up)
         , m_tree_comm(std::move(tree_comm))
+        , m_num_level_ctl(m_tree_comm->num_level_controlled())
+        , m_root_level(m_tree_comm->root_level())
         , m_application_io(std::move(application_io))
         , m_reporter(std::move(reporter))
         , m_tracer(std::move(tracer))
@@ -117,10 +119,6 @@ namespace geopm
         , m_out_sample(m_num_send_up)
         , m_manager_io_sampler(std::move(manager_io_sampler))
     {
-
-        m_num_level_ctl = m_tree_comm->num_level_controlled();
-        m_root_level = m_tree_comm->root_level();
-
         // Three dimensional vector over levels, children, and message
         // index.  These are used as temporary storage when passing
         // messages up and down the tree.
