@@ -63,7 +63,13 @@ extern "C"
         int err = 0;
         try {
             auto tmp_comm = std::unique_ptr<geopm::IComm>(new geopm::MPIComm(comm));
-            *ctl = (struct geopm_ctl_c *)(new geopm::Kontroller(std::move(tmp_comm), geopm_env_policy()));
+            if (geopm_env_do_kontroller()) {
+                *ctl = (struct geopm_ctl_c *)(new geopm::Kontroller(std::move(tmp_comm), geopm_env_policy()));
+            }
+            else {
+                geopm::IGlobalPolicy *global_policy = (geopm::IGlobalPolicy *)policy;
+                *ctl = (struct geopm_ctl_c *)(new geopm::Controller(global_policy, std::move(tmp_comm)));
+            }
         }
         catch (...) {
             err = geopm::exception_handler(std::current_exception());

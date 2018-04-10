@@ -102,8 +102,25 @@ extern "C"
         int err = 0;
         try {
             auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
-            geopm::Kontroller ctl(std::move(tmp_comm), geopm_env_policy());
-            err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
+            if (geopm_env_do_kontroller()) {
+                geopm::Kontroller ctl(std::move(tmp_comm), geopm_env_policy());
+                err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
+            }
+            else {
+                if (policy_config) {
+                    std::string policy_config_str(policy_config);
+                    geopm::IGlobalPolicy *policy = new geopm::GlobalPolicy(policy_config_str, "");
+                    geopm::Controller ctl(policy, std::move(tmp_comm));
+                    err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
+                    delete policy;
+                }
+                //The null case is for all nodes except rank 0.
+                //These controllers should assume their policy from the master.
+                else {
+                    geopm::Controller ctl(NULL, std::move(tmp_comm));
+                    err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
+                }
+            }
         }
         catch (...) {
             err = geopm::exception_handler(std::current_exception());
@@ -114,12 +131,23 @@ extern "C"
     int geopm_ctl_destroy(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
-        try {
-            delete ctl_obj;
+        if (geopm_env_do_kontroller()) {
+            geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
+            try {
+                delete ctl_obj;
+            }
+            catch (...) {
+                err = geopm::exception_handler(std::current_exception());
+            }
         }
-        catch (...) {
-            err = geopm::exception_handler(std::current_exception());
+        else {
+            geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
+            try {
+                delete ctl_obj;
+            }
+            catch (...) {
+                err = geopm::exception_handler(std::current_exception());
+            }
         }
         return err;
     }
@@ -127,14 +155,26 @@ extern "C"
     int geopm_ctl_run(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
-        try {
-            ctl_obj->run();
+        if (geopm_env_do_kontroller()) {
+            geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
+            try {
+                ctl_obj->run();
+            }
+            catch (...) {
+                /// @todo need this feature to be added to the Kontroller.
+                //ctl_obj->reset();
+                err = geopm::exception_handler(std::current_exception());
+            }
         }
-        catch (...) {
-            /// @todo need this feature to be added to the Kontroller.
-            //ctl_obj->reset();
-            err = geopm::exception_handler(std::current_exception());
+        else {
+            geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
+            try {
+                ctl_obj->run();
+            }
+            catch (...) {
+                ctl_obj->reset();
+                err = geopm::exception_handler(std::current_exception());
+            }
         }
         return err;
     }
@@ -746,7 +786,7 @@ namespace geopm
                 }
 
                 m_platform->transform_rank_data(region_id_all, m_msr_sample[0].timestamp, aligned_signal, m_telemetry_sample);
-                auto rid_it = m_rid_regulator_map.find(m_telemetry_sample[0].region_id);
+                auto rid_it = m_rid_regulator_map.find(geopm_region_id_unset_mpi(m_telemetry_sample[0].region_id));
 #ifdef GEOPM_DEBUG
                 if (rid_it == m_rid_regulator_map.end()) {
                     throw Exception("Controller::walk_up(): could not find region id in regulator map",
@@ -865,7 +905,7 @@ namespace geopm
             (*it).signal[GEOPM_TELEMETRY_TYPE_PROGRESS] = progress;
         }
 
-        auto rid_it = m_rid_regulator_map.find(m_region_id_all);
+        auto rid_it = m_rid_regulator_map.find(geopm_region_id_unset_mpi(m_region_id_all));
 #ifdef GEOPM_DEBUG
         if (rid_it == m_rid_regulator_map.end()) {
             throw Exception("Controller::walk_up(): could not find region id in regulator map",
