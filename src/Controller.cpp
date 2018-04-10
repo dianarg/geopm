@@ -77,6 +77,7 @@
 #include "ProfileIORuntime.hpp"
 #include "ProfileIOSample.hpp"
 #include "Helper.hpp"
+#include "Kontroller.hpp"
 #include "config.h"
 
 #ifdef GEOPM_HAS_XMMINTRIN
@@ -101,20 +102,25 @@ extern "C"
     {
         int err = 0;
         try {
-            if (policy_config) {
-                std::string policy_config_str(policy_config);
-                geopm::IGlobalPolicy *policy = new geopm::GlobalPolicy(policy_config_str, "");
-                auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
-                geopm::Controller ctl(policy, std::move(tmp_comm));
+            auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
+            if (geopm_env_do_kontroller()) {
+                geopm::Kontroller ctl(std::move(tmp_comm), geopm_env_policy());
                 err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
-                delete policy;
             }
-            //The null case is for all nodes except rank 0.
-            //These controllers should assume their policy from the master.
             else {
-                auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
-                geopm::Controller ctl(NULL, std::move(tmp_comm));
-                err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
+                if (policy_config) {
+                    std::string policy_config_str(policy_config);
+                    geopm::IGlobalPolicy *policy = new geopm::GlobalPolicy(policy_config_str, "");
+                    geopm::Controller ctl(policy, std::move(tmp_comm));
+                    err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
+                    delete policy;
+                }
+                //The null case is for all nodes except rank 0.
+                //These controllers should assume their policy from the master.
+                else {
+                    geopm::Controller ctl(NULL, std::move(tmp_comm));
+                    err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
+                }
             }
         }
         catch (...) {
@@ -126,12 +132,23 @@ extern "C"
     int geopm_ctl_destroy(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
-        try {
-            delete ctl_obj;
+        if (geopm_env_do_kontroller()) {
+            geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
+            try {
+                delete ctl_obj;
+            }
+            catch (...) {
+                err = geopm::exception_handler(std::current_exception());
+            }
         }
-        catch (...) {
-            err = geopm::exception_handler(std::current_exception());
+        else {
+            geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
+            try {
+                delete ctl_obj;
+            }
+            catch (...) {
+                err = geopm::exception_handler(std::current_exception());
+            }
         }
         return err;
     }
@@ -139,13 +156,26 @@ extern "C"
     int geopm_ctl_run(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
-        try {
-            ctl_obj->run();
+        if (geopm_env_do_kontroller()) {
+            geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
+            try {
+                ctl_obj->run();
+            }
+            catch (...) {
+                /// @todo need this feature to be added to the Kontroller.
+                //ctl_obj->reset();
+                err = geopm::exception_handler(std::current_exception());
+            }
         }
-        catch (...) {
-            ctl_obj->reset();
-            err = geopm::exception_handler(std::current_exception());
+        else {
+            geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
+            try {
+                ctl_obj->run();
+            }
+            catch (...) {
+                ctl_obj->reset();
+                err = geopm::exception_handler(std::current_exception());
+            }
         }
         return err;
     }
