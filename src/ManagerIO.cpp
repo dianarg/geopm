@@ -76,11 +76,6 @@ namespace geopm
         , m_samples_up(signal_names.size())
         , m_is_shm_data((m_path[0] == '/' && m_path.find_last_of('/') == 0))
     {
-        if (m_signal_names.size() == 0) {
-            throw Exception("ManagerIO::" + std::string(__func__) + "(): No signal names were provided.",
-                            GEOPM_ERROR_FILE_PARSE, __FILE__, __LINE__);
-        }
-
         if (m_shmem == nullptr && m_is_shm_data) {
             size_t shmem_size = sizeof(struct geopm_manager_shmem_s);
             m_shmem = geopm::make_unique<SharedMemory>(m_path, shmem_size);
@@ -209,11 +204,6 @@ namespace geopm
         , m_data(nullptr)
         , m_is_shm_data(m_path[0] == '/' && m_path.find_last_of('/') == 0)
     {
-        if (m_signal_names.size() == 0) {
-            throw Exception("ManagerIOSampler::" + std::string(__func__) + "(): No signal names were provided.",
-                            GEOPM_ERROR_FILE_PARSE, __FILE__, __LINE__);
-        }
-
         read_batch();
     }
 
