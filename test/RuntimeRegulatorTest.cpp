@@ -224,7 +224,7 @@ TEST_F(RuntimeRegulatorTest, raw_runtimes)
             }
             expected.push_back(M_RANK_TIMES[x][y]);
         }
-        std::vector<double> result = rtr.per_rank_last_runtime();
+        std::vector<double> result = rtr.runtimes();
         EXPECT_EQ(expected, result);
     }
 }

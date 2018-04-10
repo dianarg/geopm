@@ -275,7 +275,6 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/MonitorAgentTest.ascend_aggregates_signals \
               test/gtest_links/ReporterTest.generate \
               test/gtest_links/KontrollerTest.main \
-              test/gtest_links/ApplicationIOTest.passthrough \
               test/gtest_links/ManagerIOTest.write_json_file \
               test/gtest_links/ManagerIOTest.write_shm \
               test/gtest_links/ManagerIOTest.negative_write_json_file \
@@ -385,7 +384,6 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/ReporterTest.cpp \
                           test/KontrollerTest.cpp \
                           test/MockApplicationIO.hpp \
-                          test/ApplicationIOTest.cpp \
                           test/MockAgent.hpp \
                           test/MockReporter.hpp \
                           test/MockTracer.hpp \

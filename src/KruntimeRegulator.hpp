@@ -30,8 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RUNTIMEREGULATOR_HPP_INCLUDE
-#define RUNTIMEREGULATOR_HPP_INCLUDE
+#ifndef KRUNTIMEREGULATOR_HPP_INCLUDE
+#define KRUNTIMEREGULATOR_HPP_INCLUDE
 
 #include <vector>
 #include <string>
@@ -41,11 +41,11 @@
 
 namespace geopm
 {
-    class IRuntimeRegulator
+    class IKruntimeRegulator
     {
         public:
-            IRuntimeRegulator() = default;
-            virtual ~IRuntimeRegulator() = default;
+            IKruntimeRegulator() = default;
+            virtual ~IKruntimeRegulator() = default;
             virtual void record_entry(int rank, struct geopm_time_s entry_time) = 0;
             virtual void record_exit(int rank, struct geopm_time_s exit_time) = 0;
             virtual void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) = 0;
@@ -56,13 +56,13 @@ namespace geopm
             static const struct geopm_time_s M_TIME_ZERO;
     };
 
-    class RuntimeRegulator : public IRuntimeRegulator
+    class KruntimeRegulator : public IKruntimeRegulator
     {
         public:
-            RuntimeRegulator() = default;
-            RuntimeRegulator(const RuntimeRegulator &other) = default;
-            RuntimeRegulator(int num_rank);
-            virtual ~RuntimeRegulator() = default;
+            KruntimeRegulator() = default;
+            KruntimeRegulator(const KruntimeRegulator &other) = default;
+            KruntimeRegulator(int num_rank);
+            virtual ~KruntimeRegulator() = default;
             void record_entry(int rank, struct geopm_time_s entry_time) override;
             void record_exit(int rank, struct geopm_time_s exit_time) override;
             virtual void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) override;
@@ -83,13 +83,13 @@ namespace geopm
             std::vector<struct m_log_s> m_rank_log;
     };
 
-    class MPIRuntimeRegulator : public RuntimeRegulator
+    class MPIKruntimeRegulator : public KruntimeRegulator
     {
         public:
-            MPIRuntimeRegulator() = default;
-            MPIRuntimeRegulator(const MPIRuntimeRegulator &other) = default;
-            MPIRuntimeRegulator(int num_rank);
-            virtual ~MPIRuntimeRegulator() = default;
+            MPIKruntimeRegulator() = default;
+            MPIKruntimeRegulator(const MPIKruntimeRegulator &other) = default;
+            MPIKruntimeRegulator(int num_rank);
+            virtual ~MPIKruntimeRegulator() = default;
             void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) override;
     };
 }

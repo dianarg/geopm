@@ -36,8 +36,10 @@
 #include "geopm_hash.h"
 #include "geopm_test.hpp"
 #include "ProfileIOGroup.hpp"
+#include "ProfileIORuntime.hpp"
 #include "ProfileIOSample.hpp"
 #include "PlatformTopo.hpp"
+#include "MockProfileIORuntime.hpp"
 #include "MockProfileIOSample.hpp"
 #include "MockPlatformTopo.hpp"
 #include "Exception.hpp"
@@ -72,16 +74,19 @@ class ProfileIOGroupTest : public :: testing:: Test
     protected:
         MockPlatformTopoCpu m_mock_topo;
         std::shared_ptr<MockProfileIOSample> m_mock_pios;
+        std::shared_ptr<MockProfileIORuntime> m_mock_runtime;
         ProfileIOGroup m_piog;
 };
 
 
 ProfileIOGroupTest::ProfileIOGroupTest()
     : m_mock_pios(std::make_shared<MockProfileIOSample>())
-    , m_piog(m_mock_pios, m_mock_topo)
+    , m_mock_runtime(std::make_shared<MockProfileIORuntime>())
+    , m_piog(m_mock_pios, m_mock_runtime, m_mock_topo)
 {
     // ProfileIOGroup should never call update; only Controller will update
     EXPECT_CALL(*m_mock_pios, update(_, _)).Times(0);
+    EXPECT_CALL(*m_mock_runtime, insert_regulator(_, _)).Times(0);
 }
 
 ProfileIOGroupTest::~ProfileIOGroupTest()
@@ -226,9 +231,9 @@ TEST_F(ProfileIOGroupTest, runtime_sample)
 
     EXPECT_CALL(*m_mock_pios, per_cpu_region_id())
         .WillOnce(Return(region_cpu));
-    EXPECT_CALL(*m_mock_pios, per_cpu_runtime(region_id_1))
+    EXPECT_CALL(*m_mock_runtime, per_cpu_runtime(region_id_1))
         .WillOnce(Return(region_runtime_1));
-    EXPECT_CALL(*m_mock_pios, per_cpu_runtime(region_id_2))
+    EXPECT_CALL(*m_mock_runtime, per_cpu_runtime(region_id_2))
         .WillOnce(Return(region_runtime_2));
 
     // push_signal
@@ -263,9 +268,9 @@ TEST_F(ProfileIOGroupTest, runtime_read_signal)
 
     EXPECT_CALL(*m_mock_pios, per_cpu_region_id()).Times(4)
         .WillRepeatedly(Return(region_cpu));
-    EXPECT_CALL(*m_mock_pios, per_cpu_runtime(region_id_1)).Times(2)
+    EXPECT_CALL(*m_mock_runtime, per_cpu_runtime(region_id_1)).Times(2)
         .WillRepeatedly(Return(region_runtime_1));
-    EXPECT_CALL(*m_mock_pios, per_cpu_runtime(region_id_2)).Times(2)
+    EXPECT_CALL(*m_mock_runtime, per_cpu_runtime(region_id_2)).Times(2)
         .WillRepeatedly(Return(region_runtime_2));
 
     // read_signal

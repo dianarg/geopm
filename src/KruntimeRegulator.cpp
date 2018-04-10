@@ -31,41 +31,41 @@
  */
 
 #include "Exception.hpp"
-#include "RuntimeRegulator.hpp"
+#include "KruntimeRegulator.hpp"
 
 #include "config.h"
 
 namespace geopm
 {
 
-    const geopm_time_s IRuntimeRegulator::M_TIME_ZERO = {{0,0}};
+    const geopm_time_s IKruntimeRegulator::M_TIME_ZERO = {{0,0}};
 
-    RuntimeRegulator::RuntimeRegulator(int num_rank)
+    KruntimeRegulator::KruntimeRegulator(int num_rank)
         :  m_num_rank(num_rank)
         , m_rank_log(m_num_rank, m_log_s {M_TIME_ZERO, 0.0, 0.0, 0})
     {
         if (m_num_rank <= 0) {
-            throw Exception("RuntimeRegulator::RuntimeRegulator(): invalid max rank count", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            throw Exception("KruntimeRegulator::KruntimeRegulator(): invalid max rank count", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
     }
 
-    void RuntimeRegulator::record_entry(int rank, struct geopm_time_s enter_time)
+    void KruntimeRegulator::record_entry(int rank, struct geopm_time_s enter_time)
     {
         if (rank < 0 || rank >= m_num_rank) {
-            throw Exception("RuntimeRegulator::record_entry(): invalid rank value", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            throw Exception("KruntimeRegulator::record_entry(): invalid rank value", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
 #ifdef GEOPM_DEBUG
         if (geopm_time_diff(&m_rank_log[rank].enter_time, &M_TIME_ZERO) != 0.0) {
-            throw Exception("RuntimeRegulator::record_entry(): rank re-entry before exit detected", GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+            throw Exception("KruntimeRegulator::record_entry(): rank re-entry before exit detected", GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
         m_rank_log[rank].enter_time = enter_time;
     }
 
-    void RuntimeRegulator::record_exit(int rank, struct geopm_time_s exit_time)
+    void KruntimeRegulator::record_exit(int rank, struct geopm_time_s exit_time)
     {
         if (rank < 0 || rank >= m_num_rank) {
-            throw Exception("RuntimeRegulator::record_exit(): invalid rank value", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            throw Exception("KruntimeRegulator::record_exit(): invalid rank value", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
         double delta = geopm_time_diff(&m_rank_log[rank].enter_time, &exit_time);
         m_rank_log[rank].last_runtime = delta;
@@ -74,7 +74,7 @@ namespace geopm
         ++m_rank_log[rank].count;
     }
 
-    void RuntimeRegulator::insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry)
+    void KruntimeRegulator::insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry)
     {
         double last_avg = 0.0;
         double sum = 0.0;
@@ -96,7 +96,7 @@ namespace geopm
         }
     }
 
-    std::vector<double> RuntimeRegulator::per_rank_last_runtime(void) const
+    std::vector<double> KruntimeRegulator::per_rank_last_runtime(void) const
     {
         std::vector<double> result(m_num_rank);
         for (int rr = 0; rr < m_num_rank; ++rr) {
@@ -105,7 +105,7 @@ namespace geopm
         return result;
     }
 
-    std::vector<double> RuntimeRegulator::per_rank_total_runtime(void) const
+    std::vector<double> KruntimeRegulator::per_rank_total_runtime(void) const
     {
         std::vector<double> result(m_num_rank);
         for (int rr = 0; rr < m_num_rank; ++rr) {
@@ -114,7 +114,7 @@ namespace geopm
         return result;
     }
 
-    std::vector<size_t> RuntimeRegulator::per_rank_count(void) const
+    std::vector<size_t> KruntimeRegulator::per_rank_count(void) const
     {
         std::vector<size_t> result(m_num_rank);
         for (int rr = 0; rr < m_num_rank; ++rr) {
@@ -123,13 +123,13 @@ namespace geopm
         return result;
     }
 
-    MPIRuntimeRegulator::MPIRuntimeRegulator(int num_rank)
-        : RuntimeRegulator(num_rank)
+    MPIKruntimeRegulator::MPIKruntimeRegulator(int num_rank)
+        : KruntimeRegulator(num_rank)
     {
 
     }
 
-    void MPIRuntimeRegulator::insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry)
+    void MPIKruntimeRegulator::insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry)
     {
         double last_avg = 0.0;
         double sum = 0.0;

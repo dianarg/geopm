@@ -293,8 +293,8 @@ libgeopmpolicy_la_SOURCES = src/Agent.cpp \
                             src/geopm_version.h \
                             src/geopm_policy.h \
                             src/Helper.hpp \
-							src/ManagerIO.cpp \
-							src/ManagerIO.hpp \
+                            src/ManagerIO.cpp \
+                            src/ManagerIO.hpp \
                             src/KNLPlatformImp.cpp \
                             src/KNLPlatformImp.hpp \
                             src/Kontroller.cpp \
@@ -375,6 +375,14 @@ libgeopmpolicy_la_SOURCES = src/Agent.cpp \
                             src/XeonPlatformImp.hpp \
                             contrib/json11/json11.cpp \
                             contrib/json11/json11.hpp \
+                            src/KprofileIOGroup.cpp \
+                            src/KprofileIOGroup.hpp \
+                            src/KprofileIOSample.cpp \
+                            src/KprofileIOSample.hpp \
+                            src/KruntimeRegulator.cpp \
+                            src/KruntimeRegulator.hpp \
+                            src/ProfileIORuntime.cpp \
+                            src/ProfileIORuntime.hpp \
                             # end
 
 geopmpolicy_SOURCES = src/geopmpolicy_main.c \

@@ -161,7 +161,6 @@ TEST_F(KontrollerTest, main)
     Kontroller kontroller(m_comm, m_topo, m_platform_io,
                           m_agent_name, m_num_send_down, m_num_send_up,
                           std::unique_ptr<MockTreeComm>(m_tree_comm),
-                          m_num_level_ctl, m_root_level,
                           m_application_io,
                           std::unique_ptr<MockReporter>(m_reporter),
                           std::unique_ptr<MockTracer>(m_tracer),

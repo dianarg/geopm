@@ -33,17 +33,17 @@
 #include <set>
 #include <algorithm>
 
-#include "ProfileIOSample.hpp"
+#include "KprofileIOSample.hpp"
 #include "ProfileIO.hpp"
 #include "CircularBuffer.hpp"
-#include "RuntimeRegulator.hpp"
+#include "KruntimeRegulator.hpp"
 #include "PlatformIO.hpp"
 #include "Helper.hpp"
 #include "config.h"
 
 namespace geopm
 {
-    ProfileIOSample::ProfileIOSample(const std::vector<int> &cpu_rank)
+    KprofileIOSample::KprofileIOSample(const std::vector<int> &cpu_rank)
         : m_epoch_start_time{{0, 0}}
     {
         // This object is created when app connects
@@ -58,12 +58,12 @@ namespace geopm
         m_region_id.resize(m_num_rank, GEOPM_REGION_ID_UNMARKED);
     }
 
-    ProfileIOSample::~ProfileIOSample()
+    KprofileIOSample::~KprofileIOSample()
     {
 
     }
 
-    void ProfileIOSample::update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
+    void KprofileIOSample::update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                                  std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end)
     {
         for (auto sample_it = prof_sample_begin; sample_it != prof_sample_end; ++sample_it) {
@@ -73,7 +73,7 @@ namespace geopm
                 auto rank_idx_it = m_rank_idx_map.find(sample_it->second.rank);
 #ifdef GEOPM_DEBUG
                 if (rank_idx_it == m_rank_idx_map.end()) {
-                    throw Exception("ProfileIOSample::update(): invalid profile sample data",
+                    throw Exception("KprofileIOSample::update(): invalid profile sample data",
                                     GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
                 }
 #endif
@@ -84,8 +84,8 @@ namespace geopm
                 auto rid_it = m_rid_regulator_map.find(region_id);
                 if (rid_it == m_rid_regulator_map.end()) {
                     auto tmp = m_rid_regulator_map.emplace(
-                                   std::pair<uint64_t, std::unique_ptr<IRuntimeRegulator> >(
-                                       region_id, geopm::make_unique<RuntimeRegulator>(m_num_rank)));
+                                   std::pair<uint64_t, std::unique_ptr<IKruntimeRegulator> >(
+                                       region_id, geopm::make_unique<KruntimeRegulator>(m_num_rank)));
                     rid_it = tmp.first;
                 }
                 if (m_region_id[local_rank] != region_id) {
@@ -113,7 +113,7 @@ namespace geopm
         }
     }
 
-    std::vector<double> ProfileIOSample::per_cpu_progress(const struct geopm_time_s &extrapolation_time) const
+    std::vector<double> KprofileIOSample::per_cpu_progress(const struct geopm_time_s &extrapolation_time) const
     {
         std::vector<double> result(m_cpu_rank.size(), 0.0);
         std::vector<double> rank_progress = per_rank_progress(extrapolation_time);
@@ -125,7 +125,7 @@ namespace geopm
         return result;
     }
 
-    std::vector<double> ProfileIOSample::per_rank_progress(const struct geopm_time_s &extrapolation_time) const
+    std::vector<double> KprofileIOSample::per_rank_progress(const struct geopm_time_s &extrapolation_time) const
     {
         double delta;
         double factor;
@@ -173,7 +173,7 @@ namespace geopm
                     break;
                 default:
 #ifdef GEOPM_DEBUG
-                    throw Exception("ProfileIOSample::align_prof() CircularBuffer has more than two values",
+                    throw Exception("KprofileIOSample::align_prof() CircularBuffer has more than two values",
                                     GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
 #endif
                     break;
@@ -182,7 +182,7 @@ namespace geopm
         return result;
     }
 
-    std::vector<uint64_t> ProfileIOSample::per_cpu_region_id(void) const
+    std::vector<uint64_t> KprofileIOSample::per_cpu_region_id(void) const
     {
         std::vector<uint64_t> result(m_cpu_rank.size(), GEOPM_REGION_ID_UNMARKED);
         int cpu_idx = 0;
@@ -193,7 +193,7 @@ namespace geopm
         return result;
     }
 
-    std::vector<double> ProfileIOSample::per_cpu_runtime(uint64_t region_id) const
+    std::vector<double> KprofileIOSample::per_cpu_runtime(uint64_t region_id) const
     {
         std::vector<double> result(m_cpu_rank.size(), 0.0);
         auto regulator_it = m_rid_regulator_map.find(region_id);
@@ -203,7 +203,7 @@ namespace geopm
             for (auto rank : m_cpu_rank) {
 #ifdef GEOPM_DEBUG
                 if (rank >= (int)rank_runtimes.size()) {
-                    throw Exception("ProfileIOSample::per_cpu_runtime: node-local rank "
+                    throw Exception("KprofileIOSample::per_cpu_runtime: node-local rank "
                                     "for rank " + std::to_string(rank) + " not found in map.",
                                     GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
                 }
@@ -215,7 +215,7 @@ namespace geopm
         return result;
     }
 
-    double ProfileIOSample::total_region_runtime(uint64_t region_id) const
+    double KprofileIOSample::total_region_runtime(uint64_t region_id) const
     {
         double result = 0.0;
         auto regulator_it = m_rid_regulator_map.find(region_id);
@@ -225,32 +225,32 @@ namespace geopm
         return result;
     }
 
-    double ProfileIOSample::total_region_mpi_time(uint64_t region_id) const
+    double KprofileIOSample::total_region_mpi_time(uint64_t region_id) const
     {
         region_id = geopm_region_id_set_mpi(region_id);
         return total_region_runtime(region_id);
     }
 
-    double ProfileIOSample::total_epoch_runtime(void) const
+    double KprofileIOSample::total_epoch_runtime(void) const
     {
         geopm_time_s curr_time{{0, 0}};
         geopm_time(&curr_time);
         return geopm_time_diff(&m_epoch_start_time, &curr_time);
     }
 
-    double ProfileIOSample::total_app_runtime(void) const
+    double KprofileIOSample::total_app_runtime(void) const
     {
         geopm_time_s curr_time{{0, 0}};
         geopm_time(&curr_time);
         return geopm_time_diff(&m_app_start_time, &curr_time);
     }
 
-    double ProfileIOSample::total_app_mpi_time(void) const
+    double KprofileIOSample::total_app_mpi_time(void) const
     {
         return NAN;
     }
 
-    int ProfileIOSample::total_count(uint64_t region_id) const
+    int KprofileIOSample::total_count(uint64_t region_id) const
     {
         int result = 0;
         auto regulator_it = m_rid_regulator_map.find(region_id);

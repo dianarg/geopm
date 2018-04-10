@@ -35,14 +35,12 @@
 
 #include <vector>
 #include <map>
-#include <memory>
 
 #include "geopm_message.h"
 
 namespace geopm
 {
     template <typename T> class CircularBuffer;
-    class IRuntimeRegulator;
 
     class IProfileIOSample
     {
@@ -51,15 +49,8 @@ namespace geopm
             virtual ~IProfileIOSample() {}
             virtual void update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                                 std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end) = 0;
-            virtual std::vector<uint64_t> per_cpu_region_id(void) const = 0;
-            virtual std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) const = 0;
-            virtual std::vector<double> per_cpu_runtime(uint64_t region_id) const = 0;
-            virtual double total_region_runtime(uint64_t region_id) const = 0;
-            virtual double total_region_mpi_time(uint64_t region_id) const = 0;
-            virtual double total_epoch_runtime(void) const = 0;
-            virtual double total_app_runtime(void) const = 0;
-            virtual double total_app_mpi_time(void) const = 0;
-            virtual int total_count(uint64_t region_id) const = 0;
+            virtual std::vector<uint64_t> per_cpu_region_id(void) = 0;
+            virtual std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) = 0;
     };
 
     class ProfileIOSample : public IProfileIOSample
@@ -69,15 +60,8 @@ namespace geopm
             virtual ~ProfileIOSample();
             void update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                         std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end) override;
-            std::vector<uint64_t> per_cpu_region_id(void) const override;
-            std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) const override;
-            std::vector<double> per_cpu_runtime(uint64_t region_id) const override;
-            double total_region_runtime(uint64_t region_id) const override;
-            double total_region_mpi_time(uint64_t region_id) const override;
-            double total_epoch_runtime(void) const override;
-            double total_app_runtime(void) const override;
-            double total_app_mpi_time(void) const override;
-            int total_count(uint64_t region_id) const override;
+            std::vector<uint64_t> per_cpu_region_id(void) override;
+            std::vector<double> per_cpu_progress(const struct geopm_time_s &extrapolation_time) override;
         private:
             struct m_rank_sample_s {
                 struct geopm_time_s timestamp;
@@ -88,27 +72,25 @@ namespace geopm
                 M_INTERP_TYPE_NEAREST = 1,
                 M_INTERP_TYPE_LINEAR = 2,
             };
-            std::vector<double> per_rank_progress(const struct geopm_time_s &extrapolation_time) const;
-
-            struct geopm_time_s m_app_start_time;
-            struct geopm_time_s m_epoch_start_time;
+            std::vector<double> per_rank_progress(const struct geopm_time_s &extrapolation_time);
+            /// @brief Number of ranks running on the node.
+            size_t m_num_rank;
+            /// @brief The rank index of the rank running on each CPU.
+            std::vector<int> m_cpu_rank;
             /// @brief A map from the MPI rank reported in the
             ///        ProfileSampler data to the node local rank
             ///        index.
             std::map<int, int> m_rank_idx_map;
-            /// @brief The rank index of the rank running on each CPU.
-            std::vector<int> m_cpu_rank;
-            /// @brief Number of ranks running on the node.
-            size_t m_num_rank;
-            /// @brief Per rank record of last profile samples in
-            ///        m_region_id_prev
-            std::vector<CircularBuffer<struct m_rank_sample_s> > m_rank_sample_buffer;
             /// @brief The region_id of each rank derived from the
             ///        stored ProfileSampler data used for
             ///        extrapolation.
             std::vector<uint64_t> m_region_id;
-            std::map<uint64_t, std::unique_ptr<IRuntimeRegulator> > m_rid_regulator_map;
-
+            /// @brief Per rank record of last profile samples in
+            ///        m_region_id_prev
+            std::vector<CircularBuffer<struct m_rank_sample_s> > m_rank_sample_buffer;
+            /// @brief Vector to multiply with signal_domain_matrix to
+            /// project into control domains
+            std::vector<double> m_aligned_signal;
     };
 }
 

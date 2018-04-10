@@ -30,8 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PROFILEIOGROUP_HPP_INCLUDE
-#define PROFILEIOGROUP_HPP_INCLUDE
+#ifndef KPROFILEIOGROUP_HPP_INCLUDE
+#define KPROFILEIOGROUP_HPP_INCLUDE
 
 #include <set>
 #include <string>
@@ -41,16 +41,16 @@
 
 namespace geopm
 {
-    class IProfileIOSample;
+    class IKprofileIOSample;
     class IPlatformTopo;
 
-    class ProfileIOGroup : public IOGroup
+    class KprofileIOGroup : public IOGroup
     {
         public:
-            ProfileIOGroup(std::shared_ptr<IProfileIOSample> profile_sample);
-            ProfileIOGroup(std::shared_ptr<IProfileIOSample> profile_sample,
+            KprofileIOGroup(std::shared_ptr<IKprofileIOSample> profile_sample);
+            KprofileIOGroup(std::shared_ptr<IKprofileIOSample> profile_sample,
                            geopm::IPlatformTopo &topo);
-            virtual ~ProfileIOGroup();
+            virtual ~KprofileIOGroup();
             bool is_valid_signal(const std::string &signal_name) override;
             bool is_valid_control(const std::string &control_name) override;
             int signal_domain_type(const std::string &signal_name) override;
@@ -78,7 +78,7 @@ namespace geopm
 
             int check_signal(const std::string &signal_name, int domain_type, int domain_idx);
 
-            std::shared_ptr<IProfileIOSample> m_profile_sample;
+            std::shared_ptr<IKprofileIOSample> m_profile_sample;
             std::map<std::string, int> m_signal_idx_map;
             IPlatformTopo &m_platform_topo;
             bool m_do_read_region_id = false;

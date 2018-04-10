@@ -42,13 +42,16 @@
 namespace geopm
 {
     class IProfileIOSample;
+    class IProfileIORuntime;
     class IPlatformTopo;
 
     class ProfileIOGroup : public IOGroup
     {
         public:
-            ProfileIOGroup(std::shared_ptr<IProfileIOSample> profile_sample);
             ProfileIOGroup(std::shared_ptr<IProfileIOSample> profile_sample,
+                           std::shared_ptr<IProfileIORuntime> profile_runtime);
+            ProfileIOGroup(std::shared_ptr<IProfileIOSample> profile_sample,
+                           std::shared_ptr<IProfileIORuntime> profile_runtime,
                            geopm::IPlatformTopo &topo);
             virtual ~ProfileIOGroup();
             bool is_valid_signal(const std::string &signal_name) override;
@@ -79,6 +82,7 @@ namespace geopm
             int check_signal(const std::string &signal_name, int domain_type, int domain_idx);
 
             std::shared_ptr<IProfileIOSample> m_profile_sample;
+            std::shared_ptr<IProfileIORuntime> m_profile_runtime;
             std::map<std::string, int> m_signal_idx_map;
             IPlatformTopo &m_platform_topo;
             bool m_do_read_region_id = false;

@@ -57,7 +57,6 @@
 #include "geopm_hash.h"
 #include "Comm.hpp"
 #include "Controller.hpp"
-#include "Kontroller.hpp"
 #include "Exception.hpp"
 #include "SampleRegulator.hpp"
 #include "TreeCommunicator.hpp"
@@ -75,6 +74,7 @@
 #include "PlatformTopo.hpp"
 #include "RuntimeRegulator.hpp"
 #include "ProfileIOGroup.hpp"
+#include "ProfileIORuntime.hpp"
 #include "ProfileIOSample.hpp"
 #include "Helper.hpp"
 #include "config.h"
@@ -101,25 +101,20 @@ extern "C"
     {
         int err = 0;
         try {
-            auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
-            if (geopm_env_do_kontroller()) {
-                geopm::Kontroller ctl(std::move(tmp_comm), geopm_env_policy());
+            if (policy_config) {
+                std::string policy_config_str(policy_config);
+                geopm::IGlobalPolicy *policy = new geopm::GlobalPolicy(policy_config_str, "");
+                auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
+                geopm::Controller ctl(policy, std::move(tmp_comm));
                 err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
+                delete policy;
             }
+            //The null case is for all nodes except rank 0.
+            //These controllers should assume their policy from the master.
             else {
-                if (policy_config) {
-                    std::string policy_config_str(policy_config);
-                    geopm::IGlobalPolicy *policy = new geopm::GlobalPolicy(policy_config_str, "");
-                    geopm::Controller ctl(policy, std::move(tmp_comm));
-                    err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
-                    delete policy;
-                }
-                //The null case is for all nodes except rank 0.
-                //These controllers should assume their policy from the master.
-                else {
-                    geopm::Controller ctl(NULL, std::move(tmp_comm));
-                    err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
-                }
+                auto tmp_comm = geopm::comm_factory().make_plugin(geopm_env_comm());
+                geopm::Controller ctl(NULL, std::move(tmp_comm));
+                err = geopm_ctl_run((struct geopm_ctl_c *)&ctl);
             }
         }
         catch (...) {
@@ -131,23 +126,12 @@ extern "C"
     int geopm_ctl_destroy(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        if (geopm_env_do_kontroller()) {
-            geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
-            try {
-                delete ctl_obj;
-            }
-            catch (...) {
-                err = geopm::exception_handler(std::current_exception());
-            }
+        geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
+        try {
+            delete ctl_obj;
         }
-        else {
-            geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
-            try {
-                delete ctl_obj;
-            }
-            catch (...) {
-                err = geopm::exception_handler(std::current_exception());
-            }
+        catch (...) {
+            err = geopm::exception_handler(std::current_exception());
         }
         return err;
     }
@@ -155,26 +139,13 @@ extern "C"
     int geopm_ctl_run(struct geopm_ctl_c *ctl)
     {
         int err = 0;
-        if (geopm_env_do_kontroller()) {
-            geopm::Kontroller *ctl_obj = (geopm::Kontroller *)ctl;
-            try {
-                ctl_obj->run();
-            }
-            catch (...) {
-                /// @todo need this feature to be added to the Kontroller.
-                //ctl_obj->reset();
-                err = geopm::exception_handler(std::current_exception());
-            }
+        geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
+        try {
+            ctl_obj->run();
         }
-        else {
-            geopm::Controller *ctl_obj = (geopm::Controller *)ctl;
-            try {
-                ctl_obj->run();
-            }
-            catch (...) {
-                ctl_obj->reset();
-                err = geopm::exception_handler(std::current_exception());
-            }
+        catch (...) {
+            ctl_obj->reset();
+            err = geopm::exception_handler(std::current_exception());
         }
         return err;
     }
@@ -441,7 +412,9 @@ namespace geopm
             m_platform->init_transform(cpu_rank);
             m_sample_regulator = new SampleRegulator(cpu_rank);
             m_profile_io_sample = std::make_shared<ProfileIOSample>(cpu_rank);
-            platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample));
+            m_profile_io_runtime = std::make_shared<ProfileIORuntime>(cpu_rank);
+            platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample,
+                                                                              m_profile_io_runtime));
             m_is_connected = true;
         }
     }
@@ -630,7 +603,6 @@ namespace geopm
                 // the current region. Then we can enforce the policy
                 // by adjusting RAPL power domain limits.
                 m_sampler->sample(m_prof_sample, length, m_ppn1_comm);
-                m_profile_io_sample->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
 
                 double region_mpi_time = 0.0;
                 uint64_t base_region_id = 0;
@@ -671,6 +643,10 @@ namespace geopm
                                 auto rid_it = m_rid_regulator_map.emplace(std::piecewise_construct,
                                                                           std::make_tuple(base_region_id),
                                                                           std::make_tuple(m_rank_per_node));
+                                // Add new regulator to ProfileIO
+                                if (rid_it.second) {
+                                    m_profile_io_runtime->insert_regulator(base_region_id, rid_it.first->second);
+                                }
                                 rid_it.first->second.record_entry(local_rank, (*sample_it).second.timestamp);
                             }
                             else if ((*sample_it).second.progress == 1.0 &&

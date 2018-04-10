@@ -30,8 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PROFILEIOSAMPLE_HPP_INCLUDE
-#define PROFILEIOSAMPLE_HPP_INCLUDE
+#ifndef KPROFILEIOSAMPLE_HPP_INCLUDE
+#define KPROFILEIOSAMPLE_HPP_INCLUDE
 
 #include <vector>
 #include <map>
@@ -42,13 +42,13 @@
 namespace geopm
 {
     template <typename T> class CircularBuffer;
-    class IRuntimeRegulator;
+    class IKruntimeRegulator;
 
-    class IProfileIOSample
+    class IKprofileIOSample
     {
         public:
-            IProfileIOSample() {}
-            virtual ~IProfileIOSample() {}
+            IKprofileIOSample() {}
+            virtual ~IKprofileIOSample() {}
             virtual void update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                                 std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end) = 0;
             virtual std::vector<uint64_t> per_cpu_region_id(void) const = 0;
@@ -62,11 +62,11 @@ namespace geopm
             virtual int total_count(uint64_t region_id) const = 0;
     };
 
-    class ProfileIOSample : public IProfileIOSample
+    class KprofileIOSample : public IKprofileIOSample
     {
         public:
-            ProfileIOSample(const std::vector<int> &cpu_rank);
-            virtual ~ProfileIOSample();
+            KprofileIOSample(const std::vector<int> &cpu_rank);
+            virtual ~KprofileIOSample();
             void update(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin,
                         std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end) override;
             std::vector<uint64_t> per_cpu_region_id(void) const override;
@@ -107,7 +107,7 @@ namespace geopm
             ///        stored ProfileSampler data used for
             ///        extrapolation.
             std::vector<uint64_t> m_region_id;
-            std::map<uint64_t, std::unique_ptr<IRuntimeRegulator> > m_rid_regulator_map;
+            std::map<uint64_t, std::unique_ptr<IKruntimeRegulator> > m_rid_regulator_map;
 
     };
 }

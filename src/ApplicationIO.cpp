@@ -35,8 +35,8 @@
 #include "ApplicationIO.hpp"
 #include "PlatformIO.hpp"
 #include "ProfileSampler.hpp"
-#include "ProfileIOSample.hpp"
-#include "ProfileIOGroup.hpp"
+#include "KprofileIOSample.hpp"
+#include "KprofileIOGroup.hpp"
 #include "Helper.hpp"
 #include "config.h"
 
@@ -58,7 +58,7 @@ namespace geopm
 
     ApplicationIO::ApplicationIO(const std::string &shm_key,
                                  std::unique_ptr<IProfileSampler> sampler,
-                                 std::shared_ptr<IProfileIOSample> pio_sample)
+                                 std::shared_ptr<IKprofileIOSample> pio_sample)
         : m_sampler(std::move(sampler))
         , m_profile_io_sample(pio_sample)
         , m_do_shutdown(false)
@@ -81,8 +81,8 @@ namespace geopm
             m_prof_sample.resize(m_sampler->capacity());
             std::vector<int> cpu_rank = m_sampler->cpu_rank();
             if (m_profile_io_sample == nullptr) {
-                m_profile_io_sample = std::make_shared<ProfileIOSample>(cpu_rank);
-                platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample));
+                m_profile_io_sample = std::make_shared<KprofileIOSample>(cpu_rank);
+                platform_io().register_iogroup(geopm::make_unique<KprofileIOGroup>(m_profile_io_sample));
             }
             m_is_connected = true;
         }

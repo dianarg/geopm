@@ -30,49 +30,26 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef RUNTIMEREGULATOR_HPP_INCLUDE
-#define RUNTIMEREGULATOR_HPP_INCLUDE
+#ifndef MOCKPROFILEIORUNTIME_HPP_INCLUDE
+#define MOCKPROFILEIORUNTIME_HPP_INCLUDE
+
+#include <cstdint>
 
 #include <vector>
-#include <string>
 
-#include "geopm_time.h"
-#include "geopm_message.h"
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
-namespace geopm
+#include "ProfileIORuntime.hpp"
+#include "RuntimeRegulator.hpp"
+
+class MockProfileIORuntime : public geopm::IProfileIORuntime
 {
-    class IRuntimeRegulator
-    {
-        public:
-            IRuntimeRegulator() = default;
-            virtual ~IRuntimeRegulator() = default;
-            virtual void record_entry(int rank, struct geopm_time_s entry_time) = 0;
-            virtual void record_exit(int rank, struct geopm_time_s exit_time) = 0;
-            virtual void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) = 0;
-            virtual std::vector<double> runtimes(void) const = 0;
-    };
-    class RuntimeRegulator : public IRuntimeRegulator
-    {
-        public:
-            RuntimeRegulator();
-            RuntimeRegulator(int max_rank_count);
-            virtual ~RuntimeRegulator() override;
-            void record_entry(int rank, struct geopm_time_s entry_time) override;
-            void record_exit(int rank, struct geopm_time_s exit_time) override;
-            void insert_runtime_signal(std::vector<struct geopm_telemetry_message_s> &telemetry) override;
-            std::vector<double> runtimes(void) const override;
-
-        protected:
-            void update_average(void);
-            const struct geopm_time_s M_TIME_ZERO;
-            enum m_num_rank_signal_e {
-                M_NUM_RANK_SIGNAL = 2,
-            };
-            int m_max_rank_count;
-            double m_last_avg;
-            // per rank vector of last entry and recorded runtime pairs
-            std::vector<std::pair<struct geopm_time_s, double> > m_runtimes;
-    };
-}
+    public:
+        MOCK_METHOD2(insert_regulator,
+                     void(uint64_t region_id, geopm::IRuntimeRegulator &reg));
+        MOCK_CONST_METHOD1(per_cpu_runtime,
+                     std::vector<double>(uint64_t region_id));
+};
 
 #endif
