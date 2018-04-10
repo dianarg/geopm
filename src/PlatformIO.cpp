@@ -383,8 +383,10 @@ namespace geopm
             {"POWER", IPlatformIO::agg_sum},
             {"REGION_POWER", IPlatformIO::agg_sum},
             {"POWER_PACKAGE", IPlatformIO::agg_sum},
+            {"FREQUENCY", IPlatformIO::agg_average},
             {"RUNTIME", IPlatformIO::agg_max},
             {"REGION_RUNTIME", IPlatformIO::agg_max},
+            {"REGION_PROGRESS", IPlatformIO::agg_min},
             {"EPOCH_RUNTIME", IPlatformIO::agg_max},
             {"REGION_PROGRESS", IPlatformIO::agg_min},
             {"ENERGY", IPlatformIO::agg_sum},
@@ -394,9 +396,9 @@ namespace geopm
             {"IS_CONVERGED", IPlatformIO::agg_and},
             {"IS_UPDATED", IPlatformIO::agg_and},
             {"REGION_ID#", IPlatformIO::agg_region_id},
-            {"FREQUENCY", IPlatformIO::agg_average},
             {"CYCLES_THREAD", IPlatformIO::agg_average},
             {"CYCLES_REFERENCE", IPlatformIO::agg_average},
+            {"TIME", IPlatformIO::agg_average}
         };
         auto it = fn_map.find(signal_name);
         if (it == fn_map.end()) {

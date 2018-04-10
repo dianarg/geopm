@@ -288,6 +288,8 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/ManagerIOSamplerTestIntegration.parse_shm \
               test/gtest_links/TracerTest.columns \
               test/gtest_links/TracerTest.update_samples \
+              test/gtest_links/MonitorAgentTest.custom_signals \
+              test/gtest_links/AgentFactoryTest.static_info_monitor \
               # end
 
 if ENABLE_MPI

@@ -42,11 +42,11 @@ int main(int argc, char **argv)
     int size = 0;
     int rank = 0;
     int num_iter = 10;
-    double sleep_big_o = 1.0;
-    double stream0_big_o = 1.0;
-    double dgemm_big_o = 1.0;
-    double all2all_big_o = 1.0;
-    double stream1_big_o = 1.0;
+    double sleep_big_o = 0.1;
+    double stream0_big_o = 0.1;
+    double dgemm_big_o = 0.1;
+    double all2all_big_o = 0.1;
+    double stream1_big_o = 0.1;
 
     int err = MPI_Init(&argc, &argv);
     if (!err) {
