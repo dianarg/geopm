@@ -38,7 +38,7 @@
 #include "geopm_hash.h"
 #include "config.h"
 
-#define GEOPM_PROFILE_IO_GROUP_PLUGIN_NAME "PROFILE"
+#define GEOPM_PROFILE_IO_GROUP_PLUGIN_NAME "KPROFILE"
 
 namespace geopm
 {

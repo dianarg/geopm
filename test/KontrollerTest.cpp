@@ -181,7 +181,7 @@ TEST_F(KontrollerTest, main)
     EXPECT_CALL(m_platform_io, write_batch()).Times(m_num_step);
     EXPECT_CALL(*m_application_io, update(_)).Times(m_num_step);
     std::vector<double> manager_sample = {8.8, 9.9};
-    ASSERT_EQ(m_num_send_down, manager_sample.size());
+    ASSERT_EQ(m_num_send_down, (int)manager_sample.size());
     EXPECT_CALL(*m_manager_io, sample()).Times(m_num_step)
         .WillRepeatedly(Return(manager_sample));
     EXPECT_CALL(*m_level_agent[0], adjust_platform(_)).Times(m_num_step);
