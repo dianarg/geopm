@@ -84,7 +84,13 @@ namespace geopm
             }
             const std::map<std::string, std::string> &dictionary(const std::string &plugin_name)
             {
-                return m_dictionary.at(plugin_name);
+                auto it = m_dictionary.find(plugin_name);
+                if (it == m_dictionary.end()) {
+                    throw Exception("PluginFactory::dictonary(): Plugin named \"" + plugin_name +
+                                    "\" has not been registered with the factory.",
+                                    GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                }
+                return it->second;
             }
         private:
             std::map<std::string, std::function<std::unique_ptr<T>()> > m_name_func_map;
