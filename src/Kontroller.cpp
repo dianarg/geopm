@@ -115,15 +115,15 @@ namespace geopm
         , m_agent(std::move(level_agent))
         , m_is_root(m_num_level_ctl == m_root_level)
         , m_in_policy(m_num_send_down)
-        , m_out_policy(m_max_level)
-        , m_in_sample(m_max_level)
+        , m_out_policy(m_num_level_ctl)
+        , m_in_sample(m_num_level_ctl)
         , m_out_sample(m_num_send_up)
         , m_manager_io_sampler(std::move(manager_io_sampler))
     {
         // Three dimensional vector over levels, children, and message
         // index.  These are used as temporary storage when passing
         // messages up and down the tree.
-        for (int level = 0; level != m_max_level; ++level) {
+        for (int level = 0; level != m_num_level_ctl; ++level) {
             int num_children = m_tree_comm->level_size(level);
             m_out_policy[level] = std::vector<std::vector<double> >(num_children,
                                                                     std::vector<double>(m_num_send_down));
