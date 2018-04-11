@@ -41,7 +41,7 @@ namespace geopm
     const geopm_time_s IKruntimeRegulator::M_TIME_ZERO = {{0,0}};
 
     KruntimeRegulator::KruntimeRegulator(int num_rank)
-        :  m_num_rank(num_rank)
+        : m_num_rank(num_rank)
         , m_rank_log(m_num_rank, m_log_s {M_TIME_ZERO, 0.0, 0.0, 0})
     {
         if (m_num_rank <= 0) {

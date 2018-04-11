@@ -107,6 +107,7 @@ namespace geopm
         , m_num_send_up(num_send_up)
         , m_tree_comm(std::move(tree_comm))
         , m_num_level_ctl(m_tree_comm->num_level_controlled())
+        , m_max_level(m_num_level_ctl ? m_num_level_ctl : 1)
         , m_root_level(m_tree_comm->root_level())
         , m_application_io(std::move(application_io))
         , m_reporter(std::move(reporter))
@@ -114,15 +115,15 @@ namespace geopm
         , m_agent(std::move(level_agent))
         , m_is_root(m_num_level_ctl == m_root_level)
         , m_in_policy(m_num_send_down)
-        , m_out_policy(m_num_level_ctl)
-        , m_in_sample(m_num_level_ctl)
+        , m_out_policy(m_max_level)
+        , m_in_sample(m_max_level)
         , m_out_sample(m_num_send_up)
         , m_manager_io_sampler(std::move(manager_io_sampler))
     {
         // Three dimensional vector over levels, children, and message
         // index.  These are used as temporary storage when passing
         // messages up and down the tree.
-        for (int level = 0; level != m_num_level_ctl; ++level) {
+        for (int level = 0; level != m_max_level; ++level) {
             int num_children = m_tree_comm->level_size(level);
             m_out_policy[level] = std::vector<std::vector<double> >(num_children,
                                                                     std::vector<double>(m_num_send_down));
@@ -133,7 +134,7 @@ namespace geopm
         if (m_agent.size() == 0) {
             m_agent.push_back(agent_factory().make_plugin(m_agent_name));
             m_agent.back()->init(0);
-            for (int level = 1; level < m_num_level_ctl; ++level) {
+            for (int level = 1; level < m_max_level; ++level) {
                 m_agent.push_back(agent_factory().make_plugin(m_agent_name));
                 m_agent.back()->init(level);
             }
@@ -145,8 +146,13 @@ namespace geopm
             throw Exception("Kontroller requires at least one Agent",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        if (m_agent.size() != (size_t)m_num_level_ctl) {
-            throw Exception("Kontroller must have one agent per level",
+        if (m_num_level_ctl == 0 && m_agent.size() != 1) {
+            throw Exception("Kontroller must have at least one agent",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        else if (m_num_level_ctl != 0 &&
+                 m_num_level_ctl != (int)m_agent.size()) {
+            throw Exception("Kontroller must have one agent per level of control",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
     }
@@ -174,7 +180,7 @@ namespace geopm
         }
         /// @todo why get node reports from each level of the tree?
         std::ostringstream agent_node_report;
-        for (int level = 0; level != m_num_level_ctl; ++level) {
+        for (int level = 0; level != m_max_level; ++level) {
             agent_node_report << m_agent[level]->report_node();
         }
 
