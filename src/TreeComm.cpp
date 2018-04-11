@@ -136,7 +136,7 @@ namespace geopm
 
     int TreeComm::level_size(int level) const
     {
-        if (level < 0 || level >= m_fan_out.size()) {
+        if (level < 0 || level >= (int)m_fan_out.size()) {
             throw Exception("TreeComm::level_size()",
                             GEOPM_ERROR_LEVEL_RANGE, __FILE__, __LINE__);
         }

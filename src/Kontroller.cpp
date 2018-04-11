@@ -107,7 +107,7 @@ namespace geopm
         , m_num_send_up(num_send_up)
         , m_tree_comm(std::move(tree_comm))
         , m_num_level_ctl(m_tree_comm->num_level_controlled())
-        , m_max_level(m_num_level_ctl ? m_num_level_ctl : 1)
+        , m_max_level(m_num_level_ctl + 1)
         , m_root_level(m_tree_comm->root_level())
         , m_application_io(std::move(application_io))
         , m_reporter(std::move(reporter))
