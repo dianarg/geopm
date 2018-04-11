@@ -106,7 +106,7 @@ namespace geopm
                 m_rank_sample_buffer[local_rank].insert(rank_sample);
             }
             struct geopm_time_s zero{0, 0};
-            if (!geopm_region_id_is_epoch(sample_it->second.region_id) &&
+            if (geopm_region_id_is_epoch(sample_it->second.region_id) &&
                 geopm_time_diff(&m_epoch_start_time, &zero) == 0) {
                 geopm_time(&m_epoch_start_time);
             }

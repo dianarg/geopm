@@ -96,8 +96,11 @@ namespace geopm
         m_num_level_ctl = num_level_controlled(coords);
         std::vector<int> parent_coords(coords);
         int level = 0;
-        int level_max = m_num_level_ctl ? m_num_level_ctl : 1;
-        for (; level < level_max; ++level) {
+        int max_level = m_num_level_ctl;
+        if (m_num_level_ctl != root_level) {
+            ++max_level;
+        }
+        for (; level < max_level; ++level) {
             parent_coords[root_level - 1 - level] = 0;
             result.emplace_back(
                 new TreeCommLevel(comm_cart->split(
