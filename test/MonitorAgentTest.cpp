@@ -87,8 +87,6 @@ void MonitorAgentTest::SetUp()
     EXPECT_CALL(m_platform_io, push_signal("FREQUENCY", _, _));
     EXPECT_CALL(m_platform_io, push_signal("REGION_PROGRESS", _, _));
 
-<<<<<<< HEAD
-=======
     // does not necessarily match PlatformIO, but Agent should call
     // these and use whatever function is returned
     EXPECT_CALL(m_platform_io, agg_function("TIME"))
@@ -100,7 +98,6 @@ void MonitorAgentTest::SetUp()
     EXPECT_CALL(m_platform_io, agg_function("REGION_PROGRESS"))
         .WillOnce(Return(IPlatformIO::agg_min));
 
->>>>>>> 9d43eda... Add MonitorAgent.
     m_agent = geopm::make_unique<MonitorAgent>(m_plat_io_ref, m_plat_topo_ref);
 }
 
@@ -108,10 +105,6 @@ TEST_F(MonitorAgentTest, fixed_signal_list)
 {
     // default list we collect with this agent
     // if this list changes, update the mocked platform for this test
-<<<<<<< HEAD
-    // in the future, user should provide this list
-=======
->>>>>>> 9d43eda... Add MonitorAgent.
     std::vector<std::string> expected_signals = {"TIME", "POWER_PACKAGE", "FREQUENCY", "REGION_PROGRESS"};
     EXPECT_EQ(expected_signals, m_agent->sample_names());
 }
@@ -148,25 +141,12 @@ TEST_F(MonitorAgentTest, sample_platform)
 
 TEST_F(MonitorAgentTest, descend_nothing)
 {
-<<<<<<< HEAD
-    std::vector<std::string> expected_policy_names = {"POWER", "FREQUENCY"};
-    EXPECT_EQ(expected_policy_names, m_agent->policy_names());
-
-    std::vector<double> in_policy {56, 78};
-    std::vector<std::vector<double> > expected_policy { {56, 78}, {56, 78} };
-    std::vector<std::vector<double> > result { {0, 0}, {0, 0} };
-
-    m_agent->descend(in_policy, result);
-    EXPECT_EQ(expected_policy,result);
-=======
     std::vector<std::string> expected_policy_names = {};
     EXPECT_EQ(expected_policy_names, m_agent->policy_names());
->>>>>>> 9d43eda... Add MonitorAgent.
 }
 
 TEST_F(MonitorAgentTest, ascend_aggregates_signals)
 {
-<<<<<<< HEAD
     // does not necessarily match PlatformIO, but Agent should call these and
     // use whatever function is returned
     EXPECT_CALL(m_platform_io, agg_function("TIME"))
@@ -178,8 +158,6 @@ TEST_F(MonitorAgentTest, ascend_aggregates_signals)
     EXPECT_CALL(m_platform_io, agg_function("REGION_PROGRESS"))
         .WillOnce(Return(IPlatformIO::agg_min));
 
-=======
->>>>>>> 9d43eda... Add MonitorAgent.
     std::vector<std::vector<double> > input = {
         {5, 3, 8, 1},
         {6, 4, 9, 0.8},
@@ -196,8 +174,6 @@ TEST_F(MonitorAgentTest, ascend_aggregates_signals)
 
     EXPECT_EQ(expected, result);
 }
-<<<<<<< HEAD
-=======
 
 TEST_F(MonitorAgentTest, custom_signals)
 {
@@ -231,4 +207,3 @@ TEST_F(MonitorAgentTest, custom_signals)
 
     unsetenv("GEOPM_MONITOR_AGENT_SIGNALS");
 }
->>>>>>> 9d43eda... Add MonitorAgent.
