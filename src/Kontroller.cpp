@@ -146,13 +146,8 @@ namespace geopm
             throw Exception("Kontroller requires at least one Agent",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        if (m_num_level_ctl == 0 && m_agent.size() != 1) {
-            throw Exception("Kontroller must have at least one agent",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        else if (m_num_level_ctl != 0 &&
-                 m_num_level_ctl != (int)m_agent.size()) {
-            throw Exception("Kontroller must have one agent per level of control",
+        if (m_agent.size() != m_max_level) {
+            throw Exception("Kontroller number of agents is incorrect",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
     }
