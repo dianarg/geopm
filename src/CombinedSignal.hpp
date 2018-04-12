@@ -42,16 +42,22 @@
 
 namespace geopm
 {
+    /// @brief Used by PlatformIO to define a signal as a function of
+    ///        other signals.
     class CombinedSignal
     {
         public:
             CombinedSignal();
             CombinedSignal(std::function<double(const std::vector<double> &)>);
             virtual ~CombinedSignal() = default;
+            /// @brief Sample all required signals and aggregate
+            ///        values to produce the combined signal.
             virtual double sample(const std::vector<double> &values);
             std::function<double(const std::vector<double> &)> m_agg_function;
     };
 
+    /// @brief Used by PlatformIO for CombinedSignals based on a
+    ///        derivative of another signal over time.
     class PerRegionDerivativeCombinedSignal : public CombinedSignal
     {
         public:

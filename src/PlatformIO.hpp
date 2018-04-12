@@ -48,8 +48,8 @@ namespace geopm
     class IPlatformIO
     {
         public:
-            IPlatformIO() {}
-            virtual ~IPlatformIO() {}
+            IPlatformIO() = default;
+            virtual ~IPlatformIO() = default;
             virtual void register_iogroup(std::shared_ptr<IOGroup> iogroup) = 0;
             /// @brief Query the domain for a named signal.
             /// @param [in] signal_name The name of the signal.
@@ -188,6 +188,8 @@ namespace geopm
             static double agg_max(const std::vector<double> &operand);
             static double agg_stddev(const std::vector<double> &operand);
             static double agg_region_id(const std::vector<double> &operand);
+            /// @brief Structure describing the values required to
+            ///        push a signal or control.
             struct m_request_s {
                 std::string name;
                 int domain_type;

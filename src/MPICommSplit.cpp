@@ -54,7 +54,7 @@ extern "C"
                                                   geopm::MPIComm::make_plugin);
         }
         catch(...) {
-            geopm::exception_handler(std::current_exception());
+            geopm::exception_handler(std::current_exception(), true);
         }
     }
 
@@ -72,7 +72,7 @@ extern "C"
             }
         }
         catch (...) {
-            err = geopm::exception_handler(std::current_exception());
+            err = geopm::exception_handler(std::current_exception(), true);
         }
         return err;
     }

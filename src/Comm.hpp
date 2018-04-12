@@ -57,10 +57,10 @@ namespace geopm
             };
 
             /// @brief Constructor for global communicator
-            IComm() {}
-            IComm(const IComm *in_comm) {}
+            IComm() = default;
+            IComm(const IComm &in_comm) = default;
             /// @brief Default destructor
-            virtual ~IComm() {}
+            virtual ~IComm() = default;
 
             virtual std::shared_ptr<IComm> split() const = 0;
             virtual std::shared_ptr<IComm> split(int color, int key) const = 0;
@@ -137,7 +137,6 @@ namespace geopm
             ///        that the Cartesian communicator was created with.
             virtual void coordinate(int rank, std::vector<int> &coord) const = 0;
             virtual std::vector<int> coordinate(int rank) const = 0;
-
             // Collective communication
             /// @brief Barrier for all ranks
             virtual void barrier(void) const = 0;

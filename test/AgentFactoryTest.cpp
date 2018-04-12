@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Intel Corporation
+ * Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,46 +30,46 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SAMPLESCHEDULER_HPP_INCLUDE
-#define SAMPLESCHEDULER_HPP_INCLUDE
-#endif
+#include <iostream>
 
-#include "geopm_time.h"
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
-namespace geopm
+#include "Agent.hpp"
+#include "MonitorAgent.hpp"
+//#include "BalancingAgent.hpp"
+
+using geopm::IAgent;
+
+TEST(AgentFactoryTest, static_info_monitor)
 {
-    /// @brief SampleSchecduler class encapsulates functionality to schedule and
-    /// regulate the frequency of application profile samples.
-    class ISampleScheduler
-    {
-        public:
-            ISampleScheduler() = default;
-            virtual ~ISampleScheduler() = default;
-            virtual bool do_sample(void) = 0;
-            virtual void record_exit(void) = 0;
-            virtual void clear(void) = 0;
-    };
-
-    class SampleScheduler : public ISampleScheduler
-    {
-        public:
-            SampleScheduler(double overhead_frac);
-            virtual ~SampleScheduler() = default;
-            bool do_sample(void) override;
-            void record_exit(void) override;
-            void clear(void) override;
-        protected:
-            enum m_status_e {
-                M_STATUS_CLEAR,
-                M_STATUS_ENTERED,
-                M_STATUS_READY,
-            };
-            double m_overhead_frac;
-            int m_status;
-            struct geopm_time_s m_entry_time;
-            double m_sample_time;
-            double m_work_time;
-            size_t m_sample_stride;
-            size_t m_sample_count;
-    };
+    auto &factory = geopm::agent_factory();
+    std::string agent_name = geopm::MonitorAgent::plugin_name();
+    auto &dict = factory.dictionary(agent_name);
+    int num_policy = IAgent::num_policy(dict);
+    int num_sample = IAgent::num_sample(dict);
+    EXPECT_EQ(0, num_policy);
+    EXPECT_EQ(4, num_sample);
+    std::vector<std::string> exp_sample = {"TIME", "POWER_PACKAGE", "FREQUENCY", "REGION_PROGRESS"};
+    std::vector<std::string> exp_policy = {};
+    EXPECT_EQ(exp_sample, IAgent::sample_names(dict));
+    EXPECT_EQ(exp_policy, IAgent::policy_names(dict));
 }
+
+/// @todo Re-enable when BalancingAgent is added
+#if 0
+TEST(AgentFactoryTest, static_info_balancing)
+{
+    auto &factory = geopm::agent_factory();
+    std::string agent_name = geopm::BalancingAgent::plugin_name();
+    auto &dict = factory.dictionary(agent_name);
+    int num_policy = IAgent::num_policy(dict);
+    int num_sample = IAgent::num_sample(dict);
+    EXPECT_EQ(0, num_policy);
+    EXPECT_EQ(0, num_sample);
+    std::vector<std::string> exp_sample = {};
+    std::vector<std::string> exp_policy = {};
+    EXPECT_EQ(exp_sample, IAgent::sample_names(dict));
+    EXPECT_EQ(exp_policy, IAgent::policy_names(dict));
+}
+#endif

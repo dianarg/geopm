@@ -59,9 +59,9 @@ namespace geopm
     class ITreeCommunicator
     {
         public:
-            ITreeCommunicator() {}
-            ITreeCommunicator(const ITreeCommunicator &other) {}
-            virtual ~ITreeCommunicator() {}
+            ITreeCommunicator() = default;
+            ITreeCommunicator(const ITreeCommunicator &other) = default;
+            virtual ~ITreeCommunicator() = default;
             /// @brief The number of levels for calling process.
             ///
             /// Each of the processes in the communicator passed at
@@ -234,7 +234,7 @@ namespace geopm
             ///        the run.
             SingleTreeCommunicator(IGlobalPolicy *global_policy);
             SingleTreeCommunicator(const SingleTreeCommunicator &other);
-            virtual ~SingleTreeCommunicator();
+            virtual ~SingleTreeCommunicator() = default;
             int num_level(void) const override;
             int root_level(void) const override;
             int level_rank(int level) const override;

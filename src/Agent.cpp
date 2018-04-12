@@ -44,7 +44,6 @@ namespace geopm
                                           MonitorAgent::make_plugin,
                                           IAgent::make_dictionary(MonitorAgent::policy_names(),
                                                                   MonitorAgent::sample_names()));
-
         g_plugin_factory->register_plugin(BalancingAgent::plugin_name(),
                                           BalancingAgent::make_plugin,
                                           IAgent::make_dictionary(BalancingAgent::policy_names(),

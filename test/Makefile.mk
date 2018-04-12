@@ -383,6 +383,7 @@ test_geopm_test_SOURCES = test/geopm_test.cpp \
                           test/TreeCommTest.cpp \
                           test/MockTreeCommLevel.hpp \
                           test/MonitorAgentTest.cpp \
+                          test/AgentFactoryTest.cpp \
                           test/ReporterTest.cpp \
                           test/KontrollerTest.cpp \
                           test/MockApplicationIO.hpp \

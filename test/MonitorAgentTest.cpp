@@ -147,17 +147,6 @@ TEST_F(MonitorAgentTest, descend_nothing)
 
 TEST_F(MonitorAgentTest, ascend_aggregates_signals)
 {
-    // does not necessarily match PlatformIO, but Agent should call these and
-    // use whatever function is returned
-    EXPECT_CALL(m_platform_io, agg_function("TIME"))
-        .WillOnce(Return(IPlatformIO::agg_max));
-    EXPECT_CALL(m_platform_io, agg_function("POWER_PACKAGE"))
-        .WillOnce(Return(IPlatformIO::agg_sum));
-    EXPECT_CALL(m_platform_io, agg_function("FREQUENCY"))
-        .WillOnce(Return(IPlatformIO::agg_average));
-    EXPECT_CALL(m_platform_io, agg_function("REGION_PROGRESS"))
-        .WillOnce(Return(IPlatformIO::agg_min));
-
     std::vector<std::vector<double> > input = {
         {5, 3, 8, 1},
         {6, 4, 9, 0.8},

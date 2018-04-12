@@ -63,11 +63,6 @@ namespace geopm
         parse_lscpu_numa(lscpu_map, m_numa_map);
     }
 
-    PlatformTopo::~PlatformTopo()
-    {
-
-    }
-
     int PlatformTopo::num_domain(int domain_type) const
     {
         int result = 0;
@@ -244,9 +239,8 @@ namespace geopm
         if (inner_domain == outer_domain) {
             result = true;
         }
-        else if (outer_domain == M_DOMAIN_BOARD &&
-                 inner_domain != M_DOMAIN_RESOURCE_MANAGER) {
-            // All domains other than the resource manager are within the board domain
+        else if (outer_domain == M_DOMAIN_BOARD) {
+            // All domains are within the board domain
             result = true;
         }
         else if (outer_domain == M_DOMAIN_CORE &&

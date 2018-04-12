@@ -60,23 +60,20 @@ namespace geopm
     PlatformIO::PlatformIO()
         : PlatformIO({}, platform_topo())
     {
-         for (const auto &it : iogroup_factory().plugin_names()) {
-             register_iogroup(iogroup_factory().make_plugin(it));
-         }
+
     }
 
     PlatformIO::PlatformIO(std::list<std::shared_ptr<IOGroup> > iogroup_list,
                            IPlatformTopo &topo)
         : m_is_active(false)
         , m_platform_topo(topo)
-        , m_iogroup_list(std::move(iogroup_list))
+        , m_iogroup_list(iogroup_list)
     {
-
-    }
-
-    PlatformIO::~PlatformIO()
-    {
-
+        if (m_iogroup_list.size() == 0) {
+            for (const auto &it : iogroup_factory().plugin_names()) {
+                register_iogroup(iogroup_factory().make_plugin(it));
+            }
+        }
     }
 
     void PlatformIO::register_iogroup(std::shared_ptr<IOGroup> iogroup)
@@ -388,7 +385,6 @@ namespace geopm
             {"REGION_RUNTIME", IPlatformIO::agg_max},
             {"REGION_PROGRESS", IPlatformIO::agg_min},
             {"EPOCH_RUNTIME", IPlatformIO::agg_max},
-            {"REGION_PROGRESS", IPlatformIO::agg_min},
             {"ENERGY", IPlatformIO::agg_sum},
             {"REGION_ENERGY", IPlatformIO::agg_sum},
             {"ENERGY_PACKAGE", IPlatformIO::agg_sum},

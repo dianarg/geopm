@@ -52,6 +52,7 @@ namespace geopm
     {
         public:
             IProfileRankSampler() = default;
+            IProfileRankSampler(const IProfileRankSampler &other) = default;
             virtual ~IProfileRankSampler() = default;
             /// @brief Returns the samples present in the hash table.
             ///
@@ -89,6 +90,7 @@ namespace geopm
     {
         public:
             IProfileSampler() = default;
+            IProfileSampler(const IProfileSampler &other) = default;
             virtual ~IProfileSampler() = default;
             /// @brief Retrieve the maximum capacity of all the per-rank
             ///        hash tables.
@@ -182,7 +184,19 @@ namespace geopm
             /// @brief ProfileRankSampler destructor.
             ///
             /// Cleans up the hash table and shared memory region.
-            virtual ~ProfileRankSampler();
+            virtual ~ProfileRankSampler() = default;
+            /// @brief Returns the samples present in the hash table.
+            ///
+            /// Fills in a portion of a vector specified by a vector iterator.
+            /// It is assumed the vector is already sized greater than or
+            /// equal to the maximum number of samples we can return. This value
+            /// can be queried with the capacity() method. Internally the samples
+            /// are aggregated for later reporting functionality.
+            ///
+            /// @param [in] content_begin Vector iterator at which to begin inserting
+            ///        sample messages.
+            ///
+            /// @param [out] length The number of samples that were inserted.
             void sample(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::iterator content_begin, size_t &length) override;
             size_t capacity(void) override;
             bool name_fill(std::set<std::string> &name_set) override;
@@ -245,6 +259,11 @@ namespace geopm
             ProfileSampler(IPlatformTopo &topo, size_t table_size);
             /// @brief ProfileSampler destructor.
             virtual ~ProfileSampler();
+            /// @brief Retrieve the maximum capacity of all the per-rank
+            ///        hash tables.
+            ///
+            /// @return The maximum number of samples that can possibly
+            ///         be returned.
             size_t capacity(void) override;
             void sample(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> > &content, size_t &length, std::shared_ptr<IComm> comm) override;
             bool do_shutdown(void) override;

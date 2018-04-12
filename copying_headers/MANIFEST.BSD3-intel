@@ -82,7 +82,6 @@ src/Environment.cpp
 src/Exception.cpp
 src/Exception.hpp
 src/geopm_ctl.h
-src/geopm_ctl.h
 src/geopmctl_main.c
 src/geopm_env.h
 src/geopm_error.h
@@ -194,17 +193,16 @@ src/TreeCommunicator.cpp
 src/TreeCommunicator.hpp
 src/XeonPlatformImp.cpp
 src/XeonPlatformImp.hpp
+test/AgentFactoryTest.cpp
 test/ApplicationIOTest.cpp
 test/BalancingDeciderTest.cpp
 test/CircularBufferTest.cpp
 test/CombinedSignalTest.cpp
 test/CommMPIImpTest.cpp
-test/CommMPIImpTest.cpp
 test/ControlMessageTest.cpp
 test/CpuinfoIOGroupTest.cpp
 test/EfficientFreqDeciderTest.cpp
 test/EfficientFreqRegionTest.cpp
-test/EnvironmentTest.cpp
 test/EnvironmentTest.cpp
 test/ExceptionTest.cpp
 test/geopm_static_modes_test.cpp
@@ -264,7 +262,6 @@ test/MSRIOTest.cpp
 test/MSRTest.cpp
 test/no_omp_cpu.c
 test/PlatformFactoryTest.cpp
-test/PlatformImpTest.cpp
 test/PlatformImpTest.cpp
 test/PlatformIOTest.cpp
 test/PlatformTopologyTest.cpp
