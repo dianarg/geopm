@@ -64,6 +64,7 @@ namespace geopm
             double decode(uint64_t field, uint64_t last_field);
             uint64_t encode(double value);
             uint64_t mask(void);
+            int decode_function(void);
         private:
             const int m_function;
             int m_shift;
@@ -114,10 +115,13 @@ namespace geopm
                 if (sub_field < last_field) {
                     sub_field = sub_field + ((1 << m_num_bit) - 1);
                 }
-                result = (float)sub_field;
+                result = (double)sub_field;
                 break;
             case IMSR::M_FUNCTION_SCALE:
-                result = (float)sub_field;
+                result = (double)sub_field;
+                break;
+            case IMSR::M_FUNCTION_NORMALIZE_64:
+                result = sub_field - last_field;
             default:
                 break;
         }
@@ -166,6 +170,7 @@ namespace geopm
             default:
                 throw Exception("MSR::encode(): unimplemented scale function",
                                 GEOPM_ERROR_NOT_IMPLEMENTED,  __FILE__, __LINE__);
+                break;
 
         }
         result = (result << m_shift) & m_mask;
@@ -175,6 +180,11 @@ namespace geopm
     uint64_t MSREncode::mask(void)
     {
         return m_mask;
+    }
+
+    int MSREncode::decode_function(void)
+    {
+        return m_function;
     }
 
     MSR::MSR(const std::string &msr_name,
@@ -331,6 +341,11 @@ namespace geopm
         return m_domain_type;
     }
 
+    int MSR::decode_function(int signal_idx) const
+    {
+        return m_signal_encode[signal_idx]->decode_function();
+    }
+
     MSRSignal::MSRSignal(const IMSR &msr_obj,
                          int domain_type,
                          int cpu_idx,
@@ -343,6 +358,7 @@ namespace geopm
         , m_field_ptr(nullptr)
         , m_field_last(0)
         , m_is_field_mapped(false)
+        , m_is_sample_once(true)
     {
 
     }
@@ -368,7 +384,16 @@ namespace geopm
             throw Exception("MSRSignal::sample(): must call map() method before sample() can be called",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        return m_msr_obj.signal(m_signal_idx, *m_field_ptr, m_field_last);
+        double result = m_msr_obj.signal(m_signal_idx, *m_field_ptr, m_field_last);
+        if (m_msr_obj.decode_function(m_signal_idx) ==  IMSR::M_FUNCTION_OVERFLOW) {
+            m_field_last = *m_field_ptr;
+        }
+        else if (m_is_sample_once && m_msr_obj.decode_function(m_signal_idx) == IMSR::M_FUNCTION_NORMALIZE_64) {
+            m_field_last = *m_field_ptr;
+            result = 0.0;
+        }
+        m_is_sample_once = false;
+        return result;
     }
 
     uint64_t MSRSignal::offset(void) const

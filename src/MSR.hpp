@@ -62,6 +62,7 @@ namespace geopm
                 M_FUNCTION_LOG_HALF,        // 2.0 ^ -X
                 M_FUNCTION_7_BIT_FLOAT,     // 2 ^ Y * (1.0 + Z / 4.0) : Y in [0:5), Z in [5:7)
                 M_FUNCTION_OVERFLOW,        // Counter that may overflow
+                M_FUNCTION_NORMALIZE_64,    // Subtract first value read from all subsequent values to avoid mantissa overflow with 64 bit integers.
             };
 
             enum m_units_e {
@@ -134,6 +135,7 @@ namespace geopm
             ///         defined in the m_domain_e enum
             ///         from the PlatformTopo.hpp header.
             virtual int domain_type(void) const = 0;
+            virtual int decode_function(int signal_idx) const = 0;
     };
 
     class IMSRSignal
@@ -241,6 +243,7 @@ namespace geopm
                          uint64_t &field,
                          uint64_t &mask) const override;
             int domain_type(void) const override;
+            int decode_function(int signal_idx) const override;
         private:
             void init(const std::vector<std::pair<std::string, struct IMSR::m_encode_s> > &signal,
                       const std::vector<std::pair<std::string, struct IMSR::m_encode_s> > &control);
@@ -292,6 +295,7 @@ namespace geopm
             const uint64_t *m_field_ptr;
             uint64_t m_field_last;
             bool m_is_field_mapped;
+            bool m_is_sample_once;
     };
 
     class MSRControl : public IMSRControl
