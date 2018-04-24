@@ -101,7 +101,7 @@ namespace geopm
             }
             out_sample[sig_idx] = m_agg_func[sig_idx](child_sample);
         }
-        return m_do_send;
+        return true;
     }
 
     void MonitorAgent::adjust_platform(const std::vector<double> &in_policy)
@@ -120,8 +120,15 @@ namespace geopm
         for (size_t sample_idx = 0; sample_idx < m_num_sample; ++sample_idx) {
             out_sample[sample_idx] = m_platform_io.sample(m_sample_idx[sample_idx]);
         }
-        m_do_send = (m_num_ascend % m_send_period == 0);
-        ++m_num_ascend;
+
+        if (m_num_ascend == m_send_period) {
+            m_do_send = true;
+            m_num_ascend = 0;
+        }
+        else {
+            m_do_send = false;
+            ++m_num_ascend;
+        }
         return m_do_send;
     }
 
