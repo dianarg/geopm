@@ -47,6 +47,7 @@
 #include "Agent.hpp"
 #include "TreeComm.hpp"
 #include "ManagerIO.hpp"
+#include "test/InternalProfile.hpp"
 #include "config.h"
 
 extern "C"
@@ -120,6 +121,7 @@ namespace geopm
         , m_out_sample(m_num_send_up)
         , m_manager_io_sampler(std::move(manager_io_sampler))
     {
+        ipen(__func__);
         // Three dimensional vector over levels, children, and message
         // index.  These are used as temporary storage when passing
         // messages up and down the tree.
@@ -150,25 +152,33 @@ namespace geopm
             throw Exception("Kontroller number of agents is incorrect",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
+        ipex(__func__);
     }
 
     Kontroller::~Kontroller()
     {
+        ipen(__func__);
         geopm_signal_handler_check();
         geopm_signal_handler_revert();
+        ipex(__func__);
+        std::ofstream prof_stream("/tmp/kontroller_profile.txt");
+        prof_stream << ipre();
     }
 
     void Kontroller::run(void)
     {
+        ipen(__func__);
         setup_trace();
         while (!m_application_io->do_shutdown()) {
             step();
         }
         generate();
+        ipex(__func__);
     }
 
     void Kontroller::generate(void)
     {
+        ipen(__func__);
         std::string agent_report_header;
         if (m_is_root) {
             agent_report_header = m_agent[m_root_level]->report_header();
@@ -187,10 +197,12 @@ namespace geopm
                              m_comm,
                              *m_tree_comm);
         m_tracer->flush();
+        ipex(__func__);
     }
 
     void Kontroller::step(void)
     {
+        ipen(__func__);
         walk_down();
         geopm_signal_handler_check();
 
@@ -198,10 +210,12 @@ namespace geopm
         geopm_signal_handler_check();
         m_agent[0]->wait();
         geopm_signal_handler_check();
+        ipex(__func__);
     }
 
     void Kontroller::walk_down(void)
     {
+        ipen(__func__);
         bool do_send = false;
         if (m_is_root) {
             /// @todo Pass m_in_policy by reference into the sampler, and return an is_updated bool.
@@ -209,7 +223,9 @@ namespace geopm
             do_send = true;
         }
         else {
+            ipen("recieve_down");
             do_send = m_tree_comm->receive_down(m_num_level_ctl, m_in_policy);
+            ipex("recieve_down");
         }
         for (int level = m_num_level_ctl - 1; do_send && level != -1; --level) {
             do_send = m_agent[level]->descend(m_in_policy, m_out_policy[level]);
@@ -220,10 +236,12 @@ namespace geopm
         }
         m_agent[0]->adjust_platform(m_in_policy);
         m_platform_io.write_batch();
+        ipex(__func__);
     }
 
     void Kontroller::walk_up(void)
     {
+        ipen(__func__);
         m_application_io->update(m_comm);
         m_platform_io.read_batch();
         bool do_send = m_agent[0]->sample_platform(m_out_sample);
@@ -247,21 +265,26 @@ namespace geopm
                 /// resource manager.
             }
         }
+        ipex(__func__);
     }
 
     void Kontroller::pthread(const pthread_attr_t *attr, pthread_t *thread)
     {
+        ipen(__func__);
         int err = pthread_create(thread, attr, geopm_threaded_run, (void *)this);
         if (err) {
             throw Exception("Controller::pthread(): pthread_create() failed",
                             err, __FILE__, __LINE__);
         }
+        ipex(__func__);
     }
 
     void Kontroller::setup_trace(void)
     {
+        ipen(__func__);
         auto agent_cols = m_agent[0]->trace_names();
         m_tracer->columns(agent_cols);
         m_trace_sample.resize(agent_cols.size());
+        ipex(__func__);
     }
 }

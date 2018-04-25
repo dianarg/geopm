@@ -39,6 +39,7 @@
 #include "TreeComm.hpp"
 #include "TreeCommLevel.hpp"
 #include "Comm.hpp"
+#include "test/InternalProfile.hpp"
 #include "config.h"
 
 namespace geopm
@@ -150,38 +151,48 @@ namespace geopm
 
     void TreeComm::send_up(int level, const std::vector<double> &sample)
     {
+        ipen(__func__);
         if (level < 0 || (level != 0 && level >= m_num_level_ctl)) {
             throw Exception("TreeComm::send_up()",
                             GEOPM_ERROR_LEVEL_RANGE, __FILE__, __LINE__);
         }
         m_level_ctl[level]->send_up(sample);
+        ipex(__func__);
     }
 
     void TreeComm::send_down(int level, const std::vector<std::vector<double> > &policy)
     {
+        ipen(__func__);
         if (level < 0 || level >= m_num_level_ctl) {
             throw Exception("TreeComm::send_down()",
                             GEOPM_ERROR_LEVEL_RANGE, __FILE__, __LINE__);
         }
         m_level_ctl[level]->send_down(policy);
+        ipex(__func__);
     }
 
     bool TreeComm::receive_up(int level, std::vector<std::vector<double> > &sample)
     {
+        ipen(__func__);
         if (level < 0 || level >= m_num_level_ctl) {
             throw Exception("TreeComm::receive_up()",
                             GEOPM_ERROR_LEVEL_RANGE, __FILE__, __LINE__);
         }
-        return m_level_ctl[level]->receive_up(sample);
+        bool result = m_level_ctl[level]->receive_up(sample);
+        ipex(__func__);
+        return result;
     }
 
     bool TreeComm::receive_down(int level, std::vector<double> &policy)
     {
+        ipen(__func__);
         if (level < 0 || (level != 0 && level >= m_num_level_ctl)) {
             throw Exception("TreeComm::receive_down()",
                             GEOPM_ERROR_LEVEL_RANGE, __FILE__, __LINE__);
         }
-        return m_level_ctl[level]->receive_down(policy);
+        bool result = m_level_ctl[level]->receive_down(policy);
+        ipex(__func__);
+        return result;
     }
 
     size_t TreeComm::overhead_send(void) const

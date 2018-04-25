@@ -391,6 +391,8 @@ libgeopmpolicy_la_SOURCES = src/Agent.cpp \
                             src/KruntimeRegulator.hpp \
                             src/ProfileIORuntime.cpp \
                             src/ProfileIORuntime.hpp \
+                            test/InternalProfile.cpp \
+                            test/InternalProfile.hpp \
                             # end
 
 geopmpolicy_SOURCES = src/geopmpolicy_main.c \
