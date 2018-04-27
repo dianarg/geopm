@@ -257,25 +257,24 @@ namespace geopm
 
     void BalancingAgent::adjust_platform(const std::vector<double> &in_policy)
     {
-        m_last_power_budget = in_policy[0];
-        if (m_sample_count < m_samples_per_control) {
-            m_sample_count++;
+#ifdef GEOPM_DEBUG
+        if (in_policy.size() != M_NUM_POLICY) {
+            throw Exception("BalancingAgent::" + std::string(__func__) + "(): one control was expected.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
-        else {
-            if (in_policy.size() > 1) {
-                throw Exception("BalancingAgent::" + std::string(__func__) + "(): only one control was expected.",
-                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-            }
-
-            /// @todo Is this sufficient?  Should it be a read_signal() call to get the latest?
+#endif
+        if (m_last_power_budget != in_policy[0] || m_sample_count == 0) {
+            m_last_power_budget = in_policy[0];
+            double num_pkg = m_control_idx.size();
             double dram_power = m_platform_io.sample(m_pio_idx[M_PLAT_SAMPLE_DRAM_POWER]);
-
-            double target_pkg_power = (in_policy[0] - dram_power) / m_control_idx.size();
+            double target_pkg_power = (m_last_power_budget - dram_power) / num_pkg;
 
             for (auto ctl_idx : m_control_idx) {
                 m_platform_io.adjust(ctl_idx, target_pkg_power);
             }
-
+        }
+        m_sample_count++;
+        if (m_sample_count == m_samples_per_control) {
             m_sample_count = 0;
         }
     }
