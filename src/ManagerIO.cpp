@@ -204,6 +204,11 @@ namespace geopm
         , m_data(nullptr)
         , m_is_shm_data(m_path[0] == '/' && m_path.find_last_of('/') == 0)
     {
+        std::cout << "BRG ManagerIO Debug:\n\tExpected signals:\n\t\t";
+        for (auto str : m_signal_names) {
+            std::cout << str << " ";
+        }
+        std::cout << std::endl;
         read_batch();
     }
 
@@ -302,7 +307,13 @@ namespace geopm
             std::map<std::string, double> signal_value_map = parse_json();
             m_signals_down.clear();
             for (auto signal : m_signal_names) {
-                m_signals_down.emplace_back(signal_value_map[signal]);
+                try {
+                    m_signals_down.emplace_back(signal_value_map.at(signal));
+                }
+                catch (const std::out_of_range&) {
+                    throw Exception("ManagerIOSampler::" + std::string(__func__) + "(): Signal \"" + signal + "\" not found.",
+                                    GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                }
             }
         }
     }
