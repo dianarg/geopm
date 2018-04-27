@@ -139,6 +139,7 @@ namespace geopm
             if (m_last_power_budget == -DBL_MAX) {
                 // First time down the tree, send the budget to all children.
                 std::fill(out_policy.begin(), out_policy.end(), std::vector<double>(1, avg_per_node_pwr_tgt));
+                m_is_updated = true;
             }
             else { // Not the first descent
                 if (m_epoch_runtime_buf->size() >= m_num_sample) {
@@ -256,6 +257,7 @@ namespace geopm
 
     void BalancingAgent::adjust_platform(const std::vector<double> &in_policy)
     {
+        m_last_power_budget = in_policy[0];
         if (m_sample_count < m_samples_per_control) {
             m_sample_count++;
         }
