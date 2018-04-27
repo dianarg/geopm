@@ -262,6 +262,10 @@ namespace geopm
             throw Exception("BalancingAgent::" + std::string(__func__) + "(): one control was expected.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
+        if (isnan(in_policy[0])) {
+            throw Exception("BalancingAgent::" + std::string(__func__) + "(): policy is NAN.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
 #endif
         if (m_last_power_budget != in_policy[0] || m_sample_count == 0) {
             m_last_power_budget = in_policy[0];
