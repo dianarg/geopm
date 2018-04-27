@@ -33,6 +33,7 @@
 #include <cfloat>
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 #include "BalancingAgent.hpp"
 #include "PlatformIO.hpp"
@@ -54,8 +55,8 @@ namespace geopm
         , m_is_converged(false)
         , m_updates_per_sample(5)
         , m_samples_per_control(10)
-        , m_lower_bound(m_platform_io.read_signal("PKG_PWR_LOWER_BOUND", IPlatformTopo::M_DOMAIN_BOARD, 0))
-        , m_upper_bound(m_platform_io.read_signal("PKG_PWR_UPPER_BOUND", IPlatformTopo::M_DOMAIN_BOARD, 0))
+        , m_lower_bound(m_platform_io.read_signal("POWER_PACKAGE_MIN", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
+        , m_upper_bound(m_platform_io.read_signal("POWER_PACKAGE_MAX", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
         , m_pio_idx(M_PLAT_NUM_SAMPLE)
         , m_last_power_budget(-DBL_MAX)
         , m_epoch_runtime_buf(geopm::make_unique<CircularBuffer<double> >(8)) // Magic number...
@@ -72,6 +73,7 @@ namespace geopm
         , m_num_sample(3) // Number of samples required to be in m_epoch_runtime_buf before balancing begins
         , m_last_epoch_count(0)
     {
+        std::cout << "BalancingAgent debug:\n\tLower bound = " << m_lower_bound << "\n\tUpper bound = " << m_upper_bound << std::endl;
     }
 
     BalancingAgent::~BalancingAgent()
