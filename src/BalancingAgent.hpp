@@ -96,13 +96,11 @@ namespace geopm
             void init_platform_io(void);
             static std::vector<double> split_budget(double avg_power_budget,
                                                     double min_power_budget,
-                                                    double median_runtime,
                                                     const std::vector<double> &last_budget,
                                                     const std::vector<double> &last_runtime);
 
             static std::vector<double> split_budget_helper(double avg_power_budget,
                                                            double min_power_budget,
-                                                           double median_runtime,
                                                            const std::vector<double> &last_budget,
                                                            const std::vector<double> &last_runtime);
             static double runtime_stddev(const std::vector<std::vector<double> > &last_sample);
@@ -114,6 +112,7 @@ namespace geopm
             int m_level; // Needed in order to determine convergence
             int m_num_leaf;
             bool m_is_converged;
+            bool m_is_sample_stable;
 
             int m_updates_per_sample;
             int m_samples_per_control;
@@ -131,10 +130,13 @@ namespace geopm
             std::vector<std::vector<double> > m_last_sample;
             std::vector<std::vector<double> > m_last_child_policy;
             std::unique_ptr<ICircularBuffer<double> > m_epoch_runtime_buf;
+            std::unique_ptr<ICircularBuffer<double> > m_epoch_power_buf;
             std::vector<double> m_sample;
 
             double m_last_energy_status;
             int m_sample_count;
+            int m_ascend_count;
+            const int m_ascend_period;
 
             bool m_is_updated;
             const double m_convergence_target;

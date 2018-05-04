@@ -34,6 +34,13 @@
 #include <cmath>
 #include <algorithm>
 
+// DEBUG BEGIN
+#include <unistd.h>
+#include <iostream>
+#include <limits.h>
+//END FOR DEBUG
+
+
 #include "BalancingAgent.hpp"
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
@@ -42,6 +49,11 @@
 
 #include "Helper.hpp"
 #include "config.h"
+
+// DEBUG BEGIN
+static char g_hostname[NAME_MAX] = {};
+// DEBUG END
+
 
 namespace geopm
 {
@@ -52,17 +64,21 @@ namespace geopm
         , m_level(-1)
         , m_num_leaf(-1)
         , m_is_converged(false)
+        , m_is_sample_stable(false)
         , m_updates_per_sample(5)
         , m_samples_per_control(10)
         , m_lower_bound(m_platform_io.read_signal("POWER_PACKAGE_MIN", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
         , m_upper_bound(m_platform_io.read_signal("POWER_PACKAGE_MAX", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
         , m_pio_idx(M_PLAT_NUM_SAMPLE)
-        , m_last_power_budget_in(-DBL_MAX)
-        , m_last_power_budget_out(-DBL_MAX)
+        , m_last_power_budget_in(NAN)
+        , m_last_power_budget_out(NAN)
         , m_epoch_runtime_buf(geopm::make_unique<CircularBuffer<double> >(8)) // Magic number...
+        , m_epoch_power_buf(geopm::make_unique<CircularBuffer<double> >(8)) // Magic number...
         , m_sample(M_PLAT_NUM_SAMPLE)
         , m_last_energy_status(0.0)
         , m_sample_count(0)
+        , m_ascend_count(0)
+        , m_ascend_period(10)
         , m_is_updated(false)
         , m_convergence_target(0.01)
         , m_num_out_of_range(0)
@@ -72,6 +88,11 @@ namespace geopm
         , m_num_sample(3) // Number of samples required to be in m_epoch_runtime_buf before balancing begins
         , m_last_epoch_runtime(0.0)
     {
+// BEGIN DEBUG
+if (g_hostname[0] == '\0') {
+gethostname(g_hostname, NAME_MAX);
+}
+// END DEBUG
     }
 
     BalancingAgent::~BalancingAgent()
@@ -131,16 +152,16 @@ namespace geopm
         m_is_updated = (m_level == 0);
 
         if (m_level == 0 || m_last_power_budget_in != power_budget_in) {
-            if (m_last_power_budget_in == -DBL_MAX) {
+            if (isnan(m_last_power_budget_in)) {
                 // First time down the tree, send the budget to all children.
                 std::fill(out_policy.begin(), out_policy.end(), std::vector<double>(1, power_budget_in));
                 m_is_updated = true;
             }
-            else if (m_epoch_runtime_buf->size() >= m_num_sample) {
+            else {
                 // Not the first descent
                 double stddev_child_runtime = runtime_stddev(m_last_sample);
                 // If we are not within bounds redistribute power
-                if (!m_is_converged && stddev_child_runtime > m_convergence_target) {
+                if (m_is_sample_stable && stddev_child_runtime > m_convergence_target) {
                     m_num_converged = 0;
                     std::vector<double> last_runtime(num_children);
                     std::vector<double> last_budget(num_children);
@@ -148,13 +169,11 @@ namespace geopm
                         last_runtime[child_idx] = m_last_sample[child_idx][M_SAMPLE_EPOCH_RUNTIME];
                         last_budget[child_idx] = m_last_child_policy[child_idx][M_POLICY_POWER];
                     }
-                    double median_runtime = IPlatformIO::agg_median(m_epoch_runtime_buf->make_vector());
-                    std::vector<double> budget = split_budget(power_budget_in, m_lower_bound, median_runtime,
+                    std::vector<double> budget = split_budget(power_budget_in, m_lower_bound,
                                                               last_budget, last_runtime);
                     for (int idx = 0; idx != num_children; ++idx) {
                          out_policy[idx][0] = budget[idx];
                     }
-                    m_epoch_runtime_buf->clear();
                     m_is_updated = true;
                 }
                 // We are out of bounds increment out of range counter
@@ -189,21 +208,34 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool result = true;
-        std::vector<double> child_sample(in_sample.size());
-        for (size_t sig_idx = 0; sig_idx < out_sample.size(); ++sig_idx) {
-            for (size_t child_idx = 0; child_idx < in_sample.size(); ++child_idx) {
-                child_sample[child_idx] = in_sample[child_idx][sig_idx];
+        bool result = false;
+        m_is_sample_stable = std::all_of(in_sample.begin(), in_sample.end(),
+            [](const std::vector<double> &val)
+            {
+                return val[M_SAMPLE_IS_CONVERGED];
+            });
+
+        if (m_is_sample_stable && m_ascend_count == 0) {
+            result = true;
+            std::vector<double> child_sample(in_sample.size());
+            for (size_t sig_idx = 0; sig_idx < out_sample.size(); ++sig_idx) {
+                for (size_t child_idx = 0; child_idx < in_sample.size(); ++child_idx) {
+                    child_sample[child_idx] = in_sample[child_idx][sig_idx];
+                }
+                out_sample[sig_idx] = m_agg_func[sig_idx](child_sample);
             }
-            out_sample[sig_idx] = m_agg_func[sig_idx](child_sample);
         }
+        ++m_ascend_count;
+        if (m_ascend_count == m_ascend_period) {
+            m_ascend_count = 0;
+        }
+
         if (out_sample[M_SAMPLE_EPOCH_RUNTIME] == 0.0 ||
             isnan(out_sample[M_SAMPLE_EPOCH_RUNTIME]) ||
             out_sample[M_SAMPLE_EPOCH_RUNTIME] == m_last_epoch_runtime) {
             result = false;
         }
         else {
-            m_epoch_runtime_buf->insert(out_sample[M_SAMPLE_EPOCH_RUNTIME]);
             m_last_epoch_runtime = out_sample[M_SAMPLE_EPOCH_RUNTIME];
         }
         m_last_sample = in_sample;
@@ -224,7 +256,7 @@ namespace geopm
 #endif
 
         bool result = false;
-        double dram_power = m_platform_io.sample(m_pio_idx[M_PLAT_SAMPLE_DRAM_POWER]);
+        double dram_power = m_sample[M_PLAT_SAMPLE_DRAM_POWER];
         // Check that we have enough samples (two) to measure DRAM power
         if (isnan(dram_power)) {
             dram_power = 0.0;
@@ -232,6 +264,10 @@ namespace geopm
         if (m_last_power_budget_out != in_policy[M_POLICY_POWER] || m_sample_count == 0) {
             double num_pkg = m_control_idx.size();
             double target_pkg_power = (in_policy[M_POLICY_POWER] - dram_power) / num_pkg;
+// DEBUG BEGIN
+if (in_policy[M_POLICY_POWER] != m_last_power_budget_out) {
+std::cerr << g_hostname << ": (budget, target)=(" << in_policy[M_POLICY_POWER] << ", " << target_pkg_power << ")\n";
+}
             for (auto ctl_idx : m_control_idx) {
                 m_platform_io.adjust(ctl_idx, target_pkg_power);
             }
@@ -253,18 +289,30 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool result = true;
+        bool result = false;
         for (int sample_idx = 0; sample_idx < M_PLAT_NUM_SAMPLE; ++sample_idx) {
             m_sample[sample_idx] = m_platform_io.sample(m_pio_idx[sample_idx]);
         }
 
-        out_sample[M_SAMPLE_EPOCH_RUNTIME] = m_sample[M_PLAT_SAMPLE_EPOCH_RUNTIME];
-        out_sample[M_SAMPLE_POWER] = m_sample[M_PLAT_SAMPLE_PKG_POWER] + m_sample[M_PLAT_SAMPLE_DRAM_POWER]; // Sum of all PKG and DRAM power.
-        out_sample[M_SAMPLE_IS_CONVERGED] = m_is_converged;
-        if (isnan(out_sample[M_SAMPLE_EPOCH_RUNTIME]) ||
-            out_sample[M_SAMPLE_EPOCH_RUNTIME] == 0.0) {
-            result = false;
+        if (!std::any_of(m_sample.begin(), m_sample.end(),
+            [](double val)
+            {
+                return isnan(val) || val == 0.0;
+            })) {
+
+            m_epoch_runtime_buf->insert(m_sample[M_SAMPLE_EPOCH_RUNTIME]);
+            // Sum of all PKG and DRAM power.
+            m_epoch_power_buf->insert(m_sample[M_PLAT_SAMPLE_PKG_POWER] +
+                                      m_sample[M_PLAT_SAMPLE_DRAM_POWER]);
+
+            if (m_epoch_runtime_buf->size() > m_num_sample) {
+                out_sample[M_SAMPLE_EPOCH_RUNTIME] = IPlatformIO::agg_median(m_epoch_runtime_buf->make_vector());
+                out_sample[M_SAMPLE_POWER] = IPlatformIO::agg_median(m_epoch_power_buf->make_vector());
+                out_sample[M_SAMPLE_IS_CONVERGED] = true;
+                result = true;
+            }
         }
+
         return result;
     }
 
@@ -285,7 +333,6 @@ namespace geopm
     /// @todo Implement this with the refactor of descend()
     std::vector<double> BalancingAgent::split_budget_helper(double avg_power_budget,
                                                             double min_power_budget,
-                                                            double median_runtime,
                                                             const std::vector<double> &last_budget,
                                                             const std::vector<double> &last_runtime)
     {
@@ -293,7 +340,6 @@ namespace geopm
         std::vector<double> result(num_children);
         double avg_last_budget = IPlatformIO::agg_average(last_budget);
         double avg_last_runtime = IPlatformIO::agg_average(last_runtime);
-
         if (avg_last_budget == 0.0 ||
             avg_last_runtime == 0.0) {
             throw Exception("BalancingAgent::split_budget(): an input vector average value is zero.",
@@ -302,21 +348,23 @@ namespace geopm
 
         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
             double norm_budget = last_budget[child_idx] / avg_last_budget;
-            double norm_runtime = (3 * last_runtime[child_idx] + median_runtime) /
-                                  (3 * avg_last_runtime + median_runtime);
-            result[child_idx] = avg_power_budget * norm_runtime / norm_budget;
+            double norm_runtime = last_runtime[child_idx] / avg_last_runtime;
+
+            //result[child_idx] = last_budget[child_idx] * norm_runtime / norm_budget;
+            result[child_idx] = avg_last_budget * norm_runtime / norm_budget;
+std::cerr << g_hostname << ": child_idx=" << child_idx << " norm_budget=" << norm_budget << " norm_runtime=" << norm_runtime << "buget_unclipped=" << result[child_idx];
             if (result[child_idx] < min_power_budget) {
                 avg_power_budget -= (min_power_budget - result[child_idx]) /
                                     (num_children - child_idx - 1);
                 result[child_idx] = min_power_budget;
             }
+std::cerr << " budget_clipped=" << result[child_idx] << "\n";
         }
         return result;
     }
 
     std::vector<double> BalancingAgent::split_budget(double avg_power_budget,
                                                      double min_power_budget,
-                                                     double median_runtime,
                                                      const std::vector<double> &last_budget,
                                                      const std::vector<double> &last_runtime)
     {
@@ -344,7 +392,7 @@ namespace geopm
             // note last_runtime[sort_idx] == indexed_sorted_last_runtime[child_idx].first
             sorted_last_runtime[child_idx] = last_runtime[sort_idx];
         }
-        std::vector<double> sorted_result = split_budget_helper(avg_power_budget, min_power_budget, median_runtime,
+        std::vector<double> sorted_result = split_budget_helper(avg_power_budget, min_power_budget,
                                                                 sorted_last_budget, sorted_last_runtime);
         std::vector<double> result(num_children);
         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
