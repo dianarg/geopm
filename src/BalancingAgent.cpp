@@ -35,12 +35,6 @@
 #include <algorithm>
 #include <iostream>
 
-// DEBUG BEGIN
-#include <unistd.h>
-#include <iostream>
-#include <limits.h>
-// DEBUG END
-
 #include "BalancingAgent.hpp"
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
@@ -234,13 +228,6 @@ std::cout << "Balancer construction (Level " << level << ", Leaves " << num_leaf
         }
 #endif
 
-// DEBUG BEGIN
-static char hostname[NAME_MAX] = {};
-if (hostname[0] == '\0') {
-gethostname(hostname, NAME_MAX);
-}
-// DEBUG END
-
         bool result = false;
         double dram_power = m_platform_io.sample(m_pio_idx[M_PLAT_SAMPLE_DRAM_POWER]);
         // Check that we have enough samples (two) to measure DRAM power
@@ -251,12 +238,6 @@ gethostname(hostname, NAME_MAX);
             double num_pkg = m_control_idx.size();
             double target_pkg_power = (in_policy[M_POLICY_POWER] - dram_power) / num_pkg;
             for (auto ctl_idx : m_control_idx) {
-
-// DEBUG BEGIN
-if (in_policy[M_POLICY_POWER] != m_last_power_budget_out) {
-std::cerr << hostname << ": (budget, target)=(" << in_policy[M_POLICY_POWER] << ", " << target_pkg_power << ")\n";
-}
-// DEBUG END
                 m_platform_io.adjust(ctl_idx, target_pkg_power);
             }
             m_last_power_budget_out = in_policy[M_POLICY_POWER];
