@@ -94,15 +94,17 @@ namespace geopm
             static std::vector<std::string> sample_names(void);
         private:
             void init_platform_io(void);
-            void runtime_ratio_calc(int offset, double mean_child_runtime,
-                                    const std::vector<std::pair<double, int> > &child_runtime,
-                                    std::vector<double> &epoch_runtime_ratio,
-                                    double &ratio_total,
-                                    double &median_epoch_runtime);
-            void split_budget(double total_power_budget,
-                              const std::vector<double> &power_used,
-                              const std::vector<double> &runtime,
-                              std::vector<double> &result);
+            static std::vector<double> split_budget(double avg_power_budget,
+                                                    double min_power_budget,
+                                                    const std::vector<double> &last_budget,
+                                                    const std::vector<double> &last_runtime);
+
+            static std::vector<double> split_budget_helper(double avg_power_budget,
+                                                           double min_power_budget,
+                                                           const std::vector<double> &last_budget,
+                                                           const std::vector<double> &last_runtime);
+            static double runtime_stddev(const std::vector<std::vector<double> > &last_sample);
+
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
 
@@ -139,7 +141,7 @@ namespace geopm
             int m_num_converged;
             const double m_magic;
             const int m_num_sample;
-            int m_last_epoch_count;
+            double m_last_epoch_runtime;
 
     };
 }
