@@ -85,7 +85,7 @@ namespace geopm
         , m_min_num_converged(7)
         , m_num_converged(0)
         , m_magic(3.0) // m_slope_modifier from BalancingDecider
-        , m_num_sample(3) // Number of samples required to be in m_epoch_runtime_buf before balancing begins
+        , m_num_sample(7) // Number of samples required to be in m_epoch_runtime_buf before balancing begins
         , m_last_epoch_runtime(0.0)
     {
 // BEGIN DEBUG
@@ -159,18 +159,23 @@ gethostname(g_hostname, NAME_MAX);
             }
             else {
                 // Not the first descent
-                double stddev_child_runtime = runtime_stddev(m_last_sample);
+                double stddev_child_runtime = runtime_stddev(m_last_sample0);
                 // If we are not within bounds redistribute power
                 if (m_is_sample_stable && stddev_child_runtime > m_convergence_target) {
                     m_num_converged = 0;
-                    std::vector<double> last_runtime(num_children);
-                    std::vector<double> last_budget(num_children);
+                    std::vector<double> last_runtime0(num_children);
+                    std::vector<double> last_runtime1(num_children);
+                    std::vector<double> last_budget0(num_children);
+                    std::vector<double> last_budget1(num_children);
                     for (int child_idx = 0; child_idx < num_children; ++child_idx) {
-                        last_runtime[child_idx] = m_last_sample[child_idx][M_SAMPLE_EPOCH_RUNTIME];
-                        last_budget[child_idx] = m_last_child_policy[child_idx][M_POLICY_POWER];
+                        last_runtime0[child_idx] = m_last_sample0[child_idx][M_SAMPLE_EPOCH_RUNTIME];
+                        last_runtime1[child_idx] = m_last_sample1[child_idx][M_SAMPLE_EPOCH_RUNTIME];
+                        last_budget0[child_idx] = m_last_child_policy0[child_idx][M_POLICY_POWER];
+                        last_budget1[child_idx] = m_last_child_policy1[child_idx][M_POLICY_POWER];
                     }
                     std::vector<double> budget = split_budget(power_budget_in, m_lower_bound,
-                                                              last_budget, last_runtime);
+                                                              last_budget0, last_budget1,
+                                                              last_runtime0, last_runtime1);
                     for (int idx = 0; idx != num_children; ++idx) {
                          out_policy[idx][0] = budget[idx];
                     }
@@ -195,7 +200,8 @@ gethostname(g_hostname, NAME_MAX);
                 }
             }
             m_last_power_budget_in = power_budget_in;
-            m_last_child_policy = out_policy;
+            m_last_child_policy1 = m_last_child_policy0;
+            m_last_child_policy0 = out_policy;
         }
         return m_is_updated;
     }
@@ -238,7 +244,8 @@ gethostname(g_hostname, NAME_MAX);
         else {
             m_last_epoch_runtime = out_sample[M_SAMPLE_EPOCH_RUNTIME];
         }
-        m_last_sample = in_sample;
+        m_last_sample1 = m_last_sample0;
+        m_last_sample0 = in_sample;
         return result;
     }
 
@@ -330,33 +337,51 @@ std::cerr << g_hostname << ": (budget, target)=(" << in_policy[M_POLICY_POWER] <
         }
     }
 
-    /// @todo Implement this with the refactor of descend()
     std::vector<double> BalancingAgent::split_budget_helper(double avg_power_budget,
                                                             double min_power_budget,
-                                                            const std::vector<double> &last_budget,
-                                                            const std::vector<double> &last_runtime)
+                                                            const std::vector<double> &last_budget0,
+                                                            const std::vector<double> &last_budget1,
+                                                            const std::vector<double> &last_runtime0,
+                                                            const std::vector<double> &last_runtime1)
     {
-        int num_children = last_budget.size();
+        /// sum(result) = avg_power_budget * num_children
+        /// time[i] = time[j] for all i and j
+
+        /// m[i] = (last_runtime1[i] - last_runtime0[i]) / (last_budget1[i] - last_budget0[i])
+        /// b[i] = last_budget0[i] - last_runtime0[i] / m[i]
+
+        /// time = m[i] * result[i] + b[i]
+        /// result[i] = (time - b[i]) / m[i]
+        /// avg_power_budget * num_children = sum((time - b[i]) / m[i])
+        ///                                 = time * sum(1/m[i]) - sum(b[i] / m[i])
+        /// time = avg_power_budget * num_children / (sum(1/m[i]) - sum(b[i] / m[i]))
+        /// result[i] = ((avg_power_budget * num_children / (sum(1/m[i]) - sum(b[i] / m[i]))) - b[i]) / m[i]
+
+        int num_children = last_budget0.size();
         std::vector<double> result(num_children);
-        double avg_last_budget = IPlatformIO::agg_average(last_budget);
-        double avg_last_runtime = IPlatformIO::agg_average(last_runtime);
-        if (avg_last_budget == 0.0 ||
-            avg_last_runtime == 0.0) {
-            throw Exception("BalancingAgent::split_budget(): an input vector average value is zero.",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
 
+        std::vector<double> mm(num_children);
+        std::vector<double> bb(num_children);
+        double inv_m_sum = 0.0;
+        double ratio_sum = 0.0;
         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
-            double norm_budget = last_budget[child_idx] / avg_last_budget;
-            double norm_runtime = last_runtime[child_idx] / avg_last_runtime;
-
-            //result[child_idx] = last_budget[child_idx] * norm_runtime / norm_budget;
-            result[child_idx] = avg_last_budget * norm_runtime / norm_budget;
-std::cerr << g_hostname << ": child_idx=" << child_idx << " norm_budget=" << norm_budget << " norm_runtime=" << norm_runtime << "buget_unclipped=" << result[child_idx];
+            mm[child_idx] = (last_runtime1[child_idx] - last_runtime0[child_idx]) /
+                     (last_budget1[child_idx] - last_budget0[child_idx]);
+            bb[child_idx] = last_budget0[child_idx] - last_runtime0[child_idx] / mm[child_idx];
+            inv_m_sum += 1.0 / mm[child_idx];
+            ratio_sum += bb[child_idx] / mm[child_idx];
+        }
+        for (int child_idx = 0; child_idx != num_children; ++child_idx) {
+            result[child_idx] = ((avg_power_budget * num_children /
+                           (inv_m_sum - ratio_sum)) - bb[child_idx]) / mm[child_idx];
+std::cerr << g_hostname << ": child_idx=" << child_idx << "buget_unclipped=" << result[child_idx];
             if (result[child_idx] < min_power_budget) {
-                avg_power_budget -= (min_power_budget - result[child_idx]) /
-                                    (num_children - child_idx - 1);
+                double delta = min_power_budget - result[child_idx];
                 result[child_idx] = min_power_budget;
+                double pool = avg_power_budget * (num_children - child_idx) - min_power_budget;
+                if (child_idx != num_children - 1) {
+                    avg_power_budget = pool / (num_children - child_idx - 1);
+                }
             }
 std::cerr << " budget_clipped=" << result[child_idx] << "\n";
         }
@@ -365,11 +390,14 @@ std::cerr << " budget_clipped=" << result[child_idx] << "\n";
 
     std::vector<double> BalancingAgent::split_budget(double avg_power_budget,
                                                      double min_power_budget,
-                                                     const std::vector<double> &last_budget,
-                                                     const std::vector<double> &last_runtime)
+                                                     const std::vector<double> &last_budget0,
+                                                     const std::vector<double> &last_budget1,
+                                                     const std::vector<double> &last_runtime0,
+                                                     const std::vector<double> &last_runtime1)
     {
 #ifdef GEOPM_DEBUG
-        if (last_budget.size() != last_runtime.size()) {
+        /// @fixme check other vector lengths
+        if (last_budget0.size() != last_runtime0.size()) {
             throw Exception("BalancingAgent::split_budget(): input vectors are not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
@@ -378,22 +406,27 @@ std::cerr << " budget_clipped=" << result[child_idx] << "\n";
             throw Exception("BalancingAgent::split_budget(): ave_power_budget less than min_power_budget.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        int num_children = last_budget.size();
+        int num_children = last_budget0.size();
         std::vector<std::pair<double, int> > indexed_sorted_last_runtime(num_children);
         for (int idx = 0; idx != num_children; ++idx) {
-            indexed_sorted_last_runtime[idx] = std::make_pair(last_runtime[idx], idx);
+            indexed_sorted_last_runtime[idx] = std::make_pair(last_runtime0[idx], idx);
         }
         std::sort(indexed_sorted_last_runtime.begin(), indexed_sorted_last_runtime.end());
-        std::vector<double> sorted_last_budget(num_children);
-        std::vector<double> sorted_last_runtime(num_children);
+        std::vector<double> sorted_last_budget0(num_children);
+        std::vector<double> sorted_last_budget1(num_children);
+        std::vector<double> sorted_last_runtime0(num_children);
+        std::vector<double> sorted_last_runtime1(num_children);
         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
             int sort_idx = indexed_sorted_last_runtime[child_idx].second;
-            sorted_last_budget[child_idx] = last_budget[sort_idx];
+            sorted_last_budget0[child_idx] = last_budget0[sort_idx];
+            sorted_last_budget1[child_idx] = last_budget1[sort_idx];
             // note last_runtime[sort_idx] == indexed_sorted_last_runtime[child_idx].first
-            sorted_last_runtime[child_idx] = last_runtime[sort_idx];
+            sorted_last_runtime0[child_idx] = last_runtime0[sort_idx];
+            sorted_last_runtime1[child_idx] = last_runtime1[sort_idx];
         }
         std::vector<double> sorted_result = split_budget_helper(avg_power_budget, min_power_budget,
-                                                                sorted_last_budget, sorted_last_runtime);
+                                                                sorted_last_budget0, sorted_last_budget1,
+                                                                sorted_last_runtime0, sorted_last_runtime1);
         std::vector<double> result(num_children);
         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
             int sort_idx = indexed_sorted_last_runtime[child_idx].second;
