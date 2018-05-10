@@ -54,6 +54,8 @@ namespace geopm
             };
             enum m_plat_signal_e {
                 M_PLAT_SIGNAL_EPOCH_RUNTIME,
+                M_PLAT_SIGNAL_EPOCH_ENERGY,
+                M_PLAT_SIGNAL_EPOCH_COUNT,
                 M_PLAT_SIGNAL_PKG_POWER,
                 M_PLAT_SIGNAL_DRAM_POWER,
                 M_PLAT_NUM_SIGNAL,
@@ -94,19 +96,15 @@ namespace geopm
             static std::vector<std::string> sample_names(void);
         private:
             void init_platform_io(void);
-            static std::vector<double> split_budget(double avg_power_budget,
-                                                    double min_power_budget,
-                                                    const std::vector<double> &last_budget0,
-                                                    const std::vector<double> &last_budget1,
-                                                    const std::vector<double> &last_runtime0,
-                                                    const std::vector<double> &last_runtime1);
+            std::vector<double> split_budget(double avg_power_budget,
+                                             double min_power_budget);
             static std::vector<double> split_budget_helper(double avg_power_budget,
                                                            double min_power_budget,
                                                            const std::vector<double> &last_budget0,
                                                            const std::vector<double> &last_budget1,
                                                            const std::vector<double> &last_runtime0,
                                                            const std::vector<double> &last_runtime1);
-            static double runtime_stddev(const std::vector<std::vector<double> > &last_sample);
+            static double runtime_stddev(const std::vector<double> &last_sample);
 
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
@@ -146,11 +144,11 @@ namespace geopm
             bool m_is_updated;
             const double m_convergence_target;
             int m_num_out_of_range;
-            int m_min_num_converged;
+            const int m_min_num_converged;
             int m_num_converged;
             const double m_magic;
             const int m_num_sample;
-            double m_last_epoch_runtime;
+            int m_last_epoch_count;
 
     };
 }

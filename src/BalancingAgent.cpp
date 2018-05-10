@@ -86,7 +86,7 @@ namespace geopm
         , m_num_converged(0)
         , m_magic(3.0) // m_slope_modifier from BalancingDecider
         , m_num_sample(7) // Number of samples required to be in m_epoch_runtime_buf before balancing begins
-        , m_last_epoch_runtime(0.0)
+        , m_last_epoch_count(0)
     {
 // BEGIN DEBUG
 if (g_hostname[0] == '\0') {
@@ -142,21 +142,21 @@ gethostname(g_hostname, NAME_MAX);
         m_agg_func.push_back(IPlatformIO::agg_and);     // IS_CONVERGED
     }
 
-    bool BalancingAgent::descend(const std::vector<double> &in_policy, std::vector<std::vector<double> >&out_policy)
+    bool BalancingAgent::descend(const std::vector<double> &policy_in, std::vector<std::vector<double> >&policy_out)
     {
-        if (in_policy.size() > 1) {
+        if (policy_in.size() > 1) {
             throw Exception("BalancingAgent::" + std::string(__func__) + "(): only one power budget was expected.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 
-        int num_children = out_policy.size();
-        double power_budget_in = in_policy[M_POLICY_POWER];
+        int num_children = policy_out.size();
+        double power_budget_in = policy_in[M_POLICY_POWER];
         m_is_updated = (m_level == 0);
 
         if (m_level == 0 || m_last_power_budget_in != power_budget_in) {
             if (isnan(m_last_power_budget_in)) {
                 // First time down the tree, send the same budget to all children.
-                std::fill(out_policy.begin(), out_policy.end(), std::vector<double>(1, power_budget_in));
+                std::fill(policy_out.begin(), policy_out.end(), std::vector<double>(1, power_budget_in));
                 m_is_updated = true;
             }
             else {
@@ -199,9 +199,9 @@ gethostname(g_hostname, NAME_MAX);
                     else {
                         budget = split_budget(power_budget_in, m_lower_bound);
                     }
-                    // Store the new budget in the out_policy vector
+                    // Store the new budget in the policy_out vector
                     for (int child_idx = 0; child_idx != num_children; ++child_idx) {
-                        out_policy[child_idx][M_POLICY_POWER] = budget[child_idx];
+                        policy_out[child_idx][M_POLICY_POWER] = budget[child_idx];
                     }
                     // Store the budget history
                     m_last_budget1 = m_last_budget0;
@@ -244,12 +244,13 @@ gethostname(g_hostname, NAME_MAX);
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
+        int num_children = in_sample.size();
         /// @todo put in init() method after we pass fan_out to that method.
         if (m_last_runtime0.size() == 0) {
-            m_last_runtime0.resize(in_sample.size(), NAN);
-            m_last_runtime1.resize(in_sample.size(), NAN);
-            m_last_budget0.resize(in_sample.size(), NAN);
-            m_last_budget1.resize(in_sample.size(), NAN);
+            m_last_runtime0.resize(num_children, NAN);
+            m_last_runtime1.resize(num_children, NAN);
+            m_last_budget0.resize(num_children, NAN);
+            m_last_budget1.resize(num_children, NAN);
         }
         bool result = false;
         m_is_sample_stable = std::all_of(in_sample.begin(), in_sample.end(),
@@ -263,16 +264,16 @@ gethostname(g_hostname, NAME_MAX);
         // them up the tree.
         if (m_is_sample_stable && m_ascend_count == 0) {
             result = true;
-            std::vector<double> child_sample(in_sample.size());
+            std::vector<double> child_sample(num_children);
             for (size_t sig_idx = 0; sig_idx < out_sample.size(); ++sig_idx) {
-                for (size_t child_idx = 0; child_idx < in_sample.size(); ++child_idx) {
+                for (int child_idx = 0; child_idx < num_children; ++child_idx) {
                     child_sample[child_idx] = in_sample[child_idx][sig_idx];
                 }
                 out_sample[sig_idx] = m_agg_func[sig_idx](child_sample);
             }
         }
         // Increment the ascend counter if the children are stable.
-        if (m_is_stable) {
+        if (m_is_sample_stable) {
             ++m_ascend_count;
             if (m_ascend_count == m_ascend_period) {
                 m_ascend_count = 0;
@@ -350,20 +351,20 @@ std::cerr << g_hostname << ": (budget, target)=(" << in_policy[M_POLICY_POWER] <
 
         // If all of the ranks have observed a new epoch then update
         // the circular buffers that hold the history.
-        if (m_sample[M_SAMPLE_EPOCH_COUNT] != m_last_epoch_count) {
-            m_epoch_runtime_buf->insert(m_sample[M_SAMPLE_EPOCH_RUNTIME]);
-            m_epoch_power_buf->insert(m_sample[M_SAMPLE_EPOCH_ENERGY] / m_sample[M_SAMPLE_EPOCH_RUNTIME]);
+        if (m_sample[M_PLAT_SIGNAL_EPOCH_COUNT] != m_last_epoch_count) {
+            m_epoch_runtime_buf->insert(m_sample[M_PLAT_SIGNAL_EPOCH_RUNTIME]);
+            m_epoch_power_buf->insert(m_sample[M_PLAT_SIGNAL_EPOCH_ENERGY] / m_sample[M_PLAT_SIGNAL_EPOCH_RUNTIME]);
 
-            // If we have observed more than m_min_num_sample epoch
+            // If we have observed more than m_min_num_converged epoch
             // calls then send median filtered time and power values
             // up the tree.
-            if (m_epoch_runtime_buf->size() > m_min_num_sample) {
+            if (m_epoch_runtime_buf->size() > m_min_num_converged) {
                 out_sample[M_SAMPLE_EPOCH_RUNTIME] = IPlatformIO::agg_median(m_epoch_runtime_buf->make_vector());
                 out_sample[M_SAMPLE_POWER] = IPlatformIO::agg_median(m_epoch_power_buf->make_vector());
                 out_sample[M_SAMPLE_IS_CONVERGED] = (out_sample[M_SAMPLE_POWER] < 1.01 * m_last_power_budget_in);
                 result = true;
             }
-            m_last_epoch_count = m_sample[M_SAMPLE_EPOCH_COUNT];
+            m_last_epoch_count = m_sample[M_PLAT_SIGNAL_EPOCH_COUNT];
         }
         return result;
     }
@@ -478,13 +479,13 @@ std::cerr << " budget_clipped=" << result[child_idx] << "\n";
         return result;
     }
 
-    double BalancingAgent::runtime_stddev(const std::vector<std::vector<double> > &last_sample)
+    double BalancingAgent::runtime_stddev(const std::vector<double> &runtime)
     {
         double result = 0.0;
         double mean = 0.0;
-        int num_children = last_sample.size();
+        int num_children = runtime.size();
         for (int child_idx = 0; child_idx < num_children; ++child_idx) {
-            double child_runtime = last_sample[child_idx][M_SAMPLE_EPOCH_RUNTIME];
+            double child_runtime = runtime[child_idx];
             mean += child_runtime;
             result += child_runtime * child_runtime;
         }
