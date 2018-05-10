@@ -153,15 +153,19 @@ gethostname(g_hostname, NAME_MAX);
 
         if (m_level == 0 || m_last_power_budget_in != power_budget_in) {
             if (isnan(m_last_power_budget_in)) {
-                // First time down the tree, send the budget to all children.
+                // First time down the tree, send the same budget to all children.
                 std::fill(out_policy.begin(), out_policy.end(), std::vector<double>(1, power_budget_in));
                 m_is_updated = true;
             }
             else {
                 // Not the first descent
                 double stddev_child_runtime = runtime_stddev(m_last_sample0);
-                // If we are not within bounds redistribute power
                 if (m_is_sample_stable && stddev_child_runtime > m_convergence_target) {
+                    // All children have reported that they have
+                    // converged, but the relative runtimes between the
+                    // children is not small enough.
+
+                    // Reset counter of number of samples that have
                     m_num_converged = 0;
                     std::vector<double> last_runtime0(num_children);
                     std::vector<double> last_runtime1(num_children);
@@ -173,7 +177,7 @@ gethostname(g_hostname, NAME_MAX);
                         last_budget0[child_idx] = m_last_child_policy0[child_idx][M_POLICY_POWER];
                         last_budget1[child_idx] = m_last_child_policy1[child_idx][M_POLICY_POWER];
                     }
-                    std::vector<double>budget(num_children);
+                    std::vector<double> budget(num_children);
                     if (std::any_of(last_budget1.begin(), last_budget1.end(), isnan)) {
                         double median_runtime = IPlatformIO::agg_median(last_runtime0);
                         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
