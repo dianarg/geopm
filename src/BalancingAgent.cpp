@@ -187,6 +187,8 @@ gethostname(g_hostname, NAME_MAX);
                             }
                             total_target += budget[child_idx];
                         }
+                        // In corner cases we may have to modulate the
+                        // power a bit to stay at the limit.
                         if (policy_in[M_POLICY_POWER] * num_children != total_target) {
                             double delta = policy_in[M_POLICY_POWER] - total_target / num_children;
                             for (auto &it : budget) {
@@ -195,17 +197,20 @@ gethostname(g_hostname, NAME_MAX);
                         }
                     }
                     else {
-                        budget = split_budget(power_budget_in, m_lower_bound,
-                                              m_last_budget0, m_last_budget1,
-                                              m_last_runtime0, m_last_runtime1);
+                        budget = split_budget(power_budget_in, m_lower_bound);
                     }
+                    // Store the new budget in the out_policy vector
                     for (int child_idx = 0; child_idx != num_children; ++child_idx) {
                         out_policy[child_idx][M_POLICY_POWER] = budget[child_idx];
                     }
+                    // Store the budget history
                     m_last_budget1 = m_last_budget0;
                     m_last_budget0 = budget;
+                    // Clear the runtime and power histories since
+                    // they reflect the previous budget.
                     m_epoch_runtime_buf->clear();
                     m_epoch_power_buf->clear();
+                    // The budget is new, so send it down the tree.
                     m_is_updated = true;
                 }
                 // We are out of bounds increment out of range counter
@@ -226,6 +231,7 @@ gethostname(g_hostname, NAME_MAX);
                     }
                 }
             }
+            m_last_power_budget_in = power_budget_in;
         }
         return m_is_updated;
     }
@@ -252,6 +258,9 @@ gethostname(g_hostname, NAME_MAX);
                 return val[M_SAMPLE_IS_CONVERGED];
             });
 
+        // If all children report that they are converged for the last
+        // ascend period times, then agregate the samples and send
+        // them up the tree.
         if (m_is_sample_stable && m_ascend_count == 0) {
             result = true;
             std::vector<double> child_sample(in_sample.size());
@@ -262,23 +271,23 @@ gethostname(g_hostname, NAME_MAX);
                 out_sample[sig_idx] = m_agg_func[sig_idx](child_sample);
             }
         }
-        ++m_ascend_count;
-        if (m_ascend_count == m_ascend_period) {
-            m_ascend_count = 0;
+        // Increment the ascend counter if the children are stable.
+        if (m_is_stable) {
+            ++m_ascend_count;
+            if (m_ascend_count == m_ascend_period) {
+                m_ascend_count = 0;
+            }
         }
 
-        if (out_sample[M_SAMPLE_EPOCH_RUNTIME] == 0.0 ||
-            isnan(out_sample[M_SAMPLE_EPOCH_RUNTIME]) ||
-            out_sample[M_SAMPLE_EPOCH_RUNTIME] == m_last_epoch_runtime) {
-            result = false;
-        }
-        else {
-            m_last_epoch_runtime = out_sample[M_SAMPLE_EPOCH_RUNTIME];
-        }
-
-        m_last_runtime1 = m_last_runtime0;
+        // If we see a new runtime reported from one of the children,
+        // then update the history.
+        std::vector<double> this_runtime(num_children);
         for (int child_idx = 0; child_idx < num_children; ++child_idx) {
-            m_last_runtime0[child_idx] = in_sample[child_idx][M_SAMPLE_EPOCH_RUNTIME];
+            this_runtime[child_idx] = in_sample[child_idx][M_SAMPLE_EPOCH_RUNTIME];
+        }
+        if (this_runtime != m_last_runtime0) {
+            m_last_runtime1 = m_last_runtime0;
+            m_last_runtime0 = this_runtime;
         }
         return result;
     }
@@ -302,6 +311,9 @@ gethostname(g_hostname, NAME_MAX);
         if (isnan(dram_power)) {
             dram_power = 0.0;
         }
+        // If the budget has changed, or we have seen the same budget
+        // for m_samples_per_control samples, then update the
+        // power limits.
         if (m_last_power_budget_out != in_policy[M_POLICY_POWER] || m_sample_count == 0) {
             double num_pkg = m_control_idx.size();
             double target_pkg_power = (in_policy[M_POLICY_POWER] - dram_power) / num_pkg;
@@ -331,20 +343,27 @@ std::cerr << g_hostname << ": (budget, target)=(" << in_policy[M_POLICY_POWER] <
         }
 #endif
         bool result = false;
+        // Populate sample vector by reading from PlatformIO
         for (int sample_idx = 0; sample_idx < M_PLAT_NUM_SIGNAL; ++sample_idx) {
             m_sample[sample_idx] = m_platform_io.sample(m_pio_idx[sample_idx]);
         }
 
+        // If all of the ranks have observed a new epoch then update
+        // the circular buffers that hold the history.
         if (m_sample[M_SAMPLE_EPOCH_COUNT] != m_last_epoch_count) {
             m_epoch_runtime_buf->insert(m_sample[M_SAMPLE_EPOCH_RUNTIME]);
             m_epoch_power_buf->insert(m_sample[M_SAMPLE_EPOCH_ENERGY] / m_sample[M_SAMPLE_EPOCH_RUNTIME]);
 
+            // If we have observed more than m_min_num_sample epoch
+            // calls then send median filtered time and power values
+            // up the tree.
             if (m_epoch_runtime_buf->size() > m_min_num_sample) {
                 out_sample[M_SAMPLE_EPOCH_RUNTIME] = IPlatformIO::agg_median(m_epoch_runtime_buf->make_vector());
                 out_sample[M_SAMPLE_POWER] = IPlatformIO::agg_median(m_epoch_power_buf->make_vector());
-                out_sample[M_SAMPLE_IS_CONVERGED] = true;
+                out_sample[M_SAMPLE_IS_CONVERGED] = (out_sample[M_SAMPLE_POWER] < 1.01 * m_last_power_budget_in);
                 result = true;
             }
+            m_last_epoch_count = m_sample[M_SAMPLE_EPOCH_COUNT];
         }
         return result;
     }
@@ -370,18 +389,22 @@ std::cerr << g_hostname << ": (budget, target)=(" << in_policy[M_POLICY_POWER] <
                                                             const std::vector<double> &last_runtime0,
                                                             const std::vector<double> &last_runtime1)
     {
-        /// sum(result) = avg_power_budget * num_children
-        /// time[i] = time[j] for all i and j
-
-        /// m[i] = (last_runtime1[i] - last_runtime0[i]) / (last_budget1[i] - last_budget0[i])
-        /// b[i] = last_budget0[i] - last_runtime0[i] / m[i]
-
-        /// time = m[i] * result[i] + b[i]
-        /// result[i] = (time - b[i]) / m[i]
-        /// avg_power_budget * num_children = sum((time - b[i]) / m[i])
-        ///                                 = time * sum(1/m[i]) - sum(b[i] / m[i])
-        /// time = avg_power_budget * num_children / (sum(1/m[i]) - sum(b[i] / m[i]))
-        /// result[i] = ((avg_power_budget * num_children / (sum(1/m[i]) - sum(b[i] / m[i]))) - b[i]) / m[i]
+        // Fit a line to runtime as a function of budget for each
+        // child.  Find the budget value for each child such that the
+        // projected runtime is uniform given the linear model.
+        // 
+        // sum(result) = avg_power_budget * num_children
+        // time[i] = time[j] for all i and j
+        //
+        // m[i] = (last_runtime1[i] - last_runtime0[i]) / (last_budget1[i] - last_budget0[i])
+        // b[i] = last_budget0[i] - last_runtime0[i] / m[i]
+        //
+        // time = m[i] * result[i] + b[i]
+        // result[i] = (time - b[i]) / m[i]
+        // avg_power_budget * num_children = sum((time - b[i]) / m[i])
+        //                                 = time * sum(1/m[i]) - sum(b[i] / m[i])
+        // time = avg_power_budget * num_children / (sum(1/m[i]) - sum(b[i] / m[i]))
+        // result[i] = ((avg_power_budget * num_children / (sum(1/m[i]) - sum(b[i] / m[i]))) - b[i]) / m[i]
 
         int num_children = last_budget0.size();
         std::vector<double> result(num_children);
@@ -391,7 +414,7 @@ std::cerr << g_hostname << ": (budget, target)=(" << in_policy[M_POLICY_POWER] <
         double ratio_sum = 0.0;
         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
             mm[child_idx] = (last_runtime1[child_idx] - last_runtime0[child_idx]) /
-                     (last_budget1[child_idx] - last_budget0[child_idx]);
+                            (last_budget1[child_idx] - last_budget0[child_idx]);
             bb[child_idx] = last_budget0[child_idx] - last_runtime0[child_idx] / mm[child_idx];
             inv_m_sum += 1.0 / mm[child_idx];
             ratio_sum += bb[child_idx] / mm[child_idx];
@@ -413,15 +436,11 @@ std::cerr << " budget_clipped=" << result[child_idx] << "\n";
     }
 
     std::vector<double> BalancingAgent::split_budget(double avg_power_budget,
-                                                     double min_power_budget,
-                                                     const std::vector<double> &last_budget0,
-                                                     const std::vector<double> &last_budget1,
-                                                     const std::vector<double> &last_runtime0,
-                                                     const std::vector<double> &last_runtime1)
+                                                     double min_power_budget)
     {
 #ifdef GEOPM_DEBUG
         /// @fixme check other vector lengths
-        if (last_budget0.size() != last_runtime0.size()) {
+        if (m_last_budget0.size() != m_last_runtime0.size()) {
             throw Exception("BalancingAgent::split_budget(): input vectors are not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
@@ -430,10 +449,10 @@ std::cerr << " budget_clipped=" << result[child_idx] << "\n";
             throw Exception("BalancingAgent::split_budget(): ave_power_budget less than min_power_budget.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        int num_children = last_budget0.size();
+        int num_children = m_last_budget0.size();
         std::vector<std::pair<double, int> > indexed_sorted_last_runtime(num_children);
         for (int idx = 0; idx != num_children; ++idx) {
-            indexed_sorted_last_runtime[idx] = std::make_pair(last_runtime0[idx], idx);
+            indexed_sorted_last_runtime[idx] = std::make_pair(m_last_runtime0[idx], idx);
         }
         std::sort(indexed_sorted_last_runtime.begin(), indexed_sorted_last_runtime.end());
         std::vector<double> sorted_last_budget0(num_children);
@@ -442,11 +461,11 @@ std::cerr << " budget_clipped=" << result[child_idx] << "\n";
         std::vector<double> sorted_last_runtime1(num_children);
         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
             int sort_idx = indexed_sorted_last_runtime[child_idx].second;
-            sorted_last_budget0[child_idx] = last_budget0[sort_idx];
-            sorted_last_budget1[child_idx] = last_budget1[sort_idx];
+            sorted_last_budget0[child_idx] = m_last_budget0[sort_idx];
+            sorted_last_budget1[child_idx] = m_last_budget1[sort_idx];
             // note last_runtime[sort_idx] == indexed_sorted_last_runtime[child_idx].first
-            sorted_last_runtime0[child_idx] = last_runtime0[sort_idx];
-            sorted_last_runtime1[child_idx] = last_runtime1[sort_idx];
+            sorted_last_runtime0[child_idx] = m_last_runtime0[sort_idx];
+            sorted_last_runtime1[child_idx] = m_last_runtime1[sort_idx];
         }
         std::vector<double> sorted_result = split_budget_helper(avg_power_budget, min_power_budget,
                                                                 sorted_last_budget0, sorted_last_budget1,
