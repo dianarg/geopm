@@ -113,6 +113,8 @@ gethostname(g_hostname, NAME_MAX);
     {
         // Setup signals
         m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME] = m_platform_io.push_signal("EPOCH_RUNTIME", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_pio_idx[M_PLAT_SIGNAL_EPOCH_ENERGY] = m_platform_io.push_signal("EPOCH_ENERGY", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT] = m_platform_io.push_signal("EPOCH_COUNT", IPlatformTopo::M_DOMAIN_BOARD, 0);
         m_pio_idx[M_PLAT_SIGNAL_PKG_POWER] = m_platform_io.push_signal("POWER_PACKAGE", IPlatformTopo::M_DOMAIN_BOARD, 0);
         m_pio_idx[M_PLAT_SIGNAL_DRAM_POWER] = m_platform_io.push_signal("POWER_DRAM", IPlatformTopo::M_DOMAIN_BOARD, 0);
 
@@ -159,47 +161,51 @@ gethostname(g_hostname, NAME_MAX);
             }
             else {
                 // Not the first descent
-                double stddev_child_runtime = runtime_stddev(m_last_sample0);
+                double stddev_child_runtime = runtime_stddev(m_last_runtime0);
                 if (m_is_sample_stable && stddev_child_runtime > m_convergence_target) {
                     // All children have reported that they have
-                    // converged, but the relative runtimes between the
-                    // children is not small enough.
+                    // converged (m_is_sample_stable), but the
+                    // relative runtimes between the children is not
+                    // small enough.
 
-                    // Reset counter of number of samples that have
+                    // Reset counter of number of unique samples that
+                    // have been passed up that reported convergence.
                     m_num_converged = 0;
-                    std::vector<double> last_runtime0(num_children);
-                    std::vector<double> last_runtime1(num_children);
-                    std::vector<double> last_budget0(num_children);
-                    std::vector<double> last_budget1(num_children);
-                    for (int child_idx = 0; child_idx < num_children; ++child_idx) {
-                        last_runtime0[child_idx] = m_last_sample0[child_idx][M_SAMPLE_EPOCH_RUNTIME];
-                        last_runtime1[child_idx] = m_last_sample1[child_idx][M_SAMPLE_EPOCH_RUNTIME];
-                        last_budget0[child_idx] = m_last_child_policy0[child_idx][M_POLICY_POWER];
-                        last_budget1[child_idx] = m_last_child_policy1[child_idx][M_POLICY_POWER];
-                    }
                     std::vector<double> budget(num_children);
-                    if (std::any_of(last_budget1.begin(), last_budget1.end(), isnan)) {
-                        double median_runtime = IPlatformIO::agg_median(last_runtime0);
+                    if (std::any_of(m_last_budget1.begin(), m_last_budget1.end(), isnan)) {
+                        // We have only one sample, so move our budget
+                        // a small amount to measure measure slope of
+                        // runtime vs. power.
+                        double median_runtime = IPlatformIO::agg_median(m_last_runtime0);
+                        double total_target = 0.0;
                         for (int child_idx = 0; child_idx != num_children; ++child_idx) {
-                            if (last_runtime0[child_idx] < median_runtime) {
-                                budget[child_idx] = last_budget0[child_idx] - 10;
+                            if (m_last_runtime0[child_idx] < median_runtime) {
+                                budget[child_idx] = m_last_budget0[child_idx] - 10;
                             }
-                            else if (last_runtime0[child_idx] > median_runtime) {
-                                budget[child_idx] = last_budget0[child_idx] + 10;
+                            else if (m_last_runtime0[child_idx] >= median_runtime) {
+                                budget[child_idx] = m_last_budget0[child_idx] + 10;
                             }
-                            else {
-                                budget[child_idx] = last_budget0[child_idx];
+                            total_target += budget[child_idx];
+                        }
+                        if (policy_in[M_POLICY_POWER] * num_children != total_target) {
+                            double delta = policy_in[M_POLICY_POWER] - total_target / num_children;
+                            for (auto &it : budget) {
+                                it += delta;
                             }
                         }
                     }
                     else {
                         budget = split_budget(power_budget_in, m_lower_bound,
-                                              last_budget0, last_budget1,
-                                              last_runtime0, last_runtime1);
+                                              m_last_budget0, m_last_budget1,
+                                              m_last_runtime0, m_last_runtime1);
                     }
-                    for (int idx = 0; idx != num_children; ++idx) {
-                         out_policy[idx][0] = budget[idx];
+                    for (int child_idx = 0; child_idx != num_children; ++child_idx) {
+                        out_policy[child_idx][M_POLICY_POWER] = budget[child_idx];
                     }
+                    m_last_budget1 = m_last_budget0;
+                    m_last_budget0 = budget;
+                    m_epoch_runtime_buf->clear();
+                    m_epoch_power_buf->clear();
                     m_is_updated = true;
                 }
                 // We are out of bounds increment out of range counter
@@ -221,13 +227,6 @@ gethostname(g_hostname, NAME_MAX);
                 }
             }
         }
-        if (m_last_child_policy0 != out_policy) {
-            m_last_power_budget_in = power_budget_in;
-            m_last_child_policy1 = m_last_child_policy0;
-            m_last_child_policy0 = out_policy;
-            m_epoch_runtime_buf->clear();
-            m_epoch_power_buf->clear();
-        }
         return m_is_updated;
     }
 
@@ -240,11 +239,11 @@ gethostname(g_hostname, NAME_MAX);
         }
 #endif
         /// @todo put in init() method after we pass fan_out to that method.
-        if (m_last_sample0.size() == 0) {
-            m_last_sample0.resize(in_sample.size(), std::vector<double>(M_NUM_SAMPLE, NAN));
-            m_last_sample1.resize(in_sample.size(), std::vector<double>(M_NUM_SAMPLE, NAN));
-            m_last_child_policy0.resize(in_sample.size(), std::vector<double>(M_NUM_POLICY, NAN));
-            m_last_child_policy1.resize(in_sample.size(), std::vector<double>(M_NUM_POLICY, NAN));
+        if (m_last_runtime0.size() == 0) {
+            m_last_runtime0.resize(in_sample.size(), NAN);
+            m_last_runtime1.resize(in_sample.size(), NAN);
+            m_last_budget0.resize(in_sample.size(), NAN);
+            m_last_budget1.resize(in_sample.size(), NAN);
         }
         bool result = false;
         m_is_sample_stable = std::all_of(in_sample.begin(), in_sample.end(),
@@ -276,8 +275,11 @@ gethostname(g_hostname, NAME_MAX);
         else {
             m_last_epoch_runtime = out_sample[M_SAMPLE_EPOCH_RUNTIME];
         }
-        m_last_sample1 = m_last_sample0;
-        m_last_sample0 = in_sample;
+
+        m_last_runtime1 = m_last_runtime0;
+        for (int child_idx = 0; child_idx < num_children; ++child_idx) {
+            m_last_runtime0[child_idx] = in_sample[child_idx][M_SAMPLE_EPOCH_RUNTIME];
+        }
         return result;
     }
 
@@ -333,25 +335,17 @@ std::cerr << g_hostname << ": (budget, target)=(" << in_policy[M_POLICY_POWER] <
             m_sample[sample_idx] = m_platform_io.sample(m_pio_idx[sample_idx]);
         }
 
-        if (!std::any_of(m_sample.begin(), m_sample.end(),
-            [](double val)
-            {
-                return isnan(val) || val == 0.0;
-            })) {
-
+        if (m_sample[M_SAMPLE_EPOCH_COUNT] != m_last_epoch_count) {
             m_epoch_runtime_buf->insert(m_sample[M_SAMPLE_EPOCH_RUNTIME]);
-            // Sum of all PKG and DRAM power.
-            m_epoch_power_buf->insert(m_sample[M_PLAT_SIGNAL_PKG_POWER] +
-                                      m_sample[M_PLAT_SIGNAL_DRAM_POWER]);
+            m_epoch_power_buf->insert(m_sample[M_SAMPLE_EPOCH_ENERGY] / m_sample[M_SAMPLE_EPOCH_RUNTIME]);
 
-            if (m_epoch_runtime_buf->size() > m_num_sample) {
+            if (m_epoch_runtime_buf->size() > m_min_num_sample) {
                 out_sample[M_SAMPLE_EPOCH_RUNTIME] = IPlatformIO::agg_median(m_epoch_runtime_buf->make_vector());
                 out_sample[M_SAMPLE_POWER] = IPlatformIO::agg_median(m_epoch_power_buf->make_vector());
                 out_sample[M_SAMPLE_IS_CONVERGED] = true;
                 result = true;
             }
         }
-
         return result;
     }
 

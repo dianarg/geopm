@@ -130,10 +130,10 @@ namespace geopm
 
             double m_last_power_budget_in;
             double m_last_power_budget_out;
-            std::vector<std::vector<double> > m_last_sample0;
-            std::vector<std::vector<double> > m_last_sample1;
-            std::vector<std::vector<double> > m_last_child_policy0;
-            std::vector<std::vector<double> > m_last_child_policy1;
+            std::vector<double> m_last_runtime0;
+            std::vector<double> m_last_runtime1;
+            std::vector<double> m_last_budget0;
+            std::vector<double> m_last_budget1;
             std::unique_ptr<ICircularBuffer<double> > m_epoch_runtime_buf;
             std::unique_ptr<ICircularBuffer<double> > m_epoch_power_buf;
             std::vector<double> m_sample;
