@@ -52,11 +52,11 @@ namespace geopm
                 M_POLICY_POWER,
                 M_NUM_POLICY,
             };
-            enum m_plat_sample_e {
-                M_PLAT_SAMPLE_EPOCH_RUNTIME,
-                M_PLAT_SAMPLE_PKG_POWER,
-                M_PLAT_SAMPLE_DRAM_POWER,
-                M_PLAT_NUM_SAMPLE,
+            enum m_plat_signal_e {
+                M_PLAT_SIGNAL_EPOCH_RUNTIME,
+                M_PLAT_SIGNAL_PKG_POWER,
+                M_PLAT_SIGNAL_DRAM_POWER,
+                M_PLAT_NUM_SIGNAL,
             };
             enum m_trace_sample_e {
                 M_TRACE_SAMPLE_EPOCH_RUNTIME,
