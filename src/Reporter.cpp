@@ -139,11 +139,8 @@ namespace geopm
             if (region.find("MPI_") == 0) {
                 region_id = geopm_region_id_set_mpi(region_id);
             }
-            uint64_t mpi_region_id = geopm_region_id_set_mpi(region_id);
             double energy = m_platform_io.sample_region_total(m_energy_pkg_idx, region_id) +
-                m_platform_io.sample_region_total(m_energy_pkg_idx, mpi_region_id) +
                 m_platform_io.sample_region_total(m_energy_dram_idx, region_id) +
-                m_platform_io.sample_region_total(m_energy_dram_idx, mpi_region_id);
             int count = application_io.total_count(region_id);
             if (count > 0) {
                 region_ordered.push_back({region,
@@ -190,10 +187,8 @@ namespace geopm
                    << std::endl;
             report << "    runtime (sec): " << region.runtime << std::endl;
             report << "    energy (joules): " << region.energy << std::endl;
-            double numer = m_platform_io.sample_region_total(m_clk_core_idx, region.id) +
-                           m_platform_io.sample_region_total(m_clk_core_idx, mpi_region_id);
-            double denom = m_platform_io.sample_region_total(m_clk_ref_idx, region.id) +
-                           m_platform_io.sample_region_total(m_clk_ref_idx, mpi_region_id);
+            double numer = m_platform_io.sample_region_total(m_clk_core_idx, region.id);
+            double denom = m_platform_io.sample_region_total(m_clk_ref_idx, region.id);
             double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
             report << "    frequency (%): " << freq << std::endl;
             report << "    mpi-runtime (sec): " << application_io.total_region_mpi_runtime(region.id) << std::endl;

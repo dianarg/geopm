@@ -402,7 +402,13 @@ namespace geopm
                       .function  = IMSR::M_FUNCTION_OVERFLOW,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}},
-                {}),
+                {{"INST_RETIRED_ANY", (struct IMSR::m_encode_s) {
+                      .begin_bit = 0,
+                      .end_bit   = 40,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
+                      .function  = IMSR::M_FUNCTION_OVERFLOW,
+                      .units     = IMSR::M_UNITS_NONE,
+                      .scalar    = 1.0}}}),
             MSR("PERF_FIXED_CTR1", 0x30A,
                 {{"CPU_CLK_UNHALTED_THREAD", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
@@ -411,7 +417,13 @@ namespace geopm
                       .function  = IMSR::M_FUNCTION_OVERFLOW,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}},
-                {}),
+                {{"CPU_CLK_UNHALTED_THREAD", (struct IMSR::m_encode_s) {
+                      .begin_bit = 0,
+                      .end_bit   = 40,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
+                      .function  = IMSR::M_FUNCTION_OVERFLOW,
+                      .units     = IMSR::M_UNITS_NONE,
+                      .scalar    = 1.0}}}),
             MSR("PERF_FIXED_CTR2", 0x30B,
                 {{"CPU_CLK_UNHALTED_REF_TSC", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
@@ -420,7 +432,13 @@ namespace geopm
                       .function  = IMSR::M_FUNCTION_OVERFLOW,
                       .units     = IMSR::M_UNITS_NONE,
                       .scalar    = 1.0}}},
-                {}),
+                {{"CPU_CLK_UNHALTED_REF_TSC", (struct IMSR::m_encode_s) {
+                      .begin_bit = 0,
+                      .end_bit   = 40,
+                      .domain    = IPlatformTopo::M_DOMAIN_CPU,
+                      .function  = IMSR::M_FUNCTION_OVERFLOW,
+                      .units     = IMSR::M_UNITS_NONE,
+                      .scalar    = 1.0}}}),
             /// @todo Define all the other MSRs.
         };
         num_msr = sizeof(instance) / sizeof(MSR);
