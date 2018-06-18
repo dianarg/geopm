@@ -105,9 +105,9 @@ namespace geopm
             ///        the region entry.  Region entry and exit are
             ///        not exact and are determined by the value of
             ///        the REGION_ID# signal at the time of
-            ///        read_batch().  This aggregation should not be
-            ///        used for signals that are not monotonically
-            ///        increasing, such as frequency.
+            ///        read_batch().  This aggregation should be used
+            ///        only for signals that are monotonically
+            ///        increasing, such as event counters.
             /// @param [in] signal_idx Index returned by a previous
             ///        call to push_signal.  If the signal_idx is
             ///        not a previously registered signal, this
