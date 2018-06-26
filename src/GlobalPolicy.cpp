@@ -1019,8 +1019,8 @@ namespace geopm
         const int freq_ctl_domain = pio.control_domain_type(freq_ctl_name);
         const int num_power_domain = topo.num_domain(power_ctl_domain);
         const int num_freq_domain = topo.num_domain(freq_ctl_domain);
-        const int num_real_cpus = topo.num_domain(IPlatformTopo::M_DOMAIN_CORE);
-        const int num_packages = topo.num_domain(IPlatformTopo::M_DOMAIN_PACKAGE);
+        const int num_real_cpus = topo.num_domain(GEOPM_DOMAIN_CORE);
+        const int num_packages = topo.num_domain(GEOPM_DOMAIN_PACKAGE);
         const int num_cpus_per_package = num_real_cpus / num_packages;
         const int affinity_type = affinity();
         const int num_cpu_max_perf = num_max_perf();
@@ -1028,7 +1028,7 @@ namespace geopm
         const std::string min_freq_signal_name = "CPUINFO::FREQ_MIN";
         /*const*/ int domain_type = pio.signal_domain_type(min_freq_signal_name);
         /// @todo delete line below once PlatformIO supports control for non-CPU domains.
-        domain_type = IPlatformTopo::M_DOMAIN_CPU;
+        domain_type = GEOPM_DOMAIN_CPU;
         double min_freq = pio.read_signal(min_freq_signal_name, domain_type, 0);
 
         switch (m_mode) {

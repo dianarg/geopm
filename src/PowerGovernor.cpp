@@ -57,8 +57,8 @@ namespace geopm
         , m_sample_count(-1)
         , m_pkg_pwr_domain_type(m_platform_io.control_domain_type("POWER_PACKAGE"))
         , m_num_pkg(m_platform_topo.num_domain(m_pkg_pwr_domain_type))
-        , M_MIN_PKG_POWER_SETTING(m_platform_io.read_signal("POWER_PACKAGE_MIN", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
-        , M_MAX_PKG_POWER_SETTING(m_platform_io.read_signal("POWER_PACKAGE_MAX", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
+        , M_MIN_PKG_POWER_SETTING(m_platform_io.read_signal("POWER_PACKAGE_MIN", GEOPM_DOMAIN_PACKAGE, 0))
+        , M_MAX_PKG_POWER_SETTING(m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0))
         , m_min_pkg_power_policy(M_MIN_PKG_POWER_SETTING)
         , m_max_pkg_power_policy(M_MAX_PKG_POWER_SETTING)
         , m_dram_sig_idx(-1)
@@ -84,7 +84,7 @@ namespace geopm
 
     void PowerGovernor::init_platform_io(void)
     {
-        m_dram_sig_idx = m_platform_io.push_signal("POWER_DRAM", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_dram_sig_idx = m_platform_io.push_signal("POWER_DRAM", GEOPM_DOMAIN_BOARD, 0);
         for(int i = 0; i < m_num_pkg; ++i) {
             int control_idx = m_platform_io.push_control("POWER_PACKAGE", m_pkg_pwr_domain_type, i);
             m_control_idx.push_back(control_idx);

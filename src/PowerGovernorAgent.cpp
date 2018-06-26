@@ -58,8 +58,8 @@ namespace geopm
         , m_level(-1)
         , m_is_converged(false)
         , m_is_sample_stable(false)
-        , m_min_power_setting(m_platform_io.read_signal("POWER_PACKAGE_MIN", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
-        , m_max_power_setting(m_platform_io.read_signal("POWER_PACKAGE_MAX", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
+        , m_min_power_setting(m_platform_io.read_signal("POWER_PACKAGE_MIN", GEOPM_DOMAIN_PACKAGE, 0))
+        , m_max_power_setting(m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0))
         , m_power_gov(std::move(power_gov))
         , m_pio_idx(M_PLAT_NUM_SIGNAL)
         , m_agg_func(M_NUM_SAMPLE)
@@ -114,12 +114,12 @@ namespace geopm
     {
         m_power_gov->init_platform_io();
         // Setup signals
-        m_pio_idx[M_PLAT_SIGNAL_PKG_POWER] = m_platform_io.push_signal("POWER_PACKAGE", IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_pio_idx[M_PLAT_SIGNAL_DRAM_POWER] = m_platform_io.push_signal("POWER_DRAM", IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_pio_idx[M_PLAT_SIGNAL_PKG_POWER] = m_platform_io.push_signal("POWER_PACKAGE", GEOPM_DOMAIN_BOARD, 0);
+        m_pio_idx[M_PLAT_SIGNAL_DRAM_POWER] = m_platform_io.push_signal("POWER_DRAM", GEOPM_DOMAIN_BOARD, 0);
 
         // Setup controls
         int pkg_pwr_domain_type = m_platform_io.control_domain_type("POWER_PACKAGE");
-        if (pkg_pwr_domain_type == IPlatformTopo::M_DOMAIN_INVALID) {
+        if (pkg_pwr_domain_type == GEOPM_DOMAIN_INVALID) {
             throw Exception("PowerGovernorAgent::" + std::string(__func__) + "(): Platform does not support package power control",
                             GEOPM_ERROR_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
         }
@@ -266,7 +266,7 @@ namespace geopm
 
         for (int i = 0; i < m_updates_per_sample; ++i) {
             do  {
-                curr_energy_status = m_platform_io.read_signal("ENERGY_PACKAGE", IPlatformTopo::M_DOMAIN_PACKAGE, 0);
+                curr_energy_status = m_platform_io.read_signal("ENERGY_PACKAGE", GEOPM_DOMAIN_PACKAGE, 0);
             }
             while (m_last_energy_status == curr_energy_status);
             m_last_energy_status = curr_energy_status;

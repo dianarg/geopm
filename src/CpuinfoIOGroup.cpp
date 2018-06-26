@@ -156,13 +156,13 @@ namespace geopm
 
     int CpuinfoIOGroup::signal_domain_type(const std::string &signal_name) const
     {
-        int result = PlatformTopo::M_DOMAIN_INVALID;
+        int result = GEOPM_DOMAIN_INVALID;
         if (is_valid_signal(signal_name)) {
             if (std::isnan(m_signal_value_map.find(signal_name)->second)) {
-                result = PlatformTopo::M_DOMAIN_INVALID;
+                result = GEOPM_DOMAIN_INVALID;
             }
             else {
-                result = PlatformTopo::M_DOMAIN_BOARD;
+                result = GEOPM_DOMAIN_BOARD;
             }
         }
         return result;
@@ -170,7 +170,7 @@ namespace geopm
 
     int CpuinfoIOGroup::control_domain_type(const std::string &control_name) const
     {
-        return PlatformTopo::M_DOMAIN_INVALID;
+        return GEOPM_DOMAIN_INVALID;
     }
 
     int CpuinfoIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
@@ -180,7 +180,7 @@ namespace geopm
                             "not valid for CpuinfoIOGroup",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        else if (domain_type != PlatformTopo::M_DOMAIN_BOARD) {
+        else if (domain_type != GEOPM_DOMAIN_BOARD) {
             throw Exception("CpuinfoIOGroup:read_signal(): domain_type " + std::to_string(domain_type) +
                             "not valid for CpuinfoIOGroup",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
@@ -232,12 +232,12 @@ namespace geopm
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         switch (domain_type) {
-            case PlatformTopo::M_DOMAIN_BOARD:
-            case PlatformTopo::M_DOMAIN_PACKAGE:
-            case PlatformTopo::M_DOMAIN_CORE:
-            case PlatformTopo::M_DOMAIN_CPU:
+            case GEOPM_DOMAIN_BOARD:
+            case GEOPM_DOMAIN_PACKAGE:
+            case GEOPM_DOMAIN_CORE:
+            case GEOPM_DOMAIN_CPU:
                 break;
-            case PlatformTopo::M_DOMAIN_INVALID:
+            case GEOPM_DOMAIN_INVALID:
             default:
                 throw Exception("CpuinfoIOGroup:read_signal(): domain_type " + std::to_string(domain_type) +
                                 "not valid for CpuinfoIOGroup",

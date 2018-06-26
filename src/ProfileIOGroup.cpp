@@ -62,7 +62,7 @@ namespace geopm
                            {plugin_name() + "::REGION_RUNTIME", M_SIGNAL_RUNTIME},
                            {"REGION_RUNTIME", M_SIGNAL_RUNTIME}}
         , m_platform_topo(topo)
-        , m_per_cpu_runtime(topo.num_domain(IPlatformTopo::M_DOMAIN_CPU), NAN)
+        , m_per_cpu_runtime(topo.num_domain(GEOPM_DOMAIN_CPU), NAN)
     {
 
     }
@@ -93,16 +93,16 @@ namespace geopm
 
     int ProfileIOGroup::signal_domain_type(const std::string &signal_name) const
     {
-        int result = IPlatformTopo::M_DOMAIN_INVALID;
+        int result = GEOPM_DOMAIN_INVALID;
         if (is_valid_signal(signal_name)) {
-            result = IPlatformTopo::M_DOMAIN_CPU;
+            result = GEOPM_DOMAIN_CPU;
         }
         return result;
     }
 
     int ProfileIOGroup::control_domain_type(const std::string &control_name) const
     {
-        return PlatformTopo::M_DOMAIN_INVALID;
+        return GEOPM_DOMAIN_INVALID;
     }
 
     int ProfileIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
@@ -278,13 +278,13 @@ namespace geopm
                             " not valid for ProfileIOGroup",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        if (domain_type != PlatformTopo::M_DOMAIN_CPU) {
+        if (domain_type != GEOPM_DOMAIN_CPU) {
             /// @todo Add support for non-cpu domains.
             throw Exception("ProfileIOGroup::check_signal(): non-CPU domains are not supported",
                             GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         }
         int cpu_idx = domain_idx;
-        if (cpu_idx < 0 || cpu_idx >= m_platform_topo.num_domain(PlatformTopo::M_DOMAIN_CPU)) {
+        if (cpu_idx < 0 || cpu_idx >= m_platform_topo.num_domain(GEOPM_DOMAIN_CPU)) {
             throw Exception("ProfileIOGroup::check_signal(): domain index out of range",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }

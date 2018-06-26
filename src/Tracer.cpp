@@ -208,14 +208,14 @@ namespace geopm
 
             // default columns
             std::vector<IPlatformIO::m_request_s> base_columns({
-                    {"TIME", PlatformTopo::M_DOMAIN_BOARD, 0},
-                    {"REGION_ID#", PlatformTopo::M_DOMAIN_BOARD, 0},
-                    {"REGION_PROGRESS", PlatformTopo::M_DOMAIN_BOARD, 0},
-                    {"REGION_RUNTIME", PlatformTopo::M_DOMAIN_BOARD, 0},
-                    {"ENERGY_PACKAGE", PlatformTopo::M_DOMAIN_BOARD, 0},
-                    {"ENERGY_DRAM", PlatformTopo::M_DOMAIN_BOARD, 0},
-                    {"POWER_PACKAGE", PlatformTopo::M_DOMAIN_BOARD, 0},
-                    {"FREQUENCY", PlatformTopo::M_DOMAIN_BOARD, 0}});
+                    {"TIME", GEOPM_DOMAIN_BOARD, 0},
+                    {"REGION_ID#", GEOPM_DOMAIN_BOARD, 0},
+                    {"REGION_PROGRESS", GEOPM_DOMAIN_BOARD, 0},
+                    {"REGION_RUNTIME", GEOPM_DOMAIN_BOARD, 0},
+                    {"ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0},
+                    {"ENERGY_DRAM", GEOPM_DOMAIN_BOARD, 0},
+                    {"POWER_PACKAGE", GEOPM_DOMAIN_BOARD, 0},
+                    {"FREQUENCY", GEOPM_DOMAIN_BOARD, 0}});
             // for region entry/exit, make sure region index is known
             m_region_id_idx = 1;
             m_region_progress_idx = 2;
@@ -223,7 +223,7 @@ namespace geopm
 
             // extra columns from environment
             for (const auto &extra : m_env_column) {
-                base_columns.push_back({extra, IPlatformTopo::M_DOMAIN_BOARD, 0});
+                base_columns.push_back({extra, GEOPM_DOMAIN_BOARD, 0});
             }
 
             // set up columns to be sampled by Tracer
@@ -375,7 +375,7 @@ namespace geopm
         std::transform(name.begin(), name.end(), name.begin(),
                        [](unsigned char c){ return std::tolower(c); });
         result << name;
-        if (col.domain_type != IPlatformTopo::M_DOMAIN_BOARD) {
+        if (col.domain_type != GEOPM_DOMAIN_BOARD) {
             result << "-" << IPlatformTopo::domain_type_to_name(col.domain_type)
                    << "-" << col.domain_idx;
         }

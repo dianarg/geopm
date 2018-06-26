@@ -71,7 +71,7 @@ namespace geopm
         , m_freq_min(cpu_freq_min())
         , m_freq_max(cpu_freq_max())
         , m_freq_step(get_limit("CPUINFO::FREQ_STEP"))
-        , m_num_cpu(m_platform_topo.num_domain(IPlatformTopo::M_DOMAIN_CPU))
+        , m_num_cpu(m_platform_topo.num_domain(GEOPM_DOMAIN_CPU))
         , m_last_freq(NAN)
     {
         m_name = plugin_name();
@@ -94,8 +94,8 @@ namespace geopm
         double result = NAN;
         const double sticker_freq = m_platform_io.read_signal("CPUINFO::FREQ_STICKER", domain_type, 0);
         if (sig_name == "CPUINFO::FREQ_MIN") {
-            if (domain_type == IPlatformTopo::M_DOMAIN_INVALID) {
-                if (m_platform_io.signal_domain_type("CPUINFO::FREQ_STICKER") == IPlatformTopo::M_DOMAIN_INVALID) {
+            if (domain_type == GEOPM_DOMAIN_INVALID) {
+                if (m_platform_io.signal_domain_type("CPUINFO::FREQ_STICKER") == GEOPM_DOMAIN_INVALID) {
                     throw Exception("EfficientFreqDecider: unable to parse min and sticker frequencies.",
                                     GEOPM_ERROR_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
                 }
@@ -106,8 +106,8 @@ namespace geopm
             }
         }
         else if (sig_name == "CPUINFO::FREQ_MAX") {
-            if (domain_type == IPlatformTopo::M_DOMAIN_INVALID) {
-                if (m_platform_io.signal_domain_type("CPUINFO::FREQ_STICKER") == IPlatformTopo::M_DOMAIN_INVALID) {
+            if (domain_type == GEOPM_DOMAIN_INVALID) {
+                if (m_platform_io.signal_domain_type("CPUINFO::FREQ_STICKER") == GEOPM_DOMAIN_INVALID) {
                     throw Exception("EfficientFreqDecider: unable to parse max and sticker frequencies.",
                                     GEOPM_ERROR_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
                 }
@@ -132,7 +132,7 @@ namespace geopm
     void EfficientFreqDecider::init_platform_io(void)
     {
         uint64_t freq_domain_type = m_platform_io.control_domain_type("FREQUENCY");
-        if (freq_domain_type == IPlatformTopo::M_DOMAIN_INVALID) {
+        if (freq_domain_type == GEOPM_DOMAIN_INVALID) {
             throw Exception("EfficientFreqDecider: Platform does not support frequency control",
                             GEOPM_ERROR_DECIDER_UNSUPPORTED, __FILE__, __LINE__);
         }

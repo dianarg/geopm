@@ -74,6 +74,7 @@ int geopm_topo_domain_num_cpu(int domain_type,
 
 int geopm_topo_domain_cpu(int domain_type,
                           int domain_idx,
+                          int num_cpu,
                           int *cpu_idx);
 
 int geopm_topo_domain_idx(int domain_type,

@@ -47,6 +47,7 @@ namespace geopm
     class IPlatformTopo
     {
         public:
+            enum m_domain_e {
                 /// @brief Start of user defined collections of Linux
                 ///        logical CPUs
                 M_DOMAIN_CPU_GROUP_BEGIN = 4096,

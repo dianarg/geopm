@@ -1,0 +1,169 @@
+geopm_topo_c(3) -- query platform topology
+=====================================================================
+
+[//]: # (Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation)
+[//]: # ()
+[//]: # (Redistribution and use in source and binary forms, with or without)
+[//]: # (modification, are permitted provided that the following conditions)
+[//]: # (are met:)
+[//]: # ()
+[//]: # (    * Redistributions of source code must retain the above copyright)
+[//]: # (      notice, this list of conditions and the following disclaimer.)
+[//]: # ()
+[//]: # (    * Redistributions in binary form must reproduce the above copyright)
+[//]: # (      notice, this list of conditions and the following disclaimer in)
+[//]: # (      the documentation and/or other materials provided with the)
+[//]: # (      distribution.)
+[//]: # ()
+[//]: # (    * Neither the name of Intel Corporation nor the names of its)
+[//]: # (      contributors may be used to endorse or promote products derived)
+[//]: # (      from this software without specific prior written permission.)
+[//]: # ()
+[//]: # (THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS)
+[//]: # ("AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT)
+[//]: # (LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR)
+[//]: # (A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT)
+[//]: # (OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,)
+[//]: # (SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT)
+[//]: # (LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,)
+[//]: # (DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY)
+[//]: # (THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT)
+[//]: # ((INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE)
+[//]: # (OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.)
+
+## SYNOPSIS
+
+**\#include [<geopm_topo.h>](https://github.com/geopm/geopm/blob/dev/src/geopm_topo.h)**
+
+`Link with -lgeopmpolicy`
+
+  * `int geopm_topo_num_domain(`:
+    `int` _domain_type_, <br>
+    `int *`_num_domain_`);`
+
+  * `int geopm_topo_domain_num_cpu(`:
+    `int` _domain_type_, <br>
+    `int *`_num_cpu_`);`
+
+  * `int geopm_topo_domain_cpu(`:
+    `int` _domain_type_, <br>
+    `int` _domain_idx_, <br>
+    `int` _num_cpu_, <br>
+    `int *`_cpu_idx_`);`
+
+  * `int geopm_topo_domain_idx(`:
+    `int` _domain_type_, <br>
+    `int` _cpu_idx_, <br>
+    `int *`_domain_idx_`);`
+
+  * `int geopm_topo_define_cpu_group(`:
+     `int` _num_cpu_, <br>
+     `const int *`_cpu_domain_idx_, <br>
+     `int *`_cpu_group_idx_`);`
+
+  * `int geopm_topo_is_domain_within(`:
+    `int` _inner_domain_type_, <br>
+    `int` _outer_domain_type_, <br>
+    `int *`_is_within_`);`
+
+  * `int geopm_topo_domain_type_to_name(`:
+    `int` _domain_type_,
+    `int` _str_len_,
+    `char *`_domain_name_`);`
+
+  * `int geopm_topo_domain_name_to_type(`:
+    `const char *`_domain_name_,
+    `int *`_domain_type_`);`
+
+
+## DESCRIPTION
+  * `int geopm_topo_num_domain`():
+    Query the number of domains for the _domain_type_.  The output is
+    stored in the _num_domain_ variable.
+
+  * `int geopm_topo_domain_num_cpu`():
+    Query the number of Linux logical CPUs associated with the
+    _domain_idx_ element of the _domain_type_.
+
+  * `int geopm_topo_domain_cpu`():
+    Fill in the _cpu_idx_ array of length _num_cpu_ with the Linux
+    logical CPU index for all of the CPUs associated with the
+    _domain_idx_ element of the _domain_type_.
+
+  * `int geopm_topo_domain_idx`():
+    Query the index of the domain _domain_idx_ for a specific
+    _domain_type_ that is associated with the Linux logical CPU index
+    _cpu_idx_.
+
+  * `int geopm_topo_define_cpu_group`():
+    Group together a collection of _num_cpu_ Linux logical CPUs
+    specified by the _cpu_domain_idx_ array to form a new domain type
+    stored in the output parameter _cpu_gropu_idx_.  This domain type
+    can passed to other geopm_topo_*() interfaces in the same way as
+    the statically defined domain types.
+
+  * `int geopm_topo_is_domain_within`():
+    Query if _inner_domain_type_ is contained within
+    _outer_domain_type_, i.e. if_inner_domain_type_ can be split into
+    a grouping of domains where each group comprises one
+    _outer_domain_type_.
+
+  * `int geopm_topo_domain_type_to_name`():
+
+  * `int geopm_topo_domain_name_to_type`():
+
+Available domain types:
+
+  * GEOPM_DOMAIN_INVALID:
+    Reserved to represent an invalid domain
+
+  * GEOPM_DOMAIN_BOARD:
+    All components on a user allocated compute node (one per controller)
+
+  * GEOPM_DOMAIN_PACKAGE:
+    Single processor package in one socket
+
+  * GEOPM_DOMAIN_CORE:
+    Group of associated hyper-threads
+
+  * GEOPM_DOMAIN_CPU:
+    Linux logical CPU
+
+  * GEOPM_DOMAIN_BOARD_MEMORY:
+    Standard off package DIMM (DRAM or NAND)
+
+  * GEOPM_DOMAIN_PACKAGE_MEMORY:
+    On package memory (MCDRAM)
+
+  * GEOPM_DOMAIN_BOARD_NIC:
+    Network interface controller on the PCI bus
+
+  * GEOPM_DOMAIN_PACKAGE_NIC:
+    Network interface controller on the processor package
+
+  * GEOPM_DOMAIN_BOARD_ACCELERATOR:
+    Accelerator card on the PCI bus
+
+  * GEOPM_DOMAIN_PACKAGE_ACCELERATOR:
+    Accelerator unit on the package (e.g on-package graphics)
+
+All functions described in this man page return an error code on failure and
+zero upon success; see [ERRORS][] section below for details.
+
+## ERRORS
+All functions described on this man page return an error code.  See
+**geopm_error(3)** for a full description of the error numbers and how
+to convert them to strings.
+
+## COPYRIGHT
+Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
+
+## SEE ALSO
+**geopm(7)**,
+**geopm_agent_energy_efficient(7)**,
+**geopm_agent_monitor(7)**,
+**geopm_agent_power_balancer(7)**,
+**geopm_agent_c(3)**,
+**geopm_error(3)**,
+**geopmagent(1)**,
+**geopmendpoint(1)**

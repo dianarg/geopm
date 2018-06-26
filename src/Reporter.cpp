@@ -68,16 +68,16 @@ namespace geopm
 
     void Reporter::init(void)
     {
-        m_region_bulk_runtime_idx = m_platform_io.push_signal("TIME", IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_energy_pkg_idx = m_platform_io.push_signal("ENERGY_PACKAGE", IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_energy_dram_idx = m_platform_io.push_signal("ENERGY_DRAM", IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_clk_core_idx = m_platform_io.push_signal("CYCLES_THREAD", IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_clk_ref_idx = m_platform_io.push_signal("CYCLES_REFERENCE", IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_platform_io.push_region_signal_total(m_region_bulk_runtime_idx, IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_platform_io.push_region_signal_total(m_energy_pkg_idx, IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_platform_io.push_region_signal_total(m_energy_dram_idx, IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_platform_io.push_region_signal_total(m_clk_core_idx, IPlatformTopo::M_DOMAIN_BOARD, 0);
-        m_platform_io.push_region_signal_total(m_clk_ref_idx, IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_region_bulk_runtime_idx = m_platform_io.push_signal("TIME", GEOPM_DOMAIN_BOARD, 0);
+        m_energy_pkg_idx = m_platform_io.push_signal("ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0);
+        m_energy_dram_idx = m_platform_io.push_signal("ENERGY_DRAM", GEOPM_DOMAIN_BOARD, 0);
+        m_clk_core_idx = m_platform_io.push_signal("CYCLES_THREAD", GEOPM_DOMAIN_BOARD, 0);
+        m_clk_ref_idx = m_platform_io.push_signal("CYCLES_REFERENCE", GEOPM_DOMAIN_BOARD, 0);
+        m_platform_io.push_region_signal_total(m_region_bulk_runtime_idx, GEOPM_DOMAIN_BOARD, 0);
+        m_platform_io.push_region_signal_total(m_energy_pkg_idx, GEOPM_DOMAIN_BOARD, 0);
+        m_platform_io.push_region_signal_total(m_energy_dram_idx, GEOPM_DOMAIN_BOARD, 0);
+        m_platform_io.push_region_signal_total(m_clk_core_idx, GEOPM_DOMAIN_BOARD, 0);
+        m_platform_io.push_region_signal_total(m_clk_ref_idx, GEOPM_DOMAIN_BOARD, 0);
 
         if (!m_rank) {
             // check if report file can be created
@@ -206,7 +206,7 @@ namespace geopm
                            m_platform_io.sample_region_total(m_clk_ref_idx, mpi_region_id);
             double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
             report << "    frequency (%): " << freq << std::endl;
-            report << "    frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", IPlatformTopo::M_DOMAIN_BOARD, 0) << std::endl;
+            report << "    frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0) << std::endl;
             report << "    mpi-runtime (sec): " << application_io.total_region_mpi_runtime(region.id) << std::endl;
             report << "    count: " << region.count << std::endl;
             if (agent_region_report.find(region.id) != agent_region_report.end()) {
