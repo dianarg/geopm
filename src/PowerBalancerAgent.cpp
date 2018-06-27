@@ -62,6 +62,7 @@ namespace geopm
         , m_last_power_budget_out(NAN)
         , m_epoch_runtime_buf(geopm::make_unique<CircularBuffer<double> >(16)) // Magic number...
         , m_epoch_power_buf(geopm::make_unique<CircularBuffer<double> >(16)) // Magic number...
+        , m_dram_power_buf(geopm::make_unique<CircularBuffer<double> >(16)) // Magic number...
         , m_sample(M_PLAT_NUM_SIGNAL)
         , m_last_energy_status(0.0)
         , m_sample_count(0)
@@ -196,6 +197,7 @@ namespace geopm
                 // they reflect the previous budget.
                 m_epoch_runtime_buf->clear();
                 m_epoch_power_buf->clear();
+                m_dram_power_buf->clear();
                 // The budget is new, so send it down the tree.
                 m_is_updated = true;
                 result = true;
@@ -312,7 +314,8 @@ namespace geopm
 #endif
 
         bool result = false;
-        double dram_power = m_sample[M_PLAT_SIGNAL_DRAM_POWER];
+        double dram_power = IPlatformIO::agg_max(m_dram_power_buf->make_vector());
+
         // Check that we have enough samples (two) to measure DRAM power
         if (std::isnan(dram_power)) {
             dram_power = 0.0;
@@ -359,6 +362,9 @@ namespace geopm
             /// @todo fix me, should be as above, but we need the
             /// EPOCH_ENERGY signal which doens't currently exist
             m_epoch_power_buf->insert(m_sample[M_PLAT_SIGNAL_EPOCH_RUNTIME]);
+            if (!std::isnan(m_sample[M_PLAT_SIGNAL_DRAM_POWER])) {
+                m_dram_power_buf->insert(m_sample[M_PLAT_SIGNAL_DRAM_POWER]);
+            }
 
             // If we have observed more than m_min_num_converged epoch
             // calls then send median filtered time and power values
