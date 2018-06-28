@@ -49,7 +49,7 @@ namespace geopm
         : m_platform_io(platform_io())
         , m_platform_topo(platform_topo())
         , m_level(-1)
-        , m_is_converged(false)
+        , m_is_converged(true)
         , m_is_sample_stable(false)
         , m_updates_per_sample(5)
         , m_samples_per_control(10)
@@ -88,6 +88,13 @@ namespace geopm
         if (m_level == 0) {
             init_platform_io(); // Only do this at the leaf level.
         }
+
+        // Setup sample aggregation for data going up the tree
+        m_agg_func.resize(M_NUM_SAMPLE);
+        m_agg_func[M_SAMPLE_EPOCH_RUNTIME] = IPlatformIO::agg_max;
+        m_agg_func[M_SAMPLE_POWER] = IPlatformIO::agg_average;
+        m_agg_func[M_SAMPLE_IS_CONVERGED] = IPlatformIO::agg_and;
+
         m_num_children = fan_in[level];
         m_is_root = is_root;
         m_last_runtime0.resize(m_num_children, NAN);
@@ -122,11 +129,6 @@ namespace geopm
             }
             m_control_idx.push_back(control_idx);
         }
-
-        // Setup sample aggregation for data going up the tree
-        m_agg_func.push_back(IPlatformIO::agg_max);     // EPOCH_RUNTIME
-        m_agg_func.push_back(IPlatformIO::agg_average); // POWER
-        m_agg_func.push_back(IPlatformIO::agg_and);     // IS_CONVERGED
     }
 
 
@@ -217,6 +219,7 @@ namespace geopm
         if (std::isnan(m_last_power_budget_in)) {
             // Haven't yet recieved a budget split for the first time
             result = descend_initial_budget(power_budget_in, power_budget_out);
+            m_last_power_budget_in = power_budget_in;
         }
         else if (m_last_power_budget_in != power_budget_in) {
             // The incoming power budget has changed, restart the
@@ -243,6 +246,10 @@ namespace geopm
             throw Exception("PowerBalancerAgent::" + std::string(__func__) + "(): out_sample vector not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
+        if (in_sample.size() != (size_t)m_num_children) {
+            throw Exception("PowerBalancerAgent::" + std::string(__func__) + "(): in_sample vector is not correctly sized.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
 #endif
         bool result = false;
         m_is_sample_stable = std::all_of(in_sample.begin(), in_sample.end(),
@@ -252,7 +259,7 @@ namespace geopm
             });
 
         // If all children report that they are converged for the last
-        // ascend period times, then agregate the samples and send
+        // ascend period times, then aggregate the samples and send
         // them up the tree.
         if (m_is_sample_stable && m_ascend_count == 0) {
             result = true;
@@ -286,6 +293,7 @@ namespace geopm
         if (do_update) {
             m_last_runtime1 = m_last_runtime0;
             m_last_runtime0 = this_runtime;
+            m_epoch_runtime_buf->insert(m_agg_func[M_SAMPLE_EPOCH_RUNTIME](this_runtime));
         }
         return result;
     }
@@ -408,8 +416,12 @@ namespace geopm
     }
 
     std::vector<double> PowerBalancerAgent::split_budget_helper(double avg_power_budget,
-                                                            double min_power_budget,
-                                                            double max_power_budget)
+                                                                double min_power_budget,
+                                                                double max_power_budget,
+                                                                const std::vector<double> &last_budget0,
+                                                                const std::vector<double> &last_budget1,
+                                                                const std::vector<double> &last_runtime0,
+                                                                const std::vector<double> &last_runtime1)
     {
         // Fit a line to runtime as a function of budget for each
         // child.  Find the budget value for each child such that the
@@ -418,8 +430,8 @@ namespace geopm
         // sum(result) = avg_power_budget * m_num_children
         // time[i] = time[j] for all i and j
         //
-        // m[i] = (m_last_runtime1[i] - m_last_runtime0[i]) / (m_last_budget1[i] - m_last_budget0[i])
-        // b[i] = m_last_budget0[i] - m_last_runtime0[i] / m[i]
+        // m[i] = (last_runtime1[i] - last_runtime0[i]) / (last_budget1[i] - last_budget0[i])
+        // b[i] = last_budget0[i] - last_runtime0[i] / m[i]
         //
         // time = m[i] * result[i] + b[i]
         // result[i] = (time - b[i]) / m[i]
@@ -428,15 +440,22 @@ namespace geopm
         // time = avg_power_budget * m_num_children / (sum(1/m[i]) - sum(b[i] / m[i]))
         // result[i] = ((avg_power_budget * m_num_children / (sum(1/m[i]) - sum(b[i] / m[i]))) - b[i]) / m[i]
 
+#ifdef GEOPM_DEBUG
+        if (avg_power_budget < min_power_budget || avg_power_budget < 0 ||
+            min_power_budget > max_power_budget || min_power_budget < 0) {
+            throw Exception("PowerBalancerAgent::split_budget_helper: illogical power budget bounds or power calculation is negative", GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+
         std::vector<double> result(m_num_children);
         std::vector<double> mm(m_num_children);
         std::vector<double> bb(m_num_children);
         double inv_m_sum = 0.0;
         double ratio_sum = 0.0;
         for (int child_idx = 0; child_idx != m_num_children; ++child_idx) {
-            mm[child_idx] = (m_last_runtime1[child_idx] - m_last_runtime0[child_idx]) /
-                            (m_last_budget1[child_idx] - m_last_budget0[child_idx]);
-            bb[child_idx] = m_last_budget0[child_idx] - m_last_runtime0[child_idx] / mm[child_idx];
+            mm[child_idx] = (last_runtime1[child_idx] - last_runtime0[child_idx]) /
+                            (last_budget1[child_idx] - last_budget0[child_idx]);
+            bb[child_idx] = last_budget0[child_idx] - last_runtime0[child_idx] / mm[child_idx];
             inv_m_sum += 1.0 / mm[child_idx];
             ratio_sum += bb[child_idx] / mm[child_idx];
         }
@@ -460,7 +479,7 @@ namespace geopm
     std::vector<double> PowerBalancerAgent::split_budget(double avg_power_budget)
     {
         if (avg_power_budget < m_min_power_budget) {
-            throw Exception("PowerBalancerAgent::split_budget(): ave_power_budget less than min_power_budget.",
+            throw Exception("PowerBalancerAgent::split_budget(): avg_power_budget less than min_power_budget.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
 
@@ -494,7 +513,11 @@ namespace geopm
             }
             std::vector<double> sorted_result = split_budget_helper(avg_power_budget,
                                                                     m_min_power_budget,
-                                                                    m_max_power_budget);
+                                                                    m_max_power_budget,
+                                                                    sorted_last_budget0,
+                                                                    sorted_last_budget1,
+                                                                    sorted_last_runtime0,
+                                                                    sorted_last_runtime1);
             for (int child_idx = 0; child_idx != m_num_children; ++child_idx) {
                 int sort_idx = indexed_sorted_last_runtime[child_idx].second;
                 result[child_idx] = sorted_result[sort_idx];

@@ -103,7 +103,11 @@ namespace geopm
             std::vector<double> split_budget_first(double power_budget_in);
             std::vector<double> split_budget_helper(double avg_power_budget,
                                                     double min_power_budget,
-                                                    double max_power_budget);
+                                                    double max_power_budget,
+                                                    const std::vector<double> &last_budget0,
+                                                    const std::vector<double> &last_budget1,
+                                                    const std::vector<double> &last_runtime0,
+                                                    const std::vector<double> &last_runtime1);
 
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
