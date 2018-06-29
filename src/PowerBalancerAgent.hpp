@@ -34,6 +34,7 @@
 #define BALANCINGAGENT_HPP_INCLUDE
 
 #include <vector>
+#include <fstream>
 
 #include "Agent.hpp"
 
@@ -108,6 +109,7 @@ namespace geopm
                                                     const std::vector<double> &last_budget1,
                                                     const std::vector<double> &last_runtime0,
                                                     const std::vector<double> &last_runtime1);
+            void print_log(const std::string msg);
 
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
@@ -146,11 +148,14 @@ namespace geopm
             const int m_ascend_period;
 
             bool m_is_updated;
-            const double m_convergence_target;
+            const double m_range_target;
             int m_num_out_of_range;
             const int m_min_num_converged;
             int m_num_converged;
             int m_last_epoch_count;
+
+            std::string m_hostname;
+            std::ofstream m_log_file;
 
     };
 }

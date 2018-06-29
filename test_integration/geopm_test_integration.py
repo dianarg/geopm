@@ -683,7 +683,7 @@ class TestIntegration(unittest.TestCase):
         name = 'test_power_balancer'
         num_node = 4
         num_rank = 16
-        loop_count = 500
+        loop_count = 50
         margin = 0.05 # Balancer must out-perform governor by 5%
         app_conf = geopmpy.io.BenchConf(name + '_app.config')
         self._tmp_files.append(app_conf.get_path())

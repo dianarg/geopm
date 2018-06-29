@@ -34,6 +34,9 @@
 #include <cmath>
 #include <algorithm>
 
+#include <limits.h>
+#include <unistd.h>
+
 #include "PowerBalancerAgent.hpp"
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
@@ -69,18 +72,21 @@ namespace geopm
         , m_ascend_count(0)
         , m_ascend_period(10)
         , m_is_updated(false)
-        , m_convergence_target(0.01)
+        , m_range_target(0.01)
         , m_num_out_of_range(0)
         , m_min_num_converged(15)
         , m_num_converged(0)
         , m_last_epoch_count(0)
     {
-
+        char hostname_c[NAME_MAX];
+        gethostname(hostname_c, NAME_MAX);
+        m_hostname = hostname_c;
+        m_log_file.open("PowerBalancerAgent.log", std::ios_base::out);
     }
 
     PowerBalancerAgent::~PowerBalancerAgent()
     {
-
+        m_log_file.close();
     }
 
     void PowerBalancerAgent::init(int level, const std::vector<int> &fan_in, bool is_root)
@@ -164,19 +170,24 @@ namespace geopm
     {
         bool result = false;
         if (m_is_sample_stable) {
+            ++m_num_converged;
+            if (m_num_converged >= m_min_num_converged) {
+                m_is_converged = true;
+            }
+
             // All children have reported convergance in ascend().
             double stddev_child_runtime = IPlatformIO::agg_stddev(m_last_runtime0);
-            // We are out of bounds increment out of range counter
-            if (m_is_converged && (stddev_child_runtime > m_convergence_target)) {
-                ++m_num_out_of_range;
-            }
-            // We are within bounds.
-            else if (!m_is_converged && (stddev_child_runtime < m_convergence_target)) {
+print_log("stddev_child_runtime=" + std::to_string(stddev_child_runtime) + ", " +
+          "m_is_converged=" + std::to_string(m_is_converged) + ", " +
+          "m_num_out_of_range=" + std::to_string(m_num_out_of_range));
+
+            if (stddev_child_runtime <= m_range_target) {
+                // We are within bounds.
                 m_num_out_of_range = 0;
-                ++m_num_converged;
-                if (m_num_converged >= m_min_num_converged) {
-                    m_is_converged = true;
-                }
+            }
+            else {
+                // We are out of bounds increment out of range counter
+                ++m_num_out_of_range;
             }
             if (m_num_out_of_range >= m_min_num_converged) {
                 // All children have reported that they have
@@ -297,6 +308,7 @@ namespace geopm
             m_last_runtime0 = this_runtime;
             m_epoch_runtime_buf->insert(m_agg_func[M_SAMPLE_EPOCH_RUNTIME](this_runtime));
         }
+print_log("do_update=" + std::to_string(do_update));
         return result;
     }
 
@@ -373,6 +385,7 @@ namespace geopm
                 out_sample[M_SAMPLE_EPOCH_RUNTIME] = IPlatformIO::agg_median(m_epoch_runtime_buf->make_vector());
                 out_sample[M_SAMPLE_POWER] = IPlatformIO::agg_median(m_epoch_power_buf->make_vector());
                 out_sample[M_SAMPLE_IS_CONVERGED] = true; //(out_sample[M_SAMPLE_POWER] < 1.01 * m_last_power_budget_in);
+print_log("out_sample[M_SAMPLE_IS_CONVERGED]=true");
                 result = true;
             }
             m_last_epoch_count = m_sample[M_PLAT_SIGNAL_EPOCH_COUNT];
@@ -589,5 +602,10 @@ namespace geopm
     std::vector<std::string> PowerBalancerAgent::sample_names(void)
     {
         return {"EPOCH_RUNTIME", "POWER", "IS_CONVERGED"};
+    }
+
+    void PowerBalancerAgent::print_log(const std::string msg)
+    {
+        m_log_file << "PowerBalancerAgent: " << m_hostname << "," << m_level << ": " << msg << std::endl;
     }
 }
