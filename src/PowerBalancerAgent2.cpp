@@ -49,8 +49,6 @@ namespace geopm
         : m_platform_io(platform_io())
         , m_platform_topo(platform_topo())
         , m_level(-1)
-        , m_is_converged(true)
-        , m_is_sample_stable(false)
         , m_updates_per_sample(5)
         , m_samples_per_control(10)
         , m_min_power_budget(m_platform_io.read_signal("POWER_PACKAGE_MIN", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
@@ -82,6 +80,93 @@ namespace geopm
     {
 
     }
+
+
+
+
+    class PowerClick
+    {
+        public:
+            PowerClick(double min_power,
+                       double max_power,
+                       int num_click);
+            virtual ~PowerClick() = default;
+            int num_click(void);
+            void num_click(int num_click);
+            double power(int click);
+            bool update(std::vector<double> runtime,
+                        std::vector<int> &child_click);
+        private:
+            double m_power_min;
+            double m_power_max;
+            double m_power_delta;
+            int m_num_click;
+    };
+
+    PowerClick::PowerClick(double power_min, double power_max, int num_click)
+        : m_power_min(min_power)
+        , m_max_power(max_power)
+    {
+        if (num_click <= 1 || min_power >= max_power) {
+            throw Exception("PowerClick::PowerClick()",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        num_click(num_click);
+    }
+
+    int PowerClick::num_click(void)
+    {
+        return m_num_click;
+    }
+
+    void PowerClick::num_click(int num_click)
+    {
+        if (num_click <= 1)
+            throw Exception("PowerClick::num_click()",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        m_num_click = num_click;
+        m_power_delta = (m_max_power - m_min_power) / (num_click - 1);
+    }
+
+    double PowerClick::power(int click)
+    {
+        if (click < 0 || click >= m_num_click) {
+            throw Exception("PowerClick::power()",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        return m_min_power + click * m_power_delta;
+    }
+
+    bool PowerClick::update(std::vector<double> runtime,
+                            std::vector<int> &child_click)
+    {
+        bool result = false;
+        int slow_idx = -1;
+        int fast_idx = -1;
+        double slow_runtime = DBL_MAX;
+        double fast_runtime = -1 * DBL_MAX;
+        for (int child_idx = 1; child_idx != m_num_children; ++child_idx) {
+            if (slow_runtime > runtime[child_idx] &&
+                child_click[child_idx] != m_max_click - 1) {
+                slow_runtime = runtime[child_idx];
+                slow_idx = child_idx;
+            }
+            else if (fast_runtime < runtime[child_idx] &&
+                     child_click[child_idx] != 0) {
+                fast_runtime = runtime[child_idx];
+                fast_idx = child_idx;
+            }
+        }
+        if (slow_idx != -1 && fast_idx != -1) {
+            child_click[slow_idx]++;
+            child_click[fast_idx]--;
+            result = true;
+        }
+        return result;
+    }
+
+
 
     /*
 
