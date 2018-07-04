@@ -165,6 +165,9 @@ src/PolicyFlags.hpp
 src/Policy.hpp
 src/PowerBalancerAgent.cpp
 src/PowerBalancerAgent.hpp
+src/PowerClick.cpp
+src/PowerClick.hpp
+src/PowerClickBuffer.hpp
 src/PowerGovernorAgent.cpp
 src/PowerGovernorAgent.hpp
 src/Profile.cpp
