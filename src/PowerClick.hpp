@@ -30,11 +30,56 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef POWERCLICK_HPP_INCLUDE
+#define POWERCLICK_HPP_INCLUDE
+
+#include <vector>
+#include <memory>
+
 namespace geopm
 {
     class IPowerClickBuffer;
 
-    class PowerClick
+    class IPowerClick
+    {
+        public:
+            IPowerClick() = default;
+            virtual ~IPowerClick() = default;
+            /// @brief Update power settings given the runtime
+            ///        recorded for current settings.
+            /// @param [in] child_idx Index of child reporting new
+            ///        runtime measurement.
+            /// @param [in] runtime Last runtime recorded by specified
+            ///        child under the current policy.
+            /// @return True if power policy has been changed, false
+            ///         if the power policy was not changed.
+            virtual bool update_runtime(int child_idx, double runtime) = 0;
+            /// @brief The current power policy.
+            /// @return Vector containing the power limit for each
+            ///         child.
+            virtual std::vector<double> policy(void) const = 0;
+            /// @brief Double the number of discrete settings
+            ///        ("clicks") used.
+            /// @return True if the resolution was succesfully
+            ///         refined, and false if the refinement would
+            ///         require a granularity of control that is too
+            ///         fine.
+            virtual bool refine_delta(void) = 0;
+            /// @brief The current value of one click.
+            /// @return Current increment of one click in units of
+            ///         Watts.
+            virtual double power_delta(void) const = 0;
+            /// @brief Minimum power setting.
+            /// @return The lowest power setting allowed in units of
+            ///         Watts.
+            virtual double power_min(void) const = 0;
+            /// @brief Maximum power setting.
+            /// @return The highest power setting allowed in units of
+            ///         Watts.
+            virtual double power_max(void) const = 0;
+    };
+
+    class PowerClick : public IPowerClick
     {
         public:
             PowerClick(double power_init,
@@ -43,42 +88,37 @@ namespace geopm
                        double min_delta,
                        int num_children,
                        int num_click);
+            PowerClick(double power_init,
+                       double power_min,
+                       double power_max,
+                       double min_delta,
+                       int num_children,
+                       int num_click,
+                       std::vector<std::shared_ptr<IPowerClickBuffer> > mock_runtime_buf);
             virtual ~PowerClick() = default;
-            /// @brief Update power settings given the runtime
-            ///        recorded for current settings.
-            /// @param child_idx Index of child reporting new runtime
-            ///        measurement.
-            /// @param runtime Last runtime recorded by specified child
-            ///        under the current policy.
-            /// @return True if power policy has been changed, false
-            ///         if the power policy was not changed.
-            bool update_runtime(int child_idx, double runtime);
-            /// @brief The current power policy.
-            /// @return Vector containing the power limit for each
-            ///         child.
-            std::vector<double> policy(void) const;
-            /// @brief Double the number of discrete settings
-            ///        ("clicks") used.
-            bool refine_delta(void);
+            bool update_runtime(int child_idx, double runtime) override;
+            std::vector<double> policy(void) const override;
+            bool refine_delta(void) override;
+            double power_delta(void) const override;
+            double power_min(void) const override;
+            double power_max(void) const override;
 
-            // Below here are internal methods that can be tested
-            // that are used to implement methods above.
+            // Below here are internal methods that can be tested that
+            // are used to implement update_runtime() and policy().
 
-            /// @brief Modify the click_policy based on the runtime measurements. This
-            /// @return True if the resolution was succesfully
-            ///         refined, and false if the refinement would
-            ///         require a granularity of control that is too
-            ///         fine.
+            /// @brief Modify the click_policy based on the runtime measurements.
+            /// @param [in] runtime Current best runtime estimate in
+            ///        units of seconds.
+            /// @param [in] runtime_stddev Current estimate of error
+            ///        window for runtime value in units of seconds.
+            ///        Note that a value of zero is interpreted as not
+            ///        enough samples to evaluate error.
+            /// @param [out] click_policy Best estimate of the power
+            ///        limits for each child in units of clicks.
             bool update_runtime(const std::vector<double> &runtime,
                                 const std::vector<double> &runtime_stddev,
                                 std::vector<int> &click_policy) const;
-            /// @brief The current value of one click.
-            /// @return Current increment of one click in units of
-            ///         Watts.
-            double power_delta(void) const;
-            double power_min(void) const;
-            double power_max(void) const;
-            /// @brief Convert a policy of clicks to a policy in Watts.
+            /// @brief Convert a policy of clicks into a policy in Watts.
             /// @param click_policy Vector of policies in click units.
             /// @return Vector of policies converted into units of Watts.
             std::vector<double> policy(const std::vector<int> &click_policy) const;
@@ -91,7 +131,8 @@ namespace geopm
             /// @brief current policy in units of clicks.
             std::vector<int> m_click_policy;
             /// @brief vector over children runtime data collected.
-            std::vector<std::unique_ptr<IPowerClickBuffer> > m_runtime_buf;
+            std::vector<std::shared_ptr<IPowerClickBuffer> > m_runtime_buf;
     };
-
 }
+
+#endif

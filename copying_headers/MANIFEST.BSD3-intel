@@ -167,6 +167,7 @@ src/PowerBalancerAgent.cpp
 src/PowerBalancerAgent.hpp
 src/PowerClick.cpp
 src/PowerClick.hpp
+src/PowerClickBuffer.cpp
 src/PowerClickBuffer.hpp
 src/PowerGovernorAgent.cpp
 src/PowerGovernorAgent.hpp

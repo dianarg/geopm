@@ -30,39 +30,5 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef POWERCLICKBUFFER_HPP_INCLUDE
-#define POWERCLICKBUFFER_HPP_INCLUDE
-
-#include <map>
-template <typename T> class CircularBuffer;
-
-namespace geopm
-{
-    class IPowerClickBuffer
-    {
-        public:
-            IPowerClickBuffer() = default;
-            virtual ~IPowerClickBuffer() = default;
-            virtual void update(double power, double runtime) = 0;
-            virtual double runtime_sample_runtime(double power) const = 0;
-            virtual int runtime_num_sample(double power) const = 0;
-            virtual double runtime_stddev(double power) const = 0;
-    };
-
-    class PowerClickBuffer : public IPowerClickBuffer
-    {
-        public:
-            PowerClickBuffer(int num_children, int max_sample);
-            virtual ~PowerClickBuffer() = default;
-            void update(double power, double runtime) override;
-            double runtime_sample_runtime(double power) const override;
-            int runtime_num_sample(double power) const override;
-            double runtime_stddev(double power) const override;
-        private:
-            /// @brief Map from power limit to circular buffers
-            ///        containing runtime measurements.
-            std::map<double, CircularBuffer<double> > m_power_runtime_map;
-    };
-}
-
-#endif
+#include "PowerClickBuffer.hpp"
+#include "config.h"

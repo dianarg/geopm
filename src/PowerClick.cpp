@@ -30,6 +30,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "PowerClick.hpp"
+#include "config.h"
+
+#if 0
+
 namespace geopm
 {
     PowerClick::PowerClick(double power_min,
@@ -124,3 +129,5 @@ namespace geopm
         return result;
     }
 }
+
+#endif
