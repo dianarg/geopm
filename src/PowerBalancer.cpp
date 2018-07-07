@@ -33,11 +33,12 @@
 #include <vector>
 
 #include "PowerBalancer.hpp"
+#include "config.h"
 
 namespace geopm
 {
     PowerBalancer::PowerBalancer(double initial_budget)
-        : M_STABLE_FACTOR(0.1)
+        : M_NUM_SAMPLES(10)
         , m_is_stable(false)
         , m_step(M_STEP_MEASURE_RUNTIME)
         , m_iteration(0)
