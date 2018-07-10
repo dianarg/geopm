@@ -117,43 +117,9 @@ namespace geopm
             ///         required.
             bool is_target_met(double measured_runtime);
         private:
-            enum m_step_e {
-                /// @brief Measure epoch runtime at least 3 times and
-                ///        keep a running average.
-                M_STEP_MEASURE_RUNTIME,
-                /// @brief Aggregate epoch runtime up tree by applying
-                ///        maximum filter to measured values.
-                M_STEP_SEND_UP_RUNTIME,
-                /// @brief Propagate down from root the longest
-                ///        recorded runtime from any node.
-                M_STEP_SEND_DOWN_RUNTIME,
-                /// @brief Decrease power limit on all nodes (other
-                ///        than the slowest) until epoch runtime
-                ///        matches the slowest.
-                M_STEP_REDUCE_LIMIT,
-                /// @brief Aggregate amount power limit was reduced in
-                ///        last step up the tree with sum filter.  (Go
-                ///        to M_STEP_SEND_DOWN_LIMIT next).
-                M_STEP_SEND_UP_EXCESS,
-                /// @brief On first iteration send down resource
-                ///        manager average limit requested, otherwise
-                ///        send down average excess power.
-                M_STEP_SEND_DOWN_LIMIT,
-                /// @brief Increase power limit applied by delta sent
-                ///        down to leaf in last step or set it to
-                ///        average if first iteration.
-                M_STEP_ADJUST_LIMIT,
-                /// @brief Number of steps in process.
-                M_NUM_STEP,
-            };
-
             const double M_TARGET_EPSILON;
             const double M_TRIAL_DELTA;
             const int M_NUM_SAMPLE;
-            bool m_is_stable;
-            bool m_is_excess_ready;
-            int m_step;
-            int m_iteration;
             // @brief Maximum power as set in last global budget
             //        increase.
             double m_power_cap;
