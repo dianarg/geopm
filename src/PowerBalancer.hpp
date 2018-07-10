@@ -62,13 +62,6 @@ namespace geopm
             ///        maintained.
             /// @return The current value of the power cap.
             double power_cap(void);
-            /// @brief Set the current power limit prescribed for this
-            ///        node.  Setting the cap with the power_cap()
-            ///        method will effectively reset the power limit
-            ///        as well to the value specified as the cap.
-            /// @param limit The maximum power consumption allowed for
-            ///        the compute node being managed.
-            void power_limit(double limit);
             /// @brief Returns the current power limit prescribed for
             ///        this node.
             /// @return The current power limit in units of Watts.
