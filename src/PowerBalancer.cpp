@@ -37,6 +37,84 @@
 
 namespace geopm
 {
+    PowerBalancer::PowerBalancer()
+        : M_TARGET_EPSILON(0.03)
+        , M_TRIAL_DELTA(1.0)
+        , M_NUM_SAMPLES(5)
+        , m_is_stable(false)
+        , m_is_excess_ready(false)
+        , m_step(M_STEP_SEND_DOWN_LIMIT)
+        , m_iteration(0)
+        , m_power_cap(0.0)
+        , m_power_limit(0.0)
+        , m_target_runtime(0.0)
+        , m_runtime_buffer(M_NUM_SAMPLES)
+    {
+
+    }
+
+    void PowerBalancer::power_cap(double cap)
+    {
+        m_power_limit = cap;
+        m_power_cap = cap;
+        m_runtime_buffer.clear();
+    }
+
+    double PowerBalancer::power_cap(void)
+    {
+        return m_power_cap;
+    }
+
+    double PowerBalancer::power_limit(void)
+    {
+        if (m_power_limit == 0.0) {
+            throw Exception("PowerBalancer::power_limit() called prior to power_cap().",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        return m_power_limit;
+    }
+
+    bool PowerBalancer::is_runtime_stable(double measured_runtime)
+    {
+        bool result = false;
+        if (m_runtime_buffer.size() == m_runtime_buffer.capacity()) {
+            result = true;
+        }
+        return result;
+    }
+
+    double PowerBalancer::runtime_sample(void)
+    {
+        return IPlatformIO::agg_median(m_runtime_buffer.make_vector())
+    }
+
+    void PowerBalancer::target_runtime(double largest_runtime)
+    {
+        m_target_runtime = largest_runtime;
+    }
+
+    bool PowerBalancer::is_target_met(double measured_runtime)
+    {
+        bool result = false;
+        m_runtime_buffer.insert(mearured_runtime);
+        if (m_target_runtime * (1.0 - M_TARGET_EPSILON) < runtime_sample()) {
+            result = true;
+        }
+        else {
+            m_power_limit -= M_TRIAL_DELTA;
+        }
+
+        return result;
+    }
+}
+
+#if 0
+
+
+
+
+
+
     PowerBalancer::PowerBalancer(double initial_budget)
         : M_NUM_SAMPLES(10)
         , m_is_stable(false)
@@ -118,3 +196,4 @@ namespace geopm
     }
 }
 
+#endif

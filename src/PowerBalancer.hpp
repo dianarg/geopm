@@ -144,6 +144,8 @@ namespace geopm
                 M_NUM_STEP,
             };
 
+            const double M_TARGET_EPSILON;
+            const double M_TRIAL_DELTA;
             const int M_NUM_SAMPLES;
             bool m_is_stable;
             bool m_is_excess_ready;
