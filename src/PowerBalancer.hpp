@@ -33,8 +33,11 @@
 #ifndef POWERBALANCER_HPP_INCLUDE
 #define POWERBALANCER_HPP_INCLUDE
 
+#include <memory>
+
 namespace geopm
 {
+    template <typename T> class ICircularBuffer;
     /// @brief Stay within a power cap but redistribute power to
     ///        optimize performance. An average per compute node power
     ///        maximum is maintained, but individual nodes will be
@@ -43,7 +46,7 @@ namespace geopm
     {
         public:
             /// @brief Construct a PowerBalancer object.
-            PowerBalancer() = default;
+            PowerBalancer();
             /// @brief Destroy a PowerBalancer object.
             virtual ~PowerBalancer() = default;
             /// @brief Should be called at the start of application
@@ -146,7 +149,7 @@ namespace geopm
 
             const double M_TARGET_EPSILON;
             const double M_TRIAL_DELTA;
-            const int M_NUM_SAMPLES;
+            const int M_NUM_SAMPLE;
             bool m_is_stable;
             bool m_is_excess_ready;
             int m_step;
@@ -158,7 +161,7 @@ namespace geopm
             //        which may be lower than the cap.
             double m_power_limit;
             double m_target_runtime;
-            CircularBuffer<double> m_runtime_buffer;
+            std::unique_ptr<ICircularBuffer<double> > m_runtime_buffer;
     };
 }
 
