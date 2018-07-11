@@ -47,11 +47,86 @@ namespace geopm
     class PowerBalancerAgent : public Agent
     {
         public:
-            /// @todo May be useful for indexing into the vector of policies or samples.
+            enum m_step_e {
+                /// @brief Measure epoch runtime several times and
+                ///        apply median filter.
+                M_STEP_MEASURE_RUNTIME,
+                /// @brief Aggregate epoch runtime up tree by applying
+                ///        maximum filter to measured values.
+                M_STEP_SEND_UP_RUNTIME,
+                /// @brief Propagate down from root the longest
+                ///        recorded runtime from any node.
+                M_STEP_SEND_DOWN_RUNTIME,
+                /// @brief Decrease power limit on all nodes (other
+                ///        than the slowest) until epoch runtime
+                ///        matches the slowest.
+                M_STEP_REDUCE_LIMIT,
+                /// @brief Aggregate amount power limit was reduced in
+                ///        last step up the tree with sum filter.  (Go
+                ///        to M_STEP_SEND_DOWN_LIMIT next).
+                M_STEP_SEND_UP_EXCESS,
+                /// @brief On first iteration send down resource
+                ///        manager average limit requested, otherwise
+                ///        send down average excess power.
+                M_STEP_SEND_DOWN_LIMIT,
+                /// @brief Increase power limit applied by delta sent
+                ///        down to leaf in last step or set it to
+                ///        average if first iteration.
+                M_STEP_ADJUST_LIMIT,
+                /// @brief Number of steps in process.
+                M_NUM_STEP,
+            };
+
             enum m_policy_e {
-                M_POLICY_POWER,
+                /// @brief Step that the root is providing a policy
+                ///        for.  The parent has recieved a sample
+                ///        matching this step in the last walk up the
+                ///        tree, execpt in the case where the endpoint
+                ///        has recently been updated with a new
+                ///        policy, in this case the step will be
+                ///        M_SEND_DOWN_LIMIT and the policy indexed by
+                ///        M_POLICY_POWER_CAP will have a non-zero
+                ///        value.
+                M_POLICY_STEP,
+                /// @brief The power cap enforced on average over all
+                ///        nodes running the application.  This has
+                ///        value 0.0 except in two cases.  In the
+                ///        first case this is the M_SEND_DOWN_LIMIT
+                ///        step at the beginning of the application
+                ///        run.  This value will also be non-zero in
+                ///        the case where the resource mananger has
+                ///        requested a new budget for the application,
+                ///        and thus, the algorithm must be restarted
+                ///        at step M_SEND_DOWN_LIMIT.
+                M_POLICY_POWER_CAP,
+                /// @brief The largest runtime reported by any leaf
+                ///        agent since the last redistirubition of
+                ///        power.  This will have value 0.0 until all
+                ///        leaf agents have reported a runtime to the
+                ///        root agent.
+                M_POLICY_RUNTIME,
+                /// @brief This value is updated in step
+                ///        M_STEP_ADJUST_LIMIT to the amount that each
+                ///        leaf agent should increase their power
+                ///        limit by calling:
+                ///            power_cap(current_limit + slack)
+                ///        by before starting the algorithm over again
+                ///        at step M_STEP_MEASURE_RUNTIME.  For all
+                ///        other steps this value is 0.0.
+                M_POLICY_POWER_SLACK,
+                /// @brief Number of steps in each iteration of the
+                ///        balancing algorithm.
                 M_NUM_POLICY,
             };
+
+            enum m_sample_e { // Tree samples
+                M_SAMPLE_STEP,
+                M_SAMPLE_IS_STEP_COMPLETE,
+                M_SAMPLE_RUNTIME,
+                M_SAMPLE_POWER_SLACK,
+                M_NUM_SAMPLE,
+            };
+
             enum m_plat_signal_e {
                 M_PLAT_SIGNAL_EPOCH_RUNTIME,
                 //M_PLAT_SIGNAL_EPOCH_ENERGY,
@@ -67,12 +142,6 @@ namespace geopm
                 M_TRACE_SAMPLE_IS_CONVERGED,
                 M_TRACE_SAMPLE_PWR_BUDGET,
                 M_TRACE_NUM_SAMPLE,
-            };
-            enum m_sample_e { // Tree samples
-                M_SAMPLE_EPOCH_RUNTIME,
-                M_SAMPLE_POWER,
-                M_SAMPLE_IS_CONVERGED,
-                M_NUM_SAMPLE,
             };
 
             PowerBalancerAgent();
