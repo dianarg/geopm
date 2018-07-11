@@ -156,7 +156,10 @@ class AppOutput(object):
                 if len(trace_paths) == 0:
                     raise RuntimeError('No trace files found with pattern {}.'.format(trace_glob))
             elif type(traces) is list:
-                trace_paths = [os.path.join(dir_name, path) for path in traces]
+                trace_paths = []
+                for path in traces:
+                    trace_glob = os.path.join(dir_name, path)
+                    trace_paths += natsorted(glob.glob(trace_glob))
             else:
                 raise TypeError('AppOutput: traces must be a list of paths or a glob pattern')
 

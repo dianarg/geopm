@@ -195,7 +195,7 @@ class TestAnalysis(unittest.TestCase):
         if g_skip_analysis_test:
             self.skipTest(g_skip_analysis_ex)
         self._name_prefix = 'prof'
-        self._use_agent = False
+        self._use_agent = True
         self._freqs = [1.2e9, 1.3e9, 1.4e9, 1.5e9, 1.6e9]
         self._min_freq = min(self._freqs)
         self._max_freq = max(self._freqs)

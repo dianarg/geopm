@@ -173,7 +173,136 @@ class Analysis(object):
 
 
 class BalancerAnalysis(Analysis):
-    pass
+    """
+    Runs the application under a given range of power caps using both the governor
+    and the balancer.  Compares the performance of the two agents at each power cap.
+    """
+    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, enable_turbo=False):
+        super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, app_argv, verbose, iterations)
+        self._power_caps = range(150, 245, 5)
+
+    def find_files(self, search_pattern='*.report'):
+        report_glob = os.path.join(self._output_dir, self._name + search_pattern)
+        # todo: fix search pattern parameter
+        trace_glob = os.path.join(self._output_dir, self._name + '*trace*')
+        self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
+
+    def try_launch(self, profile_name, iteration, geopm_ctl, ctl_conf, do_geopm_barrier, agent=None):
+        report_path = os.path.join(self._output_dir, profile_name + '_{}.report'.format(iteration))
+        trace_path = os.path.join(self._output_dir, profile_name + '_{}.trace'.format(iteration))
+        self._report_paths.append(report_path)
+        self._trace_paths.append(trace_path+'*')
+
+        if self._app_argv and not os.path.exists(report_path):
+            argv = ['dummy', '--geopm-ctl', geopm_ctl,
+                             '--geopm-policy', ctl_conf.get_path(),
+                             '--geopm-report', report_path,
+                             '--geopm-trace', trace_path,
+                             '--geopm-profile', profile_name]
+            if do_geopm_barrier:
+                argv.append('--geopm-barrier')
+            if agent:
+                argv.append('--geopm-agent=' + agent)
+            argv.append('--')
+            argv.extend(self._app_argv)
+            launcher = geopmpy.launcher.factory(argv, self._num_rank, self._num_node)
+            launcher.run()
+        elif os.path.exists(report_path):
+            sys.stderr.write('<geopmpy>: Warning: output file "{}" exists, skipping run.\n'.format(report_path))
+        else:
+            raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
+
+    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+        for power_cap in self._power_caps:
+            # governor runs
+            ctl_conf = geopmpy.io.CtlConf(os.path.join(self._output_dir, self._name + '_ctl.config'),
+                                          'dynamic',
+                                          {'tree_decider': 'static_policy',
+                                           'leaf_decider': 'power_governing',
+                                           'platform': 'rapl',
+                                           'power_budget': power_cap})
+            if not self._agent:
+                ctl_conf.write()
+            else:
+                with open(ctl_conf.get_path(), "w") as outfile:
+                    outfile.write("{\"POWER\": " + str(ctl_conf._options['power_budget']) + "}\n")
+
+            for iteration in range(self._iterations):
+                profile_name = self._name + '_gov_' + str(power_cap)
+                self.try_launch(profile_name, iteration, geopm_ctl, ctl_conf,
+                                do_geopm_barrier, geopm_agent)
+
+            # balancer runs
+            ctl_conf = geopmpy.io.CtlConf(os.path.join(self._output_dir, self._name + '_ctl.config'),
+                                          'dynamic',
+                                          {'tree_decider': 'power_balancing',
+                                           'leaf_decider': 'power_governing',
+                                           'platform': 'rapl',
+                                           'power_budget': power_cap})
+            if not self._agent:
+                ctl_conf.write()
+            else:
+                with open(ctl_conf.get_path(), "w") as outfile:
+                    outfile.write("{\"POWER\": " + str(ctl_conf._options['power_budget']) + "}\n")
+
+            for iteration in range(self._iterations):
+                profile_name = self._name + '_bal_' + str(power_cap)
+                self.try_launch(profile_name, iteration, geopm_ctl, ctl_conf,
+                                do_geopm_barrier, geopm_agent)
+
+    def report_process(self, parse_output):
+        node_names = parse_output.get_node_names()
+        print node_names
+        all_power_data = {}
+        all_traces = parse_output.get_trace_df()
+        # Total power consumed will be Socket(s) + DRAM
+        # todo: handle new agents
+        for agent in ['static_policy', 'power_balancing']:
+            all_power_data[agent] = {}
+            for power_cap in self._power_caps:
+                for nn in node_names:
+                    idx = pandas.IndexSlice
+                    tt = all_traces.loc[idx[:, :, power_cap, agent, :, nn, :], ]
+
+                    epoch = '9223372036854775808'
+                    # todo: hack to run with new controller
+                    # eventually this could also use power signals from the trace
+                    if os.getenv("GEOPM_AGENT") is not None:
+                        epoch = '0x8000000000000000'
+
+                    first_epoch_index = tt.loc[tt['region_id'] == epoch][:1].index[0]
+                    epoch_dropped_data = tt[first_epoch_index:]  # Drop all startup data
+
+                    power_data = epoch_dropped_data.filter(regex='energy')
+                    power_data['seconds'] = epoch_dropped_data['seconds']
+                    power_data = power_data.diff().dropna()
+                    power_data.rename(columns={'seconds': 'elapsed_time'}, inplace=True)
+                    power_data = power_data.loc[(power_data != 0).all(axis=1)]  # Will drop any row that is all 0's
+
+                    pkg_energy_cols = [s for s in power_data.keys() if 'pkg_energy' in s]
+                    dram_energy_cols = [s for s in power_data.keys() if 'dram_energy' in s]
+                    power_data['socket_power'] = power_data[pkg_energy_cols].sum(axis=1) / power_data['elapsed_time']
+                    power_data['dram_power'] = power_data[dram_energy_cols].sum(axis=1) / power_data['elapsed_time']
+                    power_data['combined_power'] = power_data['socket_power'] + power_data['dram_power']
+                    all_power_data[agent][(power_cap, nn)] = power_data
+
+        return all_power_data
+
+    def report(self, process_output):
+        for agent in ['static_policy', 'power_balancing']:
+            sys.stdout.write('Results for {}\n'.format(agent))
+            for power_cap, nn in sorted(process_output[agent].keys()):
+                power_data = process_output[agent][(power_cap, nn)]
+                pandas.set_option('display.width', 100)
+                sys.stdout.write('Power stats for {}W cap from {} :\n{}\n'
+                                 .format(power_cap, nn, power_data.describe()))
+
+    def plot_process(self, parse_output):
+        return parse_output.get_report_df()
+
+    def plot(self, process_output):
+        config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))
+        geopmpy.plotter.generate_bar_plot(process_output, config)
 
 
 class FreqSweepAnalysis(Analysis):
@@ -572,7 +701,6 @@ class OnlineBaselineComparisonAnalysis(Analysis):
     """Compares the energy efficiency plugin in offline mode to the
     baseline at sticker frequency.  Launches freq sweep and run to be
     compared.  Uses baseline comparison class to do analysis.
-
     """
     def __init__(self, name, output_dir, verbose=True, iterations=1, min_freq=None, max_freq=None, enable_turbo=False):
         super(OnlineBaselineComparisonAnalysis, self).__init__(name=name,
@@ -620,7 +748,7 @@ class OnlineBaselineComparisonAnalysis(Analysis):
             trace_path = os.path.join(self._output_dir, profile_name + '_{}.trace'.format(iteration))
             self._report_paths.append(report_path)
 
-            # TODO:
+            # TODO: use config min_freq and max_freq
             freqs = sys_freq_avail()  # freqs contains a list of available system frequencies in ascending order
             self._min_freq = freqs[0]
             self._max_freq = freqs[-1] if self._enable_turbo else freqs[-2]
