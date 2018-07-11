@@ -57,7 +57,9 @@ namespace geopm
         , m_min_power_budget(m_platform_io.read_signal("POWER_PACKAGE_MIN", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
         , m_max_power_budget(m_platform_io.read_signal("POWER_PACKAGE_MAX", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
         , m_power_gov(geopm::make_unique<PowerGovernor> (m_platform_io, m_platform_topo))
+        , m_power_balancer(NULL)
         , m_pio_idx(M_PLAT_NUM_SIGNAL)
+        , m_agg_func(M_NUM_SAMPLE);
         , m_num_children(0)
         , m_is_root(false)
         , m_last_power_budget_in(NAN)
@@ -76,7 +78,11 @@ namespace geopm
         , m_num_converged(0)
         , m_last_epoch_count(0)
     {
-
+        // Setup sample aggregation for data going up the tree
+        m_agg_func[M_SAMPLE_STEP] = IPlatformIO::agg_min;
+        m_agg_func[M_SAMPLE_IS_STEP_COMPLETE] = IPlatformIO::agg_and;
+        m_agg_func[M_SAMPLE_RUNTIME] = IPlatformIO::agg_max;
+        m_agg_func[M_SAMPLE_POWER_SLACK] = IPlatformIO::agg_sum;
     }
 
     PowerBalancerAgent::~PowerBalancerAgent() = default;
@@ -85,7 +91,9 @@ namespace geopm
     {
         m_level = level;
         if (m_level == 0) {
-            init_platform_io(); // Only do this at the leaf level.
+            // Only do this at the leaf level.
+            init_platform_io();
+            m_power_balancer = geopm::make_unique<PowerBalancer>();
         }
         m_num_children = fan_in[level];
         m_is_root = is_root;
@@ -104,14 +112,7 @@ namespace geopm
         m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT] = m_platform_io.push_signal("EPOCH_COUNT", IPlatformTopo::M_DOMAIN_BOARD, 0);
         m_pio_idx[M_PLAT_SIGNAL_PKG_POWER] = m_platform_io.push_signal("POWER_PACKAGE", IPlatformTopo::M_DOMAIN_BOARD, 0);
         m_pio_idx[M_PLAT_SIGNAL_DRAM_POWER] = m_platform_io.push_signal("POWER_DRAM", IPlatformTopo::M_DOMAIN_BOARD, 0);
-
-        // Setup sample aggregation for data going up the tree
-        m_agg_func.push_back(IPlatformIO::agg_max);     // EPOCH_RUNTIME
-        m_agg_func.push_back(IPlatformIO::agg_average); // POWER
-        m_agg_func.push_back(IPlatformIO::agg_and);     // IS_CONVERGED
     }
-
-
 
     bool PowerBalancerAgent::descend_initial_budget(double power_budget_in, std::vector<double> &power_budget_out)
     {

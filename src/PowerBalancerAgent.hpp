@@ -185,6 +185,7 @@ namespace geopm
             double m_min_power_budget;
             double m_max_power_budget;
             std::unique_ptr<PowerGovernor> m_power_gov;
+            std::unique_ptr<IPowerBalancer> m_power_balancer;
             std::vector<int> m_pio_idx;
             std::vector<std::function<double(const std::vector<double>&)> > m_agg_func;
             int m_num_children;

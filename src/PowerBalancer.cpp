@@ -47,7 +47,7 @@ namespace geopm
         , m_power_cap(0.0)
         , m_power_limit(0.0)
         , m_target_runtime(0.0)
-        , m_runtime_buffer(new CircularBuffer<double>(M_NUM_SAMPLE))
+        , m_runtime_buffer(make_unique<CircularBuffer<double> >(M_NUM_SAMPLE))
     {
 
     }
