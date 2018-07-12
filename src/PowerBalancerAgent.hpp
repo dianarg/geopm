@@ -74,7 +74,7 @@ namespace geopm
                 /// @brief Increase power limit applied by delta sent
                 ///        down to leaf in last step or set it to
                 ///        average if first iteration.
-                M_STEP_ADJUST_LIMIT,
+                M_STEP_INCREASE_CAP,
                 /// @brief Number of steps in process.
                 M_NUM_STEP,
             };
@@ -177,7 +177,7 @@ namespace geopm
             void init_platform_io(void);
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
-            int m_level; // Needed in order to determine convergence
+            int m_level;
             int m_updates_per_sample;
             int m_samples_per_control;
             double m_min_power_budget;
@@ -187,9 +187,8 @@ namespace geopm
             std::vector<int> m_pio_idx;
             const std::vector<std::function<double(const std::vector<double>&)> > m_agg_func;
             int m_num_children;
-            bool m_is_root;
-            std::vector<double> m_last_policy;
-            std::vector<double> m_last_sample;
+            bool m_is_level_root;
+            bool m_is_tree_root;
             int m_sample_count;
             int m_ascend_count;
             const int m_ascend_period;

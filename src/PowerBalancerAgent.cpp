@@ -65,7 +65,8 @@ namespace geopm
               IPlatformIO::agg_sum, // M_SAMPLE_POWER_SLACK
           }
         , m_num_children(0)
-        , m_is_root(false)
+        , m_is_level_root(false)
+        , m_is_tree_root(false)
         , m_last_epoch_count(0)
     {
 #ifdef GEOPM_DEBUG
@@ -85,9 +86,11 @@ namespace geopm
             // Only do this at the leaf level.
             init_platform_io();
             m_power_balancer = geopm::make_unique<PowerBalancer>();
+            m_num_children = 1;
         }
-        m_num_children = fan_in[level];
-        m_is_root = is_root;
+        m_num_children = fan_in[level - 1];
+        m_is_level_root = is_root;
+        m_is_tree_root = (level == fan_in.size()) && is_root;
     }
 
     void PowerBalancerAgent::init_platform_io(void)
@@ -107,11 +110,11 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool result = (policy_in == m_last_policy);
+        bool result = (policy_in == m_policy);
         for (auto &po : policy_out) {
             po = policy_in;
         }
-        m_last_policy = policy_in;
+        m_policy = policy_in;
 
         return result;
     }
@@ -132,6 +135,10 @@ namespace geopm
                 out_sample[sample_idx] = m_agg_function[sample_idx](in_sample[sample_idx]);
             }
         }
+        if (m_is_root) {
+
+        }
+        /// @todo If this agent is the tree root, extra stuff needs to happen here.
         return out_sample[M_SAMPLE_IS_STEP_COMPLETE];
     }
 
@@ -143,7 +150,18 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_power_gov->adjust_platform(m_power_balancer->power_limit());
+        if (in_policy[M_POLICY_STEP] != m_step) {
+            m_step = in_policy[M_POLICY_STEP];
+            m_is_step_complete = false;
+        }
+        double actual_limit = 0.0;
+        double request_limit = m_power_balancer->power_limit();
+        bool result = m_power_gov->adjust_platform(request_limit, actual_limit);
+        if (actual_limit != request_limit) {
+            /// @todo Depending on step, need to do something here.
+
+        }
+        return result;
     }
 
     bool PowerBalancerAgent::sample_platform(std::vector<double> &out_sample)
@@ -154,21 +172,21 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool result = false; /// @todo need to figure out when to set this to true.
-        bool is_runtime_stable = false;
-        double epoch_runtime = m_platform_io->sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME]);
-        double epoch_count = m_platform_io->sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT]);
+        int epoch_count = m_platform_io->sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT]);
         // If all of the ranks have observed a new epoch then update
         // the power_balancer.
         if (epoch_count != m_last_epoch_count) {
+            double epoch_runtime = m_platform_io->sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME]);
             switch (m_step) {
                 case M_STEP_MEASURE_RUNTIME:
                     m_is_step_complete = m_power_balancer->is_runtime_stable(epoch_runtime);
-                    m_runtime_cap = m_power_balancer->sample_runtime();
+                    m_runtime = m_power_balancer->runtime_sample();
+                    result = m_is_step_complete;
                     break;
                 case M_STEP_REDUCE_LIMIT:
                     m_is_step_complete = m_power_balancer->is_target_met(epoch_runtime);
                     m_power_slack = m_power_balancer->power_cap() - m_power_balancer->power_limit();
+                    result = m_is_step_complete;
                     break;
                 default:
                     break;
@@ -176,8 +194,11 @@ namespace geopm
             m_last_epoch_count = epoch_count;
         }
         m_power_gov->sample_platform();
-        m_power_gov->adjust_platform(m_power_balancer->power_limit());
-        return result;
+        out_sample[M_SAMPLE_STEP] = m_step;
+        out_sample[M_SAMPLE_IS_STEP_COMPLETE] = m_is_step_complete;
+        out_sample[M_SAMPLE_RUNTIME] = m_runtime;
+        out_sample[M_SAMPLE_POWER_SLACK] = m_power_slack;
+        return m_is_step_complete;
     }
 
     void PowerBalancerAgent::wait()
