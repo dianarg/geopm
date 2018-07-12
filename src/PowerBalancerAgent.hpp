@@ -43,6 +43,7 @@ namespace geopm
     class IPlatformTopo;
     template <class type>
     class ICircularBuffer;
+    class IPowerBalancer;
     class PowerGovernor;
 
     class PowerBalancerAgent : public Agent
@@ -120,20 +121,28 @@ namespace geopm
                 M_NUM_POLICY,
             };
 
-            enum m_sample_e { // Tree samples
+            enum m_sample_e {
+                /// @brief The the step that is currently in execution.
                 M_SAMPLE_STEP,
+                /// @brief Value 0.0 implies that all children below
+                ///        have completed the step and are waiting for
+                ///        a policy that is marked with the next step.
+                ///        0.0 implies that at least one child below
+                ///        has not yet completed the step.
                 M_SAMPLE_IS_STEP_COMPLETE,
+                /// @brief Maximum expected runtime for any node
+                ///        below.
                 M_SAMPLE_RUNTIME,
+                /// @brief The sum of all slack power available from
+                ///        children below the agent.
                 M_SAMPLE_POWER_SLACK,
+                /// @brief Number of elements in a sample vector.
                 M_NUM_SAMPLE,
             };
 
             enum m_plat_signal_e {
                 M_PLAT_SIGNAL_EPOCH_RUNTIME,
-                //M_PLAT_SIGNAL_EPOCH_ENERGY,
                 M_PLAT_SIGNAL_EPOCH_COUNT,
-                M_PLAT_SIGNAL_PKG_POWER,
-                M_PLAT_SIGNAL_DRAM_POWER,
                 M_PLAT_NUM_SIGNAL,
             };
             enum m_trace_sample_e {
@@ -166,20 +175,9 @@ namespace geopm
             static std::vector<std::string> sample_names(void);
         private:
             void init_platform_io(void);
-            bool descend_initial_budget(double power_budget_in, std::vector<double> &power_budget_out);
-            bool descend_updated_budget(double power_budget_in, std::vector<double> &power_budget_out);
-            bool descend_updated_runtimes(double power_budget_in, std::vector<double> &power_budget_out);
-            std::vector<double> split_budget(double avg_power_budget);
-            std::vector<double> split_budget_first(double power_budget_in);
-            std::vector<double> split_budget_helper(double avg_power_budget,
-                                                    double min_power_budget,
-                                                    double max_power_budget);
-
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
             int m_level; // Needed in order to determine convergence
-            bool m_is_converged;
-            bool m_is_sample_stable;
             int m_updates_per_sample;
             int m_samples_per_control;
             double m_min_power_budget;
@@ -187,27 +185,15 @@ namespace geopm
             std::unique_ptr<PowerGovernor> m_power_gov;
             std::unique_ptr<IPowerBalancer> m_power_balancer;
             std::vector<int> m_pio_idx;
-            std::vector<std::function<double(const std::vector<double>&)> > m_agg_func;
+            const std::vector<std::function<double(const std::vector<double>&)> > m_agg_func;
             int m_num_children;
             bool m_is_root;
-            double m_last_power_budget_in;
-            double m_last_power_budget_out;
-            std::vector<double> m_last_runtime0;
-            std::vector<double> m_last_runtime1;
-            std::vector<double> m_last_budget0;
-            std::vector<double> m_last_budget1;
-            std::unique_ptr<ICircularBuffer<double> > m_epoch_runtime_buf;
-            std::unique_ptr<ICircularBuffer<double> > m_epoch_power_buf;
-            std::vector<double> m_sample;
-            double m_last_energy_status;
+            std::vector<double> m_last_policy;
+            std::vector<double> m_last_sample;
             int m_sample_count;
             int m_ascend_count;
             const int m_ascend_period;
             bool m_is_updated;
-            const double m_convergence_target;
-            int m_num_out_of_range;
-            const int m_min_num_converged;
-            int m_num_converged;
             int m_last_epoch_count;
     };
 }

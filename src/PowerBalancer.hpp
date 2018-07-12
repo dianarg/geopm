@@ -37,18 +37,17 @@
 
 namespace geopm
 {
-    template <typename T> class ICircularBuffer;
     /// @brief Stay within a power cap but redistribute power to
     ///        optimize performance. An average per compute node power
     ///        maximum is maintained, but individual nodes will be
     ///        allowed above or below this average.
-    class PowerBalancer
+    class IPowerBalancer
     {
         public:
-            /// @brief Construct a PowerBalancer object.
-            PowerBalancer();
-            /// @brief Destroy a PowerBalancer object.
-            virtual ~PowerBalancer() = default;
+            /// @brief Construct a IPowerBalancer object.
+            IPowerBalancer() = default;
+            /// @brief Destroy a IPowerBalancer object.
+            virtual ~IPowerBalancer() = default;
             /// @brief Should be called at the start of application
             ///        execution with the average power cap across
             ///        compute nodes. Should be called at the end of
@@ -58,17 +57,17 @@ namespace geopm
             /// @param power_cap The new maximum power limit equal to
             ///        the current power limit plus the amount of
             ///        power saved that is being redistributed.
-            void power_cap(double cap);
+            virtual void power_cap(double cap) = 0;
             /// @brief The current power cap which cannot be exceeded
             ///        without breaking contract that the average
             ///        power budget across all compute nodes is
             ///        maintained.
             /// @return The current value of the power cap.
-            double power_cap(void);
+            virtual double power_cap(void) = 0;
             /// @brief Returns the current power limit prescribed for
             ///        this node.
             /// @return The current power limit in units of Watts.
-            double power_limit(void);
+            virtual double power_limit(void) = 0;
             /// @brief Update the object with a runtime measured under
             ///        the current power limit and test if the current
             ///        runtime sample is reliable such that a call
@@ -79,7 +78,7 @@ namespace geopm
             /// @return True if a stable measurement of expected
             ///         runtime for an epoch can be made with the
             ///         runtime_sample() method, and false otherwise.
-            bool is_runtime_stable(double measured_runtime);
+            virtual bool is_runtime_stable(double measured_runtime) = 0;
             /// @brief Sample the measured runtimes under the current
             ///        power cap in the first phase of execution.
             ///        This measurement will aggregated across all
@@ -87,7 +86,7 @@ namespace geopm
             ///        measured.
             /// @return The expected execution time of an application
             ///         epoch under the current power limit.
-            double runtime_sample(void);
+            virtual double runtime_sample(void) = 0;
             /// @param Set the target runtime which is the largest
             ///        epoch execution time measured by any compute
             ///        node since the application began or the last
@@ -95,7 +94,7 @@ namespace geopm
             /// @param largest_runtime The largest expected runtime
             ///        for one epoch across all compute nodes under
             ///        the current power budget.
-            void target_runtime(double largest_runtime);
+            virtual void target_runtime(double largest_runtime) = 0;
             /// @brief During the second phase of execution the power
             ///        limit is decreased until the epoch runtime on
             ///        the compute node under management has increased
@@ -115,7 +114,25 @@ namespace geopm
             ///         should be sent up to the root to be
             ///         redistributed, and false if more trials are
             ///         required.
-            bool is_target_met(double measured_runtime);
+            virtual bool is_target_met(double measured_runtime) = 0;
+    };
+
+    template <typename T> class ICircularBuffer;
+
+    class PowerBalancer : public IPowerBalancer
+    {
+        public:
+            /// @brief Construct a PowerBalancer object.
+            PowerBalancer();
+            /// @brief Destroy a PowerBalancer object.
+            virtual ~PowerBalancer() = default;
+            void power_cap(double cap) override;
+            double power_cap(void) override;
+            double power_limit(void) override;
+            bool is_runtime_stable(double measured_runtime) override;
+            double runtime_sample(void) override;
+            void target_runtime(double largest_runtime) override;
+            bool is_target_met(double measured_runtime) override;
         private:
             const double M_TARGET_EPSILON;
             const double M_TRIAL_DELTA;
