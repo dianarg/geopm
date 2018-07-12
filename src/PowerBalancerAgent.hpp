@@ -40,16 +40,40 @@
 
 namespace geopm
 {
-    class IPlatformIO;
-    class IPlatformTopo;
-    template <class type>
-    class ICircularBuffer;
-    class IPowerBalancer;
-    class PowerGovernor;
-
-    class PowerBalancerAgent : public Agent
+    class IPowerBalancerStep
     {
         public:
+            IPowerBalancerStep() = default;
+            virtual ~IPowerBalancerStep() = default;
+            virtual int reset() = 0;
+            virtual int step_count() const = 0;
+            virtual void inc_step_count() = 0;
+            virtual bool is_send_down_limit(int step) const = 0;
+            virtual bool is_send_down_limit() const = 0;
+            virtual bool is_measure_runtime() const = 0;
+            virtual bool is_reduce_limit() const = 0;
+            virtual bool is_step_complete() const = 0;
+            virtual void is_step_complete(bool is_complete) = 0;
+            virtual void step(int step) = 0;
+    };
+
+    class PowerBalancerStep : public IPowerBalancerStep
+    {
+        public:
+            PowerBalancerStep();
+            virtual ~PowerBalancerStep() = default;
+            int reset() override;
+            int step_count() const override;
+            void inc_step_count() override;
+            bool is_send_down_limit(int step) const override;
+            bool is_send_down_limit() const override;
+            bool is_measure_runtime() const override;
+            bool is_reduce_limit() const override;
+            bool is_step_complete() const override;
+            void is_step_complete(bool is_complete) override;
+            void step(int step) override;
+        private:
+            int step(void) const;
             enum m_step_e {
                 /// @brief On first iteration send down resource
                 ///        manager average limit requested, otherwise
@@ -73,6 +97,20 @@ namespace geopm
                 M_NUM_STEP,
             };
 
+            size_t m_step_count;
+            bool m_is_step_complete;
+    };
+
+    class IPlatformIO;
+    class IPlatformTopo;
+    template <class type>
+    class ICircularBuffer;
+    class IPowerBalancer;
+    class IPowerGovernor;
+
+    class PowerBalancerAgent : public Agent
+    {
+        public:
             enum m_policy_e {
                 /// @brief The power cap enforced on average over all
                 ///        nodes running the application.  This has
@@ -144,6 +182,9 @@ namespace geopm
                 M_TRACE_NUM_SAMPLE,
             };
 
+            PowerBalancerAgent(IPlatformIO &platform_io, IPlatformTopo &platform_topo,
+                               std::unique_ptr<IPowerBalancerStep> power_step,
+                               std::unique_ptr<IPowerGovernor> power_gov, std::unique_ptr<IPowerBalancer> power_bal);
             PowerBalancerAgent();
             virtual ~PowerBalancerAgent();
             void init(int level, const std::vector<int> &fan_in, bool is_level_root) override;
@@ -166,21 +207,18 @@ namespace geopm
         private:
             void init_platform_io(void);
             void update_policy(const std::vector<double> &sample);
-            int step(void);
-            int step(uint64_t step_count);
 
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
             int m_level;
-            std::unique_ptr<PowerGovernor> m_power_gov;
+            std::unique_ptr<IPowerBalancerStep> m_power_step;
+            std::unique_ptr<IPowerGovernor> m_power_gov;
             std::unique_ptr<IPowerBalancer> m_power_balancer;
             std::vector<int> m_pio_idx;
             const std::vector<std::function<double(const std::vector<double>&)> > m_agg_func;
             int m_num_children;
             bool m_is_tree_root;
             int m_last_epoch_count;
-            size_t m_step_count;
-            bool m_is_step_complete;
             double m_root_cap;
             double m_runtime;
             double m_power_slack;
