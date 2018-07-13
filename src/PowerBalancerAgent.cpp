@@ -140,16 +140,31 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool result = false;
-        for (int child_idx = 0; child_idx != m_num_children; ++child_idx) {
-            for (sample_idx = 0; sample_idx != M_NUM_SAMPLE; ++sample_idx) {
-                out_sample[sample_idx] = m_agg_function[sample_idx](in_sample[sample_idx]);
+
+        aggregate_sample(in_sample, out_sample, m_agg_func);
+        bool is_step_complete = out_sample[M_SAMPLE_IS_STEP_COMPLETE];
+        if (is_step_complete && !m_is_step_complete)
+            // All children have reported the step completed for the
+            // first time.
+            switch(step()) {
+                case M_STEP_MEASURE_RUNTIME:
+                    break;
+                case M_STEP_SEND_UP_RUNTIME:
+                    break;
+                case M_STEP_SEND_DOWN_RUNTIME:
+                    break;
+                case M_STEP_REDUCE_LIMIT:
+                    break;
+                case M_STEP_SEND_UP_EXCESS:
+                    break;
+                case M_STEP_SEND_DOWN_LIMIT:
+                    break;
+                case M_STEP_INCREASE_CAP:
+                    break;
             }
+            m_is_step_complete = true;
         }
-        if (m_is_root) {
-            /// @todo If this agent is the tree root, extra stuff needs to happen here.
-        }
-        return out_sample[M_SAMPLE_IS_STEP_COMPLETE];
+        return m_is_step_complete;
     }
 
     bool PowerBalancerAgent::adjust_platform(const std::vector<double> &in_policy)

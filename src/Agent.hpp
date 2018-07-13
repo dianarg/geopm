@@ -137,6 +137,9 @@ namespace geopm
             static std::map<std::string, std::string> make_dictionary(const std::vector<std::string> &policy_names,
                                                                       const std::vector<std::string> &sample_names);
         private:
+            static void aggregate_sample(const std::vector<std::vector<double> > &in_sample,
+                                         std::vector<double> &out_sample,
+                                         std::vector<std::function<double(const std::vector<double>&)> > m_agg_func);
             static const std::string m_num_sample_string;
             static const std::string m_num_policy_string;
             static const std::string m_sample_prefix;
