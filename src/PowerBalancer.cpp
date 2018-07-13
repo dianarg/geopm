@@ -110,5 +110,15 @@ namespace geopm
         }
         return result;
     }
-}
 
+    void PowerBalancer::achieved_limit(double achieved)
+    {
+        if (achieved > m_power_limit) {
+            int num_delta = 1 + (achieved - m_power_limit) / M_TRIAL_DELTA;
+            m_power_limit += num_delta * M_TRIAL_DELTA;
+            if (m_power_limit > m_power_cap) {
+                m_power_limit = m_power_cap;
+            }
+        }
+    }
+}

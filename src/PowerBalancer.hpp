@@ -115,6 +115,7 @@ namespace geopm
             ///         redistributed, and false if more trials are
             ///         required.
             virtual bool is_target_met(double measured_runtime) = 0;
+            virtual void achieved_limit(double achieved) = 0;
     };
 
     template <typename T> class ICircularBuffer;
@@ -133,6 +134,7 @@ namespace geopm
             double runtime_sample(void) override;
             void target_runtime(double largest_runtime) override;
             bool is_target_met(double measured_runtime) override;
+            void achieved_limit(double achieved) override;
         private:
             const double M_TARGET_EPSILON;
             const double M_TRIAL_DELTA;
