@@ -161,45 +161,31 @@ namespace geopm
         }
 #endif
         if (step(in_policy[M_POLICY_STEP]) != step()) {
-            if (in_policy[M_POLICY_POWER_CAP != 0.0) {
+            if (in_policy[M_POLICY_POWER_CAP] != 0.0) {
                 // New power cap from resource manager, reset
                 // algorithm.
                 m_step_count = M_STEP_SEND_DOWN_LIMIT;
+                m_power_balancer->power_cap(in_policy[M_POLICY_POWER_CAP]);
+                m_is_step_complete = true;
             }
             else if (m_is_step_complete &&
-                     in_policy[M_POLICY_STEP) == m_policy_count + 1)) {
+                     in_policy[M_POLICY_STEP] == m_policy_count + 1)) {
                 // Advance a step
                 ++m_step_count;
                 m_is_step_complete = false;
-                switch(step()) {
-                    case M_STEP_MEASURE_RUNTIME:
-                        break;
-                    case M_STEP_SEND_UP_RUNTIME:
-                        break;
-                    case M_STEP_SEND_DOWN_RUNTIME:
-                        break;
-                    case M_STEP_REDUCE_LIMIT:
-                        break;
-                    case M_STEP_SEND_UP_EXCESS:
-                        break;
-                    case M_STEP_SEND_DOWN_LIMIT:
-                        break;
-                    case M_STEP_INCREASE_CAP:
-                        break;
-                }
             }
             else {
-                // Throw, agent is out of step with the policy
+                throw Exception("PowerBalancerAgent::adjust_platform(): recieved a policy for a step that the agent is not currently active in.",
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
         }
         double actual_limit = 0.0;
         double request_limit = m_power_balancer->power_limit();
         bool result = m_power_gov->adjust_platform(request_limit, actual_limit);
-        if (actual_limit != request_limit) {
-            /// @todo Depending on step, need to do something here.
+        if (actual_limit != request_limit &&
+            m_step == M_STEP_REDUCE_LIMIT) {
 
         }
-        return result;
     }
 
     bool PowerBalancerAgent::sample_platform(std::vector<double> &out_sample)

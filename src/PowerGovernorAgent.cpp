@@ -215,20 +215,17 @@ namespace geopm
         }
 #endif
 
-        bool result = false;
         // If the budget has changed, or we have seen the same budget
         // for m_samples_per_control samples, then update the
         // power limits.
         if (m_last_power_budget != in_policy[M_POLICY_POWER] || m_sample_count == 0) {
             m_power_gov->adjust_platform(in_policy[M_POLICY_POWER]);
             m_last_power_budget = in_policy[M_POLICY_POWER];
-            result = true;
         }
         m_sample_count++;
         if (m_sample_count == m_samples_per_control) {
             m_sample_count = 0;
         }
-        return result;
     }
 
     bool PowerGovernorAgent::sample_platform(std::vector<double> &out_sample)
