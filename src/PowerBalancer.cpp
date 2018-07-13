@@ -47,6 +47,7 @@ namespace geopm
         , m_power_cap(0.0)
         , m_power_limit(0.0)
         , m_target_runtime(0.0)
+        , m_is_target_met(false)
         , m_runtime_buffer(make_unique<CircularBuffer<double> >(M_NUM_SAMPLE))
     {
 
@@ -91,24 +92,25 @@ namespace geopm
     void PowerBalancer::target_runtime(double largest_runtime)
     {
         m_target_runtime = largest_runtime;
+        m_is_target_met = false;
     }
 
     bool PowerBalancer::is_target_met(double measured_runtime)
     {
-        bool result = false;
-        if (is_runtime_stable(measured_runtime) &&
-            m_target_runtime * (1.0 - M_TARGET_EPSILON) < runtime_sample()) {
-            if (m_power_limit != m_power_cap) {
-                m_runtime_buffer.clear();
-                m_power_limit += M_TRIAL_DELTA;
+        if (is_runtime_stable(measured_runtime)) {
+            if (m_target_runtime * (1.0 - M_TARGET_EPSILON) < runtime_sample()) {
+                if (m_power_limit != m_power_cap) {
+                    m_runtime_buffer.clear();
+                    m_power_limit += M_TRIAL_DELTA;
+                }
+                m_is_target_met = true;
             }
-            result = true;
+            else {
+                m_runtime_buffer.clear();
+                m_power_limit -= M_TRIAL_DELTA;
+            }
         }
-        else {
-            m_runtime_buffer.clear();
-            m_power_limit -= M_TRIAL_DELTA;
-        }
-        return result;
+        return m_is_target_met;
     }
 
     void PowerBalancer::achieved_limit(double achieved)
@@ -118,6 +120,7 @@ namespace geopm
             m_power_limit += num_delta * M_TRIAL_DELTA;
             if (m_power_limit > m_power_cap) {
                 m_power_limit = m_power_cap;
+                m_is_target_met = true;
             }
         }
     }

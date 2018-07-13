@@ -146,6 +146,7 @@ namespace geopm
             //        which may be lower than the cap.
             double m_power_limit;
             double m_target_runtime;
+            bool m_is_target_met;
             std::unique_ptr<ICircularBuffer<double> > m_runtime_buffer;
     };
 }
