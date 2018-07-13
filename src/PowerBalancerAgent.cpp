@@ -184,8 +184,10 @@ namespace geopm
         bool result = m_power_gov->adjust_platform(request_limit, actual_limit);
         if (actual_limit != request_limit &&
             m_step == M_STEP_REDUCE_LIMIT) {
+            m_power_balancer->achieved_limit(actual_limit):
 
         }
+        return result;
     }
 
     bool PowerBalancerAgent::sample_platform(std::vector<double> &out_sample)

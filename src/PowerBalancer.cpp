@@ -120,8 +120,8 @@ namespace geopm
             m_power_limit += num_delta * M_TRIAL_DELTA;
             if (m_power_limit > m_power_cap) {
                 m_power_limit = m_power_cap;
-                m_is_target_met = true;
             }
+            m_is_target_met = true;
         }
     }
 }
