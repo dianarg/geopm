@@ -76,6 +76,7 @@ namespace geopm
     bool PowerBalancer::is_runtime_stable(double measured_runtime)
     {
         bool result = false;
+        m_runtime_buffer->insert(measured_runtime);
         if (m_runtime_buffer->size() == m_runtime_buffer->capacity()) {
             result = true;
         }
@@ -95,11 +96,16 @@ namespace geopm
     bool PowerBalancer::is_target_met(double measured_runtime)
     {
         bool result = false;
-        m_runtime_buffer->insert(measured_runtime);
-        if (m_target_runtime * (1.0 - M_TARGET_EPSILON) < runtime_sample()) {
+        if (is_runtime_stable(measured_runtime) &&
+            m_target_runtime * (1.0 - M_TARGET_EPSILON) < runtime_sample()) {
+            if (m_power_limit != m_power_cap) {
+                m_runtime_buffer.clear();
+                m_power_limit += M_TRIAL_DELTA;
+            }
             result = true;
         }
         else {
+            m_runtime_buffer.clear();
             m_power_limit -= M_TRIAL_DELTA;
         }
         return result;

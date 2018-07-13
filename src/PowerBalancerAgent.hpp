@@ -122,8 +122,13 @@ namespace geopm
             };
 
             enum m_sample_e {
-                /// @brief The the step that is currently in execution.
-                M_SAMPLE_STEP,
+                /// @brief The the step counter that is currently in
+                ///        execution.  Note that the step is equal to
+                ///        the step counter modulo M_NUM_STEP and is
+                ///        reset each time a new power cap is provided
+                ///        by sending a policy with a non-zero
+                ///        M_POLICY_POWER_CAP field.
+                M_SAMPLE_STEP_COUNT,
                 /// @brief Value 0.0 implies that all children below
                 ///        have completed the step and are waiting for
                 ///        a policy that is marked with the next step.
@@ -175,6 +180,8 @@ namespace geopm
             static std::vector<std::string> sample_names(void);
         private:
             void init_platform_io(void);
+            int step(void);
+            int step(uint64_t step_count);
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
             int m_level;
@@ -194,6 +201,7 @@ namespace geopm
             const int m_ascend_period;
             bool m_is_updated;
             int m_last_epoch_count;
+            size_t m_step_count;
     };
 }
 

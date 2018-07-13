@@ -68,6 +68,7 @@ namespace geopm
         , m_is_level_root(false)
         , m_is_tree_root(false)
         , m_last_epoch_count(0)
+        , m_step(M_STEP_SEND_DOWN_LIMIT);
     {
 #ifdef GEOPM_DEBUG
         if (m_agg_func.size() != M_NUM_SAMPLE) {
@@ -99,6 +100,16 @@ namespace geopm
         // Setup signals
         m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME] = m_platform_io.push_signal("EPOCH_RUNTIME", IPlatformTopo::M_DOMAIN_BOARD, 0);
         m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT] = m_platform_io.push_signal("EPOCH_COUNT", IPlatformTopo::M_DOMAIN_BOARD, 0);
+    }
+
+    int PowerBalancerAgent::step(size_t step_count)
+    {
+        return (step_count % M_NUM_STEP);
+    }
+
+    int PowerBalancerAgent::step(void)
+    {
+        return step(m_step_count);
     }
 
     bool PowerBalancerAgent::descend(const std::vector<double> &policy_in, std::vector<std::vector<double> > &policy_out)
@@ -136,9 +147,8 @@ namespace geopm
             }
         }
         if (m_is_root) {
-
+            /// @todo If this agent is the tree root, extra stuff needs to happen here.
         }
-        /// @todo If this agent is the tree root, extra stuff needs to happen here.
         return out_sample[M_SAMPLE_IS_STEP_COMPLETE];
     }
 
@@ -150,9 +160,37 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        if (in_policy[M_POLICY_STEP] != m_step) {
-            m_step = in_policy[M_POLICY_STEP];
-            m_is_step_complete = false;
+        if (step(in_policy[M_POLICY_STEP]) != step()) {
+            if (in_policy[M_POLICY_POWER_CAP != 0.0) {
+                // New power cap from resource manager, reset
+                // algorithm.
+                m_step_count = M_STEP_SEND_DOWN_LIMIT;
+            }
+            else if (m_is_step_complete &&
+                     in_policy[M_POLICY_STEP) == m_policy_count + 1)) {
+                // Advance a step
+                ++m_step_count;
+                m_is_step_complete = false;
+                switch(step()) {
+                    case M_STEP_MEASURE_RUNTIME:
+                        break;
+                    case M_STEP_SEND_UP_RUNTIME:
+                        break;
+                    case M_STEP_SEND_DOWN_RUNTIME:
+                        break;
+                    case M_STEP_REDUCE_LIMIT:
+                        break;
+                    case M_STEP_SEND_UP_EXCESS:
+                        break;
+                    case M_STEP_SEND_DOWN_LIMIT:
+                        break;
+                    case M_STEP_INCREASE_CAP:
+                        break;
+                }
+            }
+            else {
+                // Throw, agent is out of step with the policy
+            }
         }
         double actual_limit = 0.0;
         double request_limit = m_power_balancer->power_limit();
@@ -194,7 +232,7 @@ namespace geopm
             m_last_epoch_count = epoch_count;
         }
         m_power_gov->sample_platform();
-        out_sample[M_SAMPLE_STEP] = m_step;
+        out_sample[M_SAMPLE_STEP] = m_step_count;
         out_sample[M_SAMPLE_IS_STEP_COMPLETE] = m_is_step_complete;
         out_sample[M_SAMPLE_RUNTIME] = m_runtime;
         out_sample[M_SAMPLE_POWER_SLACK] = m_power_slack;
