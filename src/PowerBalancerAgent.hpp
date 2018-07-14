@@ -85,7 +85,7 @@ namespace geopm
                 ///        M_SEND_DOWN_LIMIT and the policy indexed by
                 ///        M_POLICY_POWER_CAP will have a non-zero
                 ///        value.
-                M_POLICY_STEP,
+                M_POLICY_STEP_COUNT,
                 /// @brief The power cap enforced on average over all
                 ///        nodes running the application.  This has
                 ///        value 0.0 except in two cases.  In the
@@ -102,7 +102,7 @@ namespace geopm
                 ///        power.  This will have value 0.0 until all
                 ///        leaf agents have reported a runtime to the
                 ///        root agent.
-                M_POLICY_RUNTIME,
+                M_POLICY_MAX_EPOCH_RUNTIME,
                 /// @brief This value is updated in step
                 ///        M_STEP_ADJUST_LIMIT to the amount that each
                 ///        leaf agent should increase their power
@@ -133,10 +133,10 @@ namespace geopm
                 M_SAMPLE_IS_STEP_COMPLETE,
                 /// @brief Maximum expected runtime for any node
                 ///        below.
-                M_SAMPLE_RUNTIME,
+                M_SAMPLE_EPOCH_RUNTIME,
                 /// @brief The sum of all slack power available from
                 ///        children below the agent.
-                M_SAMPLE_POWER_SLACK,
+                M_SAMPLE_SUM_POWER_SLACK,
                 /// @brief Number of elements in a sample vector.
                 M_NUM_SAMPLE,
             };
