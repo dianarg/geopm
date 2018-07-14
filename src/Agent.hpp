@@ -64,6 +64,7 @@ namespace geopm
             /// @param [in] in_policy Policy values from the parent.
             /// @param [out] out_policy Vector of policies to be sent
             ///        to each child.
+            /// @return True if out_policy has been updated since last call.
             virtual bool descend(const std::vector<double> &in_policy,
                                  std::vector<std::vector<double> >&out_policy) = 0;
             /// @brief Aggregate signals from children for the next
@@ -72,6 +73,8 @@ namespace geopm
             ///        from each child.
             /// @param [out] out_signal Aggregated signal values to be
             ///        sent up to the parent.
+            /// @return True if out_signal has been updated since last
+            ///         call.
             virtual bool ascend(const std::vector<std::vector<double> > &in_signal,
                                 std::vector<double> &out_signal) = 0;
             /// @brief Adjust the platform settings based the policy
@@ -83,6 +86,8 @@ namespace geopm
             /// @brief Sample signals from the platform to be sent up
             ///        the tree.
             /// @param [out] sample Vector of samples, one per signal.
+            /// @return True if sample has been updated since last
+            ///         call.
             virtual bool sample_platform(std::vector<double> &sample) = 0;
             /// @brief Called by Kontroller to wait for sample period
             ///        to elapse.  This controls the cadence of the

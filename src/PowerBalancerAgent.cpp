@@ -68,7 +68,7 @@ namespace geopm
         , m_is_level_root(false)
         , m_is_tree_root(false)
         , m_last_epoch_count(0)
-        , m_step(M_STEP_SEND_DOWN_LIMIT);
+        , m_step_count(M_STEP_MEASURE_RUNTIME);
     {
 #ifdef GEOPM_DEBUG
         if (m_agg_func.size() != M_NUM_SAMPLE) {
@@ -121,13 +121,20 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool result = (policy_in == m_policy);
-        for (auto &po : policy_out) {
-            po = policy_in;
+        bool is_step_changed = (policy_in[M_POLICY_STEP] != m_step_count)
+        if (m_level != 0) {
+            // Don't change m_step_count for level zero agents until
+            // adjust_platform is called.
+            m_step_count = policy_in[M_POLICY_STEP];
         }
-        m_policy = policy_in;
-
-        return result;
+        if (is_step_changed) {
+            // Copy the input policy directly into each child's
+            // policy.
+            for (auto &po : policy_out) {
+                po = policy_in;
+            }
+        }
+        return is_step_changed;
     }
 
 
@@ -140,31 +147,12 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-
-        aggregate_sample(in_sample, out_sample, m_agg_func);
-        bool is_step_complete = out_sample[M_SAMPLE_IS_STEP_COMPLETE];
-        if (is_step_complete && !m_is_step_complete)
-            // All children have reported the step completed for the
-            // first time.
-            switch(step()) {
-                case M_STEP_MEASURE_RUNTIME:
-                    break;
-                case M_STEP_SEND_UP_RUNTIME:
-                    break;
-                case M_STEP_SEND_DOWN_RUNTIME:
-                    break;
-                case M_STEP_REDUCE_LIMIT:
-                    break;
-                case M_STEP_SEND_UP_EXCESS:
-                    break;
-                case M_STEP_SEND_DOWN_LIMIT:
-                    break;
-                case M_STEP_INCREASE_CAP:
-                    break;
-            }
+        bool result = (out_sample[M_SAMPLE_IS_STEP_COMPLETE] && !m_is_step_complete);
+        if (result) {
+            aggregate_sample(in_sample, out_sample, m_agg_func);
             m_is_step_complete = true;
         }
-        return m_is_step_complete;
+        return result;
     }
 
     bool PowerBalancerAgent::adjust_platform(const std::vector<double> &in_policy)
@@ -175,32 +163,35 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        if (step(in_policy[M_POLICY_STEP]) != step()) {
-            if (in_policy[M_POLICY_POWER_CAP] != 0.0) {
-                // New power cap from resource manager, reset
-                // algorithm.
-                m_step_count = M_STEP_SEND_DOWN_LIMIT;
-                m_power_balancer->power_cap(in_policy[M_POLICY_POWER_CAP]);
-                m_is_step_complete = true;
-            }
-            else if (m_is_step_complete &&
-                     in_policy[M_POLICY_STEP] == m_policy_count + 1)) {
-                // Advance a step
-                ++m_step_count;
-                m_is_step_complete = false;
-            }
-            else {
-                throw Exception("PowerBalancerAgent::adjust_platform(): recieved a policy for a step that the agent is not currently active in.",
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-            }
+        bool is_step_changed = (in_policy[M_POLICY_STEP] != m_step_count)
+        if (is_step_changed &&
+            policy_in[M_POLICY_STEP] == M_STEP_SEND_DOWN_LIMIT &&
+            policy_in[M_POLICY_POWER_CAP] != 0.0) {
+            // New power cap from resource manager, reset
+            // algorithm.
+            m_step_count = M_STEP_SEND_DOWN_LIMIT;
+            m_power_balancer->power_cap(in_policy[M_POLICY_POWER_CAP]);
+            m_is_step_complete = true;
         }
+        else if (is_step_changed &&
+            m_is_step_complete &&
+            m_step_count + 1 == policy_in[M_POLICY_STEP]) {
+            // Advance a step
+            ++m_step_count;
+            m_is_step_complete = false;
+        }
+
         double actual_limit = 0.0;
         double request_limit = m_power_balancer->power_limit();
         bool result = m_power_gov->adjust_platform(request_limit, actual_limit);
-        if (actual_limit != request_limit &&
-            m_step == M_STEP_REDUCE_LIMIT) {
-            m_power_balancer->achieved_limit(actual_limit):
-
+        if (actual_limit != request_limit) {
+            if (step() == M_STEP_REDUCE_LIMIT) {
+                m_power_balancer->achieved_limit(actual_limit);
+            }
+            // Warn if this is a new power cap and it is too low.
+            else if (m_step_count == M_STEP_SEND_DOWN_LIMIT) {
+                std::cerr << "Warning: <geopm> PowerBalancerAgent: per node power cap of " << request_limit << " Watts could not be maintained." << std::endl;
+            }
         }
         return result;
     }
@@ -213,12 +204,14 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
+        bool result = false;
         int epoch_count = m_platform_io->sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT]);
         // If all of the ranks have observed a new epoch then update
         // the power_balancer.
-        if (epoch_count != m_last_epoch_count) {
+        if (epoch_count != m_last_epoch_count &&
+            !m_is_step_complete) {
             double epoch_runtime = m_platform_io->sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME]);
-            switch (m_step) {
+            switch (step()) {
                 case M_STEP_MEASURE_RUNTIME:
                     m_is_step_complete = m_power_balancer->is_runtime_stable(epoch_runtime);
                     m_runtime = m_power_balancer->runtime_sample();
