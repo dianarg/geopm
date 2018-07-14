@@ -174,11 +174,27 @@ namespace geopm
             m_is_step_complete = true;
         }
         else if (is_step_changed &&
-            m_is_step_complete &&
-            m_step_count + 1 == policy_in[M_POLICY_STEP]) {
+                 m_is_step_complete &&
+                 m_step_count + 1 == policy_in[M_POLICY_STEP]) {
             // Advance a step
             ++m_step_count;
             m_is_step_complete = false;
+            switch (step()) {
+                case M_STEP_SEND_DOWN_RUNTIME:
+                    m_power_balancer->m_power_balancer->target_runtime(in_policy->M_POLICY_RUNTIME);
+                    break;
+                case M_STEP_SEND_DOWN_LIMIT:
+                    if (m_step_counter != M_STEP_SEND_DOWN_LIMIT) {
+                        // Not a new power cap so adjust power cap up by the slack amount.
+                        m_power_balancer->power_cap(m_power_balancer->power_limit() + in_policy[M_POLICY_POWER_SLACK])
+                    break;
+                default:
+                    break;
+            }
+        }
+        else if (is_step_changed) {
+            throw Exception("PowerBalancerAgent::adjust_platform(): The policy step is out of sync with the agent step or first policy recieived had a zero power cap.",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
 
         double actual_limit = 0.0;

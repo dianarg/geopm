@@ -71,10 +71,6 @@ namespace geopm
                 ///        manager average limit requested, otherwise
                 ///        send down average excess power.
                 M_STEP_SEND_DOWN_LIMIT,
-                /// @brief Increase power limit applied by delta sent
-                ///        down to leaf in last step or set it to
-                ///        average if first iteration.
-                M_STEP_INCREASE_CAP,
                 /// @brief Number of steps in process.
                 M_NUM_STEP,
             };
