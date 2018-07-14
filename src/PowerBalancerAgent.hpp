@@ -148,10 +148,7 @@ namespace geopm
             };
             enum m_trace_sample_e {
                 M_TRACE_SAMPLE_EPOCH_RUNTIME,
-                M_TRACE_SAMPLE_PKG_POWER,
-                M_TRACE_SAMPLE_DRAM_POWER,
-                M_TRACE_SAMPLE_IS_CONVERGED,
-                M_TRACE_SAMPLE_PWR_BUDGET,
+                M_TRACE_SAMPLE_POWER_LIMIT,
                 M_TRACE_NUM_SAMPLE,
             };
 

@@ -283,10 +283,7 @@ namespace geopm
     std::vector<std::string> PowerBalancerAgent::trace_names(void) const
     {
         return {"epoch_runtime",
-                "power_package",
-                "power_dram",
-                "is_converged",
-                "power_budget"};
+                "power_limit"};
     }
 
     void PowerBalancerAgent::trace_values(std::vector<double> &values)
@@ -296,12 +293,13 @@ namespace geopm
             throw Exception("PowerBalancerAgent::" + std::string(__func__) + "(): values vector not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
+        if (m_level != 0) {
+            throw Exception("PowerBalancerAgent::trace_values(): called on non-leaf agent.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
 #endif
         values[M_TRACE_SAMPLE_EPOCH_RUNTIME] = m_sample[M_PLAT_SIGNAL_EPOCH_RUNTIME];
-        values[M_TRACE_SAMPLE_PKG_POWER] = m_sample[M_PLAT_SIGNAL_PKG_POWER];
-        values[M_TRACE_SAMPLE_DRAM_POWER] = m_sample[M_PLAT_SIGNAL_DRAM_POWER];
-        values[M_TRACE_SAMPLE_IS_CONVERGED] = m_is_converged;
-        values[M_TRACE_SAMPLE_PWR_BUDGET] = m_last_power_budget_out;
+        values[M_TRACE_SAMPLE_POWER_LIMIT] = m_power_balancer->power_limit();
     }
 
     std::string PowerBalancerAgent::plugin_name(void)
