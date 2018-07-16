@@ -34,8 +34,8 @@
 #include <cmath>
 #include <algorithm>
 
-#include "PowerGovernorAgent.hpp"
 #include "PowerGovernor.hpp"
+#include "PowerGovernorAgent.hpp"
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
 #include "Exception.hpp"
@@ -47,21 +47,20 @@
 namespace geopm
 {
     PowerGovernorAgent::PowerGovernorAgent()
-        : PowerGovernorAgent(platform_io(), platform_topo())
+        : PowerGovernorAgent(platform_io(), platform_topo(), geopm::make_unique<PowerGovernor>(platform_io(), platform_topo()))
     {
 
     }
 
-    PowerGovernorAgent::PowerGovernorAgent(IPlatformIO &platform_io, IPlatformTopo &platform_topo)
+    PowerGovernorAgent::PowerGovernorAgent(IPlatformIO &platform_io, IPlatformTopo &platform_topo, std::unique_ptr<IPowerGovernor> power_gov)
         : m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
         , m_level(-1)
         , m_is_converged(false)
         , m_is_sample_stable(false)
-        , m_samples_per_control(10)
         , m_min_power_setting(m_platform_io.read_signal("POWER_PACKAGE_MIN", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
         , m_max_power_setting(m_platform_io.read_signal("POWER_PACKAGE_MAX", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
-        , m_power_gov(geopm::make_unique<PowerGovernor> (m_platform_io, m_platform_topo))
+        , m_power_gov(std::move(power_gov))
         , m_policy(M_NUM_POLICY, NAN)
         , m_pio_idx(M_PLAT_NUM_SIGNAL)
         , m_agg_func(M_NUM_SAMPLE)
@@ -71,7 +70,6 @@ namespace geopm
         , m_sample(M_PLAT_NUM_SIGNAL)
         , m_updates_per_sample(5)
         , m_last_energy_status(0.0)
-        , m_sample_count(0)
         , m_ascend_count(0)
         , m_ascend_period(10)
         , m_convergence_target(0.01)
@@ -183,7 +181,13 @@ namespace geopm
         // them up the tree.
         if (m_is_sample_stable && m_ascend_count == 0) {
             result = true;
-            aggregate_sample(in_sample, out_sample, m_agg_func);
+            std::vector<double> child_sample(m_num_children);
+            for (size_t sig_idx = 0; sig_idx < out_sample.size(); ++sig_idx) {
+                for (int child_idx = 0; child_idx < m_num_children; ++child_idx) {
+                    child_sample[child_idx] = in_sample[child_idx][sig_idx];
+                }
+                out_sample[sig_idx] = m_agg_func[sig_idx](child_sample);
+            }
         }
         // Increment the ascend counter if the children are stable.
         if (m_is_sample_stable) {
@@ -209,17 +213,10 @@ namespace geopm
         }
 #endif
 
-        // If the budget has changed, or we have seen the same budget
-        // for m_samples_per_control samples, then update the
-        // power limits.
-        if (m_last_power_budget != in_policy[M_POLICY_POWER] || m_sample_count == 0) {
-            m_power_gov->adjust_platform(in_policy[M_POLICY_POWER]);
-            m_last_power_budget = in_policy[M_POLICY_POWER];
-        }
-        m_sample_count++;
-        if (m_sample_count == m_samples_per_control) {
-            m_sample_count = 0;
-        }
+        double actual_power = 0.0;
+        bool result = m_power_gov->adjust_platform(in_policy[M_POLICY_POWER], actual_power);
+        m_last_power_budget = in_policy[M_POLICY_POWER];
+        return result;
     }
 
     bool PowerGovernorAgent::sample_platform(std::vector<double> &out_sample)

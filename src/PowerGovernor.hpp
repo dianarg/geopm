@@ -43,33 +43,53 @@ namespace geopm
     template <class type>
     class ICircularBuffer;
 
-    class PowerGovernor
+    class IPowerGovernor
+    {
+        public:
+            IPowerGovernor() = default;
+            virtual ~IPowerGovernor() = default;
+            /// @brief Registsters signals and controls with PlatformIO.
+            virtual void init_platform_io(void) = 0;
+            /// @brief Samples DRAM power, storing history of past values.
+            virtual void sample_platform(void) = 0;
+            /// @brief Calculates metric of DRAM power history, subtracting that value
+            ///        from the provided target node power.
+            /// @param [in] node_power_request Total expected node power consumption.
+            /// @param [out] node_power_actual Achievable node power limit.  Should equal
+            //              node_power_request unless clamped by bounds.
+            /// @return True if platform adjustments have been made, false otherwise.
+            virtual bool adjust_platform(double node_power_request, double &node_power_actual) = 0;
+            /// @brief Sets min and max package bounds.
+            /// @param min_pkg_power Minimum package power.
+            /// @param max_pkg_power Maximum package power.
+            virtual void set_power_bounds(double min_pkg_power, double max_pkg_power) = 0;
+    };
+
+    class PowerGovernor : public IPowerGovernor
     {
         public:
             PowerGovernor(IPlatformIO &platform_io, IPlatformTopo &platform_topo);
+            PowerGovernor(IPlatformIO &platform_io, IPlatformTopo &platform_topo, int samples_per_control);
             virtual ~PowerGovernor();
-            /// @brief Registsters signals and controls with PlatformIO.
-            void init_platform_io(void);
-            /// @brief Samples DRAM power, storing history of past values.
-            void sample_platform(void);
-            /// @brief Calculates metric of DRAM power history, subracting that value
-            ///        from the provided target node power.
-            /// @param [in] node_power_setting Total expected node power consumption.
-            void adjust_platform(double node_power_setting);
-            /// @brief Sets min and max node power target bounds.
-            /// @param min_node_power Minimum node power.
-            /// @param max_node_power Maximum node power.
-            void set_power_bounds(double min_node_power, double max_node_power);
+            void init_platform_io(void) override;
+            void sample_platform(void) override;
+            bool adjust_platform(double node_power_request, double &node_power_actual);
+            void set_power_bounds(double min_pkg_power, double max_pkg_power) override;
         private:
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
+            const int M_SAMPLES_PER_CONTROL;
+            int m_sample_count;
             int m_pkg_pwr_domain_type;
             int m_num_pkg;
-            double m_min_pkg_power_setting;
-            double m_max_pkg_power_setting;
+            const double M_MIN_PKG_POWER_SETTING;
+            const double M_MAX_PKG_POWER_SETTING;
+            double m_min_pkg_power_policy;
+            double m_max_pkg_power_policy;
             int m_dram_sig_idx;
             std::vector<int> m_control_idx;
             std::unique_ptr<ICircularBuffer<double> > m_dram_power_buf;
+            mutable double m_last_node_power_setting;
     };
 }
 
