@@ -35,6 +35,7 @@
 
 #include <vector>
 
+#include "geopm_time.h"
 #include "Agent.hpp"
 
 namespace geopm
@@ -195,6 +196,11 @@ namespace geopm
             int m_last_epoch_count;
             size_t m_step_count;
             bool m_is_step_complete;
+            double m_runtime;
+            double m_power_slack;
+            struct geopm_time_s m_last_wait;
+            const double M_WAIT_SEC;
+            std::vector<double> m_sample;
     };
 }
 

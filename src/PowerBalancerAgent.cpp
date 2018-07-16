@@ -71,6 +71,11 @@ namespace geopm
         , m_last_epoch_count(0)
         , m_step_count(M_STEP_MEASURE_RUNTIME)
         , m_is_step_complete(false)
+        , m_runtime(0.0)
+        , m_power_slack(0.0)
+        , m_last_wait{{0,0}}
+        , M_WAIT_SEC(0.005)
+        , m_sample(M_NUM_SAMPLE, NAN)
     {
 #ifdef GEOPM_DEBUG
         if (m_agg_func.size() != M_NUM_SAMPLE) {
@@ -78,6 +83,7 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
+        geopm_time(&m_last_wait);
     }
 
     PowerBalancerAgent::~PowerBalancerAgent() = default;
@@ -227,12 +233,12 @@ namespace geopm
         }
 #endif
         bool result = false;
-        int epoch_count = m_platform_io->sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT]);
+        int epoch_count = m_platform_io.sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT]);
         // If all of the ranks have observed a new epoch then update
         // the power_balancer.
         if (epoch_count != m_last_epoch_count &&
             !m_is_step_complete) {
-            double epoch_runtime = m_platform_io->sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME]);
+            double epoch_runtime = m_platform_io.sample(m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME]);
             switch (step()) {
                 case M_STEP_MEASURE_RUNTIME:
                     m_is_step_complete = m_power_balancer->is_runtime_stable(epoch_runtime);
@@ -254,21 +260,18 @@ namespace geopm
         out_sample[M_SAMPLE_IS_STEP_COMPLETE] = m_is_step_complete;
         out_sample[M_SAMPLE_EPOCH_RUNTIME] = m_runtime;
         out_sample[M_SAMPLE_SUM_POWER_SLACK] = m_power_slack;
-        return m_is_step_complete;
+        m_sample = out_sample;
+        return result;
     }
 
-    void PowerBalancerAgent::wait()
-    {
-        // Wait for updates to the energy status register
-        double curr_energy_status = 0;
 
-        for (int i = 0; i < m_updates_per_sample; ++i) {
-            do  {
-                curr_energy_status = m_platform_io.read_signal("ENERGY_PACKAGE", IPlatformTopo::M_DOMAIN_PACKAGE, 0);
-            }
-            while (m_last_energy_status == curr_energy_status);
-            m_last_energy_status = curr_energy_status;
+    void PowerBalancerAgent::wait(void)    {
+        geopm_time_s current_time;
+        do {
+            geopm_time(&current_time);
         }
+        while(geopm_time_diff(&m_last_wait, &current_time) < M_WAIT_SEC);
+        geopm_time(&m_last_wait);
     }
 
     std::vector<std::pair<std::string, std::string> > PowerBalancerAgent::report_header(void) const

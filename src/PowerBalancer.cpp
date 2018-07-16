@@ -100,13 +100,13 @@ namespace geopm
         if (is_runtime_stable(measured_runtime)) {
             if (m_target_runtime * (1.0 - M_TARGET_EPSILON) < runtime_sample()) {
                 if (m_power_limit != m_power_cap) {
-                    m_runtime_buffer.clear();
+                    m_runtime_buffer->clear();
                     m_power_limit += M_TRIAL_DELTA;
                 }
                 m_is_target_met = true;
             }
             else {
-                m_runtime_buffer.clear();
+                m_runtime_buffer->clear();
                 m_power_limit -= M_TRIAL_DELTA;
             }
         }
