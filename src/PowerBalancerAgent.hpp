@@ -134,7 +134,7 @@ namespace geopm
                 M_SAMPLE_IS_STEP_COMPLETE,
                 /// @brief Maximum expected runtime for any node
                 ///        below.
-                M_SAMPLE_EPOCH_RUNTIME,
+                M_SAMPLE_MAX_EPOCH_RUNTIME,
                 /// @brief The sum of all slack power available from
                 ///        children below the agent.
                 M_SAMPLE_SUM_POWER_SLACK,
@@ -174,6 +174,7 @@ namespace geopm
             static std::vector<std::string> sample_names(void);
         private:
             void init_platform_io(void);
+            void update_policy(const std::vector<double> &sample);
             int step(void);
             int step(uint64_t step_count);
             IPlatformIO &m_platform_io;
@@ -201,6 +202,8 @@ namespace geopm
             struct geopm_time_s m_last_wait;
             const double M_WAIT_SEC;
             std::vector<double> m_sample;
+            std::vector<double> m_policy;
+            int m_num_node;
     };
 }
 

@@ -62,7 +62,7 @@ namespace geopm
         , m_agg_func {
               IPlatformIO::agg_min, // M_SAMPLE_STEP_COUNT
               IPlatformIO::agg_and, // M_SAMPLE_IS_STEP_COMPLETE
-              IPlatformIO::agg_max, // M_SAMPLE_EPOCH_RUNTIME
+              IPlatformIO::agg_max, // M_SAMPLE_MAX_EPOCH_RUNTIME
               IPlatformIO::agg_sum, // M_SAMPLE_SUM_POWER_SLACK
           }
         , m_num_children(0)
@@ -76,6 +76,8 @@ namespace geopm
         , m_last_wait{{0,0}}
         , M_WAIT_SEC(0.005)
         , m_sample(M_NUM_SAMPLE, NAN)
+        , m_policy(M_NUM_POLICY, NAN)
+        , m_num_node(0)
     {
 #ifdef GEOPM_DEBUG
         if (m_agg_func.size() != M_NUM_SAMPLE) {
@@ -100,6 +102,10 @@ namespace geopm
         m_num_children = fan_in[level - 1];
         m_is_level_root = is_root;
         m_is_tree_root = (level == (int)fan_in.size()) && is_root;
+        m_num_node = 1.0;
+        for (auto fi : fan_in) {
+            m_num_node *= fi;
+        }
     }
 
     void PowerBalancerAgent::init_platform_io(void)
@@ -130,10 +136,11 @@ namespace geopm
         }
 #endif
         bool is_step_changed = (policy_in[M_POLICY_STEP_COUNT] != m_step_count);
-        if (m_level != 0) {
+        if (is_step_changed && m_level != 0) {
             // Don't change m_step_count for level zero agents until
             // adjust_platform is called.
             m_step_count = policy_in[M_POLICY_STEP_COUNT];
+            m_is_step_complete = false;
         }
         if (is_step_changed) {
             // Copy the input policy directly into each child's
@@ -155,15 +162,39 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool result = (out_sample[M_SAMPLE_IS_STEP_COMPLETE] && !m_is_step_complete);
-        if (result) {
-            aggregate_sample(in_sample, out_sample, m_agg_func);
-            m_is_step_complete = true;
-        }
-        if (m_is_tree_root) {
-            /// @todo need to move the step and update the policy.
+        bool result = false;
+        aggregate_sample(in_sample, out_sample, m_agg_func);
+        if (!m_is_step_complete && out_sample[M_SAMPLE_IS_STEP_COMPLETE]) {
+            // Method returns true if all children have completed the step
+            // for the first time.
+            result = true;
+            if (out_sample[M_SAMPLE_STEP_COUNT] == m_step_count) {
+                if (m_is_tree_root) {
+                    update_policy(out_sample);
+                }
+            }
+            else {
+                throw Exception();
+            }
         }
         return result;
+    }
+
+    void PowerBalancerAgent::update_policy(const std::vector<double> &sample)
+    {
+        switch (m_step_count) {
+            case M_STEP_SEND_DOWN_LIMIT:
+                m_policy[M_POLICY_POWER_CAP] = 0.0;
+            case M_STEP_SEND_UP_RUNTIME:
+                m_policy[M_POLICY_MAX_EPOCH_RUNTIME] = sample[M_SAMPLE_MAX_EPOCH_RUNTIME];
+                break;
+            case M_STEP_SEND_UP_EXCESS:
+                m_policy[M_POLICY_POWER_SLACK] = sample[M_SAMPLE_SUM_POWER_SLACK] / m_num_node;
+                break;
+            default:
+                break;
+        }
+        ++(m_policy[M_POLICY_STEP_COUNT]);
     }
 
     bool PowerBalancerAgent::adjust_platform(const std::vector<double> &in_policy)
@@ -258,7 +289,7 @@ namespace geopm
         m_power_gov->sample_platform();
         out_sample[M_SAMPLE_STEP_COUNT] = m_step_count;
         out_sample[M_SAMPLE_IS_STEP_COMPLETE] = m_is_step_complete;
-        out_sample[M_SAMPLE_EPOCH_RUNTIME] = m_runtime;
+        out_sample[M_SAMPLE_MAX_EPOCH_RUNTIME] = m_runtime;
         out_sample[M_SAMPLE_SUM_POWER_SLACK] = m_power_slack;
         m_sample = out_sample;
         return result;
@@ -333,7 +364,7 @@ namespace geopm
     {
         return {"STEP_COUNT",
                 "IS_STEP_COMPLETE",
-                "EPOCH_RUNTIME",
+                "MAX_EPOCH_RUNTIME",
                 "SUM_POWER_SLACK"};
     }
 }
