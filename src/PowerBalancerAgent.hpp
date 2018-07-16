@@ -187,14 +187,14 @@ namespace geopm
             std::vector<int> m_pio_idx;
             const std::vector<std::function<double(const std::vector<double>&)> > m_agg_func;
             int m_num_children;
+            /// @todo m_is_level_root is never used.  Either delete
+            ///       this member variable or figure out where the
+            ///       missing code is for the root of the level.
             bool m_is_level_root;
             bool m_is_tree_root;
-            int m_sample_count;
-            int m_ascend_count;
-            const int m_ascend_period;
-            bool m_is_updated;
             int m_last_epoch_count;
             size_t m_step_count;
+            bool m_is_step_complete;
     };
 }
 

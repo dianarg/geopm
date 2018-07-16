@@ -33,6 +33,7 @@
 #include <cfloat>
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 #include "PowerGovernor.hpp"
 #include "PowerBalancerAgent.hpp"
@@ -68,7 +69,8 @@ namespace geopm
         , m_is_level_root(false)
         , m_is_tree_root(false)
         , m_last_epoch_count(0)
-        , m_step_count(M_STEP_MEASURE_RUNTIME);
+        , m_step_count(M_STEP_MEASURE_RUNTIME)
+        , m_is_step_complete(false)
     {
 #ifdef GEOPM_DEBUG
         if (m_agg_func.size() != M_NUM_SAMPLE) {
@@ -91,7 +93,7 @@ namespace geopm
         }
         m_num_children = fan_in[level - 1];
         m_is_level_root = is_root;
-        m_is_tree_root = (level == fan_in.size()) && is_root;
+        m_is_tree_root = (level == (int)fan_in.size()) && is_root;
     }
 
     void PowerBalancerAgent::init_platform_io(void)
@@ -116,12 +118,12 @@ namespace geopm
     {
 #ifdef GEOPM_DEBUG
         if (policy_in.size() != M_NUM_POLICY ||
-            policy_out.size() != m_num_children) {
+            policy_out.size() != (size_t)m_num_children) {
             throw Exception("PowerBalancerAgent::" + std::string(__func__) + "(): policy vectors are not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool is_step_changed = (policy_in[M_POLICY_STEP_COUNT] != m_step_count)
+        bool is_step_changed = (policy_in[M_POLICY_STEP_COUNT] != m_step_count);
         if (m_level != 0) {
             // Don't change m_step_count for level zero agents until
             // adjust_platform is called.
@@ -141,7 +143,7 @@ namespace geopm
     bool PowerBalancerAgent::ascend(const std::vector<std::vector<double> > &in_sample, std::vector<double> &out_sample)
     {
 #ifdef GEOPM_DEBUG
-        if (in_sample.size() != m_num_children ||
+        if (in_sample.size() != (size_t)m_num_children ||
             out_sample.size() != M_NUM_SAMPLE) {
             throw Exception("PowerBalancerAgent::ascend(): sample vectors not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
@@ -151,6 +153,9 @@ namespace geopm
         if (result) {
             aggregate_sample(in_sample, out_sample, m_agg_func);
             m_is_step_complete = true;
+        }
+        if (m_is_tree_root) {
+            /// @todo need to move the step and update the policy.
         }
         return result;
     }
@@ -163,10 +168,10 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool is_step_changed = (in_policy[M_POLICY_STEP_COUNT] != m_step_count)
+        bool is_step_changed = (in_policy[M_POLICY_STEP_COUNT] != m_step_count);
         if (is_step_changed &&
-            policy_in[M_POLICY_STEP_COUNT] == M_STEP_SEND_DOWN_LIMIT &&
-            policy_in[M_POLICY_POWER_CAP] != 0.0) {
+            in_policy[M_POLICY_STEP_COUNT] == M_STEP_SEND_DOWN_LIMIT &&
+            in_policy[M_POLICY_POWER_CAP] != 0.0) {
             // New power cap from resource manager, reset
             // algorithm.
             m_step_count = M_STEP_SEND_DOWN_LIMIT;
@@ -175,18 +180,19 @@ namespace geopm
         }
         else if (is_step_changed &&
                  m_is_step_complete &&
-                 m_step_count + 1 == policy_in[M_POLICY_STEP_COUNT]) {
+                 m_step_count + 1 == in_policy[M_POLICY_STEP_COUNT]) {
             // Advance a step
             ++m_step_count;
             m_is_step_complete = false;
             switch (step()) {
                 case M_STEP_SEND_DOWN_RUNTIME:
-                    m_power_balancer->m_power_balancer->target_runtime(in_policy->M_POLICY_MAX_EPOCH_RUNTIME);
+                    m_power_balancer->target_runtime(in_policy[M_POLICY_MAX_EPOCH_RUNTIME]);
                     break;
                 case M_STEP_SEND_DOWN_LIMIT:
-                    if (m_step_counter != M_STEP_SEND_DOWN_LIMIT) {
+                    if (m_step_count != M_STEP_SEND_DOWN_LIMIT) {
                         // Not a new power cap so adjust power cap up by the slack amount.
-                        m_power_balancer->power_cap(m_power_balancer->power_limit() + in_policy[M_POLICY_POWER_SLACK])
+                        m_power_balancer->power_cap(m_power_balancer->power_limit() + in_policy[M_POLICY_POWER_SLACK]);
+                    }
                     break;
                 default:
                     break;
