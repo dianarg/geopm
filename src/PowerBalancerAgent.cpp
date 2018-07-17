@@ -52,8 +52,6 @@ namespace geopm
         : m_platform_io(platform_io())
         , m_platform_topo(platform_topo())
         , m_level(-1)
-        , m_min_power_budget(m_platform_io.read_signal("POWER_PACKAGE_MIN", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
-        , m_max_power_budget(m_platform_io.read_signal("POWER_PACKAGE_MAX", IPlatformTopo::M_DOMAIN_PACKAGE, 0))
         , m_power_gov(nullptr)
         , m_power_balancer(nullptr)
         , m_pio_idx(M_PLAT_NUM_SIGNAL)
@@ -151,6 +149,10 @@ namespace geopm
             for (auto &po : policy_out) {
                 po = policy_in;
             }
+            m_policy = policy_in;
+            if (m_level == 0 && m_policy[M_POLICY_POWER_CAP] != 0.0) {
+                m_power_balancer->power_cap(m_policy[M_POLICY_POWER_CAP]);
+            }
         }
         return is_step_changed;
     }
@@ -191,7 +193,7 @@ namespace geopm
             throw Exception("PowerBalancerAgent::update_policy(): sample passed does not match current step_count.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        switch (m_step_count) {
+        switch (step()) {
             case M_STEP_SEND_DOWN_LIMIT:
                 m_policy[M_POLICY_POWER_CAP] = 0.0;
                 break;
@@ -220,7 +222,6 @@ namespace geopm
         ///       determining if we are getting a new power cap.
         bool is_step_changed = (in_policy[M_POLICY_STEP_COUNT] != m_step_count);
         if (is_step_changed &&
-            in_policy[M_POLICY_STEP_COUNT] == M_STEP_SEND_DOWN_LIMIT &&
             in_policy[M_POLICY_POWER_CAP] != 0.0) {
             // New power cap from resource manager, reset
             // algorithm.
@@ -255,15 +256,19 @@ namespace geopm
         }
 
         double actual_limit = 0.0;
+        bool result = false;
         double request_limit = m_power_balancer->power_limit();
-        bool result = m_power_gov->adjust_platform(request_limit, actual_limit);
-        if (actual_limit != request_limit) {
-            if (step() == M_STEP_REDUCE_LIMIT) {
-                m_power_balancer->achieved_limit(actual_limit);
-            }
-            // Warn if this is a new power cap and it is too low.
-            else if (m_step_count == M_STEP_SEND_DOWN_LIMIT) {
-                std::cerr << "Warning: <geopm> PowerBalancerAgent: per node power cap of " << request_limit << " Watts could not be maintained." << std::endl;
+        if (!std::isnan(request_limit)) {
+            result = m_power_gov->adjust_platform(request_limit, actual_limit);
+            if (actual_limit != request_limit) {
+                if (step() == M_STEP_REDUCE_LIMIT) {
+                    m_power_balancer->achieved_limit(actual_limit);
+                }
+                // Warn if this is a new power cap and it is too low.
+                else if (m_step_count == M_STEP_SEND_DOWN_LIMIT) {
+                    std::cerr << "Warning: <geopm> PowerBalancerAgent: per node power cap of "
+                              << request_limit << " Watts could not be maintained." << std::endl;
+                }
             }
         }
         return result;

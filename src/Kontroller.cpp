@@ -112,7 +112,7 @@ namespace geopm
         , m_tracer(std::move(tracer))
         , m_agent(std::move(level_agent))
         , m_is_root(m_num_level_ctl == m_root_level)
-        , m_in_policy(m_num_send_down)
+        , m_in_policy(m_num_send_down, NAN)
         , m_out_policy(m_num_level_ctl)
         , m_in_sample(m_num_level_ctl)
         , m_out_sample(m_num_send_up)

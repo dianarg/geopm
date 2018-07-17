@@ -31,6 +31,7 @@
  */
 
 #include <vector>
+#include <cmath>
 
 #include "PowerBalancer.hpp"
 #include "CircularBuffer.hpp"
@@ -44,8 +45,8 @@ namespace geopm
         : M_TARGET_EPSILON(0.03)
         , M_TRIAL_DELTA(1.0)
         , M_NUM_SAMPLE(5)
-        , m_power_cap(0.0)
-        , m_power_limit(0.0)
+        , m_power_cap(NAN)
+        , m_power_limit(NAN)
         , m_target_runtime(0.0)
         , m_is_target_met(false)
         , m_runtime_buffer(make_unique<CircularBuffer<double> >(M_NUM_SAMPLE))
@@ -67,10 +68,6 @@ namespace geopm
 
     double PowerBalancer::power_limit(void)
     {
-        if (m_power_limit == 0.0) {
-            throw Exception("PowerBalancer::power_limit() called prior to power_cap().",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
         return m_power_limit;
     }
 

@@ -180,8 +180,6 @@ namespace geopm
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
             int m_level;
-            double m_min_power_budget;
-            double m_max_power_budget;
             std::unique_ptr<PowerGovernor> m_power_gov;
             std::unique_ptr<IPowerBalancer> m_power_balancer;
             std::vector<int> m_pio_idx;
