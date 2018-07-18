@@ -136,23 +136,34 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        bool is_step_changed = (policy_in[M_POLICY_STEP_COUNT] != m_step_count);
-        if (is_step_changed) {
-            if (m_level != 0) {
-                // Don't change m_step_count for level zero agents until
-                // adjust_platform is called.
-                m_step_count = policy_in[M_POLICY_STEP_COUNT];
-                m_is_step_complete = false;
-            }
-
+        bool result = false;
+        if (policy_in[M_POLICY_POWER_CAP] != 0.0) {
+            m_step_count = M_STEP_SEND_DOWN_LIMIT;
+            m_policy[M_POLICY_STEP_COUNT] = M_POLICY_STEP_SEND_DOWN_LIMIT;
+            m_policy[M_POLICY_POWER_CAP] = policy_in[M_POLICY_POWER_CAP];
+            m_policy[M_POLICY_MAX_EPOCH_RUNTIME] = 0.0;
+            m_policy[M_POLICY_POWER_SLACK] = 0.0;
+            policy_out = m_policy;
+            m_is_step_complete = false;
+            result = true;
+        }
+        else if (policy_in[M_POLICY_STEP_COUNT] == m_step_count + 1 &&
+                 m_step_is_complete == true) {
+            ++m_step_count;
+            m_is_step_complete = false;
             // Copy the input policy directly into each child's
             // policy.
             for (auto &po : policy_out) {
                 po = policy_in;
             }
             m_policy = policy_in;
+            result = true;
         }
-        return is_step_changed;
+        else {
+            throw Exception("PowerBalancerAgent::descend(): polilcy is out of sync with agent step.",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__));
+        }
+        return result;
     }
 
 
@@ -217,9 +228,6 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        /// @todo Add functions somewhere that hold the logic for
-        ///       determining if we are getting a new power cap.
-        bool is_step_changed = (in_policy[M_POLICY_STEP_COUNT] != m_step_count);
         if (in_policy[M_POLICY_POWER_CAP] != 0.0) {
             // New power cap from resource manager, reset
             // algorithm.
@@ -227,12 +235,16 @@ namespace geopm
             m_power_balancer->power_cap(in_policy[M_POLICY_POWER_CAP]);
             m_is_step_complete = true;
         }
-        else if (is_step_changed &&
-                 m_is_step_complete &&
-                 m_step_count + 1 == in_policy[M_POLICY_STEP_COUNT]) {
+        else if (in_policy[M_POLICY_STEP_COUNT] != m_step_count) {
             // Advance a step
             ++m_step_count;
             m_is_step_complete = false;
+            if (m_step_count != in_policy[M_POLICY_STEP_COUNT]) {
+                throw Exception("PowerBalancerAgent::adjust_platform(): The policy step is out of sync "
+                                "with the agent step or first policy received had a zero power cap.",
+                                GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            }
+            // Record message data in the PowerBalancer object.
             switch (step()) {
                 case M_STEP_SEND_DOWN_RUNTIME:
                     m_power_balancer->target_runtime(in_policy[M_POLICY_MAX_EPOCH_RUNTIME]);
@@ -246,13 +258,10 @@ namespace geopm
                     break;
             }
         }
-        else if (is_step_changed) {
-            throw Exception("PowerBalancerAgent::adjust_platform(): The policy step is out of sync with the agent step or first policy received had a zero power cap.",
-                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-        }
 
         double actual_limit = 0.0;
         bool result = false;
+        // Request the power limit from the balancer
         double request_limit = m_power_balancer->power_limit();
         if (!std::isnan(request_limit)) {
             result = m_power_gov->adjust_platform(request_limit, actual_limit);
@@ -261,9 +270,9 @@ namespace geopm
                     m_power_balancer->achieved_limit(actual_limit);
                 }
                 // Warn if this is a new power cap and it is too low.
-                else if (m_step_count == M_STEP_SEND_DOWN_LIMIT) {
+                else if (in_policy[M_POLICY_POWER_CAP] != 0.0) {
                     std::cerr << "Warning: <geopm> PowerBalancerAgent: per node power cap of "
-                              << request_limit << " Watts could not be maintained." << std::endl;
+                              << in_policy[M_POLICY_POWER_CAP] << " Watts could not be maintained." << std::endl;
                 }
             }
         }
