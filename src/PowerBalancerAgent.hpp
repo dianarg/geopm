@@ -193,6 +193,7 @@ namespace geopm
             int m_last_epoch_count;
             size_t m_step_count;
             bool m_is_step_complete;
+            double m_root_cap;
             double m_runtime;
             double m_power_slack;
             struct geopm_time_s m_last_wait;

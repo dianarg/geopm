@@ -67,6 +67,7 @@ namespace geopm
         , m_last_epoch_count(0)
         , m_step_count(M_STEP_MEASURE_RUNTIME)
         , m_is_step_complete(false)
+        , m_root_cap(NAN)
         , m_runtime(0.0)
         , m_power_slack(0.0)
         , m_last_wait{{0,0}}
@@ -137,26 +138,33 @@ namespace geopm
         }
 #endif
         bool result = false;
-        if (is_tree_root) {
+        if (m_is_tree_root) {
             if (policy_in[M_POLICY_POWER_CAP] != m_root_cap) {
                 m_step_count = M_STEP_SEND_DOWN_LIMIT;
-                m_policy[M_POLICY_STEP_COUNT] = M_POLICY_STEP_SEND_DOWN_LIMIT;
+                m_policy[M_POLICY_STEP_COUNT] = M_STEP_SEND_DOWN_LIMIT;
                 m_policy[M_POLICY_POWER_CAP] = policy_in[M_POLICY_POWER_CAP];
                 m_policy[M_POLICY_MAX_EPOCH_RUNTIME] = 0.0;
                 m_policy[M_POLICY_POWER_SLACK] = 0.0;
                 m_root_cap = policy_in[M_POLICY_POWER_CAP];
-                policy_out = m_policy;
                 result = true;
             }
             else if (m_step_count + 1 == m_policy[M_POLICY_STEP_COUNT]) {
                 ++m_step_count;
                 m_is_step_complete = false;
-                policy_out = m_policy;
                 result = true;
+            }
+            else {
+                throw Exception("PowerBalancerAgent::descend(): updated policy is out of sync with current step",
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+            if (result) {
+                for (auto &po : policy_out) {
+                    po = m_policy;
+                }
             }
         }
         else if (policy_in[M_POLICY_STEP_COUNT] == m_step_count + 1 &&
-                 m_step_is_complete == true) {
+                 m_is_step_complete == true) {
             ++m_step_count;
             m_is_step_complete = false;
             // Copy the input policy directly into each child's
@@ -169,7 +177,7 @@ namespace geopm
         }
         else {
             throw Exception("PowerBalancerAgent::descend(): polilcy is out of sync with agent step.",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__));
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return result;
     }
