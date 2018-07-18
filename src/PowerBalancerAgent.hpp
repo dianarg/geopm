@@ -58,20 +58,10 @@ namespace geopm
                 /// @brief Measure epoch runtime several times and
                 ///        apply median filter.
                 M_STEP_MEASURE_RUNTIME,
-                /// @brief Aggregate epoch runtime up tree by applying
-                ///        maximum filter to measured values.
-                M_STEP_SEND_UP_RUNTIME,
-                /// @brief Propagate down from root the longest
-                ///        recorded runtime from any node.
-                M_STEP_SEND_DOWN_RUNTIME,
                 /// @brief Decrease power limit on all nodes (other
                 ///        than the slowest) until epoch runtime
                 ///        matches the slowest.
                 M_STEP_REDUCE_LIMIT,
-                /// @brief Aggregate amount power limit was reduced in
-                ///        last step up the tree with sum filter.  (Go
-                ///        to M_STEP_SEND_DOWN_LIMIT next).
-                M_STEP_SEND_UP_EXCESS,
                 /// @brief Number of steps in process.
                 M_NUM_STEP,
             };

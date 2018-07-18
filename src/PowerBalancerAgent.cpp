@@ -231,10 +231,10 @@ std::cerr << "m_step_count = " << m_step_count << std::endl;
             case M_STEP_SEND_DOWN_LIMIT:
                 m_policy[M_POLICY_POWER_CAP] = 0.0;
                 break;
-            case M_STEP_SEND_UP_RUNTIME:
+            case M_STEP_MEASURE_RUNTIME:
                 m_policy[M_POLICY_MAX_EPOCH_RUNTIME] = sample[M_SAMPLE_MAX_EPOCH_RUNTIME];
                 break;
-            case M_STEP_SEND_UP_EXCESS:
+            case M_STEP_REDUCE_LIMIT:
                 m_policy[M_POLICY_POWER_SLACK] = sample[M_SAMPLE_SUM_POWER_SLACK] / m_num_node;
                 break;
             default:
@@ -269,7 +269,7 @@ std::cerr << "m_step_count = " << m_step_count << std::endl;
             }
             // Record message data in the PowerBalancer object.
             switch (step()) {
-                case M_STEP_SEND_DOWN_RUNTIME:
+                case M_STEP_REDUCE_LIMIT:
                     m_power_balancer->target_runtime(in_policy[M_POLICY_MAX_EPOCH_RUNTIME]);
                     m_is_step_complete = true;
                     break;
