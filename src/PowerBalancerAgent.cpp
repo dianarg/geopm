@@ -155,7 +155,6 @@ namespace geopm
             }
             else if (m_step_count + 1 == m_policy[M_POLICY_STEP_COUNT]) {
                 ++m_step_count;
-std::cerr << "m_step_count = " << m_step_count << std::endl;
                 m_is_step_complete = false;
                 result = true;
             }
@@ -271,7 +270,6 @@ std::cerr << "m_step_count = " << m_step_count << std::endl;
             switch (step()) {
                 case M_STEP_REDUCE_LIMIT:
                     m_power_balancer->target_runtime(in_policy[M_POLICY_MAX_EPOCH_RUNTIME]);
-                    m_is_step_complete = true;
                     break;
                 case M_STEP_SEND_DOWN_LIMIT:
                     m_power_balancer->power_cap(m_power_balancer->power_limit() + in_policy[M_POLICY_POWER_SLACK]);
@@ -381,7 +379,7 @@ std::cerr << "m_step_count = " << m_step_count << std::endl;
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        values[M_TRACE_SAMPLE_EPOCH_RUNTIME] = m_sample[M_PLAT_SIGNAL_EPOCH_RUNTIME];
+        values[M_TRACE_SAMPLE_EPOCH_RUNTIME] = m_power_balancer->runtime_sample();
         values[M_TRACE_SAMPLE_POWER_LIMIT] = m_power_balancer->power_limit();
     }
 
