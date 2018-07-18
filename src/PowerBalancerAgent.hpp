@@ -126,12 +126,6 @@ namespace geopm
                 ///        by sending a policy with a non-zero
                 ///        M_POLICY_POWER_CAP field.
                 M_SAMPLE_STEP_COUNT,
-                /// @brief Value 0.0 implies that all children below
-                ///        have completed the step and are waiting for
-                ///        a policy that is marked with the next step.
-                ///        0.0 implies that at least one child below
-                ///        has not yet completed the step.
-                M_SAMPLE_IS_STEP_COMPLETE,
                 /// @brief Maximum expected runtime for any node
                 ///        below.
                 M_SAMPLE_MAX_EPOCH_RUNTIME,
