@@ -51,6 +51,10 @@ namespace geopm
     {
         public:
             enum m_step_e {
+                /// @brief On first iteration send down resource
+                ///        manager average limit requested, otherwise
+                ///        send down average excess power.
+                M_STEP_SEND_DOWN_LIMIT,
                 /// @brief Measure epoch runtime several times and
                 ///        apply median filter.
                 M_STEP_MEASURE_RUNTIME,
@@ -68,10 +72,6 @@ namespace geopm
                 ///        last step up the tree with sum filter.  (Go
                 ///        to M_STEP_SEND_DOWN_LIMIT next).
                 M_STEP_SEND_UP_EXCESS,
-                /// @brief On first iteration send down resource
-                ///        manager average limit requested, otherwise
-                ///        send down average excess power.
-                M_STEP_SEND_DOWN_LIMIT,
                 /// @brief Number of steps in process.
                 M_NUM_STEP,
             };

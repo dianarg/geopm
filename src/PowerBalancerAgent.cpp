@@ -137,22 +137,20 @@ namespace geopm
         }
 #endif
         bool is_step_changed = (policy_in[M_POLICY_STEP_COUNT] != m_step_count);
-        if (is_step_changed && m_level != 0) {
-            // Don't change m_step_count for level zero agents until
-            // adjust_platform is called.
-            m_step_count = policy_in[M_POLICY_STEP_COUNT];
-            m_is_step_complete = false;
-        }
         if (is_step_changed) {
+            if (m_level != 0) {
+                // Don't change m_step_count for level zero agents until
+                // adjust_platform is called.
+                m_step_count = policy_in[M_POLICY_STEP_COUNT];
+                m_is_step_complete = false;
+            }
+
             // Copy the input policy directly into each child's
             // policy.
             for (auto &po : policy_out) {
                 po = policy_in;
             }
             m_policy = policy_in;
-            if (m_level == 0 && m_policy[M_POLICY_POWER_CAP] != 0.0) {
-                m_power_balancer->power_cap(m_policy[M_POLICY_POWER_CAP]);
-            }
         }
         return is_step_changed;
     }
@@ -207,6 +205,7 @@ namespace geopm
                 break;
         }
         ++m_step_count;
+        m_is_step_complete = false;
         m_policy[M_POLICY_STEP_COUNT] = m_step_count;
     }
 
@@ -221,8 +220,7 @@ namespace geopm
         /// @todo Add functions somewhere that hold the logic for
         ///       determining if we are getting a new power cap.
         bool is_step_changed = (in_policy[M_POLICY_STEP_COUNT] != m_step_count);
-        if (is_step_changed &&
-            in_policy[M_POLICY_POWER_CAP] != 0.0) {
+        if (in_policy[M_POLICY_POWER_CAP] != 0.0) {
             // New power cap from resource manager, reset
             // algorithm.
             m_step_count = M_STEP_SEND_DOWN_LIMIT;
@@ -238,13 +236,11 @@ namespace geopm
             switch (step()) {
                 case M_STEP_SEND_DOWN_RUNTIME:
                     m_power_balancer->target_runtime(in_policy[M_POLICY_MAX_EPOCH_RUNTIME]);
+                    m_is_step_complete = true;
                     break;
                 case M_STEP_SEND_DOWN_LIMIT:
-                    if (m_step_count != M_STEP_SEND_DOWN_LIMIT) {
-                        // Not a new power cap so adjust power cap up
-                        // by the slack amount.
-                        m_power_balancer->power_cap(m_power_balancer->power_limit() + in_policy[M_POLICY_POWER_SLACK]);
-                    }
+                    m_power_balancer->power_cap(m_power_balancer->power_limit() + in_policy[M_POLICY_POWER_SLACK]);
+                    m_is_step_complete = true;
                     break;
                 default:
                     break;
