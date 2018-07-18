@@ -137,15 +137,23 @@ namespace geopm
         }
 #endif
         bool result = false;
-        if (policy_in[M_POLICY_POWER_CAP] != 0.0) {
-            m_step_count = M_STEP_SEND_DOWN_LIMIT;
-            m_policy[M_POLICY_STEP_COUNT] = M_POLICY_STEP_SEND_DOWN_LIMIT;
-            m_policy[M_POLICY_POWER_CAP] = policy_in[M_POLICY_POWER_CAP];
-            m_policy[M_POLICY_MAX_EPOCH_RUNTIME] = 0.0;
-            m_policy[M_POLICY_POWER_SLACK] = 0.0;
-            policy_out = m_policy;
-            m_is_step_complete = false;
-            result = true;
+        if (is_tree_root) {
+            if (policy_in[M_POLICY_POWER_CAP] != m_root_cap) {
+                m_step_count = M_STEP_SEND_DOWN_LIMIT;
+                m_policy[M_POLICY_STEP_COUNT] = M_POLICY_STEP_SEND_DOWN_LIMIT;
+                m_policy[M_POLICY_POWER_CAP] = policy_in[M_POLICY_POWER_CAP];
+                m_policy[M_POLICY_MAX_EPOCH_RUNTIME] = 0.0;
+                m_policy[M_POLICY_POWER_SLACK] = 0.0;
+                m_root_cap = policy_in[M_POLICY_POWER_CAP];
+                policy_out = m_policy;
+                result = true;
+            }
+            else if (m_step_count + 1 == m_policy[M_POLICY_STEP_COUNT]) {
+                ++m_step_count;
+                m_is_step_complete = false;
+                policy_out = m_policy;
+                result = true;
+            }
         }
         else if (policy_in[M_POLICY_STEP_COUNT] == m_step_count + 1 &&
                  m_step_is_complete == true) {
@@ -167,30 +175,28 @@ namespace geopm
     }
 
 
-    bool PowerBalancerAgent::ascend(const std::vector<std::vector<double> > &in_sample, std::vector<double> &out_sample)
+    bool PowerBalancerAgent::ascend(const std::vector<std::vector<double> > &sample_in, std::vector<double> &sample_out)
     {
 #ifdef GEOPM_DEBUG
-        if (in_sample.size() != (size_t)m_num_children ||
-            out_sample.size() != M_NUM_SAMPLE) {
+        if (sample_in.size() != (size_t)m_num_children ||
+            sample_out.size() != M_NUM_SAMPLE) {
             throw Exception("PowerBalancerAgent::ascend(): sample vectors not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
         bool result = false;
-        aggregate_sample(in_sample, m_agg_func, out_sample);
-        if (!m_is_step_complete && out_sample[M_SAMPLE_IS_STEP_COMPLETE]) {
+        aggregate_sample(sample_in, m_agg_func, sample_out);
+        if (!m_is_step_complete && sample_out[M_SAMPLE_IS_STEP_COMPLETE]) {
             // Method returns true if all children have completed the step
             // for the first time.
             result = true;
-            if (out_sample[M_SAMPLE_STEP_COUNT] == m_step_count) {
-                if (m_is_tree_root) {
-                    update_policy(out_sample);
-                }
-            }
-            else {
+            if (sample_out[M_SAMPLE_STEP_COUNT] != m_step_count) {
                 throw Exception("PowerBalancerAgent::ascend(): sample recieved has true for step complete field, "
                                 "but the step_count does not match the agent's current step_count.",
                                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+            if (m_is_tree_root) {
+                update_policy(sample_out);
             }
         }
         return result;
@@ -215,9 +221,7 @@ namespace geopm
             default:
                 break;
         }
-        ++m_step_count;
-        m_is_step_complete = false;
-        m_policy[M_POLICY_STEP_COUNT] = m_step_count;
+        m_policy[M_POLICY_STEP_COUNT] = m_step_count + 1;
     }
 
     bool PowerBalancerAgent::adjust_platform(const std::vector<double> &in_policy)
