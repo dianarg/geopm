@@ -63,11 +63,11 @@ namespace geopm
             ///        power budget across all compute nodes is
             ///        maintained.
             /// @return The current value of the power cap.
-            virtual double power_cap(void) = 0;
+            virtual double power_cap(void) const = 0;
             /// @brief Returns the current power limit prescribed for
             ///        this node.
             /// @return The current power limit in units of Watts.
-            virtual double power_limit(void) = 0;
+            virtual double power_limit(void) const = 0;
             /// @brief Update the object with a runtime measured under
             ///        the current power limit and test if the current
             ///        runtime sample is reliable such that a call
@@ -86,7 +86,7 @@ namespace geopm
             ///        measured.
             /// @return The expected execution time of an application
             ///         epoch under the current power limit.
-            virtual double runtime_sample(void) = 0;
+            virtual double runtime_sample(void) const = 0;
             /// @param Set the target runtime which is the largest
             ///        epoch execution time measured by any compute
             ///        node since the application began or the last
@@ -128,10 +128,10 @@ namespace geopm
             /// @brief Destroy a PowerBalancer object.
             virtual ~PowerBalancer() = default;
             void power_cap(double cap) override;
-            double power_cap(void) override;
-            double power_limit(void) override;
+            double power_cap(void) const override;
+            double power_limit(void) const override;
             bool is_runtime_stable(double measured_runtime) override;
-            double runtime_sample(void) override;
+            double runtime_sample(void) const override;
             void target_runtime(double largest_runtime) override;
             bool is_target_met(double measured_runtime) override;
             void achieved_limit(double achieved) override;

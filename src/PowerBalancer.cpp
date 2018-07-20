@@ -42,7 +42,7 @@
 namespace geopm
 {
     PowerBalancer::PowerBalancer()
-        : M_TRIAL_DELTA(1.0)
+        : M_TRIAL_DELTA(5.0)
         , M_NUM_SAMPLE(11)
         , m_power_cap(NAN)
         , m_power_limit(NAN)
@@ -60,12 +60,12 @@ namespace geopm
         m_runtime_buffer->clear();
     }
 
-    double PowerBalancer::power_cap(void)
+    double PowerBalancer::power_cap(void) const
     {
         return m_power_cap;
     }
 
-    double PowerBalancer::power_limit(void)
+    double PowerBalancer::power_limit(void) const
     {
         return m_power_limit;
     }
@@ -80,7 +80,7 @@ namespace geopm
         return result;
     }
 
-    double PowerBalancer::runtime_sample(void)
+    double PowerBalancer::runtime_sample(void) const
     {
         return IPlatformIO::agg_median(m_runtime_buffer->make_vector());
     }
