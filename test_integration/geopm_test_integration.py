@@ -63,12 +63,17 @@ def skip_unless_cpufreq():
 
 
 def get_platform():
-    with open('/proc/cpuinfo') as fid:
-        for line in fid.readlines():
-            if line.startswith('cpu family\t:'):
-                fam = int(line.split(':')[1])
-            if line.startswith('model\t\t:'):
-                mod = int(line.split(':')[1])
+    hostname = socket.gethostname()
+    if hostname.startswith('theta'):
+        fam = 6
+        mod = 87
+    else:
+        with open('/proc/cpuinfo') as fid:
+            for line in fid.readlines():
+                if line.startswith('cpu family\t:'):
+                    fam = int(line.split(':')[1])
+                if line.startswith('model\t\t:'):
+                    mod = int(line.split(':')[1])
     return fam, mod
 
 
@@ -703,8 +708,8 @@ class TestIntegration(unittest.TestCase):
         else:
             power_budget = 200
         self._options = {'power_budget': power_budget}
-        gov_agent_conf_path = name + 'gov_ctl.config'
-        bal_agent_conf_path = name + 'bal_ctl.config'
+        gov_agent_conf_path = name + '_gov_ctl.config'
+        bal_agent_conf_path = name + '_bal_ctl.config'
         self._tmp_files.append(gov_agent_conf_path)
         self._tmp_files.append(bal_agent_conf_path)
         gov_agent_conf = geopmpy.io.AgentConf(gov_agent_conf_path, self._options)
