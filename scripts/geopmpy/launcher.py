@@ -52,6 +52,7 @@ import itertools
 import glob
 import re
 import shlex
+import stat
 
 from geopmpy import __version__
 
