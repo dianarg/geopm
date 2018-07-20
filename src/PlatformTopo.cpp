@@ -426,10 +426,13 @@ namespace geopm
             }
         }
         else {
-            int err = geopm_sched_popen("lscpu -x", &result);
-            if (err) {
-                throw Exception("PlatformTopo::open_lscpu(): Could not popen lscpu command",
-                                errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            result = fopen("/tmp/geopm-lscpu.log", "r");
+            if (!result) {
+                int err = geopm_sched_popen("lscpu -x", &result);
+                if (err) {
+                    throw Exception("PlatformTopo::open_lscpu(): Could not popen lscpu command",
+                                    errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+                }
             }
         }
         return result;
