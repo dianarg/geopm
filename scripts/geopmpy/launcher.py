@@ -598,8 +598,14 @@ class Launcher(object):
         """
 
         tmp_script = 'geopm-init-topo.sh'
+        tmp_script_txt = """\
+#!/bin/bash
+if [ ! -e /tmp/geopm-lscpu.log ]; then
+    lscpu --hex > /tmp/geopm-lscpu.log && chmod a+rw /tmp/geopm-lscpu.log
+fi
+"""
         with open(tmp_script, 'w') as fid:
-            fid.write("#!/bin/bash\nlscpu --hex > /tmp/geopm-lscpu.log\n\n")
+            fid.write(tmp_script_txt)
         os.chmod(tmp_script, stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
 
         argv = shlex.split("dummy -- ./{}".format(tmp_script))
