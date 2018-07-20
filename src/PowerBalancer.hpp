@@ -86,7 +86,7 @@ namespace geopm
             ///        measured.
             /// @return The expected execution time of an application
             ///         epoch under the current power limit.
-            virtual double runtime_sample(void) const = 0;
+            virtual double runtime_sample(void) = 0;
             /// @param Set the target runtime which is the largest
             ///        epoch execution time measured by any compute
             ///        node since the application began or the last
@@ -132,7 +132,7 @@ namespace geopm
             double power_cap(void) const override;
             double power_limit(void) const override;
             bool is_runtime_stable(double measured_runtime) override;
-            double runtime_sample(void) const override;
+            double runtime_sample(void) override;
             void target_runtime(double largest_runtime) override;
             bool is_target_met(double measured_runtime) override;
             void achieved_limit(double achieved) override;
@@ -148,6 +148,7 @@ namespace geopm
             double m_power_limit;
             double m_target_runtime;
             double m_trial_delta;
+            double m_runtime_sample;
             bool m_is_target_met;
             std::unique_ptr<ICircularBuffer<double> > m_runtime_buffer;
     };

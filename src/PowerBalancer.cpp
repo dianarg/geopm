@@ -49,6 +49,7 @@ namespace geopm
         , m_power_limit(NAN)
         , m_target_runtime(NAN)
         , m_trial_delta(8.0)
+        , m_runtime_sample(NAN)
         , m_is_target_met(false)
         , m_runtime_buffer(make_unique<CircularBuffer<double> >(M_NUM_SAMPLE))
     {
@@ -83,15 +84,21 @@ namespace geopm
         return result;
     }
 
-    double PowerBalancer::runtime_sample(void) const
+    double PowerBalancer::runtime_sample(void)
     {
-        return IPlatformIO::agg_median(m_runtime_buffer->make_vector());
+        m_runtime_sample = IPlatformIO::agg_median(m_runtime_buffer->make_vector());
+        return m_runtime_sample;
     }
 
     void PowerBalancer::target_runtime(double largest_runtime)
     {
         m_target_runtime = largest_runtime;
-        m_is_target_met = false;
+        if (m_runtime_sample == largest_runtime) {
+            m_is_target_met = true;
+        }
+        else {
+            m_is_target_met = false;
+        }
     }
 
     bool PowerBalancer::is_target_met(double measured_runtime)
