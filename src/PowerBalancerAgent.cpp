@@ -229,9 +229,11 @@ namespace geopm
                 break;
             case M_STEP_MEASURE_RUNTIME:
                 m_policy[M_POLICY_MAX_EPOCH_RUNTIME] = sample[M_SAMPLE_MAX_EPOCH_RUNTIME];
+std::cerr << "max_runtime=" << m_policy[M_POLICY_MAX_EPOCH_RUNTIME] << std::endl;
                 break;
             case M_STEP_REDUCE_LIMIT:
                 m_policy[M_POLICY_POWER_SLACK] = sample[M_SAMPLE_SUM_POWER_SLACK] / m_num_node;
+std::cerr << "power_slack=" << m_policy[M_POLICY_POWER_SLACK] << std::endl;
                 break;
             default:
                 break;
@@ -318,7 +320,7 @@ namespace geopm
                     break;
                 case M_STEP_REDUCE_LIMIT:
                     m_is_step_complete = m_power_balancer->is_target_met(epoch_runtime);
-                    m_power_slack = m_power_balancer->power_cap() - m_power_balancer->power_limit();
+                    m_power_slack = m_power_balancer->power_slack();
                     break;
                 default:
                     break;

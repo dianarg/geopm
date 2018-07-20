@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <cmath>
+#include <iostream>
 
 #include "PowerBalancer.hpp"
 #include "CircularBuffer.hpp"
@@ -42,11 +43,12 @@
 namespace geopm
 {
     PowerBalancer::PowerBalancer()
-        : M_TRIAL_DELTA(5.0)
+        : M_MIN_TRIAL_DELTA(0.125)
         , M_NUM_SAMPLE(11)
         , m_power_cap(NAN)
         , m_power_limit(NAN)
         , m_target_runtime(NAN)
+        , m_trial_delta(8.0)
         , m_is_target_met(false)
         , m_runtime_buffer(make_unique<CircularBuffer<double> >(M_NUM_SAMPLE))
     {
@@ -58,6 +60,7 @@ namespace geopm
         m_power_limit = cap;
         m_power_cap = cap;
         m_runtime_buffer->clear();
+        m_target_runtime = NAN;
     }
 
     double PowerBalancer::power_cap(void) const
@@ -93,18 +96,18 @@ namespace geopm
 
     bool PowerBalancer::is_target_met(double measured_runtime)
     {
-        if (is_runtime_stable(measured_runtime)) {
-            if (!m_is_target_met &&
-                m_target_runtime < runtime_sample()) {
-                if (m_power_limit != m_power_cap) {
-                    m_runtime_buffer->clear();
-                    m_power_limit += M_TRIAL_DELTA;
+        if (!m_is_target_met) {
+            if (is_runtime_stable(measured_runtime)) {
+                if (runtime_sample() > m_target_runtime) {
+                    if (m_power_limit != m_power_cap) {
+                        m_power_limit += m_trial_delta;
+                    }
+                    m_is_target_met = true;
                 }
-                m_is_target_met = true;
-            }
-            else {
+                else {
+                    m_power_limit -= m_trial_delta;
+                }
                 m_runtime_buffer->clear();
-                m_power_limit -= M_TRIAL_DELTA;
             }
         }
         return m_is_target_met;
@@ -112,13 +115,28 @@ namespace geopm
 
     void PowerBalancer::achieved_limit(double achieved)
     {
-        if (achieved > m_power_limit) {
-            int num_delta = 1 + (achieved - m_power_limit) / M_TRIAL_DELTA;
-            m_power_limit += num_delta * M_TRIAL_DELTA;
+        if (!std::isnan(m_target_runtime) &&
+            achieved > m_power_limit + m_trial_delta) {
+            int num_delta = (achieved - m_power_limit) / m_trial_delta;
+            m_power_limit += num_delta * m_trial_delta;
             if (m_power_limit > m_power_cap) {
                 m_power_limit = m_power_cap;
+std::cerr << "reset_cap=" << m_power_cap << std::endl;
             }
+            m_runtime_buffer->clear();
             m_is_target_met = true;
         }
+    }
+
+    double PowerBalancer::power_slack(void)
+    {
+        double result = m_power_cap - m_power_limit;
+        if (result == 0.0) {
+            m_trial_delta /= 2.0;
+            if (m_trial_delta < M_MIN_TRIAL_DELTA) {
+                m_trial_delta = M_MIN_TRIAL_DELTA;
+            }
+        }
+        return result;
     }
 }

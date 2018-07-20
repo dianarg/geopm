@@ -116,6 +116,7 @@ namespace geopm
             ///         required.
             virtual bool is_target_met(double measured_runtime) = 0;
             virtual void achieved_limit(double achieved) = 0;
+            virtual double power_slack(void) = 0;
     };
 
     template <typename T> class ICircularBuffer;
@@ -135,8 +136,9 @@ namespace geopm
             void target_runtime(double largest_runtime) override;
             bool is_target_met(double measured_runtime) override;
             void achieved_limit(double achieved) override;
+            double power_slack(void) override;
         private:
-            const double M_TRIAL_DELTA;
+            const double M_MIN_TRIAL_DELTA;
             const int M_NUM_SAMPLE;
             // @brief Maximum power as set in last global budget
             //        increase.
@@ -145,6 +147,7 @@ namespace geopm
             //        which may be lower than the cap.
             double m_power_limit;
             double m_target_runtime;
+            double m_trial_delta;
             bool m_is_target_met;
             std::unique_ptr<ICircularBuffer<double> > m_runtime_buffer;
     };
