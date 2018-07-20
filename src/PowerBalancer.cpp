@@ -42,12 +42,11 @@
 namespace geopm
 {
     PowerBalancer::PowerBalancer()
-        : M_TARGET_EPSILON(0.03)
-        , M_TRIAL_DELTA(1.0)
-        , M_NUM_SAMPLE(5)
+        : M_TRIAL_DELTA(1.0)
+        , M_NUM_SAMPLE(11)
         , m_power_cap(NAN)
         , m_power_limit(NAN)
-        , m_target_runtime(0.0)
+        , m_target_runtime(NAN)
         , m_is_target_met(false)
         , m_runtime_buffer(make_unique<CircularBuffer<double> >(M_NUM_SAMPLE))
     {
@@ -95,7 +94,8 @@ namespace geopm
     bool PowerBalancer::is_target_met(double measured_runtime)
     {
         if (is_runtime_stable(measured_runtime)) {
-            if (m_target_runtime * (1.0 - M_TARGET_EPSILON) < runtime_sample()) {
+            if (!m_is_target_met &&
+                m_target_runtime < runtime_sample()) {
                 if (m_power_limit != m_power_cap) {
                     m_runtime_buffer->clear();
                     m_power_limit += M_TRIAL_DELTA;

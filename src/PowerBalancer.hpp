@@ -136,7 +136,6 @@ namespace geopm
             bool is_target_met(double measured_runtime) override;
             void achieved_limit(double achieved) override;
         private:
-            const double M_TARGET_EPSILON;
             const double M_TRIAL_DELTA;
             const int M_NUM_SAMPLE;
             // @brief Maximum power as set in last global budget
