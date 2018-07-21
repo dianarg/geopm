@@ -35,7 +35,6 @@
 #include <streambuf>
 #include <string>
 #include <unistd.h>
-#include <mpi.h>
 
 #include "geopm.h"
 #include "imbalancer.h"
@@ -79,7 +78,6 @@ namespace geopm
             for (auto it = m_region.begin(); it != m_region.end(); ++it) {
                 (*it)->run();
             }
-            MPI_Barrier(MPI_COMM_WORLD);
             if (!m_rank) {
                 std::cout << "Iteration: " << i << "\r" << std::flush;
             }

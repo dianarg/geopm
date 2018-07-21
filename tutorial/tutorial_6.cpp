@@ -52,7 +52,6 @@ int main(int argc, char **argv)
     int rank;
     int verbosity = 0;
     uint64_t init_rid;
-    uint64_t shutdown_rid;
     char *config_path = NULL;
     const char *usage = "\n"
 "%s -h | --help\n"
@@ -146,9 +145,6 @@ int main(int argc, char **argv)
         err = geopm_prof_region("model-init", GEOPM_REGION_HINT_UNKNOWN, &init_rid);
     }
     if (!err) {
-        err = geopm_prof_region("model-shutdown", GEOPM_REGION_HINT_UNKNOWN, &shutdown_rid);
-    }
-    if (!err) {
         err = geopm_prof_enter(init_rid);
     }
     if (!err) {
@@ -170,12 +166,7 @@ int main(int argc, char **argv)
         if (!err) {
             // Run application
             app.run();
-            // Capture the destruction of the app object in the shutdown region
-            err = geopm_prof_enter(shutdown_rid);
         }
-    }
-    if (!err) {
-        err = geopm_prof_exit(shutdown_rid);
     }
 
     if (err == ERROR_HELP) {
