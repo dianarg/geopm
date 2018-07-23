@@ -686,8 +686,8 @@ class TestIntegration(unittest.TestCase):
     @skip_unless_run_long_tests()
     def test_power_balancer(self):
         name = 'test_power_balancer'
-        num_node = 4
-        num_rank = 16
+        num_node = 256
+        num_rank = 1024
         loop_count = 500
         margin = 0.05 # Balancer must out-perform governor by 5%
         app_conf = geopmpy.io.BenchConf(name + '_app.config')
@@ -704,7 +704,7 @@ class TestIntegration(unittest.TestCase):
             power_budget = 300
         elif fam == 6 and mod == 87:
             # budget for KNL
-            power_budget = 200
+            power_budget = 160
         else:
             power_budget = 200
         self._options = {'power_budget': power_budget}
