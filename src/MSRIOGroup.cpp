@@ -453,10 +453,26 @@ namespace geopm
             for (MSRControl *ctl_ptr : pair_it.second) {
                 auto it = m_per_cpu_restore[ctl_ptr->cpu_idx()].find(ctl_ptr->offset());
                 if (it == m_per_cpu_restore[ctl_ptr->cpu_idx()].end()) {
-                    struct m_restore_s restore {.value = m_msrio->read_msr(ctl_ptr->cpu_idx(),
-                                                                           ctl_ptr->offset()),
-                                                .mask = ctl_ptr->mask()};
-                    m_per_cpu_restore[ctl_ptr->cpu_idx()].emplace(ctl_ptr->offset(), restore);
+                    uint64_t msr_value = 0;
+                    int attempt_count = 0;
+                    int max_attempt = 5;
+                    do {
+                        try {
+                            msr_value = m_msrio->read_msr(ctl_ptr->cpu_idx(), ctl_ptr->offset());
+                            struct m_restore_s restore {.value = msr_value,
+                                                        .mask = ctl_ptr->mask()};
+                            m_per_cpu_restore[ctl_ptr->cpu_idx()].emplace(ctl_ptr->offset(), restore);
+                            attempt_count = max_attempt;
+                        }
+                        catch (const Exception &ex) {
+                            ++attempt_count;
+                            if (attempt_count == max_attempt) {
+                                std::cerr << "Warning: unable to read msr 0x"
+                                          << std::hex << ctl_ptr->offset()
+                                          << " on cpu " << ctl_ptr->cpu_idx() << std::endl;
+                            }
+                        }
+                    } while(attempt_count != max_attempt);
                 }
                 else {
                     it->second.mask |= ctl_ptr->mask();
