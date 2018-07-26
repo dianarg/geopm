@@ -34,73 +34,13 @@
 #define BALANCINGAGENT_HPP_INCLUDE
 
 #include <vector>
+#include <iostream>
 
 #include "geopm_time.h"
 #include "Agent.hpp"
 
 namespace geopm
 {
-    class IPowerBalancerStep
-    {
-        public:
-            IPowerBalancerStep() = default;
-            virtual ~IPowerBalancerStep() = default;
-            virtual int reset() = 0;
-            virtual int step_count() const = 0;
-            virtual void inc_step_count() = 0;
-            virtual bool is_send_down_limit(int step) const = 0;
-            virtual bool is_send_down_limit() const = 0;
-            virtual bool is_measure_runtime() const = 0;
-            virtual bool is_reduce_limit() const = 0;
-            virtual bool is_step_complete() const = 0;
-            virtual void is_step_complete(bool is_complete) = 0;
-            virtual void step(int step) = 0;
-    };
-
-    class PowerBalancerStep : public IPowerBalancerStep
-    {
-        public:
-            PowerBalancerStep();
-            virtual ~PowerBalancerStep() = default;
-            int reset() override;
-            int step_count() const override;
-            void inc_step_count() override;
-            bool is_send_down_limit(int step) const override;
-            bool is_send_down_limit() const override;
-            bool is_measure_runtime() const override;
-            bool is_reduce_limit() const override;
-            bool is_step_complete() const override;
-            void is_step_complete(bool is_complete) override;
-            void step(int step) override;
-        private:
-            int step(void) const;
-            enum m_step_e {
-                /// @brief On first iteration send down resource
-                ///        manager average limit requested, otherwise
-                ///        send down average excess power.
-                M_STEP_SEND_DOWN_LIMIT,
-                /// @brief Measure epoch runtime several times and
-                ///        apply median filter.  Aggregate epoch
-                ///        runtime up tree by applying maximum filter
-                ///        to measured values.  Propagate down from
-                ///        root the longest recorded runtime from any
-                ///        node.
-                M_STEP_MEASURE_RUNTIME,
-                /// @brief Decrease power limit on all nodes (other
-                ///        than the slowest) until epoch runtime
-                ///        matches the slowest.  Aggregate amount
-                ///        power limit was reduced in last step up the
-                ///        tree with sum filter.  (Go to
-                ///        M_STEP_SEND_DOWN_LIMIT next).
-                M_STEP_REDUCE_LIMIT,
-                /// @brief Number of steps in process.
-                M_NUM_STEP,
-            };
-
-            size_t m_step_count;
-            bool m_is_step_complete;
-    };
-
     class IPlatformIO;
     class IPlatformTopo;
     template <class type>
@@ -183,8 +123,7 @@ namespace geopm
             };
 
             PowerBalancerAgent(IPlatformIO &platform_io, IPlatformTopo &platform_topo,
-                               std::unique_ptr<IPowerBalancerStep> power_step,
-                               std::unique_ptr<IPowerGovernor> power_gov, std::unique_ptr<IPowerBalancer> power_bal);
+                               std::unique_ptr<IPowerGovernor> power_governor, std::unique_ptr<IPowerBalancer> power_balancer);
             PowerBalancerAgent();
             virtual ~PowerBalancerAgent();
             void init(int level, const std::vector<int> &fan_in, bool is_level_root) override;
@@ -204,28 +143,141 @@ namespace geopm
             static std::unique_ptr<Agent> make_plugin(void);
             static std::vector<std::string> policy_names(void);
             static std::vector<std::string> sample_names(void);
-        private:
-            void init_platform_io(void);
-            void update_policy(const std::vector<double> &sample);
 
+            class IStep;
+
+            class IRole {
+                public:
+                    enum m_step_e {
+                        /// @brief On first iteration send down resource
+                        ///        manager average limit requested, otherwise
+                        ///        send down average excess power.
+                        M_STEP_SEND_DOWN_LIMIT,
+                        /// @brief Measure epoch runtime several times and
+                        ///        apply median filter.  Aggregate epoch
+                        ///        runtime up tree by applying maximum filter
+                        ///        to measured values.  Propagate down from
+                        ///        root the longest recorded runtime from any
+                        ///        node.
+                        M_STEP_MEASURE_RUNTIME,
+                        /// @brief Decrease power limit on all nodes (other
+                        ///        than the slowest) until epoch runtime
+                        ///        matches the slowest.  Aggregate amount
+                        ///        power limit was reduced in last step up the
+                        ///        tree with sum filter.  (Go to
+                        ///        M_STEP_SEND_DOWN_LIMIT next).
+                        M_STEP_REDUCE_LIMIT,
+                        /// @brief Number of steps in process.
+                        M_NUM_STEP,
+                    };
+
+                    virtual bool descend(const std::vector<double> &in_policy,
+                            std::vector<std::vector<double> >&out_policy) = 0;
+                    virtual bool ascend(const std::vector<std::vector<double> > &in_sample,
+                            std::vector<double> &out_sample) = 0;
+                    virtual bool adjust_platform(const std::vector<double> &in_policy) = 0;
+                    virtual bool sample_platform(std::vector<double> &out_sample) = 0;
+                    virtual std::vector<std::string> trace_names(void) const = 0;
+                    virtual void trace_values(std::vector<double> &values) = 0;
+                    size_t reset();
+                    size_t step_count() const;
+                    bool is_step_complete() const;
+                    void is_step_complete(bool is_complete);
+                    void step(size_t step);
+                protected:
+                    IRole();
+                    virtual ~IRole();
+                    void inc_step_count();
+                    size_t step(void) const;
+                    size_t m_step_count;
+                    bool m_is_step_complete;
+                    std::shared_ptr<IStep> m_step;
+            };
+
+            class TreeRole : public IRole {
+                friend class SendDownLimitStep;
+                friend class MeasureRuntimeStep;
+                friend class ReduceLimitStep;
+                public:
+                    TreeRole(int num_children);
+                    virtual ~TreeRole();
+                    virtual bool descend(const std::vector<double> &in_policy,
+                            std::vector<std::vector<double> >&out_policy) override;
+                    virtual bool ascend(const std::vector<std::vector<double> > &in_sample,
+                            std::vector<double> &out_sample) override;
+                    bool adjust_platform(const std::vector<double> &in_policy) override;
+                    bool sample_platform(std::vector<double> &out_sample) override;
+                    std::vector<std::string> trace_names(void) const override;
+                    void trace_values(std::vector<double> &values) override;
+                protected:
+                    const std::vector<std::function<double(const std::vector<double>&)> > M_AGG_FUNC;
+                    const int M_NUM_CHILDREN;
+                    std::vector<double> m_policy;
+            };
+
+            class RootRole : public TreeRole {
+                friend class SendDownLimitStep;
+                friend class MeasureRuntimeStep;
+                friend class ReduceLimitStep;
+                public:
+                    RootRole(int num_node, int num_children);
+                    virtual ~RootRole();
+                    bool descend(const std::vector<double> &in_policy,
+                            std::vector<std::vector<double> >&out_policy) override;
+                    bool ascend(const std::vector<std::vector<double> > &in_sample,
+                            std::vector<double> &out_sample) override;
+                private:
+                    const int M_NUM_NODE;
+                    double m_root_cap;
+            };
+
+            class LeafRole : public IRole {
+                friend class SendDownLimitStep;
+                friend class MeasureRuntimeStep;
+                friend class ReduceLimitStep;
+                public:
+                    LeafRole(IPlatformIO &platform_io, IPlatformTopo &platform_topo,
+                             std::unique_ptr<IPowerGovernor> power_governor, std::unique_ptr<IPowerBalancer> power_balancer);
+                    virtual ~LeafRole();
+                    bool descend(const std::vector<double> &in_policy,
+                            std::vector<std::vector<double> >&out_policy) override;
+                    bool ascend(const std::vector<std::vector<double> > &in_sample,
+                            std::vector<double> &out_sample) override;
+                    bool adjust_platform(const std::vector<double> &in_policy) override;
+                    bool sample_platform(std::vector<double> &out_sample) override;
+                    std::vector<std::string> trace_names(void) const override;
+                    void trace_values(std::vector<double> &values) override;
+                private:
+                    void init_platform_io(void);
+
+                    IPlatformIO &m_platform_io;
+                    IPlatformTopo &m_platform_topo;
+                    std::vector<int> m_pio_idx;
+                    std::unique_ptr<IPowerGovernor> m_power_governor;
+                    std::unique_ptr<IPowerBalancer> m_power_balancer;
+                    int m_last_epoch_count;
+                    double m_runtime;
+                    double m_power_slack;
+            };
+
+            class IStep {
+                public:
+                    IStep() = default;
+                    virtual ~IStep() = default;
+                    virtual bool update_policy(RootRole &role, const std::vector<double> &sample) = 0;
+                    virtual void pre_adjust(LeafRole &role, const std::vector<double> &in_policy) = 0;
+                    virtual void post_adjust(LeafRole &role, double policy_limit, double actual_limit) = 0;
+                    virtual void post_sample(LeafRole &role, double epoch_runtime) = 0;
+            };
+
+        protected:
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
-            int m_level;
-            std::unique_ptr<IPowerBalancerStep> m_power_step;
-            std::unique_ptr<IPowerGovernor> m_power_gov;
-            std::unique_ptr<IPowerBalancer> m_power_balancer;
-            std::vector<int> m_pio_idx;
-            const std::vector<std::function<double(const std::vector<double>&)> > m_agg_func;
-            int m_num_children;
-            bool m_is_tree_root;
-            int m_last_epoch_count;
-            double m_root_cap;
-            double m_runtime;
-            double m_power_slack;
+            std::shared_ptr<IRole> m_role;
+            std::unique_ptr<IPowerGovernor> m_power_governor;   /// temporary ownership, moved to IRole on init
+            std::unique_ptr<IPowerBalancer> m_power_balancer;   /// temporary ownership, moved to IRole on init
             struct geopm_time_s m_last_wait;
             const double M_WAIT_SEC;
-            std::vector<double> m_policy;
-            int m_num_node;
     };
 }
 

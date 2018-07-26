@@ -42,7 +42,7 @@
 namespace geopm
 {
     PowerBalancer::PowerBalancer()
-        : PowerBalancer(1.0, 5)
+        : PowerBalancer(0.125, 5)
     {
 
     }
