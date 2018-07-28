@@ -747,11 +747,11 @@ def generate_power_plot(trace_df, config):
 
         plt.title('{} Iteration Power\n@ {}W{}'.format(config.profile_name, power_budget, config.misc_text), y=1.02)
 
-        legend = plt.legend(loc="lower center", bbox_to_anchor=[0.5, 0], ncol=4,
-                            shadow=True, fancybox=True, fontsize=config.legend_fontsize)
-        for l in legend.legendHandles:
-            l.set_linewidth(2.0)
-        legend.set_zorder(11)
+#        legend = plt.legend(loc="lower center", bbox_to_anchor=[0.5, 0], ncol=4,
+#                            shadow=True, fancybox=True, fontsize=config.legend_fontsize)
+#        for l in legend.legendHandles:
+#            l.set_linewidth(2.0)
+#        legend.set_zorder(11)
         plt.tight_layout()
         ax.set_ylim(ax.get_ylim()[0] * .93, ax.get_ylim()[1])
 
@@ -891,7 +891,7 @@ def generate_epoch_plot(trace_df, config):
 
         plt.title('{} Critical Path Iteration Loop Time\n@ {}W{}'.format(config.profile_name, power_budget,
                                                                          config.misc_text), y=1.02)
-        plt.legend(shadow=True, fancybox=True, loc='best', fontsize=14).set_zorder(11)
+#        plt.legend(shadow=True, fancybox=True, loc='best', fontsize=14).set_zorder(11)
         plt.tight_layout()
 
         if config.analyze:
