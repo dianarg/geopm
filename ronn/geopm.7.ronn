@@ -88,6 +88,10 @@ application including support for static control.
 
 **geopmbench(1)**: Synthetic benchmark application
 
+**geopm_topo_c(3)**: Query platform component topology
+
+**geopm_pio_c(3)**: Interfaces to query and modify platform
+
 ## BUILT-IN AGENTS
 
 **geopm_agent_monitor(7)**: Agent implementation that enforces no policies

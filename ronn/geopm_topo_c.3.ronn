@@ -67,88 +67,107 @@ geopm_topo_c(3) -- query platform topology
     `int *`_is_within_`);`
 
   * `int geopm_topo_domain_type_to_name(`:
-    `int` _domain_type_,
-    `int` _str_len_,
+    `int` _domain_type_, <br>
+    `int` _str_len_, <br>
     `char *`_domain_name_`);`
 
   * `int geopm_topo_domain_name_to_type(`:
-    `const char *`_domain_name_,
+    `const char *`_domain_name_, <br>
     `int *`_domain_type_`);`
 
 
 ## DESCRIPTION
-  * `int geopm_topo_num_domain`():
+  * `geopm_topo_num_domain`():
     Query the number of domains for the _domain_type_.  The output is
     stored in the _num_domain_ variable.
 
-  * `int geopm_topo_domain_num_cpu`():
+  * `geopm_topo_domain_num_cpu`():
     Query the number of Linux logical CPUs associated with the
     _domain_idx_ element of the _domain_type_.
 
-  * `int geopm_topo_domain_cpu`():
+  * `geopm_topo_domain_cpu`():
     Fill in the _cpu_idx_ array of length _num_cpu_ with the Linux
     logical CPU index for all of the CPUs associated with the
     _domain_idx_ element of the _domain_type_.
 
-  * `int geopm_topo_domain_idx`():
+  * `geopm_topo_domain_idx`():
     Query the index of the domain _domain_idx_ for a specific
     _domain_type_ that is associated with the Linux logical CPU index
     _cpu_idx_.
 
-  * `int geopm_topo_define_cpu_group`():
+  * `geopm_topo_define_cpu_group`():
     Group together a collection of _num_cpu_ Linux logical CPUs
     specified by the _cpu_domain_idx_ array to form a new domain type
     stored in the output parameter _cpu_gropu_idx_.  This domain type
     can passed to other geopm_topo_*() interfaces in the same way as
     the statically defined domain types.
 
-  * `int geopm_topo_is_domain_within`():
+  * `geopm_topo_is_domain_within`():
     Query if _inner_domain_type_ is contained within
     _outer_domain_type_, i.e. if_inner_domain_type_ can be split into
     a grouping of domains where each group comprises one
     _outer_domain_type_.
 
-  * `int geopm_topo_domain_type_to_name`():
+  * `geopm_topo_domain_type_to_name`():
+    Set the output string _domain_name_ to the name associated with
+    the domain type enum _domain_type_.  The _str_len_ argument
+    defines the maximum string length that can be stored in the output
+    character array _domain_name_.
 
-  * `int geopm_topo_domain_name_to_type`():
-
-Available domain types:
-
-  * GEOPM_DOMAIN_INVALID:
-    Reserved to represent an invalid domain
-
-  * GEOPM_DOMAIN_BOARD:
-    All components on a user allocated compute node (one per controller)
-
-  * GEOPM_DOMAIN_PACKAGE:
-    Single processor package in one socket
-
-  * GEOPM_DOMAIN_CORE:
-    Group of associated hyper-threads
-
-  * GEOPM_DOMAIN_CPU:
-    Linux logical CPU
-
-  * GEOPM_DOMAIN_BOARD_MEMORY:
-    Standard off package DIMM (DRAM or NAND)
-
-  * GEOPM_DOMAIN_PACKAGE_MEMORY:
-    On package memory (MCDRAM)
-
-  * GEOPM_DOMAIN_BOARD_NIC:
-    Network interface controller on the PCI bus
-
-  * GEOPM_DOMAIN_PACKAGE_NIC:
-    Network interface controller on the processor package
-
-  * GEOPM_DOMAIN_BOARD_ACCELERATOR:
-    Accelerator card on the PCI bus
-
-  * GEOPM_DOMAIN_PACKAGE_ACCELERATOR:
-    Accelerator unit on the package (e.g on-package graphics)
+  * `geopm_topo_domain_name_to_type`():
+    Set the _domain_type_ output parameter to the enum associated with
+    the input string _domain_type_ that describes the domain.
 
 All functions described in this man page return an error code on failure and
 zero upon success; see [ERRORS][] section below for details.
+
+## DOMAIN TYPES
+
+Many API's use the `geopm_domain_e` enum to represent each of the
+GEOPM domain types as an integer.  The values included in this enum
+are defined in this section along with their string name
+representation.
+
+  * `GEOPM_DOMAIN_INVALID`:
+    Reserved to represent an invalid domain. Domain name string:
+    "invalid".
+
+  * `GEOPM_DOMAIN_BOARD`:
+    All components on a user allocated compute node (one per
+    controller).  Domain name string: "board".
+
+  * `GEOPM_DOMAIN_PACKAGE`:
+    Single processor package in one socket.  Domain name string:
+    "package".
+
+  * `GEOPM_DOMAIN_CORE`:
+    Group of associated hyper-threads.  Domain name string: "core".
+
+  * `GEOPM_DOMAIN_CPU`:
+    Linux logical CPU.  Domain name string "cpu".
+
+  * `GEOPM_DOMAIN_BOARD_MEMORY`:
+    Standard off package DIMM (DRAM or NAND).  Domain name string:
+    "board_memory".
+
+  * `GEOPM_DOMAIN_PACKAGE_MEMORY`:
+    On package memory (MCDRAM).  Domain name string: "package_memory".
+
+  * `GEOPM_DOMAIN_BOARD_NIC`:
+    Network interface controller on the PCI bus.  Domain name string
+    "board_nic".
+
+  * `GEOPM_DOMAIN_PACKAGE_NIC`:
+    Network interface controller on the processor package.  Domain
+    name string: "package_nic".
+
+  * `GEOPM_DOMAIN_BOARD_ACCELERATOR`:
+    Accelerator card on the PCI bus.  Domain name string
+    "board_accelerator".
+
+  * `GEOPM_DOMAIN_PACKAGE_ACCELERATOR`:
+    Accelerator unit on the package (e.g on-package graphics).  Domain
+    name string: "package_accelerator".
 
 ## ERRORS
 All functions described on this man page return an error code.  See
@@ -160,10 +179,7 @@ Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
 
 ## SEE ALSO
 **geopm(7)**,
-**geopm_agent_energy_efficient(7)**,
-**geopm_agent_monitor(7)**,
-**geopm_agent_power_balancer(7)**,
-**geopm_agent_c(3)**,
+**geopm_pio_c(3)**,
 **geopm_error(3)**,
-**geopmagent(1)**,
-**geopmendpoint(1)**
+**geopmread(1)**,
+**geopmwrite(1)**
