@@ -272,7 +272,6 @@ test/MockPlatformTopo.hpp
 test/MockPlatformTopology.hpp
 test/MockPolicy.hpp
 test/MockPowerBalancer.hpp
-test/MockPowerBalancerStep.hpp
 test/MockPowerGovernor.hpp
 test/MockProfileIORuntime.hpp
 test/MockProfileIOSample.hpp

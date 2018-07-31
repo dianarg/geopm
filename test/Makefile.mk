@@ -332,6 +332,8 @@ GTEST_TESTS = test/gtest_links/PlatformFactoryTest.platform_register \
               test/gtest_links/EpochRuntimeRegulatorTest.all_ranks_enter_exit \
               test/gtest_links/EpochRuntimeRegulatorTest.epoch_runtime \
               test/gtest_links/PowerBalancerAgentTest.tree_root_agent \
+              test/gtest_links/PowerBalancerAgentTest.tree_agent \
+              test/gtest_links/PowerBalancerAgentTest.leaf_agent \
               test/gtest_links/PowerBalancerTest.power_cap \
               test/gtest_links/PowerBalancerTest.is_runtime_stable \
               test/gtest_links/PowerBalancerTest.balance \

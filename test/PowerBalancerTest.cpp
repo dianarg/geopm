@@ -35,6 +35,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
+#include "CircularBuffer.hpp"
 #include "PowerBalancer.hpp"
 #include "Helper.hpp"
 
