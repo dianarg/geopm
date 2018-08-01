@@ -48,8 +48,6 @@
 
 namespace geopm
 {
-    static std::shared_ptr<PowerBalancerAgent::IStep> make_step(size_t step);
-
     PowerBalancerAgent::IRole::IRole()
         : m_is_step_complete(true)
     {
@@ -73,7 +71,7 @@ namespace geopm
     void PowerBalancerAgent::IRole::inc_step_count()
     {
         ++m_step_count;
-        m_step = make_step(this->step());
+        assign_step(step());
     }
 
     bool PowerBalancerAgent::IRole::is_step_complete() const
@@ -113,6 +111,26 @@ namespace geopm
         else if (m_step_count != step) {
             throw Exception("PowerBalancerAgent::IRole::" + std::string(__func__) + "(): step is out of sync with current step",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+    }
+
+    void PowerBalancerAgent::IRole::assign_step(size_t step)
+    {
+        switch(step) {
+            case M_STEP_SEND_DOWN_LIMIT:
+                m_step = &M_STEP_SEND_DOWN_LIMIT_IMP;
+                break;
+            case M_STEP_MEASURE_RUNTIME:
+                m_step = &M_STEP_MEASURE_RUNTIME_IMP;
+                break;
+            case M_STEP_REDUCE_LIMIT:
+                m_step = &M_STEP_REDUCE_LIMIT_IMP;
+                break;
+            default:
+#ifdef GEOPM_DEBUG
+                throw Exception("PowerBalancer::" + std::string(__func__) + "(): invalid step.",
+                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+#endif
         }
     }
 
@@ -382,111 +400,74 @@ namespace geopm
         return true;
     }
 
-    class SendDownLimitStep : public PowerBalancerAgent::IStep {
-        public:
-            SendDownLimitStep() = default;
-            ~SendDownLimitStep() = default;
-            bool update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample)
-            {
-                role.m_policy[PowerBalancerAgent::M_POLICY_POWER_CAP] = 0.0;
-                return true;
-            }
-
-            void pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy)
-            {
-                role.m_power_balancer->power_cap(role.m_power_balancer->power_limit() + in_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK]);
-                role.is_step_complete(true);
-            }
-
-            void post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit)
-            {
-                if (policy_limit != 0.0) {
-                    std::cerr << "Warning: <geopm> PowerBalancerAgent: per node power cap of "
-                        << policy_limit << " Watts could not be maintained (request=" << actual_limit << ");" << std::endl;
-                }
-            }
-
-            void post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime)
-            {
-            }
-    };
-
-    class MeasureRuntimeStep : public PowerBalancerAgent::IStep {
-        public:
-            MeasureRuntimeStep() = default;
-            ~MeasureRuntimeStep() = default;
-            bool update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample)
-            {
-                role.m_policy[PowerBalancerAgent::M_POLICY_MAX_EPOCH_RUNTIME] = sample[PowerBalancerAgent::M_SAMPLE_MAX_EPOCH_RUNTIME];
-                return true;
-            }
-
-            void pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy)
-            {
-            }
-
-            void post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit)
-            {
-                if (policy_limit != 0.0) {
-                    std::cerr << "Warning: <geopm> PowerBalancerAgent: per node power cap of "
-                        << policy_limit << " Watts could not be maintained (request=" << actual_limit << ");" << std::endl;
-                }
-            }
-
-            void post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime)
-            {
-                role.m_runtime = role.m_power_balancer->runtime_sample();
-                role.is_step_complete(role.m_power_balancer->is_runtime_stable(epoch_runtime));
-            }
-    };
-
-    class ReduceLimitStep : public PowerBalancerAgent::IStep {
-        public:
-            ReduceLimitStep() = default;
-            ~ReduceLimitStep() = default;
-            bool update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample)
-            {
-                role.m_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK] = sample[PowerBalancerAgent::M_SAMPLE_SUM_POWER_SLACK] / role.M_NUM_NODE;
-                return true;
-            }
-
-            void pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy)
-            {
-                role.m_power_balancer->target_runtime(in_policy[PowerBalancerAgent::M_POLICY_MAX_EPOCH_RUNTIME]);
-            }
-
-            void post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit)
-            {
-                role.m_power_balancer->achieved_limit(actual_limit);
-            }
-
-            void post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime)
-            {
-                role.m_power_slack = role.m_power_balancer->power_cap() - role.m_power_balancer->power_limit();
-                role.is_step_complete(role.m_power_balancer->is_target_met(epoch_runtime));
-            }
-    };
-
-    static std::shared_ptr<PowerBalancerAgent::IStep> make_step(size_t step)
+    bool PowerBalancerAgent::SendDownLimitStep::update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const
     {
-        std::shared_ptr<PowerBalancerAgent::IStep> ret_val;
-        switch(step) {
-            case PowerBalancerAgent::IRole::M_STEP_SEND_DOWN_LIMIT:
-                ret_val = std::make_shared<SendDownLimitStep>();
-                break;
-            case PowerBalancerAgent::IRole::M_STEP_MEASURE_RUNTIME:
-                ret_val = std::make_shared<MeasureRuntimeStep>();
-                break;
-            case PowerBalancerAgent::IRole::M_STEP_REDUCE_LIMIT:
-                ret_val = std::make_shared<ReduceLimitStep>();
-                break;
-            default:
-#ifdef GEOPM_DEBUG
-                throw Exception("PowerBalancer::" + std::string(__func__) + "(): invalid step.",
-                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-#endif
+        role.m_policy[PowerBalancerAgent::M_POLICY_POWER_CAP] = 0.0;
+        return true;
+    }
+
+    void PowerBalancerAgent::SendDownLimitStep::pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const
+    {
+        role.m_power_balancer->power_cap(role.m_power_balancer->power_limit() + in_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK]);
+        role.is_step_complete(true);
+    }
+
+    void PowerBalancerAgent::SendDownLimitStep::post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit) const
+    {
+        if (policy_limit != 0.0) {
+            std::cerr << "Warning: <geopm> PowerBalancerAgent: per node power cap of "
+                << policy_limit << " Watts could not be maintained (request=" << actual_limit << ");" << std::endl;
         }
-        return ret_val;
+    }
+
+    void PowerBalancerAgent::SendDownLimitStep::post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime) const
+    {
+    }
+
+    bool PowerBalancerAgent::MeasureRuntimeStep::update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const
+    {
+        role.m_policy[PowerBalancerAgent::M_POLICY_MAX_EPOCH_RUNTIME] = sample[PowerBalancerAgent::M_SAMPLE_MAX_EPOCH_RUNTIME];
+        return true;
+    }
+
+    void PowerBalancerAgent::MeasureRuntimeStep::pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const
+    {
+    }
+
+    void PowerBalancerAgent::MeasureRuntimeStep::post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit) const
+    {
+        if (policy_limit != 0.0) {
+            std::cerr << "Warning: <geopm> PowerBalancerAgent: per node power cap of "
+                << policy_limit << " Watts could not be maintained (request=" << actual_limit << ");" << std::endl;
+        }
+    }
+
+    void PowerBalancerAgent::MeasureRuntimeStep::post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime) const
+    {
+        role.m_runtime = role.m_power_balancer->runtime_sample();
+        role.is_step_complete(role.m_power_balancer->is_runtime_stable(epoch_runtime));
+    }
+
+    bool PowerBalancerAgent::ReduceLimitStep::update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const
+    {
+        role.m_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK] = sample[PowerBalancerAgent::M_SAMPLE_SUM_POWER_SLACK] / role.M_NUM_NODE;
+        return true;
+    }
+
+    void PowerBalancerAgent::ReduceLimitStep::pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const
+    {
+        role.m_power_balancer->target_runtime(in_policy[PowerBalancerAgent::M_POLICY_MAX_EPOCH_RUNTIME]);
+    }
+
+    void PowerBalancerAgent::ReduceLimitStep::post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit) const
+    {
+        role.m_power_balancer->achieved_limit(actual_limit);
+    }
+
+    void PowerBalancerAgent::ReduceLimitStep::post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime) const
+    {
+        role.m_power_slack = role.m_power_balancer->power_cap() - role.m_power_balancer->power_limit();
+        role.is_step_complete(role.m_power_balancer->is_target_met(epoch_runtime));
     }
 
     PowerBalancerAgent::PowerBalancerAgent()

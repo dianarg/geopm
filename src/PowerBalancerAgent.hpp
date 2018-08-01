@@ -144,10 +144,66 @@ namespace geopm
             static std::vector<std::string> policy_names(void);
             static std::vector<std::string> sample_names(void);
 
-            class IStep;
+            class RootRole;
+            class LeafRole;
+            class TreeRole;
+
+            class IStep {
+                public:
+                    IStep() = default;
+                    virtual ~IStep() = default;
+                    virtual bool update_policy(RootRole &role, const std::vector<double> &sample) const = 0;
+                    virtual void pre_adjust(LeafRole &role, const std::vector<double> &in_policy) const = 0;
+                    virtual void post_adjust(LeafRole &role, double policy_limit, double actual_limit) const = 0;
+                    virtual void post_sample(LeafRole &role, double epoch_runtime) const = 0;
+            };
+
+            class SendDownLimitStep : public IStep {
+                public:
+                    SendDownLimitStep() = default;
+                   ~SendDownLimitStep() = default;
+                   bool update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const;
+                   void pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const;
+                   void post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit) const;
+                   void post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime) const;
+            };
+
+            class MeasureRuntimeStep : public IStep {
+                public:
+                    MeasureRuntimeStep() = default;
+                    ~MeasureRuntimeStep() = default;
+                    bool update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const;
+                    void pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const;
+                    void post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit) const;
+                    void post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime) const;
+            };
+
+            class ReduceLimitStep : public IStep {
+                public:
+                    ReduceLimitStep() = default;
+                    ~ReduceLimitStep() = default;
+                    bool update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const;
+                    void pre_adjust(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const;
+                    void post_adjust(PowerBalancerAgent::LeafRole &role, double policy_limit, double actual_limit) const;
+                    void post_sample(PowerBalancerAgent::LeafRole &role, double epoch_runtime) const;
+            };
 
             class IRole {
                 public:
+                    virtual bool descend(const std::vector<double> &in_policy,
+                            std::vector<std::vector<double> >&out_policy) = 0;
+                    virtual bool ascend(const std::vector<std::vector<double> > &in_sample,
+                            std::vector<double> &out_sample) = 0;
+                    virtual bool adjust_platform(const std::vector<double> &in_policy) = 0;
+                    virtual bool sample_platform(std::vector<double> &out_sample) = 0;
+                    virtual std::vector<std::string> trace_names(void) const = 0;
+                    virtual void trace_values(std::vector<double> &values) = 0;
+                    size_t reset();
+                    size_t step_count() const;
+                    bool is_step_complete() const;
+                    void is_step_complete(bool is_complete);
+                    void step(size_t step);
+                protected:
                     enum m_step_e {
                         /// @brief On first iteration send down resource
                         ///        manager average limit requested, otherwise
@@ -171,27 +227,17 @@ namespace geopm
                         M_NUM_STEP,
                     };
 
-                    virtual bool descend(const std::vector<double> &in_policy,
-                            std::vector<std::vector<double> >&out_policy) = 0;
-                    virtual bool ascend(const std::vector<std::vector<double> > &in_sample,
-                            std::vector<double> &out_sample) = 0;
-                    virtual bool adjust_platform(const std::vector<double> &in_policy) = 0;
-                    virtual bool sample_platform(std::vector<double> &out_sample) = 0;
-                    virtual std::vector<std::string> trace_names(void) const = 0;
-                    virtual void trace_values(std::vector<double> &values) = 0;
-                    size_t reset();
-                    size_t step_count() const;
-                    bool is_step_complete() const;
-                    void is_step_complete(bool is_complete);
-                    void step(size_t step);
-                protected:
                     IRole();
                     virtual ~IRole();
                     void inc_step_count();
                     size_t step(void) const;
+                    void assign_step(size_t step);
                     size_t m_step_count;
                     bool m_is_step_complete;
-                    std::shared_ptr<IStep> m_step;
+                    const SendDownLimitStep M_STEP_SEND_DOWN_LIMIT_IMP;
+                    const MeasureRuntimeStep M_STEP_MEASURE_RUNTIME_IMP;
+                    const ReduceLimitStep M_STEP_REDUCE_LIMIT_IMP;
+                    const IStep *m_step;
             };
 
             class TreeRole : public IRole {
@@ -258,16 +304,6 @@ namespace geopm
                     int m_last_epoch_count;
                     double m_runtime;
                     double m_power_slack;
-            };
-
-            class IStep {
-                public:
-                    IStep() = default;
-                    virtual ~IStep() = default;
-                    virtual bool update_policy(RootRole &role, const std::vector<double> &sample) = 0;
-                    virtual void pre_adjust(LeafRole &role, const std::vector<double> &in_policy) = 0;
-                    virtual void post_adjust(LeafRole &role, double policy_limit, double actual_limit) = 0;
-                    virtual void post_sample(LeafRole &role, double epoch_runtime) = 0;
             };
 
         protected:
