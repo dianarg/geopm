@@ -357,16 +357,31 @@ def generate_bar_plot(report_df, config):
     idx = pandas.IndexSlice
     df = pandas.DataFrame()
 
-    reference_g = report_df.loc[idx[config.ref_version:config.ref_version, config.ref_profile_name:config.ref_profile_name,
-                                    config.min_drop:config.max_drop, config.ref_plugin, :, :, :, 'epoch'],
+    if config.use_agent:
+        # removed power budget, profile names from index in agent case
+        reference_g = report_df.loc[idx[config.ref_version:config.ref_version, :,
+                                    :, :, :, config.ref_plugin, :, :, 'epoch'],
+                                config.datatype].groupby(level='name')
+    else:
+        reference_g = report_df.loc[idx[config.ref_version:config.ref_version, config.ref_profile_name:config.ref_profile_name,
+                                    config.min_drop:config.max_drop, config.ref_plugin, :, :, :, :, 'epoch'],
                                 config.datatype].groupby(level='power_budget')
+
+    print reference_g
+
     df['reference_mean'] = reference_g.mean()
     df['reference_max'] = reference_g.max()
     df['reference_min'] = reference_g.min()
-
-    target_g = report_df.loc[idx[config.tgt_version:config.tgt_version, config.tgt_profile_name:config.tgt_profile_name,
-                                 config.min_drop:config.max_drop, config.tgt_plugin, :, :, :, 'epoch'],
+    if config.use_agent:
+        target_g = report_df.loc[idx[config.tgt_version:config.tgt_version, :,
+                                 :, :, :, config.tgt_plugin, :, :, 'epoch'],
+                             config.datatype].groupby(level='name')
+    else:
+        target_g = report_df.loc[idx[config.tgt_version:config.tgt_version, config.tgt_profile_name:config.tgt_profile_name,
+                                 config.min_drop:config.max_drop, config.tgt_plugin, :, :, :, :, 'epoch'],
                              config.datatype].groupby(level='power_budget')
+    print target_g
+
     df['target_mean'] = target_g.mean()
     df['target_max'] = target_g.max()
     df['target_min'] = target_g.min()
@@ -385,6 +400,8 @@ def generate_bar_plot(report_df, config):
     df['reference_min_delta'] = df['reference_mean'] - df['reference_min']
     df['target_max_delta'] = df['target_max'] - df['target_mean']
     df['target_min_delta'] = df['target_mean'] - df['target_min']
+
+    print df
 
     # Begin plot setup
     f, ax = plt.subplots()
@@ -447,7 +464,7 @@ def generate_bar_plot(report_df, config):
     plt.title('{} {} Comparison{}'.format(config.profile_name, config.datatype.title(), config.misc_text), y=1.02)
     plt.margins(0.02, 0.01)
     plt.axis('tight')
-    plt.legend(shadow=True, fancybox=True, fontsize=config.legend_fontsize, loc='best').set_zorder(11)
+    #plt.legend(shadow=True, fancybox=True, fontsize=config.legend_fontsize, loc='best').set_zorder(11)
     plt.tight_layout()
 
     if config.speedup:

@@ -42,6 +42,10 @@ import socket
 import json
 import geopmpy.io
 import geopmpy.launcher
+
+import matplotlib
+matplotlib.use('Agg')
+
 import geopmpy.plotter
 from geopmpy import __version__
 
@@ -178,8 +182,9 @@ class BalancerAnalysis(Analysis):
     and the balancer.  Compares the performance of the two agents at each power cap.
     """
     def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, enable_turbo=False):
-        super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, app_argv, verbose, iterations)
-        self._power_caps = range(150, 245, 5)
+        super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
+        #self._power_caps = range(150, 245, 5)
+        self._power_caps = range(150, 165, 5)
 
     def find_files(self, search_pattern='*.report'):
         report_glob = os.path.join(self._output_dir, self._name + search_pattern)
@@ -187,9 +192,9 @@ class BalancerAnalysis(Analysis):
         trace_glob = os.path.join(self._output_dir, self._name + '*trace*')
         self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
 
-    def try_launch(self, profile_name, iteration, geopm_ctl, ctl_conf, do_geopm_barrier, agent=None):
-        report_path = os.path.join(self._output_dir, profile_name + '_{}.report'.format(iteration))
-        trace_path = os.path.join(self._output_dir, profile_name + '_{}.trace'.format(iteration))
+    def try_launch(self, profile_name, tag, iteration, geopm_ctl, ctl_conf, do_geopm_barrier, agent=None):
+        report_path = os.path.join(self._output_dir, profile_name + '_{}_{}.report'.format(tag, iteration))
+        trace_path = os.path.join(self._output_dir, profile_name + '_{}_{}.trace'.format(tag, iteration))
         self._report_paths.append(report_path)
         self._trace_paths.append(trace_path+'*')
 
@@ -214,6 +219,7 @@ class BalancerAnalysis(Analysis):
 
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         for power_cap in self._power_caps:
+            agent = None
             # governor runs
             ctl_conf = geopmpy.io.CtlConf(os.path.join(self._output_dir, self._name + '_ctl.config'),
                                           'dynamic',
@@ -226,11 +232,12 @@ class BalancerAnalysis(Analysis):
             else:
                 with open(ctl_conf.get_path(), "w") as outfile:
                     outfile.write("{\"POWER\": " + str(ctl_conf._options['power_budget']) + "}\n")
+                agent = 'power_governor'
 
             for iteration in range(self._iterations):
-                profile_name = self._name + '_gov_' + str(power_cap)
-                self.try_launch(profile_name, iteration, geopm_ctl, ctl_conf,
-                                do_geopm_barrier, geopm_agent)
+                profile_name = self._name + '_' + str(power_cap)
+                self.try_launch(profile_name, 'gov', iteration, geopm_ctl, ctl_conf,
+                                do_geopm_barrier, agent)
 
             # balancer runs
             ctl_conf = geopmpy.io.CtlConf(os.path.join(self._output_dir, self._name + '_ctl.config'),
@@ -243,12 +250,14 @@ class BalancerAnalysis(Analysis):
                 ctl_conf.write()
             else:
                 with open(ctl_conf.get_path(), "w") as outfile:
-                    outfile.write("{\"POWER\": " + str(ctl_conf._options['power_budget']) + "}\n")
+                    outfile.write("{\"POWER_CAP\": " + str(ctl_conf._options['power_budget']) + ", " +
+                                  "\"STEP_COUNT\":0, \"MAX_EPOCH_RUNTIME\":0, \"POWER_SLACK\":0}\n")
+                agent = 'power_balancer'
 
             for iteration in range(self._iterations):
-                profile_name = self._name + '_bal_' + str(power_cap)
-                self.try_launch(profile_name, iteration, geopm_ctl, ctl_conf,
-                                do_geopm_barrier, geopm_agent)
+                profile_name = self._name + '_' + str(power_cap)
+                self.try_launch(profile_name, 'bal', iteration, geopm_ctl, ctl_conf,
+                                do_geopm_barrier, agent)
 
     def report_process(self, parse_output):
         node_names = parse_output.get_node_names()
@@ -257,17 +266,26 @@ class BalancerAnalysis(Analysis):
         all_traces = parse_output.get_trace_df()
         # Total power consumed will be Socket(s) + DRAM
         # todo: handle new agents
-        for agent in ['static_policy', 'power_balancing']:
+        agents_list = ['static_policy', 'power_balancing']
+        if self._agent:
+            agents_list = ['power_governor', 'power_balancer']
+        for agent in agents_list:
             all_power_data[agent] = {}
+            if agent == 'static_policy' or agent == 'power_governor':
+                agname = 'gov'
+            else:
+                agname = 'bal'
             for power_cap in self._power_caps:
                 for nn in node_names:
                     idx = pandas.IndexSlice
-                    tt = all_traces.loc[idx[:, :, power_cap, agent, :, nn, :], ]
+                    profile = self._name + '_' + str(power_cap)
+                    #tt = all_traces.loc[idx[:, :, power_cap, agent, :, nn, :], ]
+                    tt = all_traces.loc[idx[:, profile, :, :, :, :, nn, :], ]
 
                     epoch = '9223372036854775808'
                     # todo: hack to run with new controller
                     # eventually this could also use power signals from the trace
-                    if os.getenv("GEOPM_AGENT") is not None:
+                    if self._agent:
                         epoch = '0x8000000000000000'
 
                     first_epoch_index = tt.loc[tt['region_id'] == epoch][:1].index[0]
@@ -289,7 +307,10 @@ class BalancerAnalysis(Analysis):
         return all_power_data
 
     def report(self, process_output):
-        for agent in ['static_policy', 'power_balancing']:
+        agents_list = ['static_policy', 'power_balancing']
+        if self._agent:
+            agents_list = ['power_governor', 'power_balancer']
+        for agent in agents_list:
             sys.stdout.write('Results for {}\n'.format(agent))
             for power_cap, nn in sorted(process_output[agent].keys()):
                 power_data = process_output[agent][(power_cap, nn)]
@@ -302,6 +323,12 @@ class BalancerAnalysis(Analysis):
 
     def plot(self, process_output):
         config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))
+        config.output_types = ['png']
+        config.verbose = True
+        if self._agent:
+            config.ref_plugin = 'power_governor'
+            config.tgt_plugin = 'power_balancer'
+            config.use_agent = True
         geopmpy.plotter.generate_bar_plot(process_output, config)
 
 
