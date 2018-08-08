@@ -37,6 +37,7 @@ import argparse
 import sys
 import os
 import glob
+import json
 from collections import defaultdict
 import socket
 import json
@@ -181,10 +182,9 @@ class BalancerAnalysis(Analysis):
     Runs the application under a given range of power caps using both the governor
     and the balancer.  Compares the performance of the two agents at each power cap.
     """
-    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, enable_turbo=False):
+    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
         super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
-        #self._power_caps = range(150, 245, 5)
-        self._power_caps = range(150, 165, 5)
+        self._power_caps = range(min_power, max_power+step_power, step_power)
 
     def find_files(self, search_pattern='*.report'):
         report_glob = os.path.join(self._output_dir, self._name + search_pattern)
@@ -193,6 +193,7 @@ class BalancerAnalysis(Analysis):
         self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
 
     def try_launch(self, profile_name, tag, iteration, geopm_ctl, ctl_conf, do_geopm_barrier, agent=None):
+        # tag is used to differentiate output files for governor and balancer.  profile name will be the same.
         report_path = os.path.join(self._output_dir, profile_name + '_{}_{}.report'.format(tag, iteration))
         trace_path = os.path.join(self._output_dir, profile_name + '_{}_{}.trace'.format(tag, iteration))
         self._report_paths.append(report_path)
