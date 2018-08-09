@@ -177,14 +177,13 @@ class Analysis(object):
         raise NotImplementedError('Analysis base class does not implement the plot method()')
 
 
-class BalancerAnalysis(Analysis):
-    """
-    Runs the application under a given range of power caps using both the governor
-    and the balancer.  Compares the performance of the two agents at each power cap.
-    """
-    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
-        super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
+# TODO: should this run balancer also, or just the governor?  or configurable?
+class PowerSweepAnalysis(Analysis):
+    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10,
+                 agent_type='power_governor'):
+        super(PowerSweepAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
         self._power_caps = range(min_power, max_power+step_power, step_power)
+        self._agent_type = agent_type
 
     def find_files(self, search_pattern='*.report'):
         report_glob = os.path.join(self._output_dir, self._name + search_pattern)
@@ -231,34 +230,39 @@ class BalancerAnalysis(Analysis):
             if not self._agent:
                 ctl_conf.write()
             else:
+                # todo: clean up
                 with open(ctl_conf.get_path(), "w") as outfile:
-                    outfile.write("{\"POWER\": " + str(ctl_conf._options['power_budget']) + "}\n")
-                agent = 'power_governor'
+                    if self._agent_type == 'power_governor':
+                        outfile.write("{\"POWER\": " + str(ctl_conf._options['power_budget']) + "}\n")
+                    elif self._agent_type == 'power_balancer':
+                        outfile.write("{\"POWER_CAP\": " + str(ctl_conf._options['power_budget']) + ", " +
+                                      "\"STEP_COUNT\":0, \"MAX_EPOCH_RUNTIME\":0, \"POWER_SLACK\":0}\n")
+                    else:
+                        raise RuntimeError('<geopmpy>: Unsupported agent type for power sweep: {}'.format(self._agent_type))
+                agent = self._agent_type
 
             for iteration in range(self._iterations):
                 profile_name = self._name + '_' + str(power_cap)
-                self.try_launch(profile_name, 'gov', iteration, geopm_ctl, ctl_conf,
+                self.try_launch(profile_name, self._agent_type, iteration, geopm_ctl, ctl_conf,
                                 do_geopm_barrier, agent)
 
-            # balancer runs
-            ctl_conf = geopmpy.io.CtlConf(os.path.join(self._output_dir, self._name + '_ctl.config'),
-                                          'dynamic',
-                                          {'tree_decider': 'power_balancing',
-                                           'leaf_decider': 'power_governing',
-                                           'platform': 'rapl',
-                                           'power_budget': power_cap})
-            if not self._agent:
-                ctl_conf.write()
-            else:
-                with open(ctl_conf.get_path(), "w") as outfile:
-                    outfile.write("{\"POWER_CAP\": " + str(ctl_conf._options['power_budget']) + ", " +
-                                  "\"STEP_COUNT\":0, \"MAX_EPOCH_RUNTIME\":0, \"POWER_SLACK\":0}\n")
-                agent = 'power_balancer'
 
-            for iteration in range(self._iterations):
-                profile_name = self._name + '_' + str(power_cap)
-                self.try_launch(profile_name, 'bal', iteration, geopm_ctl, ctl_conf,
-                                do_geopm_barrier, agent)
+class BalancerAnalysis(Analysis):
+    """
+    Runs the application under a given range of power caps using both the governor
+    and the balancer.  Compares the performance of the two agents at each power cap.
+    """
+    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
+        super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
+        #self._power_caps = range(min_power, max_power+step_power, step_power)
+        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
+                                                        min_power, max_power, step_power, 'power_governor')
+        self._balancer_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
+                                                        min_power, max_power, step_power, 'power_balancer')
+
+    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+        self._governor_power_sweep.launch(geopm_ctl, do_geopm_barrier)
+        self._balancer_power_sweep.launch(geopm_ctl, do_geopm_barrier)
 
     def report_process(self, parse_output):
         node_names = parse_output.get_node_names()
@@ -331,6 +335,32 @@ class BalancerAnalysis(Analysis):
             config.tgt_plugin = 'power_balancer'
             config.use_agent = True
         geopmpy.plotter.generate_bar_plot(process_output, config)
+
+
+# todo: derive from power sweep analysis
+class NodeEfficiencyAnalysis(Analysis):
+    """
+    Generates a histogram per power cap of the frequency achieved in the hot
+    region of the application across nodes.
+    Use 25 MHz bucket size for now, but make this a configuration parameter.
+    """
+    pass
+
+
+class NodePowerAnalysis(Analysis):
+    """
+    Generates a histogram of the package power used across nodes.
+    Report step can show data from power_total.py.
+    """
+    pass
+
+
+class FrequencyRangeAnalysis(Analysis):
+    """
+    Show the range of achieved frequencies at each power cap.
+    x axis is power cap, y axis is frequency with a bar from min to max across nodes.
+    """
+    pass
 
 
 class FreqSweepAnalysis(Analysis):
