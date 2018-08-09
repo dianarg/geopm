@@ -353,6 +353,7 @@ def generate_bar_plot(report_df, config):
                          'Assuming "power_balancing".\n')
     sys.stdout.flush()
 
+    print report_df
     config.check_plugins(report_df)
     idx = pandas.IndexSlice
     df = pandas.DataFrame()
@@ -558,6 +559,7 @@ def generate_bar_plot_sc17(data, name, output_dir):
 
 
 # TODO: move to generic floating box plot
+# possibly combine with range of achieved frequencies plot
 def generate_best_freq_plot_sc17(data, name, output_dir):
     """
     Creates a plot showing the frequencies chosen by the adaptive online algorithm.

@@ -146,10 +146,28 @@ class Analysis(object):
             if trace_paths is not None:
                 self._trace_paths.extend(trace_paths)
 
+    # todo: hdf5 caching here
     def parse(self):
         """
         Load any necessary data from the application result files into memory for analysis.
         """
+        # # move to common place.  should be able to reuse for any analysis
+        # try:
+        #     report_df = pandas.read_hdf(app_name + '_' + agent + '_report.h5', 'table')
+        #     trace_df = pandas.read_hdf(app_name + '_' + agent + '_trace.h5', 'table')
+        # except IOError:
+        #     sys.stderr.write('WARNING: No HDF5 files detected.  Data will be saved to {}_<report|trace>.h5.\n'
+        #                      .format(app_name +  '_' + agent))
+        #     tp = trace_path + '*' if any('trace' in x for x in os.listdir('.')) else None
+        #     output = geopmpy.io.AppOutput(report_path + '*', tp, verbose=True)
+        #     sys.stdout.write('Generating HDF5 files... ')
+        #     output.get_report_df().to_hdf(app_name + '_' + agent + '_report.h5', 'table')
+        #     output.get_trace_df().to_hdf(app_name + '_' + agent + '_trace.h5', 'table')
+        #     sys.stdout.write('Done.\n')
+
+        #     report_df = output.get_report_df()
+        #     trace_df = output.get_trace_df()
+
         return geopmpy.io.AppOutput(self._report_paths, self._trace_paths, verbose=self._verbose)
 
     def plot_process(self, parse_output):
@@ -184,12 +202,6 @@ class PowerSweepAnalysis(Analysis):
         super(PowerSweepAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
         self._power_caps = range(min_power, max_power+step_power, step_power)
         self._agent_type = agent_type
-
-    def find_files(self, search_pattern='*.report'):
-        report_glob = os.path.join(self._output_dir, self._name + search_pattern)
-        # todo: fix search pattern parameter
-        trace_glob = os.path.join(self._output_dir, self._name + '*trace*')
-        self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
 
     def try_launch(self, profile_name, tag, iteration, geopm_ctl, ctl_conf, do_geopm_barrier, agent=None):
         # tag is used to differentiate output files for governor and balancer.  profile name will be the same.
@@ -247,6 +259,7 @@ class PowerSweepAnalysis(Analysis):
                                 do_geopm_barrier, agent)
 
 
+# todo: some code from plotter can move here.
 class BalancerAnalysis(Analysis):
     """
     Runs the application under a given range of power caps using both the governor
@@ -254,32 +267,40 @@ class BalancerAnalysis(Analysis):
     """
     def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
         super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
-        #self._power_caps = range(min_power, max_power+step_power, step_power)
+        # self._power_caps = range(min_power, max_power+step_power, step_power)
         self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
                                                         min_power, max_power, step_power, 'power_governor')
         self._balancer_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
                                                         min_power, max_power, step_power, 'power_balancer')
+        self._power_caps = self._governor_power_sweep._power_caps
+
+    # todo: why does each analysis need to define this?
+    def find_files(self, search_pattern='*.report'):
+        report_glob = os.path.join(self._output_dir, self._name + search_pattern)
+        # todo: fix search pattern parameter
+        trace_glob = os.path.join(self._output_dir, self._name + '*trace*')
+        self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
 
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         self._governor_power_sweep.launch(geopm_ctl, do_geopm_barrier)
         self._balancer_power_sweep.launch(geopm_ctl, do_geopm_barrier)
+        self._report_paths += self._governor_power_sweep._report_paths
+        self._report_paths += self._balancer_power_sweep._report_paths
+        self._trace_paths += self._governor_power_sweep._trace_paths
+        self._trace_paths += self._balancer_power_sweep._trace_paths
+        #self.find_files() # todo: bad.  just use paths from two power sweeps?
 
     def report_process(self, parse_output):
         node_names = parse_output.get_node_names()
-        print node_names
         all_power_data = {}
         all_traces = parse_output.get_trace_df()
+
         # Total power consumed will be Socket(s) + DRAM
-        # todo: handle new agents
         agents_list = ['static_policy', 'power_balancing']
         if self._agent:
             agents_list = ['power_governor', 'power_balancer']
         for agent in agents_list:
             all_power_data[agent] = {}
-            if agent == 'static_policy' or agent == 'power_governor':
-                agname = 'gov'
-            else:
-                agname = 'bal'
             for power_cap in self._power_caps:
                 for nn in node_names:
                     idx = pandas.IndexSlice
@@ -337,22 +358,173 @@ class BalancerAnalysis(Analysis):
         geopmpy.plotter.generate_bar_plot(process_output, config)
 
 
-# todo: derive from power sweep analysis
+# todo: check whether this is supposed to use governor, or monitor with
+# fixed package power. if governor ignores dram, it might not matter.
 class NodeEfficiencyAnalysis(Analysis):
     """
     Generates a histogram per power cap of the frequency achieved in the hot
     region of the application across nodes.
     Use 25 MHz bucket size for now, but make this a configuration parameter.
     """
-    pass
+    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
+        super(NodeEfficiencyAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
+        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
+                                                        min_power, max_power, step_power, 'power_governor')
+
+    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+        self._governor_power_sweep.launch(geopm_ctl, do_geopm_barrier)
+
+    def frequency_histogram(prefix):
+        report_path = prefix + '_report'
+        trace_path = prefix + '_trace'
+
+        pickle_file = prefix + '_report.pkl'
+        if os.path.exists(pickle_file):
+            report_df = pickle.load(open(pickle_file, 'rb'))
+        else:
+            output = geopmpy.io.AppOutput(report_path + '*', trace_path + '*')
+            report_df = output.get_report_df()
+            report_df.to_pickle(pickle_file)
+
+        hot_region = find_hot_region_name(report_df)
+        freq_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, hot_region], ].groupby('node_name').mean()['frequency'].sort_values()
+        # convert percent to GHz frequency based on sticker
+        # todo: don't hard code
+        freq_data *= 0.01 * 1.3
+        num_nodes = len(freq_data)
+
+        #code.interact(local=dict(globals(), **locals()))
+
+        # report()
+        print freq_data
+        n, bins, patches = plt.hist(freq_data, rwidth=0.8)
+        bin_dist = bins[1] - bins[0]
+        for n, b in zip(n, bins):
+            print n, b
+            plt.annotate(int(n), xy=(b+bin_dist/2.0, n+0.5),
+                         horizontalalignment='center')
+        min_max_range = max(freq_data) - min(freq_data)
+
+        # plot()
+        # TODO: move to plotter
+        plt.title(prefix + ' Histogram of Achieved Frequencies\n{} Region\nRange {} MHz'.format(hot_region, min_max_range*1000))
+        plt.xlabel('Frequency (GHz)')
+        plt.ylabel('Num nodes')
+        #plt.xlim(0.7, 1.5)
+        #plt.xticks(numpy.arange(0.7, 1.5, 0.1))
+        print bin_dist, bins
+        plt.xticks([b+bin_dist/2.0 for b in bins],
+                   ['[{:.3f}, {:.3f})'.format(b, b+bin_dist) for b in bins],
+                   rotation='vertical')
+        plt.tight_layout()
+        plt.savefig(report_path[:-len('report')] + 'histo.png')
+
+        pass
 
 
+# TODO: figure out where to put print_run_stats.  this function could be report and
+# histogram could be the plot
+# Note: there is also a generate_power_plot method in plotter; see what overlaps.
 class NodePowerAnalysis(Analysis):
     """
     Generates a histogram of the package power used across nodes.
     Report step can show data from power_total.py.
     """
-    pass
+    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
+        super(NodePowerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
+        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
+                                                        min_power, max_power, step_power, 'power_governor')
+
+    #pandas.set_option('display.max_rows', None)
+    #warnings.simplefilter(action='ignore', category=pandas.errors.PerformanceWarning)
+
+    def print_run_stats(report_path, trace_path):
+        ''' From test_power_consumption integration test.'''
+        app_name = report_path.split('_')[0]
+        agent = report_path.split('_')[2]
+
+        # move to common place.  should be able to reuse for any analysis
+        try:
+            report_df = pandas.read_hdf(app_name + '_' + agent + '_report.h5', 'table')
+            trace_df = pandas.read_hdf(app_name + '_' + agent + '_trace.h5', 'table')
+        except IOError:
+            sys.stderr.write('WARNING: No HDF5 files detected.  Data will be saved to {}_<report|trace>.h5.\n'
+                             .format(app_name +  '_' + agent))
+            tp = trace_path + '*' if any('trace' in x for x in os.listdir('.')) else None
+            output = geopmpy.io.AppOutput(report_path + '*', tp, verbose=True)
+            sys.stdout.write('Generating HDF5 files... ')
+            output.get_report_df().to_hdf(app_name + '_' + agent + '_report.h5', 'table')
+            output.get_trace_df().to_hdf(app_name + '_' + agent + '_trace.h5', 'table')
+            sys.stdout.write('Done.\n')
+
+            report_df = output.get_report_df()
+            trace_df = output.get_trace_df()
+
+        # Print per-region stats from the reports
+        # TODO Needs additional logic to handle iteration support and multiple agents properly
+
+        #  import code
+        #  code.interact(local=dict(globals(), **locals()))
+
+        report_df = report_df.reset_index(level=['version', 'name', 'power_budget', 'tree_decider', 'leaf_decider', 'iteration'],
+                                          drop=True)
+        report_df['power'] = report_df['energy'] / report_df['runtime']
+        report_df = report_df[['frequency', 'power', 'runtime', 'mpi_runtime', 'energy','id', 'count']]
+        with open('power_region.log', 'w') as out_file:
+            out_file.write('Per-region power stats :\n{}\n\n'.format(report_df))
+            out_file.write('-' * 80 + '\n\n')
+            out_file.write('All nodes summary : \n{}\n\n'.format(report_df.groupby('region').mean()))
+        sys.stdout.write('\nAll nodes summary :\n{}\n\n'.format(report_df.groupby('region').mean()))
+
+        #  import code
+        #  code.interact(local=dict(globals(), **locals()))
+
+        # Print detailed per-node power stats from the trace files
+        if len(trace_df) > 0:
+            power_data_df_list = []
+            num_nodes = len(trace_df.index.get_level_values('node_name').unique().tolist())
+            count = 0
+            for nn, df in trace_df.groupby('node_name'):
+                count += 1
+                #  sys.stdout.write('\rProcessing {} of {}... '.format(count, num_nodes))
+
+                epoch = '0x8000000000000000' if '0x' in df['region_id'].iloc[0] else '9223372036854775808'
+
+                first_epoch_index = df.loc[df['region_id'] == epoch][:1].index[0]
+                epoch_dropped_data = df[first_epoch_index:]  # Drop all startup data
+
+                power_data = epoch_dropped_data.filter(regex='energy').copy()
+                power_data['seconds'] = epoch_dropped_data['seconds']
+                power_data = power_data.diff().dropna()
+                power_data.rename(columns={'seconds': 'elapsed_time'}, inplace=True)
+                power_data = power_data.loc[(power_data != 0).all(axis=1)]  # Will drop any row that is all 0's
+
+                pkg_energy_cols = [s for s in power_data.keys() if 'pkg_energy' in s]
+                dram_energy_cols = [s for s in power_data.keys() if 'dram_energy' in s]
+                power_data['socket_power'] = power_data[pkg_energy_cols].sum(axis=1) / power_data['elapsed_time']
+                power_data['dram_power'] = power_data[dram_energy_cols].sum(axis=1) / power_data['elapsed_time']
+                # Total power consumed will be Socket(s) + DRAM
+                power_data['combined_power'] = power_data['socket_power'] + power_data['dram_power']
+
+                power_data['node_name'] = nn # Setup for the MultiIndex
+                power_data = power_data.reset_index(drop=True).reset_index().set_index(['node_name', 'index'])
+                power_data_df_list.append(power_data)
+
+            combined_power_df = pandas.concat(power_data_df_list)
+            #  sys.stdout.write('Done.\n')
+
+            #  sys.stdout.write('Calculating power statistics... \n')
+            with open('power.log', 'w') as out_file:
+                for nn, df in combined_power_df.groupby('node_name'):
+                    pandas.set_option('display.width', 150)
+                    out_file.write('Power stats from {} :\n{}\n\n'.format(nn, df.describe()))
+                out_file.write('-' * 80 + '\n\n')
+                cdfd = combined_power_df.describe().drop('count') # If count is large, pandas auto converts to scientific notation
+                out_file.write('Combined power stats :\n{}\n\n'.format(cdfd))
+
+            sys.stdout.write('\nCombined power stats :\n{}\n\n'.format(cdfd))
+
+        pass
 
 
 class FrequencyRangeAnalysis(Analysis):
