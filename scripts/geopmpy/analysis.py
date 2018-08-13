@@ -52,7 +52,6 @@ from geopmpy import __version__
 
 import pandas
 
-
 def get_freq_profiles(df, prefix):
     """Finds all profiles from fixed frequency runs and returns the
     frequencies and profiles in decending order. Profile names should be formatted
@@ -67,6 +66,7 @@ def get_freq_profiles(df, prefix):
     return freq_pname
 
 
+# todo: can live in freq analysis
 def fixed_freq_name(prefix, freq):
     """Returns the formatted name for fixed frequency runs."""
     return '{}_freq_{}'.format(prefix, freq)
@@ -102,6 +102,24 @@ class LaunchConfig(object):
         self.app_argv = app_argv
         self.geopm_ctl = geopm_ctl
         self.do_geopm_barrier = do_geopm_barrier
+
+
+def find_hot_region_name(report_df):
+    return report_df.groupby('region')['runtime'].mean().sort_values(ascending=False).drop(['epoch', 'unmarked-region']).index[0]
+
+
+def load_report_or_cache(prefix):
+    report_path = prefix + '*report'
+
+    pickle_file = prefix + '_report.pkl'
+    if os.path.exists(pickle_file):
+        report_df = pickle.load(open(pickle_file, 'rb'))
+    else:
+        output = geopmpy.io.AppOutput(report_path + '*', None, verbose=True)
+        report_df = output.get_report_df()
+        report_df.to_pickle(pickle_file)
+    assert report_df is not None
+    return report_df
 
 
 class Analysis(object):
@@ -151,7 +169,8 @@ class Analysis(object):
         """
         Load any necessary data from the application result files into memory for analysis.
         """
-        # # move to common place.  should be able to reuse for any analysis
+        # todo: move to common place.  should be able to reuse for any analysis
+        # might want to fall back to pickle if hdf5 library is not installed, and warn
         # try:
         #     report_df = pandas.read_hdf(app_name + '_' + agent + '_report.h5', 'table')
         #     trace_df = pandas.read_hdf(app_name + '_' + agent + '_trace.h5', 'table')
@@ -275,6 +294,7 @@ class BalancerAnalysis(Analysis):
         self._power_caps = self._governor_power_sweep._power_caps
 
     # todo: why does each analysis need to define this?
+    # a: in case of special naming convention like freq sweep
     def find_files(self, search_pattern='*.report'):
         report_glob = os.path.join(self._output_dir, self._name + search_pattern)
         # todo: fix search pattern parameter
@@ -288,7 +308,6 @@ class BalancerAnalysis(Analysis):
         self._report_paths += self._balancer_power_sweep._report_paths
         self._trace_paths += self._governor_power_sweep._trace_paths
         self._trace_paths += self._balancer_power_sweep._trace_paths
-        #self.find_files() # todo: bad.  just use paths from two power sweeps?
 
     def report_process(self, parse_output):
         node_names = parse_output.get_node_names()
@@ -374,52 +393,27 @@ class NodeEfficiencyAnalysis(Analysis):
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         self._governor_power_sweep.launch(geopm_ctl, do_geopm_barrier)
 
-    def frequency_histogram(prefix):
-        report_path = prefix + '_report'
-        trace_path = prefix + '_trace'
+    def frequency_histogram(prefix, hot_region=None):
+        report_df = load_report_or_cache(prefix)
 
-        pickle_file = prefix + '_report.pkl'
-        if os.path.exists(pickle_file):
-            report_df = pickle.load(open(pickle_file, 'rb'))
-        else:
-            output = geopmpy.io.AppOutput(report_path + '*', trace_path + '*')
-            report_df = output.get_report_df()
-            report_df.to_pickle(pickle_file)
+        if hot_region is None:
+            hot_region = find_hot_region_name(report_df)
 
-        hot_region = find_hot_region_name(report_df)
+        # version name power_budget tree_decider leaf_decider agent node_name iteration region
+        #freq_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, :, hot_region], ].groupby('node_name').mean()['frequency'].sort_values()
         freq_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, hot_region], ].groupby('node_name').mean()['frequency'].sort_values()
         # convert percent to GHz frequency based on sticker
-        # todo: don't hard code
+        # todo: don't hard code sticker!!
         freq_data *= 0.01 * 1.3
-        num_nodes = len(freq_data)
-
-        #code.interact(local=dict(globals(), **locals()))
-
-        # report()
-        print freq_data
-        n, bins, patches = plt.hist(freq_data, rwidth=0.8)
-        bin_dist = bins[1] - bins[0]
-        for n, b in zip(n, bins):
-            print n, b
-            plt.annotate(int(n), xy=(b+bin_dist/2.0, n+0.5),
-                         horizontalalignment='center')
-        min_max_range = max(freq_data) - min(freq_data)
-
-        # plot()
-        # TODO: move to plotter
-        plt.title(prefix + ' Histogram of Achieved Frequencies\n{} Region\nRange {} MHz'.format(hot_region, min_max_range*1000))
-        plt.xlabel('Frequency (GHz)')
-        plt.ylabel('Num nodes')
-        #plt.xlim(0.7, 1.5)
-        #plt.xticks(numpy.arange(0.7, 1.5, 0.1))
-        print bin_dist, bins
-        plt.xticks([b+bin_dist/2.0 for b in bins],
-                   ['[{:.3f}, {:.3f})'.format(b, b+bin_dist) for b in bins],
-                   rotation='vertical')
-        plt.tight_layout()
-        plt.savefig(report_path[:-len('report')] + 'histo.png')
-
-        pass
+        # TODO: decide on bin size
+        # TODO: range from throttle min to HW max frequency
+        # on KNL, lower end is 500 MHz
+        # on theta, max turbo is 1.5 GHz
+        min_freq = 0.5
+        max_freq = 1.5
+        bin_size = 0.025
+        geopmpy.plotter.generate_histogram('freq', prefix, hot_region,
+                                           min_freq, max_freq, bin_size, freq_data)
 
 
 # TODO: figure out where to put print_run_stats.  this function could be report and
@@ -524,7 +518,24 @@ class NodePowerAnalysis(Analysis):
 
             sys.stdout.write('\nCombined power stats :\n{}\n\n'.format(cdfd))
 
-        pass
+    def power_histogram(prefix, hot_region=None):
+            report_df = load_report_or_cache(prefix)
+        if hot_region is None:
+            hot_region = find_hot_region_name(report_df)
+        # version name power_budget tree_decider leaf_decider agent node_name iteration region
+        # todo: decide whether to use hot region or epoch
+        region_of_interest = hot_region  # or 'epoch'
+        # TODO: add agent back in
+        #energy_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy'].sort_values()
+        #runtime_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['runtime'].sort_values()
+        energy_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy'].sort_values()
+        runtime_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['runtime'].sort_values()
+        power_data = energy_data / runtime_data
+        power_data = power_data.sort_values()
+        bin_size = 8
+        min_power = 100  # min power is 98, unrealistic to run that low
+        max_power = 250  # TDP is 215W, DRAM is around 30W?  MAX_POWER MSR says 258?
+        generate_histogram('power', prefix, hot_region, min_power, max_power, bin_size, power_data)
 
 
 class FrequencyRangeAnalysis(Analysis):
