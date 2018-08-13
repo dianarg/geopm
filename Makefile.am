@@ -539,7 +539,7 @@ rpm: dist
 	mkdir -p $(rpm_topdir)/SPECS
 	cp geopm-$(VERSION).tar.gz $(rpm_topdir)/SOURCES/geopm.tar.gz
 	cp geopm.spec $(rpm_topdir)/SPECS/geopm.spec
-	rpmbuild $(rpmbuild_flags) -ba $(rpm_topdir)/SPECS/geopm.spec
+	rpmbuild $(rpmbuild_flags) --nocheck -ba $(rpm_topdir)/SPECS/geopm.spec
 
 if ENABLE_DOC
 
