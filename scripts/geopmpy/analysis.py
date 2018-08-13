@@ -216,8 +216,8 @@ class Analysis(object):
 
 # TODO: should this run balancer also, or just the governor?  or configurable?
 class PowerSweepAnalysis(Analysis):
-    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10,
-                 agent_type='power_governor'):
+    def __init__(self, name, output_dir, verbose=True, iterations=1,
+                 min_power=150, max_power=200, step_power=10, agent_type='power_governor'):
         super(PowerSweepAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
         self._power_caps = range(min_power, max_power+step_power, step_power)
         self._agent_type = agent_type
@@ -248,7 +248,7 @@ class PowerSweepAnalysis(Analysis):
         else:
             raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
-    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
+    def launch(self, launch_options):
         for power_cap in self._power_caps:
             agent = None
             # governor runs
@@ -258,7 +258,7 @@ class PowerSweepAnalysis(Analysis):
                                            'leaf_decider': 'power_governing',
                                            'platform': 'rapl',
                                            'power_budget': power_cap})
-            if not self._agent:
+            if not launch_options['agent']:
                 ctl_conf.write()
             else:
                 # todo: clean up
@@ -274,8 +274,8 @@ class PowerSweepAnalysis(Analysis):
 
             for iteration in range(self._iterations):
                 profile_name = self._name + '_' + str(power_cap)
-                self.try_launch(profile_name, self._agent_type, iteration, geopm_ctl, ctl_conf,
-                                do_geopm_barrier, agent)
+                self.try_launch(profile_name, self._agent_type, iteration, launch_options['geopm_ctl'], ctl_conf,
+                                launch_options['do_geopm_barrier'], agent)
 
 
 # todo: some code from plotter can move here.
@@ -287,9 +287,9 @@ class BalancerAnalysis(Analysis):
     def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
         super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
         # self._power_caps = range(min_power, max_power+step_power, step_power)
-        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
+        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, verbose, iterations,
                                                         min_power, max_power, step_power, 'power_governor')
-        self._balancer_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
+        self._balancer_power_sweep = PowerSweepAnalysis(name, output_dir, verbose, iterations,
                                                         min_power, max_power, step_power, 'power_balancer')
         self._power_caps = self._governor_power_sweep._power_caps
 
@@ -301,9 +301,9 @@ class BalancerAnalysis(Analysis):
         trace_glob = os.path.join(self._output_dir, self._name + '*trace*')
         self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
 
-    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
-        self._governor_power_sweep.launch(geopm_ctl, do_geopm_barrier)
-        self._balancer_power_sweep.launch(geopm_ctl, do_geopm_barrier)
+    def launch(self, launch_options):
+        self._governor_power_sweep.launch(launch_options)
+        self._balancer_power_sweep.launch(launch_options)
         self._report_paths += self._governor_power_sweep._report_paths
         self._report_paths += self._balancer_power_sweep._report_paths
         self._trace_paths += self._governor_power_sweep._trace_paths
@@ -385,9 +385,9 @@ class NodeEfficiencyAnalysis(Analysis):
     region of the application across nodes.
     Use 25 MHz bucket size for now, but make this a configuration parameter.
     """
-    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
-        super(NodeEfficiencyAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
-        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
+    def __init__(self, name, output_dir, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
+        super(NodeEfficiencyAnalysis, self).__init__(name, output_dir, verbose, iterations)
+        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir,verbose, iterations,
                                                         min_power, max_power, step_power, 'power_governor')
 
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
@@ -425,8 +425,8 @@ class NodePowerAnalysis(Analysis):
     Report step can show data from power_total.py.
     """
     def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
-        super(NodePowerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
-        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations,
+        super(NodePowerAnalysis, self).__init__(name, output_dir, verbose, iterations)
+        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, verbose, iterations,
                                                         min_power, max_power, step_power, 'power_governor')
 
     #pandas.set_option('display.max_rows', None)
@@ -519,7 +519,7 @@ class NodePowerAnalysis(Analysis):
             sys.stdout.write('\nCombined power stats :\n{}\n\n'.format(cdfd))
 
     def power_histogram(prefix, hot_region=None):
-            report_df = load_report_or_cache(prefix)
+        report_df = load_report_or_cache(prefix)
         if hot_region is None:
             hot_region = find_hot_region_name(report_df)
         # version name power_budget tree_decider leaf_decider agent node_name iteration region
@@ -536,6 +536,12 @@ class NodePowerAnalysis(Analysis):
         min_power = 100  # min power is 98, unrealistic to run that low
         max_power = 250  # TDP is 215W, DRAM is around 30W?  MAX_POWER MSR says 258?
         generate_histogram('power', prefix, hot_region, min_power, max_power, bin_size, power_data)
+
+    def plot_process():
+        pass
+
+    def plot():
+        pass
 
 
 class FrequencyRangeAnalysis(Analysis):
@@ -826,6 +832,8 @@ class OfflineBaselineComparisonAnalysis(Analysis):
                                        'leaf_decider': 'efficient_freq',
                                        'platform': 'rapl'})
 
+        self._min_freq = min(sys_freq_avail())
+        self._max_freq = max(sys_freq_avail())
         if config.agent:
             with open(ctl_conf.get_path(), "w") as outfile:
                 outfile.write("{{\"FREQ_MIN\" : {}, \"FREQ_MAX\" : {}}}\n".format(self._min_freq, self._max_freq))
@@ -1335,7 +1343,6 @@ Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
     if os.getenv("GEOPM_AGENT", None) is not None:
         raise RuntimeError('Use --use-agent option instead of environment variable to enable agent code path.')
 
-    # TODO: move enable_turbo to config and do more error checking here
     special_options = {}
     if args.analysis_type in ['freq_sweep', 'offline', 'online', 'stream_mix']:
         special_options['enable_turbo'] = args.enable_turbo
