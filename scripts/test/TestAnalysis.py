@@ -201,31 +201,20 @@ class TestAnalysis(unittest.TestCase):
         self._max_freq = max(self._freqs)
         self._step_freq = 100e6
         self._mid_freq = self._max_freq - self._step_freq*2
+        other_config = {'min_freq': self._min_freq, 'max_freq': self._max_freq}
         self._sweep_analysis = geopmpy.analysis.FreqSweepAnalysis(name=self._name_prefix,
                                                                   output_dir='.',
-                                                                  num_rank=2,
-                                                                  num_node=3,
-                                                                  agent=self._use_agent,
-                                                                  app_argv='args',
-                                                                  enable_turbo=True)
+                                                                  enable_turbo=True,
+                                                                  **other_config)
         self._offline_analysis = geopmpy.analysis.OfflineBaselineComparisonAnalysis(name=self._name_prefix,
                                                                                     output_dir='.',
-                                                                                    num_rank=2,
-                                                                                    num_node=3,
-                                                                                    agent=self._use_agent,
-                                                                                    app_argv='args')
+                                                                                    **other_config)
         self._online_analysis = geopmpy.analysis.OnlineBaselineComparisonAnalysis(name=self._name_prefix,
                                                                                   output_dir='.',
-                                                                                  num_rank=2,
-                                                                                  num_node=3,
-                                                                                  agent=self._use_agent,
-                                                                                  app_argv='args')
+                                                                                  **other_config)
         self._mix_analysis = geopmpy.analysis.StreamDgemmMixAnalysis(name=self._name_prefix,
                                                                      output_dir='.',
-                                                                     num_rank=2,
-                                                                     num_node=3,
-                                                                     agent=self._use_agent,
-                                                                     app_argv='args')
+                                                                     **other_config)
         self._tmp_files = []
 
     def tearDown(self):
