@@ -218,7 +218,7 @@ class Analysis(object):
 class PowerSweepAnalysis(Analysis):
     def __init__(self, name, output_dir, verbose=True, iterations=1,
                  min_power=150, max_power=200, step_power=10, agent_type='power_governor'):
-        super(PowerSweepAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
+        super(PowerSweepAnalysis, self).__init__(name, output_dir, verbose, iterations)
         self._power_caps = range(min_power, max_power+step_power, step_power)
         self._agent_type = agent_type
 
@@ -248,7 +248,7 @@ class PowerSweepAnalysis(Analysis):
         else:
             raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
-    def launch(self, launch_options):
+    def launch(self, config):
         for power_cap in self._power_caps:
             agent = None
             # governor runs
@@ -258,7 +258,7 @@ class PowerSweepAnalysis(Analysis):
                                            'leaf_decider': 'power_governing',
                                            'platform': 'rapl',
                                            'power_budget': power_cap})
-            if not launch_options['agent']:
+            if not config.agent:
                 ctl_conf.write()
             else:
                 # todo: clean up
@@ -274,8 +274,8 @@ class PowerSweepAnalysis(Analysis):
 
             for iteration in range(self._iterations):
                 profile_name = self._name + '_' + str(power_cap)
-                self.try_launch(profile_name, self._agent_type, iteration, launch_options['geopm_ctl'], ctl_conf,
-                                launch_options['do_geopm_barrier'], agent)
+                self.try_launch(profile_name, self._agent_type, iteration, config.geopm_ctl, ctl_conf,
+                                config.do_geopm_barrier, agent)
 
 
 # todo: some code from plotter can move here.
@@ -284,8 +284,8 @@ class BalancerAnalysis(Analysis):
     Runs the application under a given range of power caps using both the governor
     and the balancer.  Compares the performance of the two agents at each power cap.
     """
-    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
-        super(BalancerAnalysis, self).__init__(name, output_dir, num_rank, num_node, agent, app_argv, verbose, iterations)
+    def __init__(self, name, output_dir, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
+        super(BalancerAnalysis, self).__init__(name, output_dir,verbose, iterations)
         # self._power_caps = range(min_power, max_power+step_power, step_power)
         self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, verbose, iterations,
                                                         min_power, max_power, step_power, 'power_governor')
@@ -301,9 +301,9 @@ class BalancerAnalysis(Analysis):
         trace_glob = os.path.join(self._output_dir, self._name + '*trace*')
         self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
 
-    def launch(self, launch_options):
-        self._governor_power_sweep.launch(launch_options)
-        self._balancer_power_sweep.launch(launch_options)
+    def launch(self, config):
+        self._governor_power_sweep.launch(config)
+        self._balancer_power_sweep.launch(config)
         self._report_paths += self._governor_power_sweep._report_paths
         self._report_paths += self._balancer_power_sweep._report_paths
         self._trace_paths += self._governor_power_sweep._trace_paths
@@ -313,10 +313,11 @@ class BalancerAnalysis(Analysis):
         node_names = parse_output.get_node_names()
         all_power_data = {}
         all_traces = parse_output.get_trace_df()
+        self._use_agent = True  # TODO: parse_output.use_agent()
 
         # Total power consumed will be Socket(s) + DRAM
         agents_list = ['static_policy', 'power_balancing']
-        if self._agent:
+        if self._use_agent:
             agents_list = ['power_governor', 'power_balancer']
         for agent in agents_list:
             all_power_data[agent] = {}
@@ -330,7 +331,7 @@ class BalancerAnalysis(Analysis):
                     epoch = '9223372036854775808'
                     # todo: hack to run with new controller
                     # eventually this could also use power signals from the trace
-                    if self._agent:
+                    if self._use_agent:
                         epoch = '0x8000000000000000'
 
                     first_epoch_index = tt.loc[tt['region_id'] == epoch][:1].index[0]
@@ -353,7 +354,7 @@ class BalancerAnalysis(Analysis):
 
     def report(self, process_output):
         agents_list = ['static_policy', 'power_balancing']
-        if self._agent:
+        if self._use_agent:
             agents_list = ['power_governor', 'power_balancer']
         for agent in agents_list:
             sys.stdout.write('Results for {}\n'.format(agent))
@@ -370,7 +371,7 @@ class BalancerAnalysis(Analysis):
         config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))
         config.output_types = ['png']
         config.verbose = True
-        if self._agent:
+        if self._use_agent:
             config.ref_plugin = 'power_governor'
             config.tgt_plugin = 'power_balancer'
             config.use_agent = True

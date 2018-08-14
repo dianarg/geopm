@@ -88,6 +88,7 @@ class AppOutput(object):
         self._reports_df_list = []
         self._traces_df_list = []
         self._index_tracker = IndexTracker()
+        self._use_agent = False
 
         if reports:
             if type(reports) is str:
@@ -118,6 +119,7 @@ class AppOutput(object):
                 # Parse the first report
                 rr_size = os.stat(rp).st_size
                 rr = Report(rp)
+                self._use_agent = rr.get_agent() is None
                 if verbose:
                     sys.stdout.write('\rParsing report {} of {} ({}).. '.format(fileno, files, filesize))
                     sys.stdout.flush()
@@ -328,6 +330,9 @@ class AppOutput(object):
 
         """
         return self._traces_df
+
+    def use_agent(self):
+        return self._use_agent
 
 
 class IndexTracker(object):
