@@ -434,6 +434,8 @@ class NodeEfficiencyAnalysis(Analysis):
         config.profile_name = self._name + "@" + str(self._target_power) + "W"
         config.min_drop = self._min_freq
         config.max_drop = self._max_freq - self._step_freq
+        config.fontsize=12
+        config.fig_size = (8, 4)
 
         bin_size = self._step_freq
         geopmpy.plotter.generate_histogram(process_output, config, 'frequency',

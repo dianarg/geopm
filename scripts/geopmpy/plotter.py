@@ -1120,20 +1120,24 @@ def generate_histogram(data, config, label, bin_size, xprecision):
     else:
         raise RuntimeError("<geopmpy>: Unknown type for histogram: {}".format(label))
 
+    plt.figure(figsize=config.fig_size)
     bins = [round(bb*bin_size, 3) for bb in range(int(config.min_drop/bin_size), int(config.max_drop/bin_size)+2)]
     n, bins, patches = plt.hist(data, rwidth=0.8, bins=bins)
     for n, b in zip(n, bins):
         print n, b
-        plt.annotate(int(n) if int(n) != 0 else "", xy=(b+bin_size/2.0, n+0.5),
-                     horizontalalignment='center')
+        plt.annotate(int(n) if int(n) != 0 else "", xy=(b+bin_size/2.0, n+2.5),
+                     horizontalalignment='center',
+                     fontsize=config.fontsize-4)
     min_max_range = (max(data) - min(data)) * range_factor
-    plt.title('{} Histogram of achieved {}\nRange {} {}'
-              .format(config.profile_name, label, min_max_range, title_units))
-    plt.xlabel('{} ({})'.format(label, axis_units))
+    plt.title('{} Histogram of achieved {}\nRange: {} {}'
+              .format(config.profile_name, label, min_max_range, title_units),
+              fontsize=config.fontsize)
+    plt.xlabel('{} ({})'.format(label, axis_units), fontsize=config.fontsize)
     plt.ylabel('node count')
     plt.xticks([b+bin_size/2.0 for b in bins],
                [' [{start:.{prec}f}, {end:.{prec}f})'.format(start=b, end=b+bin_size, prec=xprecision) for b in bins],
-               rotation='vertical')
+               rotation='vertical',
+               fontsize=config.fontsize-4)
     plt.margins(0.02, 0.2)
     plt.axis('tight')
 
