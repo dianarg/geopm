@@ -169,25 +169,26 @@ class Analysis(object):
         """
         Load any necessary data from the application result files into memory for analysis.
         """
-        # todo: move to common place.  should be able to reuse for any analysis
-        # might want to fall back to pickle if hdf5 library is not installed, and warn
-        # try:
-        #     report_df = pandas.read_hdf(app_name + '_' + agent + '_report.h5', 'table')
-        #     trace_df = pandas.read_hdf(app_name + '_' + agent + '_trace.h5', 'table')
-        # except IOError:
-        #     sys.stderr.write('WARNING: No HDF5 files detected.  Data will be saved to {}_<report|trace>.h5.\n'
-        #                      .format(app_name +  '_' + agent))
-        #     tp = trace_path + '*' if any('trace' in x for x in os.listdir('.')) else None
-        #     output = geopmpy.io.AppOutput(report_path + '*', tp, verbose=True)
-        #     sys.stdout.write('Generating HDF5 files... ')
-        #     output.get_report_df().to_hdf(app_name + '_' + agent + '_report.h5', 'table')
-        #     output.get_trace_df().to_hdf(app_name + '_' + agent + '_trace.h5', 'table')
-        #     sys.stdout.write('Done.\n')
+        # move to common place.  should be able to reuse for any analysis
+        report_h5_name = 'balancer_analysis_report.h5'
+        try:
+            report_df = pandas.read_hdf(report_h5_name, 'table')
+            #trace_df = pandas.read_hdf(app_name + '_' + agent + '_trace.h5', 'table')
+        except IOError:
+            sys.stderr.write('WARNING: No HDF5 files detected.  Data will be saved to {}.\n'
+                             .format(report_h5_name))
+            #tp = trace_path + '*' if any('trace' in x for x in os.listdir('.')) else None
+            output = geopmpy.io.AppOutput(self._report_paths, None, verbose=True)
+            sys.stdout.write('Generating HDF5 files... ')
+            #output.get_report_df().to_hdf(report_h5_name, 'table')
+            #output.get_trace_df().to_hdf(app_name + '_' + agent + '_trace.h5', 'table')
+            sys.stdout.write('Done.\n')
 
-        #     report_df = output.get_report_df()
-        #     trace_df = output.get_trace_df()
+            report_df = output.get_report_df()
+            report_df.to_hdf(report_h5_name, 'table')
+            #trace_df = output.get_trace_df()
 
-        return geopmpy.io.AppOutput(self._report_paths, self._trace_paths, verbose=self._verbose)
+        return report_df  # geopmpy.io.AppOutput(self._report_paths, self._trace_paths, verbose=self._verbose)
 
     def plot_process(self, parse_output):
         """
@@ -295,11 +296,14 @@ class BalancerAnalysis(Analysis):
 
     # todo: why does each analysis need to define this?
     # a: in case of special naming convention like freq sweep
-    def find_files(self, search_pattern='*.report'):
+    def find_files(self, search_pattern='*report'):
         report_glob = os.path.join(self._output_dir, self._name + search_pattern)
         # todo: fix search pattern parameter
         trace_glob = os.path.join(self._output_dir, self._name + '*trace*')
+        #trace_glob = None
+        print report_glob, trace_glob
         self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
+        self._use_agent = True
 
     def launch(self, config):
         self._governor_power_sweep.launch(config)
@@ -310,6 +314,7 @@ class BalancerAnalysis(Analysis):
         self._trace_paths += self._balancer_power_sweep._trace_paths
 
     def report_process(self, parse_output):
+        return None
         node_names = parse_output.get_node_names()
         all_power_data = {}
         all_traces = parse_output.get_trace_df()
@@ -353,6 +358,7 @@ class BalancerAnalysis(Analysis):
         return all_power_data
 
     def report(self, process_output):
+        return ""
         agents_list = ['static_policy', 'power_balancing']
         if self._use_agent:
             agents_list = ['power_governor', 'power_balancer']
@@ -365,7 +371,7 @@ class BalancerAnalysis(Analysis):
                                  .format(power_cap, nn, power_data.describe()))
 
     def plot_process(self, parse_output):
-        return parse_output.get_report_df()
+        return parse_output  #.get_report_df()
 
     def plot(self, process_output):
         config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))

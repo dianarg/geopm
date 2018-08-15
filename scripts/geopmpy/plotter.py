@@ -448,7 +448,9 @@ def generate_bar_plot(report_df, config):
                 zorder=10)
 
     ax.set_xticks(index)
-    ax.set_xticklabels(df.index)
+    xlabels = [tick.split('_')[-1] for tick in df.index]
+    #xlabels = sorted(xlabels)
+    ax.set_xticklabels(xlabels)
     ax.set_xlabel('Per-Node Socket+DRAM Power Limit (W)')
 
     ylabel = config.datatype.title()
@@ -465,7 +467,7 @@ def generate_bar_plot(report_df, config):
     plt.title('{} {} Comparison{}'.format(config.profile_name, config.datatype.title(), config.misc_text), y=1.02)
     plt.margins(0.02, 0.01)
     plt.axis('tight')
-    #plt.legend(shadow=True, fancybox=True, fontsize=config.legend_fontsize, loc='best').set_zorder(11)
+    plt.legend(shadow=True, fancybox=True, fontsize=config.legend_fontsize, loc='best').set_zorder(11)
     plt.tight_layout()
 
     if config.speedup:
