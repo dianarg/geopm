@@ -108,16 +108,19 @@ def find_hot_region_name(report_df):
     return report_df.groupby('region')['runtime'].mean().sort_values(ascending=False).drop(['epoch', 'unmarked-region']).index[0]
 
 
-def load_report_or_cache(prefix):
-    report_path = prefix + '*report'
+def load_report_or_cache(report_paths):
+    report_h5_name = 'balancer_analysis_report.h5' # TODO: fix name
+    try:
+        report_df = pandas.read_hdf(report_h5_name, 'table')
+    except IOError:
+        sys.stderr.write('WARNING: No HDF5 files detected.  Data will be saved to {}.\n'
+                         .format(report_h5_name))
+        output = geopmpy.io.AppOutput(report_paths, None, verbose=True)
+        sys.stdout.write('Generating HDF5 files... ')
+        sys.stdout.write('Done.\n')
 
-    pickle_file = prefix + '_report.pkl'
-    if os.path.exists(pickle_file):
-        report_df = pickle.load(open(pickle_file, 'rb'))
-    else:
-        output = geopmpy.io.AppOutput(report_path + '*', None, verbose=True)
         report_df = output.get_report_df()
-        report_df.to_pickle(pickle_file)
+        report_df.to_hdf(report_h5_name, 'table')
     assert report_df is not None
     return report_df
 
@@ -215,7 +218,6 @@ class Analysis(object):
         raise NotImplementedError('Analysis base class does not implement the plot method()')
 
 
-# TODO: should this run balancer also, or just the governor?  or configurable?
 class PowerSweepAnalysis(Analysis):
     def __init__(self, name, output_dir, verbose=True, iterations=1,
                  min_power=150, max_power=200, step_power=10, agent_type='power_governor'):
@@ -386,6 +388,7 @@ class BalancerAnalysis(Analysis):
 
 # todo: check whether this is supposed to use governor, or monitor with
 # fixed package power. if governor ignores dram, it might not matter.
+# TODO: use epoch frequency instead of hot region
 class NodeEfficiencyAnalysis(Analysis):
     """
     Generates a histogram per power cap of the frequency achieved in the hot
@@ -400,14 +403,19 @@ class NodeEfficiencyAnalysis(Analysis):
     def launch(self, geopm_ctl='process', do_geopm_barrier=False):
         self._governor_power_sweep.launch(geopm_ctl, do_geopm_barrier)
 
+    def report_process(self, parse_output):
+        pass
+
+    def report(self, process_output):
+        pass
+
     def frequency_histogram(prefix, hot_region=None):
-        report_df = load_report_or_cache(prefix)
+        report_df = load_report_or_cache(self._report_paths)
 
         if hot_region is None:
             hot_region = find_hot_region_name(report_df)
 
         # version name power_budget tree_decider leaf_decider agent node_name iteration region
-        #freq_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, :, hot_region], ].groupby('node_name').mean()['frequency'].sort_values()
         freq_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, hot_region], ].groupby('node_name').mean()['frequency'].sort_values()
         # convert percent to GHz frequency based on sticker
         # todo: don't hard code sticker!!
@@ -419,7 +427,7 @@ class NodeEfficiencyAnalysis(Analysis):
         min_freq = 0.5
         max_freq = 1.5
         bin_size = 0.025
-        geopmpy.plotter.generate_histogram('freq', prefix, hot_region,
+        geopmpy.plotter.generate_histogram('frequency', prefix, hot_region,
                                            min_freq, max_freq, bin_size, freq_data)
 
 
@@ -431,18 +439,30 @@ class NodePowerAnalysis(Analysis):
     Generates a histogram of the package power used across nodes.
     Report step can show data from power_total.py.
     """
-    def __init__(self, name, output_dir, num_rank, num_node, agent, app_argv, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
+    def __init__(self, name, output_dir, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10, target_power=180):
         super(NodePowerAnalysis, self).__init__(name, output_dir, verbose, iterations)
         self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, verbose, iterations,
-                                                        min_power, max_power, step_power, 'power_governor')
+                                                        target_power, target_power, step_power, 'power_governor')
 
-    #pandas.set_option('display.max_rows', None)
-    #warnings.simplefilter(action='ignore', category=pandas.errors.PerformanceWarning)
+        # min and max are only used for plot xaxis, not for launch
+        self._min_power = min_power
+        self._max_power = max_power
+        self._step_power = step_power
+        self._target_power = target_power
+        print self._min_power, self._max_power, self._target_power
+
+    def report_process(self, parse_output):
+        pass
+
+    def report(self, process_output):
+        pass
 
     def print_run_stats(report_path, trace_path):
         ''' From test_power_consumption integration test.'''
         app_name = report_path.split('_')[0]
         agent = report_path.split('_')[2]
+        #pandas.set_option('display.max_rows', None)
+        #warnings.simplefilter(action='ignore', category=pandas.errors.PerformanceWarning)
 
         # move to common place.  should be able to reuse for any analysis
         try:
@@ -525,30 +545,25 @@ class NodePowerAnalysis(Analysis):
 
             sys.stdout.write('\nCombined power stats :\n{}\n\n'.format(cdfd))
 
-    def power_histogram(prefix, hot_region=None):
-        report_df = load_report_or_cache(prefix)
-        if hot_region is None:
-            hot_region = find_hot_region_name(report_df)
-        # version name power_budget tree_decider leaf_decider agent node_name iteration region
-        # todo: decide whether to use hot region or epoch
-        region_of_interest = hot_region  # or 'epoch'
-        # TODO: add agent back in
-        #energy_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy'].sort_values()
-        #runtime_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['runtime'].sort_values()
-        energy_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy'].sort_values()
-        runtime_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['runtime'].sort_values()
+    def plot_process(self, parse_output):
+        report_df = load_report_or_cache(self._report_paths)
+        self._hot_region = find_hot_region_name(report_df)
+
+        profile = self._name + "_" + str(self._target_power)
+        print 'profile:', profile
+
+        region_of_interest = self._hot_region  # or 'epoch'
+        energy_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy'].sort_values()
+        runtime_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['runtime'].sort_values()
         power_data = energy_data / runtime_data
         power_data = power_data.sort_values()
-        bin_size = 8
-        min_power = 100  # min power is 98, unrealistic to run that low
-        max_power = 250  # TDP is 215W, DRAM is around 30W?  MAX_POWER MSR says 258?
-        generate_histogram('power', prefix, hot_region, min_power, max_power, bin_size, power_data)
+        print power_data
+        return power_data
 
-    def plot_process():
-        pass
-
-    def plot():
-        pass
+    def plot(self, process_output):
+        bin_size = self._step_power
+        geopmpy.plotter.generate_histogram('power', self._name, self._hot_region,
+                                           self._min_power, self._max_power-self._step_power, bin_size, process_output)
 
 
 class FrequencyRangeAnalysis(Analysis):
@@ -1272,8 +1287,10 @@ geopmanalysis - Used to run applications and analyze results for specific
   -t, --analysis-type   type of analysis to perform. Available
                         ANALYSIS_TYPE values: freq_sweep, balancer,
                         offline, online, stream_mix.  Optional --config fields:
-                          balancer: min_power, max_power, step_power
-                          all others: enable_turbo
+                            balancer: min_power, max_power, step_power
+                            node_efficiency and node_power: target_power for launch;
+                                min_power, max_power, step_power for plotting
+                            all others: enable_turbo
   -c, --config          JSON string of configuration for analysis.
   -n, --num-rank        total number of application ranks to launch with
   -N, --num-node        number of compute nodes to launch onto
@@ -1308,6 +1325,8 @@ Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
 
     analysis_type_map = {'freq_sweep': FreqSweepAnalysis,
                          'balancer': BalancerAnalysis,
+                         'node_efficiency': NodeEfficiencyAnalysis,
+                         'node_power': NodePowerAnalysis,
                          'offline': OfflineBaselineComparisonAnalysis,
                          'online': OnlineBaselineComparisonAnalysis,
                          'stream_mix': StreamDgemmMixAnalysis}

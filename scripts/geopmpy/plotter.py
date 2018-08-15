@@ -1109,6 +1109,18 @@ def generate_freq_plot(trace_df, config):
 
 
 def generate_histogram(label, prefix, region, min_bin, max_bin, bin_size, data):
+    if label == 'power':
+        axis_units = 'W'
+        title_units = 'W'
+        range_factor = 1
+    elif label == 'frequency':
+        axis_units = 'GHz'
+        title_units = 'MHz'
+        range_factor = 1000
+    else:
+        raise RuntimeError("<geopmpy>: Unknown type for histogram: {}".format(label))
+
+
     # bins based on observed data
     # bins = [round(bb*bin_size, 3) for bb in range(int(min(freq_data)/bin_size), int(max(freq_data)/bin_size) + 1)]
     # bins based on hw freq range
@@ -1119,28 +1131,28 @@ def generate_histogram(label, prefix, region, min_bin, max_bin, bin_size, data):
         print n, b
         plt.annotate(int(n), xy=(b+bin_dist/2.0, n+0.5),
                      horizontalalignment='center')
-    min_max_range = max(data) - min(data)
-    plt.title(prefix + ' Histogram of Achieved Frequencies\n{} Region\nRange {} MHz'.format(hot_region, min_max_range*1000))
-    plt.xlabel('Frequency (GHz)')
-    plt.ylabel('Num nodes')
+    min_max_range = (max(data) - min(data)) * range_factor
+    plt.title(prefix + ' Histogram of achieved {}\n{} Region\nRange {} {}'.format(label, region, min_max_range, title_units))
+    plt.xlabel('{} ({})'.format(label, axis_units))
+    plt.ylabel('node count')
     print bin_dist, bins
     # todo: this is different for the two histogram plots
     plt.xticks([b+bin_dist/2.0 for b in bins],
-               ['[{:.3f}, {:.3f})'.format(b, b+bin_dist) for b in bins],
+               [' [{:.3f}, {:.3f})'.format(b, b+bin_dist) for b in bins],
                rotation='vertical')
     # todo: need plt.xlim?
     plt.tight_layout()
     output_dir = 'figures'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    plt.savefig(os.path.join(output_dir, '{}_{}_histo_{}.png'.format(prefix, label, hot_region)))
+    plt.savefig(os.path.join(output_dir, '{}_{}_histo_{}.png'.format(prefix, label, region.replace(' ', '_'))))
 
     # todo: could be a method
-    for ext in config.output_types:
-        full_path = os.path.join(config.output_dir, '{}.{}'.format(file_name, ext))
-        plt.savefig(full_path)
-        if config.verbose:
-            sys.stdout.write('    {}\n'.format(full_path))
+    #for ext in config.output_types:
+    #    full_path = os.path.join(config.output_dir, '{}.{}'.format(file_name, ext))
+    #    plt.savefig(full_path)
+    #    if config.verbose:
+    #        sys.stdout.write('    {}\n'.format(full_path))
 
 
 def main(argv):
