@@ -1108,7 +1108,7 @@ def generate_freq_plot(trace_df, config):
             plt.close()
 
 
-def generate_histogram(label, prefix, region, min_bin, max_bin, bin_size, data):
+def generate_histogram(data, config, label, bin_size, xprecision):
     if label == 'power':
         axis_units = 'W'
         title_units = 'W'
@@ -1120,39 +1120,35 @@ def generate_histogram(label, prefix, region, min_bin, max_bin, bin_size, data):
     else:
         raise RuntimeError("<geopmpy>: Unknown type for histogram: {}".format(label))
 
-
-    # bins based on observed data
-    # bins = [round(bb*bin_size, 3) for bb in range(int(min(freq_data)/bin_size), int(max(freq_data)/bin_size) + 1)]
-    # bins based on hw freq range
-    bins = [round(bb*bin_size, 3) for bb in range(int(min_bin/bin_size), int(max_bin/bin_size) + 1)]
+    bins = [round(bb*bin_size, 3) for bb in range(int(config.min_drop/bin_size), int(config.max_drop/bin_size)+2)]
     n, bins, patches = plt.hist(data, rwidth=0.8, bins=bins)
-    bin_dist = bins[1] - bins[0]
     for n, b in zip(n, bins):
         print n, b
-        plt.annotate(int(n), xy=(b+bin_dist/2.0, n+0.5),
+        plt.annotate(int(n) if int(n) != 0 else "", xy=(b+bin_size/2.0, n+0.5),
                      horizontalalignment='center')
     min_max_range = (max(data) - min(data)) * range_factor
-    plt.title(prefix + ' Histogram of achieved {}\n{} Region\nRange {} {}'.format(label, region, min_max_range, title_units))
+    plt.title('{} Histogram of achieved {}\nRange {} {}'
+              .format(config.profile_name, label, min_max_range, title_units))
     plt.xlabel('{} ({})'.format(label, axis_units))
     plt.ylabel('node count')
-    print bin_dist, bins
-    # todo: this is different for the two histogram plots
-    plt.xticks([b+bin_dist/2.0 for b in bins],
-               [' [{:.3f}, {:.3f})'.format(b, b+bin_dist) for b in bins],
+    plt.xticks([b+bin_size/2.0 for b in bins],
+               [' [{start:.{prec}f}, {end:.{prec}f})'.format(start=b, end=b+bin_size, prec=xprecision) for b in bins],
                rotation='vertical')
-    # todo: need plt.xlim?
+    plt.margins(0.02, 0.2)
+    plt.axis('tight')
+
     plt.tight_layout()
     output_dir = 'figures'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    plt.savefig(os.path.join(output_dir, '{}_{}_histo_{}.png'.format(prefix, label, region.replace(' ', '_'))))
 
+    filename = '{}_{}_histo'.format(config.profile_name.replace('@', '_'), label)
     # todo: could be a method
-    #for ext in config.output_types:
-    #    full_path = os.path.join(config.output_dir, '{}.{}'.format(file_name, ext))
-    #    plt.savefig(full_path)
-    #    if config.verbose:
-    #        sys.stdout.write('    {}\n'.format(full_path))
+    for ext in config.output_types:
+        full_path = os.path.join(config.output_dir, '{}.{}'.format(filename, ext))
+        plt.savefig(full_path)
+        if config.verbose:
+            sys.stdout.write('    {}\n'.format(full_path))
 
 
 def main(argv):

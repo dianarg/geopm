@@ -395,13 +395,17 @@ class NodeEfficiencyAnalysis(Analysis):
     region of the application across nodes.
     Use 25 MHz bucket size for now, but make this a configuration parameter.
     """
-    def __init__(self, name, output_dir, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
+    def __init__(self, name, output_dir, verbose=True, iterations=1, min_freq=0.5, max_freq=2.0, step_freq=0.1, target_power=180):
         super(NodeEfficiencyAnalysis, self).__init__(name, output_dir, verbose, iterations)
         self._governor_power_sweep = PowerSweepAnalysis(name, output_dir,verbose, iterations,
-                                                        min_power, max_power, step_power, 'power_governor')
+                                                        target_power, target_power, 1, 'power_governor')
+        self._target_power = target_power
+        self._min_freq = min_freq
+        self._max_freq = max_freq
+        self._step_freq = step_freq
 
-    def launch(self, geopm_ctl='process', do_geopm_barrier=False):
-        self._governor_power_sweep.launch(geopm_ctl, do_geopm_barrier)
+    def launch(self, config):
+        self._governor_power_sweep.launch(config)
 
     def report_process(self, parse_output):
         pass
@@ -409,26 +413,31 @@ class NodeEfficiencyAnalysis(Analysis):
     def report(self, process_output):
         pass
 
-    def frequency_histogram(prefix, hot_region=None):
+    def plot_process(self, parse_output):
         report_df = load_report_or_cache(self._report_paths)
 
-        if hot_region is None:
-            hot_region = find_hot_region_name(report_df)
+        profile = self._name + "_" + str(self._target_power)
 
+        region_of_interest = find_hot_region_name(report_df)  # TODO: change to epoch
         # version name power_budget tree_decider leaf_decider agent node_name iteration region
-        freq_data = report_df.loc[pandas.IndexSlice[:, :, :, :, :, :, :, hot_region], ].groupby('node_name').mean()['frequency'].sort_values()
+        freq_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['frequency'].sort_values()
         # convert percent to GHz frequency based on sticker
         # todo: don't hard code sticker!!
         freq_data *= 0.01 * 1.3
-        # TODO: decide on bin size
-        # TODO: range from throttle min to HW max frequency
-        # on KNL, lower end is 500 MHz
-        # on theta, max turbo is 1.5 GHz
-        min_freq = 0.5
-        max_freq = 1.5
-        bin_size = 0.025
-        geopmpy.plotter.generate_histogram('frequency', prefix, hot_region,
-                                           min_freq, max_freq, bin_size, freq_data)
+        print freq_data
+        return freq_data
+
+    def plot(self, process_output):
+        config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))
+        config.output_types = ['png']
+        config.verbose = True
+        config.profile_name = self._name + "@" + str(self._target_power) + "W"
+        config.min_drop = self._min_freq
+        config.max_drop = self._max_freq - self._step_freq
+
+        bin_size = self._step_freq
+        geopmpy.plotter.generate_histogram(process_output, config, 'frequency',
+                                           bin_size, 3)
 
 
 # TODO: figure out where to put print_run_stats.  this function could be report and
@@ -547,12 +556,10 @@ class NodePowerAnalysis(Analysis):
 
     def plot_process(self, parse_output):
         report_df = load_report_or_cache(self._report_paths)
-        self._hot_region = find_hot_region_name(report_df)
 
         profile = self._name + "_" + str(self._target_power)
-        print 'profile:', profile
 
-        region_of_interest = self._hot_region  # or 'epoch'
+        region_of_interest = 'epoch'
         energy_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy'].sort_values()
         runtime_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['runtime'].sort_values()
         power_data = energy_data / runtime_data
@@ -561,9 +568,16 @@ class NodePowerAnalysis(Analysis):
         return power_data
 
     def plot(self, process_output):
+        config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))
+        config.output_types = ['png']
+        config.verbose = True
+        config.profile_name = self._name + "@" + str(self._target_power) + "W"
+        config.min_drop = self._min_power
+        config.max_drop = self._max_power - self._step_power
+
         bin_size = self._step_power
-        geopmpy.plotter.generate_histogram('power', self._name, self._hot_region,
-                                           self._min_power, self._max_power-self._step_power, bin_size, process_output)
+        geopmpy.plotter.generate_histogram(process_output, config, 'power',
+                                           bin_size, 0)
 
 
 class FrequencyRangeAnalysis(Analysis):
@@ -1288,7 +1302,9 @@ geopmanalysis - Used to run applications and analyze results for specific
                         ANALYSIS_TYPE values: freq_sweep, balancer,
                         offline, online, stream_mix.  Optional --config fields:
                             balancer: min_power, max_power, step_power
-                            node_efficiency and node_power: target_power for launch;
+                            node_efficiency: target_power for launch;
+                                min_freq, max_freq, step_freq for plotting
+                            node_power: target_power for launch;
                                 min_power, max_power, step_power for plotting
                             all others: enable_turbo
   -c, --config          JSON string of configuration for analysis.
