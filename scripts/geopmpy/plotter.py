@@ -1146,7 +1146,7 @@ def generate_histogram(data, config, label, bin_size, xprecision):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    filename = '{}_{}_histo'.format(config.profile_name.replace('@', '_'), label)
+    filename = '{}_{}_histo'.format(config.profile_name.replace('@', '_').replace(' ', '_'), label)
     # todo: could be a method
     for ext in config.output_types:
         full_path = os.path.join(config.output_dir, '{}.{}'.format(filename, ext))

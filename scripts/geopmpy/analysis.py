@@ -147,7 +147,7 @@ class Analysis(object):
         """
         raise NotImplementedError('Analysis base class does not implement the launch method()')
 
-    def find_files(self, search_pattern='*.report'):
+    def find_files(self, search_pattern='*report'):
         """
         Uses the output dir and any custom naming convention to load the report and trace data
         produced by launch.
@@ -399,6 +399,9 @@ class NodeEfficiencyAnalysis(Analysis):
         super(NodeEfficiencyAnalysis, self).__init__(name, output_dir, verbose, iterations)
         self._governor_power_sweep = PowerSweepAnalysis(name, output_dir,verbose, iterations,
                                                         target_power, target_power, 1, 'power_governor')
+        self._balancer_power_sweep = PowerSweepAnalysis(name, output_dir,verbose, iterations,
+                                                        target_power, target_power, 1, 'power_balancer')
+
         self._target_power = target_power
         self._min_freq = min_freq
         self._max_freq = max_freq
@@ -406,6 +409,7 @@ class NodeEfficiencyAnalysis(Analysis):
 
     def launch(self, config):
         self._governor_power_sweep.launch(config)
+        self._balancer_power_sweep.launch(config)
 
     def report_process(self, parse_output):
         pass
@@ -414,53 +418,62 @@ class NodeEfficiencyAnalysis(Analysis):
         pass
 
     def plot_process(self, parse_output):
+        print self._report_paths
         report_df = load_report_or_cache(self._report_paths)
+        print report_df
 
         profile = self._name + "_" + str(self._target_power)
 
         region_of_interest = find_hot_region_name(report_df)  # TODO: change to epoch
         # version name power_budget tree_decider leaf_decider agent node_name iteration region
-        freq_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['frequency'].sort_values()
+        gov_freq_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, "power_governor", :, :, region_of_interest], ].groupby('node_name').mean()['frequency'].sort_values()
+        bal_freq_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, "power_balancer", :, :, region_of_interest], ].groupby('node_name').mean()['frequency'].sort_values()
         # convert percent to GHz frequency based on sticker
         # todo: don't hard code sticker!!
-        freq_data *= 0.01 * 1.3
-        print freq_data
-        return freq_data
+        gov_freq_data *= 0.01 * 1.3
+        bal_freq_data *= 0.01 * 1.3
+        return gov_freq_data, bal_freq_data
 
     def plot(self, process_output):
+        gov_data, bal_data = process_output
         config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))
         config.output_types = ['png']
         config.verbose = True
-        config.profile_name = self._name + "@" + str(self._target_power) + "W"
         config.min_drop = self._min_freq
         config.max_drop = self._max_freq - self._step_freq
         config.fontsize=12
         config.fig_size = (8, 4)
-
         bin_size = self._step_freq
-        geopmpy.plotter.generate_histogram(process_output, config, 'frequency',
+
+        config.profile_name = self._name + "@" + str(self._target_power) + "W (gov)"
+        geopmpy.plotter.generate_histogram(gov_data, config, 'frequency',
+                                           bin_size, 3)
+        config.profile_name = self._name + "@" + str(self._target_power) + "W (bal)"
+        geopmpy.plotter.generate_histogram(bal_data, config, 'frequency',
                                            bin_size, 3)
 
 
 # TODO: figure out where to put print_run_stats.  this function could be report and
 # histogram could be the plot
 # Note: there is also a generate_power_plot method in plotter; see what overlaps.
+
 class NodePowerAnalysis(Analysis):
     """
     Generates a histogram of the package power used across nodes.
     Report step can show data from power_total.py.
     """
-    def __init__(self, name, output_dir, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10, target_power=180):
+    def __init__(self, name, output_dir, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
         super(NodePowerAnalysis, self).__init__(name, output_dir, verbose, iterations)
-        self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, verbose, iterations,
-                                                        target_power, target_power, step_power, 'power_governor')
 
         # min and max are only used for plot xaxis, not for launch
         self._min_power = min_power
         self._max_power = max_power
         self._step_power = step_power
-        self._target_power = target_power
         print self._min_power, self._max_power, self._target_power
+
+    def launch(self):
+        # TODO: don't do power sweep, just run with monitor
+        pass
 
     def report_process(self, parse_output):
         pass
@@ -468,98 +481,10 @@ class NodePowerAnalysis(Analysis):
     def report(self, process_output):
         pass
 
-    def print_run_stats(report_path, trace_path):
-        ''' From test_power_consumption integration test.'''
-        app_name = report_path.split('_')[0]
-        agent = report_path.split('_')[2]
-        #pandas.set_option('display.max_rows', None)
-        #warnings.simplefilter(action='ignore', category=pandas.errors.PerformanceWarning)
-
-        # move to common place.  should be able to reuse for any analysis
-        try:
-            report_df = pandas.read_hdf(app_name + '_' + agent + '_report.h5', 'table')
-            trace_df = pandas.read_hdf(app_name + '_' + agent + '_trace.h5', 'table')
-        except IOError:
-            sys.stderr.write('WARNING: No HDF5 files detected.  Data will be saved to {}_<report|trace>.h5.\n'
-                             .format(app_name +  '_' + agent))
-            tp = trace_path + '*' if any('trace' in x for x in os.listdir('.')) else None
-            output = geopmpy.io.AppOutput(report_path + '*', tp, verbose=True)
-            sys.stdout.write('Generating HDF5 files... ')
-            output.get_report_df().to_hdf(app_name + '_' + agent + '_report.h5', 'table')
-            output.get_trace_df().to_hdf(app_name + '_' + agent + '_trace.h5', 'table')
-            sys.stdout.write('Done.\n')
-
-            report_df = output.get_report_df()
-            trace_df = output.get_trace_df()
-
-        # Print per-region stats from the reports
-        # TODO Needs additional logic to handle iteration support and multiple agents properly
-
-        #  import code
-        #  code.interact(local=dict(globals(), **locals()))
-
-        report_df = report_df.reset_index(level=['version', 'name', 'power_budget', 'tree_decider', 'leaf_decider', 'iteration'],
-                                          drop=True)
-        report_df['power'] = report_df['energy'] / report_df['runtime']
-        report_df = report_df[['frequency', 'power', 'runtime', 'mpi_runtime', 'energy','id', 'count']]
-        with open('power_region.log', 'w') as out_file:
-            out_file.write('Per-region power stats :\n{}\n\n'.format(report_df))
-            out_file.write('-' * 80 + '\n\n')
-            out_file.write('All nodes summary : \n{}\n\n'.format(report_df.groupby('region').mean()))
-        sys.stdout.write('\nAll nodes summary :\n{}\n\n'.format(report_df.groupby('region').mean()))
-
-        #  import code
-        #  code.interact(local=dict(globals(), **locals()))
-
-        # Print detailed per-node power stats from the trace files
-        if len(trace_df) > 0:
-            power_data_df_list = []
-            num_nodes = len(trace_df.index.get_level_values('node_name').unique().tolist())
-            count = 0
-            for nn, df in trace_df.groupby('node_name'):
-                count += 1
-                #  sys.stdout.write('\rProcessing {} of {}... '.format(count, num_nodes))
-
-                epoch = '0x8000000000000000' if '0x' in df['region_id'].iloc[0] else '9223372036854775808'
-
-                first_epoch_index = df.loc[df['region_id'] == epoch][:1].index[0]
-                epoch_dropped_data = df[first_epoch_index:]  # Drop all startup data
-
-                power_data = epoch_dropped_data.filter(regex='energy').copy()
-                power_data['seconds'] = epoch_dropped_data['seconds']
-                power_data = power_data.diff().dropna()
-                power_data.rename(columns={'seconds': 'elapsed_time'}, inplace=True)
-                power_data = power_data.loc[(power_data != 0).all(axis=1)]  # Will drop any row that is all 0's
-
-                pkg_energy_cols = [s for s in power_data.keys() if 'pkg_energy' in s]
-                dram_energy_cols = [s for s in power_data.keys() if 'dram_energy' in s]
-                power_data['socket_power'] = power_data[pkg_energy_cols].sum(axis=1) / power_data['elapsed_time']
-                power_data['dram_power'] = power_data[dram_energy_cols].sum(axis=1) / power_data['elapsed_time']
-                # Total power consumed will be Socket(s) + DRAM
-                power_data['combined_power'] = power_data['socket_power'] + power_data['dram_power']
-
-                power_data['node_name'] = nn # Setup for the MultiIndex
-                power_data = power_data.reset_index(drop=True).reset_index().set_index(['node_name', 'index'])
-                power_data_df_list.append(power_data)
-
-            combined_power_df = pandas.concat(power_data_df_list)
-            #  sys.stdout.write('Done.\n')
-
-            #  sys.stdout.write('Calculating power statistics... \n')
-            with open('power.log', 'w') as out_file:
-                for nn, df in combined_power_df.groupby('node_name'):
-                    pandas.set_option('display.width', 150)
-                    out_file.write('Power stats from {} :\n{}\n\n'.format(nn, df.describe()))
-                out_file.write('-' * 80 + '\n\n')
-                cdfd = combined_power_df.describe().drop('count') # If count is large, pandas auto converts to scientific notation
-                out_file.write('Combined power stats :\n{}\n\n'.format(cdfd))
-
-            sys.stdout.write('\nCombined power stats :\n{}\n\n'.format(cdfd))
-
     def plot_process(self, parse_output):
         report_df = load_report_or_cache(self._report_paths)
 
-        profile = self._name + "_" + str(self._target_power)
+        profile = self._name + "_nocap"
 
         region_of_interest = 'epoch'
         energy_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy'].sort_values()
