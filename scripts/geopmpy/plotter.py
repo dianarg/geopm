@@ -190,6 +190,7 @@ class ReportConfig(Config):
             'energy': 'J',
             'runtime': 's',
             'frequency': '% of sticker',
+            'power': 'W',
         }
 
 
@@ -353,7 +354,6 @@ def generate_bar_plot(report_df, config):
                          'Assuming "power_balancing".\n')
     sys.stdout.flush()
 
-    print report_df
     config.check_plugins(report_df)
     idx = pandas.IndexSlice
     df = pandas.DataFrame()
@@ -368,8 +368,6 @@ def generate_bar_plot(report_df, config):
                                     config.min_drop:config.max_drop, config.ref_plugin, :, :, :, :, 'epoch'],
                                 config.datatype].groupby(level='power_budget')
 
-    print reference_g
-
     df['reference_mean'] = reference_g.mean()
     df['reference_max'] = reference_g.max()
     df['reference_min'] = reference_g.min()
@@ -381,7 +379,6 @@ def generate_bar_plot(report_df, config):
         target_g = report_df.loc[idx[config.tgt_version:config.tgt_version, config.tgt_profile_name:config.tgt_profile_name,
                                  config.min_drop:config.max_drop, config.tgt_plugin, :, :, :, :, 'epoch'],
                              config.datatype].groupby(level='power_budget')
-    print target_g
 
     df['target_mean'] = target_g.mean()
     df['target_max'] = target_g.max()
@@ -401,8 +398,6 @@ def generate_bar_plot(report_df, config):
     df['reference_min_delta'] = df['reference_mean'] - df['reference_min']
     df['target_max_delta'] = df['target_max'] - df['target_mean']
     df['target_min_delta'] = df['target_mean'] - df['target_min']
-
-    print df
 
     # Begin plot setup
     f, ax = plt.subplots()
@@ -510,6 +505,116 @@ def generate_bar_plot(report_df, config):
 
     plt.close()
 
+
+# Same as above plot, but pandas logic has been moved to analysis.py
+# some cosmetic changes August 2018
+def generate_bar_plot_comparison(df, config):
+    # Begin plot setup
+    f, ax = plt.subplots()
+    bar_width = 0.35
+    index = numpy.arange(min(len(df['target_mean']), len(df['reference_mean'])))
+
+    plt.bar(index - bar_width / 2,
+            df['reference_mean'],
+            width=bar_width,
+            color='blue',
+            align='center',
+            label=config.ref_plugin.replace('_', ' ').title(),
+            zorder=3)
+
+    ax.errorbar(index - bar_width / 2,
+                df['reference_mean'],
+                xerr=None,
+                yerr=(df['reference_min_delta'], df['reference_max_delta']),
+                fmt=' ',
+                label='',
+                color='r',
+                elinewidth=2,
+                capthick=2,
+                zorder=10)
+
+    plt.bar(index + bar_width / 2,
+            df['target_mean'],
+            width=bar_width,
+            color='cyan',
+            align='center',
+            label=config.tgt_plugin.replace('_', ' ').title(),
+            zorder=3)  # Forces grid lines to be drawn behind the bar
+
+    ax.errorbar(index + bar_width / 2,
+                df['target_mean'],
+                xerr=None,
+                yerr=(df['target_min_delta'], df['target_max_delta']),
+                fmt=' ',
+                label='',
+                color='r',
+                elinewidth=2,
+                capthick=2,
+                zorder=10)
+
+    ax.set_xticks(index)
+    xlabels = [tick.split('_')[-1] for tick in df.index]
+    #xlabels = sorted(xlabels)
+    ax.set_xticklabels(xlabels)
+    ax.set_xlabel('Average Node Power Limit (W)')
+
+    ylabel = config.datatype.title()
+    if config.normalize and not config.speedup:
+        ylabel = 'Normalized {}'.format(ylabel)
+    elif not config.normalize and not config.speedup:
+        units_label = config.units.get(config.datatype)
+        ylabel = '{}{}'.format(ylabel, ' ({})'.format(units_label) if units_label else '')
+    else:  # if config.speedup:
+        ylabel = 'Normalized Speed-up'
+    ax.set_ylabel(ylabel)
+    ax.grid(axis='y', linestyle='--', color='black')
+
+    #plt.title('{} {} Comparison{}'.format(config.profile_name, config.datatype.title(), config.misc_text), y=1.02)
+
+    plt.margins(0.02, 0.01)
+    plt.axis('tight')
+    plt.legend(shadow=True, fancybox=True, fontsize=config.legend_fontsize, loc='best').set_zorder(11)
+    plt.tight_layout()
+
+    if config.speedup:
+        # Check yspan before setting to ensure span is > speedup
+        abs_max_val = max(abs(df['target_mean'].max()), abs(df['target_mean'].min()))
+        abs_max_val = abs(abs_max_val - 1)
+        if abs_max_val > config.yspan:
+            yspan = abs_max_val * 1.1
+        else:
+            yspan = config.yspan
+        ax.set_ylim(1 - yspan, 1 + yspan)
+    else:
+        ymax = ax.get_ylim()[1]
+        ymax *= 1.1
+        ax.set_ylim(0, ymax)
+
+    # Write data/plot files
+    file_name = '{}_{}_comparison'.format(config.profile_name.lower().replace(' ', '_'), config.datatype)
+    if config.speedup:
+        file_name += '_speeudp'
+    if config.verbose:
+        sys.stdout.write('Writing:\n')
+    if config.write_csv:
+        full_path = os.path.join(config.output_dir, '{}.csv'.format(file_name))
+        df.T.to_csv(full_path)
+        if config.verbose:
+            sys.stdout.write('    {}\n'.format(full_path))
+    for ext in config.output_types:
+        full_path = os.path.join(config.output_dir, '{}.{}'.format(file_name, ext))
+        plt.savefig(full_path)
+        if config.verbose:
+            sys.stdout.write('    {}\n'.format(full_path))
+    sys.stdout.flush()
+
+    if config.show:
+        plt.show(block=config.block)
+
+    if config.shell:
+        code.interact(local=dict(globals(), **locals()))
+
+    plt.close()
 
 # TODO: this can be combined with above bar plot function once analysis code is
 # moved to analysis.py
@@ -1109,31 +1214,42 @@ def generate_freq_plot(trace_df, config):
 
 
 def generate_histogram(data, config, label, bin_size, xprecision):
-    if label == 'power':
+    # TODO: fix in analysis.py
+    if 'nekbone' in config.profile_name:
+        config.profile_name.replace('nekbone', 'Nekbone')
+    elif 'dgemm' in config.profile_name:
+        config.profile_name.replace('dgemm', 'DGEMM')
+
+    if label.lower() == 'power':
         axis_units = 'W'
         title_units = 'W'
         range_factor = 1
-    elif label == 'frequency':
+        title = '{}: Histogram of Power (No Capping)'.format(config.profile_name)
+        bar_color = 'red'
+    elif label.lower() == 'frequency':
         axis_units = 'GHz'
         title_units = 'MHz'
         range_factor = 1000
+        title = '{} Histogram of Achieved Frequency'.format(config.profile_name)
+        bar_color = 'blue'
     else:
         raise RuntimeError("<geopmpy>: Unknown type for histogram: {}".format(label))
 
+
     plt.figure(figsize=config.fig_size)
     bins = [round(bb*bin_size, 3) for bb in range(int(config.min_drop/bin_size), int(config.max_drop/bin_size)+2)]
-    n, bins, patches = plt.hist(data, rwidth=0.8, bins=bins)
+    n, bins, patches = plt.hist(data, rwidth=0.8, bins=bins, color=bar_color)
     for n, b in zip(n, bins):
-        print n, b
         plt.annotate(int(n) if int(n) != 0 else "", xy=(b+bin_size/2.0, n+2.5),
                      horizontalalignment='center',
                      fontsize=config.fontsize-4)
     min_max_range = (max(data) - min(data)) * range_factor
-    plt.title('{} Histogram of achieved {}\nRange: {} {}'
-              .format(config.profile_name, label, min_max_range, title_units),
+    mean = data.mean()
+    plt.title('{}\nRange: {} {}; Mean: {} {}'
+              .format(title, min_max_range, title_units, mean, title_units),
               fontsize=config.fontsize)
     plt.xlabel('{} ({})'.format(label, axis_units), fontsize=config.fontsize)
-    plt.ylabel('node count')
+    plt.ylabel('Node Count', fontsize=config.fontsize-4)
     plt.xticks([b+bin_size/2.0 for b in bins],
                [' [{start:.{prec}f}, {end:.{prec}f})'.format(start=b, end=b+bin_size, prec=xprecision) for b in bins],
                rotation='vertical',

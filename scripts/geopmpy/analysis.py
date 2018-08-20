@@ -167,7 +167,6 @@ class Analysis(object):
             if trace_paths is not None:
                 self._trace_paths.extend(trace_paths)
 
-    # todo: hdf5 caching here
     def parse(self):
         """
         Load any necessary data from the application result files into memory for analysis.
@@ -287,7 +286,7 @@ class BalancerAnalysis(Analysis):
     Runs the application under a given range of power caps using both the governor
     and the balancer.  Compares the performance of the two agents at each power cap.
     """
-    def __init__(self, name, output_dir, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10):
+    def __init__(self, name, output_dir, verbose=True, iterations=1, min_power=150, max_power=200, step_power=10, metric='runtime'):
         super(BalancerAnalysis, self).__init__(name, output_dir,verbose, iterations)
         # self._power_caps = range(min_power, max_power+step_power, step_power)
         self._governor_power_sweep = PowerSweepAnalysis(name, output_dir, verbose, iterations,
@@ -295,6 +294,7 @@ class BalancerAnalysis(Analysis):
         self._balancer_power_sweep = PowerSweepAnalysis(name, output_dir, verbose, iterations,
                                                         min_power, max_power, step_power, 'power_balancer')
         self._power_caps = self._governor_power_sweep._power_caps
+        self._metric = metric
 
     # todo: why does each analysis need to define this?
     # a: in case of special naming convention like freq sweep
@@ -303,9 +303,8 @@ class BalancerAnalysis(Analysis):
         # todo: fix search pattern parameter
         trace_glob = os.path.join(self._output_dir, self._name + '*trace*')
         #trace_glob = None
-        print report_glob, trace_glob
         self.set_data_paths(glob.glob(report_glob), glob.glob(trace_glob))
-        self._use_agent = True
+        self._use_agent = True  # TODO: detect
 
     def launch(self, config):
         self._governor_power_sweep.launch(config)
@@ -373,17 +372,92 @@ class BalancerAnalysis(Analysis):
                                  .format(power_cap, nn, power_data.describe()))
 
     def plot_process(self, parse_output):
-        return parse_output  #.get_report_df()
+        report_df = parse_output
+        idx = pandas.IndexSlice
+        df = pandas.DataFrame()
+
+        reference = 'static_policy'
+        target = 'power_balancing'
+        if self._use_agent:
+            reference = 'power_governor'
+            target = 'power_balancer'
+             #TODO: have a separate power analysis?  or combine two node efficiency/power types
+            if self._metric == 'power':
+                rge = report_df.loc[idx[:, :, :, :, :, reference, :, :, 'epoch'],
+                                    'energy']#.groupby(level='name')
+                rgr = report_df.loc[idx[:, :, :, :, :, reference, :, :, 'epoch'],
+                                    'runtime']#.groupby(level='name')
+                reference_g = (rge / rgr).groupby(level='name')
+            else:
+                reference_g = report_df.loc[idx[:, :, :, :, :, reference, :, :, 'epoch'],
+                                        self._metric].groupby(level='name')
+        else:
+            if self._metric == 'power':
+                rge = report_df.loc[idx[:, :, self._min_power:self._max_power, reference, :, :, :, :, 'epoch'],
+                                        'energy'].groupby(level='power_budget')
+                rgr = report_df.loc[idx[:, :, self._min_power:self._max_power, reference, :, :, :, :, 'epoch'],
+                                        'runtime'].groupby(level='power_budget')
+                reference_g = rge / rgr
+            else:
+                reference_g = report_df.loc[idx[:, :, self._min_power:self._max_power, reference, :, :, :, :, 'epoch'],
+                                        self._metric].groupby(level='power_budget')
+
+        df['reference_mean'] = reference_g.mean()
+        df['reference_max'] = reference_g.max()
+        df['reference_min'] = reference_g.min()
+        if self._use_agent:
+            if self._metric == 'power':
+                tge = report_df.loc[idx[:, :, :, :, :, target, :, :, 'epoch'],
+                                     'energy']#.groupby(level='name')
+                tgr = report_df.loc[idx[:, :, :, :, :, target, :, :, 'epoch'],
+                                     'runtime']#.groupby(level='name')
+                target_g = (tge / tgr).groupby(level='name')
+            else:
+                target_g = report_df.loc[idx[:, :, :, :, :, target, :, :, 'epoch'],
+                                     self._metric].groupby(level='name')
+        else:
+            if self._metric == 'power':
+                tge = report_df.loc[idx[:, :, self._min_power:self._max_power, target, :, :, :, :, 'epoch'],
+                                         'energy']#.groupby(level='power_budget')
+                tgr = report_df.loc[idx[:, :, self._min_power:self._max_power, target, :, :, :, :, 'epoch'],
+                                         'runtime']#.groupby(level='power_budget')
+                target_g = (tge / tgr).groupby(level='power_budget')
+            else:
+                target_g = report_df.loc[idx[:, :, self._min_power:self._max_power, target, :, :, :, :, 'epoch'],
+                                     self._metric].groupby(level='power_budget')
+
+        df['target_mean'] = target_g.mean()
+        df['target_max'] = target_g.max()
+        df['target_min'] = target_g.min()
+
+        # TODO: add to config options
+        # if config.normalize and not config.speedup:  # Normalize the data against the rightmost reference bar
+        #     df /= df['reference_mean'].iloc[-1]
+
+        # if config.speedup:  # Plot the inverse of the target data to show speedup as a positive change
+        #     df = df.div(df['reference_mean'], axis='rows')
+        #     df['target_mean'] = 1 / df['target_mean']
+        #     df['target_max'] = 1 / df['target_max']
+        #     df['target_min'] = 1 / df['target_min']
+
+        # Convert the maxes and mins to be deltas from the mean; required for the errorbar API
+        df['reference_max_delta'] = df['reference_max'] - df['reference_mean']
+        df['reference_min_delta'] = df['reference_mean'] - df['reference_min']
+        df['target_max_delta'] = df['target_max'] - df['target_mean']
+        df['target_min_delta'] = df['target_mean'] - df['target_min']
+
+        return df
 
     def plot(self, process_output):
         config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))
         config.output_types = ['png']
         config.verbose = True
+        config.datatype = self._metric
         if self._use_agent:
-            config.ref_plugin = 'power_governor'
             config.tgt_plugin = 'power_balancer'
+            config.ref_plugin = 'power_governor'
             config.use_agent = True
-        geopmpy.plotter.generate_bar_plot(process_output, config)
+        geopmpy.plotter.generate_bar_plot_comparison(process_output, config)
 
 
 # todo: check whether this is supposed to use governor, or monitor with
@@ -418,10 +492,7 @@ class NodeEfficiencyAnalysis(Analysis):
         pass
 
     def plot_process(self, parse_output):
-        print self._report_paths
         report_df = load_report_or_cache(self._report_paths)
-        print report_df
-
         profile = self._name + "_" + str(self._target_power)
 
         region_of_interest = find_hot_region_name(report_df)  # TODO: change to epoch
@@ -432,6 +503,11 @@ class NodeEfficiencyAnalysis(Analysis):
         # todo: don't hard code sticker!!
         gov_freq_data *= 0.01 * 1.3
         bal_freq_data *= 0.01 * 1.3
+        with open("gov_freq_{}.data".format(self._target_power), "w") as outfile:
+            outfile.write(gov_freq_data.to_string())
+        with open("bal_freq_{}.data".format(self._target_power), "w") as outfile:
+            outfile.write(bal_freq_data.to_string())
+
         return gov_freq_data, bal_freq_data
 
     def plot(self, process_output):
@@ -469,7 +545,6 @@ class NodePowerAnalysis(Analysis):
         self._min_power = min_power
         self._max_power = max_power
         self._step_power = step_power
-        print self._min_power, self._max_power, self._target_power
 
     def launch(self):
         # TODO: don't do power sweep, just run with monitor
@@ -484,21 +559,21 @@ class NodePowerAnalysis(Analysis):
     def plot_process(self, parse_output):
         report_df = load_report_or_cache(self._report_paths)
 
-        profile = self._name + "_nocap"
+        # TODO: need to run with no power cap
+        profile = self._name + "_" + str(self._max_power)  # "_nocap"
 
         region_of_interest = 'epoch'
         energy_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy'].sort_values()
         runtime_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['runtime'].sort_values()
         power_data = energy_data / runtime_data
         power_data = power_data.sort_values()
-        print power_data
         return power_data
 
     def plot(self, process_output):
         config = geopmpy.plotter.ReportConfig(output_dir=os.path.join(self._output_dir, 'figures'))
         config.output_types = ['png']
         config.verbose = True
-        config.profile_name = self._name + "@" + str(self._target_power) + "W"
+        config.profile_name = self._name
         config.min_drop = self._min_power
         config.max_drop = self._max_power - self._step_power
 
