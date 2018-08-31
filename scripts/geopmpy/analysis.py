@@ -1533,10 +1533,10 @@ Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
         sys.stdout.write(help_str)
         if len(argv) >= 2 and argv[0] in analysis_type_map:
             sys.stdout.write(analysis_type_map[argv[0]].help_text())
-        exit(0)
+        return 0
     if '--version' in argv:
         sys.stdout.write(version_str)
-        exit(0)
+        return 0
 
     if os.getenv("GEOPM_AGENT", None) is not None:
         raise RuntimeError('Use --use-agent option instead of environment variable to enable agent code path.')
@@ -1544,7 +1544,7 @@ Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
     if len(argv) < 1:
         sys.stderr.write("<geopmpy> Error: analysis type is required.\n")
         sys.stderr.write(help_str)
-        exit(1)
+        return 1
     analysis_type = argv[0]
     argv = argv[1:]
 
@@ -1626,3 +1626,5 @@ Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
     if do_plot:
         process_output = analysis.plot_process(parse_output)
         analysis.plot(process_output)
+
+    return 0
