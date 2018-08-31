@@ -188,6 +188,7 @@ class ReportConfig(Config):
         self.yspan = yspan
         self.units = {
             'energy': 'J',
+            'energy_pkg': 'J',
             'runtime': 's',
             'frequency': '% of sticker',
             'power': 'W',
@@ -508,6 +509,14 @@ def generate_bar_plot(report_df, config):
 # Same as above plot, but pandas logic has been moved to analysis.py
 # some cosmetic changes August 2018
 def generate_bar_plot_comparison(df, config):
+    # TODO: fix in analysis.py
+    if 'nekbone' in config.profile_name:
+        config.profile_name = config.profile_name.replace('nekbone', 'Nekbone')
+    elif 'dgemm' in config.profile_name:
+        config.profile_name = config.profile_name.replace('dgemm', 'DGEMM')
+    elif 'minife' in config.profile_name:
+        config.profile_name = config.profile_name.replace('minife', 'MiniFE')
+
     # Begin plot setup
     f, ax = plt.subplots()
     bar_width = 0.35
@@ -556,7 +565,12 @@ def generate_bar_plot_comparison(df, config):
     ax.set_xticklabels(xlabels)
     ax.set_xlabel('Average Node Power Limit (W)')
 
-    ylabel = config.datatype.title()
+    if config.datatype == 'energy_pkg':
+        title_datatype = 'Energy'
+    else:
+        title_datatype = config.datatype.title()
+
+    ylabel = title_datatype
     if config.normalize and not config.speedup:
         ylabel = 'Normalized {}'.format(ylabel)
     elif not config.normalize and not config.speedup:
@@ -565,9 +579,20 @@ def generate_bar_plot_comparison(df, config):
     else:  # if config.speedup:
         ylabel = 'Normalized Speed-up'
     ax.set_ylabel(ylabel)
+
+    #num_yticks = 8
+    #maxy = max(df['reference_mean'])
+    #size = round(maxy/num_yticks, -2)
+
+    #ax.set_yticks(yticks)
+    #yticks = ax.get_yticks()
+    #ystep = yticks[-1] - yticks[0]
+    #yticks = range(int(yticks[0]), int(yticks[-1]+ystep), int(ystep))
+    #ax.set_yticks(yticks)
+
     ax.grid(axis='y', linestyle='--', color='black')
 
-    #plt.title('{} {} Comparison{}'.format(config.profile_name, config.datatype.title(), config.misc_text), y=1.02)
+    plt.title('{}: {} Decreases from Power Balancing{}'.format(config.profile_name, title_datatype, config.misc_text), y=1.02)
 
     plt.margins(0.02, 0.01)
     plt.axis('tight')
@@ -832,7 +857,7 @@ def generate_power_plot(trace_df, config):
         dram_energy_cols = [s for s in median_df.keys() if 'dram_energy' in s]
         median_df['socket_power'] = median_df[pkg_energy_cols].sum(axis=1) / median_df['elapsed_time']
         median_df['dram_power'] = median_df[dram_energy_cols].sum(axis=1) / median_df['elapsed_time']
-        median_df['combined_power'] = median_df['socket_power'] + median_df['dram_power']
+        median_df['combined_power'] = median_df['socket_power']  # + median_df['dram_power']
 
         # Begin plot setup
         node_names = df.index.get_level_values('node_name').unique().tolist()
@@ -842,7 +867,7 @@ def generate_power_plot(trace_df, config):
         f, ax = plt.subplots()
 
         for node_name in natsorted(node_names):
-            node_df = median_df.loc[idx[:, :, :, :, :, node_name], ]
+            node_df = median_df.loc[idx[:, :, :, :, :, :, node_name], ]
 
             if node_name == config.focus_node:
                 plt.plot(pandas.Series(numpy.arange(float(len(node_df))) / (len(node_df) - 1) * 100),
@@ -874,11 +899,11 @@ def generate_power_plot(trace_df, config):
 
         plt.title('{} Iteration Power\n@ {}W{}'.format(config.profile_name, power_budget, config.misc_text), y=1.02)
 
-        legend = plt.legend(loc="lower center", bbox_to_anchor=[0.5, 0], ncol=4,
-                            shadow=True, fancybox=True, fontsize=config.legend_fontsize)
-        for l in legend.legendHandles:
-            l.set_linewidth(2.0)
-        legend.set_zorder(11)
+        # legend = plt.legend(loc="lower center", bbox_to_anchor=[0.5, 0], ncol=4,
+        #                     shadow=True, fancybox=True, fontsize=config.legend_fontsize)
+        # for l in legend.legendHandles:
+        #     l.set_linewidth(2.0)
+        # legend.set_zorder(11)
         plt.tight_layout()
         ax.set_ylim(ax.get_ylim()[0] * .93, ax.get_ylim()[1])
 
@@ -1211,11 +1236,17 @@ def generate_freq_plot(trace_df, config):
 
 
 def generate_histogram(data, config, label, bin_size, xprecision):
+    config.fontsize = 12
+    config.fig_size = (8, 4)
+
+
     # TODO: fix in analysis.py
     if 'nekbone' in config.profile_name:
-        config.profile_name.replace('nekbone', 'Nekbone')
+        config.profile_name = config.profile_name.replace('nekbone', 'Nekbone')
     elif 'dgemm' in config.profile_name:
-        config.profile_name.replace('dgemm', 'DGEMM')
+        config.profile_name = config.profile_name.replace('dgemm', 'DGEMM')
+    elif 'minife' in config.profile_name:
+        config.profile_name = config.profile_name.replace('minife', 'MiniFE')
 
     if label.lower() == 'power':
         axis_units = 'W'
@@ -1241,15 +1272,25 @@ def generate_histogram(data, config, label, bin_size, xprecision):
                      fontsize=config.fontsize-4)
     min_max_range = (max(data) - min(data)) * range_factor
     mean = data.mean()
-    plt.title('{}\nRange: {} {}; Mean: {} {}'
-              .format(title, min_max_range, title_units, mean, title_units),
+
+    n = len(data)
+    trim_pct = 0.05
+    trimmed_data = data[int(n*trim_pct):n-int(trim_pct*n)]
+    trimmed_min_max = (max(trimmed_data) - min(trimmed_data)) * range_factor
+    plt.title('{}\nMin-max Var.: {} {}; {}% Min-max Var.: {} {}; Mean: {} {}'
+              .format(title, round(min_max_range, 3), title_units,
+                      int((1.0-(trim_pct*2))*100), round(trimmed_min_max, 3), title_units,
+                      round(mean, 3), title_units),
               fontsize=config.fontsize)
-    plt.xlabel('{} ({})'.format(label, axis_units), fontsize=config.fontsize)
-    plt.ylabel('Node Count', fontsize=config.fontsize-4)
+    plt.xlabel('{} ({})'.format(label.title(), axis_units), fontsize=config.fontsize)
+    plt.ylabel('Node Count', fontsize=config.fontsize)
     plt.xticks([b+bin_size/2.0 for b in bins],
                [' [{start:.{prec}f}, {end:.{prec}f})'.format(start=b, end=b+bin_size, prec=xprecision) for b in bins],
                rotation='vertical',
                fontsize=config.fontsize-4)
+    _, ylabels = plt.yticks()
+    plt.setp(ylabels, fontsize=config.fontsize-4)
+
     plt.margins(0.02, 0.2)
     plt.axis('tight')
 
