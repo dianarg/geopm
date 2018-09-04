@@ -129,6 +129,7 @@ TEST_F(PowerBalancerTest, balance)
             ++num_step;
             if (!is_target_met) {
                 while (!m_balancer->is_runtime_stable(calc_rt())) {
+                    m_balancer->calculate_runtime_sample();
                     EXPECT_NEAR(*curr_exp_sample, m_balancer->runtime_sample(), 1e-5);
                     curr_exp_sample++;
                 }
