@@ -215,12 +215,16 @@ class PowerSweepAnalysis(Analysis):
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
         min_power = int(proc.stdout.readline().strip())
-        # TODO: way too high; use tdp
         proc = subprocess.Popen(['geopmread', 'POWER_PACKAGE_TDP', 'package', '0'],
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         proc.wait()
+        tdp_power = int(proc.stdout.readline().strip())
+        proc = subprocess.Popen(['geopmread', 'POWER_PACKAGE_MAX', 'package', '0'],
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc.wait()
         max_power = int(proc.stdout.readline().strip())
-        return min_power, max_power
+
+        return min_power, tdp_power, max_power
 
     # TODO : have this return left and right columns to be formatted by caller
     @staticmethod
@@ -268,14 +272,14 @@ class PowerSweepAnalysis(Analysis):
             raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
     def launch(self, config):
-        sys_min, sys_max = PowerSweepAnalysis.sys_power_avail()
+        sys_min, sys_tdp, sys_max = PowerSweepAnalysis.sys_power_avail()
         if self._min_power is None or self._min_power < sys_min:
             # system minimum is actually too low; use 50% of TDP or min rounded up to nearest step, whichever is larger
-            self._min_power = max(int(0.5 * sys_max), sys_min)
+            self._min_power = max(int(0.5 * sys_tdp), sys_min)
             self._min_power = int(self._step_power * math.ceil(float(self._min_power)/self._step_power))
             sys.stderr.write("<geopmpy>: Warning: Invalid or unspecified min_power; using default minimum: {}.\n".format(self._min_power))
         if self._max_power is None or self._max_power > sys_max:
-            self._max_power = sys_max
+            self._max_power = sys_tdp
             sys.stderr.write("<geopmpy>: Warning: Invalid or unspecified max_power; using system TDP: {}.\n".format(self._max_power))
 
         power_caps = range(self._min_power, self._max_power+1, self._step_power)
@@ -370,7 +374,7 @@ class BalancerAnalysis(Analysis):
             #names_list = numpy.unique(df.index.values)  #.tolist()
             for name in names_list:
                 # The profile name is currently set to: ${ITERATION}_${POWER_BUDGET}
-                profile_name_map.update({name : int(name.split('_')[1])})
+                profile_name_map.update({name: int(name.split('_')[-1])})
             df = df.rename(profile_name_map)
             #df.index = df.index.set_names('power_budget', level='name')
             return df
