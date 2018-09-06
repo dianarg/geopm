@@ -46,89 +46,77 @@ except ImportError as ex:
     g_skip_analysis_test = True
     g_skip_analysis_ex = "Warning, analysis and plotting requires the pandas and matplotlib modules to be installed: {}".format(ex)
 
-region_id = {
-    'epoch':  '9223372036854775808',
-    'dgemm':  '11396693813',
-    'stream': '20779751936'
-}
-version = '0.3.0'
-power_budget = 400
-tree_decider = 'static'
-leaf_decider = 'simple'
-agent = 'energy_efficient'
-node_name = 'mynode'
-
-# for input data frame
-index_names = ['version', 'name', 'power_budget', 'tree_decider',
-               'leaf_decider', 'agent', 'node_name', 'iteration', 'region']
-numeric_cols = ['count', 'energy_pkg', 'frequency', 'mpi_runtime', 'runtime', 'id']
-gen_val = {
-    'count': 1,
-    'energy_pkg': 14000.0,
-    'frequency': 1e9,
-    'mpi_runtime': 10,
-    'runtime': 50,
-    'id': 'bad'
-}
-ratio_inds = [0, 1, 2, 3, 6, 5, 4]
-regions = ['epoch', 'dgemm', 'stream']
-iterations = range(1, 4)
-
-
 # TODO: profile name should affect performance. it can hide bugs if all the numbers are the same
 # however the functions that generate expected output need to also take this into account
-def make_mock_sweep_report_df(name_prefix, freqs, best_fit_freq, best_fit_perf,
-                              metric_of_interest=None, best_fit_metric_perf=None,
-                              baseline_freq=None, baseline_metric_perf=None):
+def make_mock_sweep_report_df(name_prefix, powers, metric, metric_perf):
     ''' Make a mock report dataframe for the fixed frequency sweeps.'''
+    version = '0.3.0'
+    power_budget = 400
+    tree_decider = 'static'
+    leaf_decider = 'simple'
+    node_name = 'mynode'
+    region_id = {
+        'epoch':  '9223372036854775808',
+        'dgemm':  '11396693813',
+        'stream': '20779751936'
+    }
+
+    # for input data frame
+    index_names = ['version', 'name', 'power_budget', 'tree_decider',
+                   'leaf_decider', 'agent', 'node_name', 'iteration', 'region']
+    numeric_cols = ['count', 'energy_pkg', 'frequency', 'mpi_runtime', 'runtime', 'id']
+
+    # default mocked data for each column
+    gen_val = {
+        'count': 1,
+        'energy_pkg': 14000.0,
+        'frequency': 1e9,
+        'mpi_runtime': 10,
+        'runtime': 50,
+        'id': 'bad'
+    }
+    regions = ['epoch', 'dgemm', 'stream']
+    iterations = range(1, 4)
+
     input_data = {}
     for col in numeric_cols:
         input_data[col] = {}
-        for freq in freqs:
-            prof_name = '{}_freq_{}'.format(name_prefix, freq)
+        for pp in powers:
+            prof_name = '{}_{}'.format(name_prefix, pp)
             for it in iterations:
-                for region in regions:
-                    gen_val['id'] = region_id[region]  # return unique region id
-                    index = (version, prof_name, power_budget, tree_decider,
-                             leaf_decider, agent, node_name, it, region)
-                    value = gen_val[col]
-                    # force best performance for requested best fit freq
-                    if col == 'runtime':
-                        if freq == best_fit_freq[region]:
-                            value = best_fit_perf[region]
-                        else:
-                            # make other frequencies have worse performance
-                            value = best_fit_perf[region] * 2.0
-                    elif metric_of_interest == col:
-                        if freq == best_fit_freq[region]:
-                            value = best_fit_metric_perf[region]
-                        elif baseline_freq and baseline_metric_perf and freq == baseline_freq:
-                            value = baseline_metric_perf[region]
-                    input_data[col][index] = value
+                for agent in ['power_governor', 'power_balancer']:
+                    for region in regions:
+                        gen_val['id'] = region_id[region]  # return unique region id
+                        index = (version, prof_name, power_budget, tree_decider,
+                                 leaf_decider, agent, node_name, it, region)
+                        value = gen_val[col]
+                        if metric == col and region == 'epoch':
+                            value = metric_perf[agent][pp] + it
+                        input_data[col][index] = value
 
     df = pandas.DataFrame.from_dict(input_data)
     df.index.rename(index_names, inplace=True)
     return df
 
 
-def make_mock_report_df(name_prefix, metric, metric_perf):
-    ''' Make a mock report dataframe for a single run.'''
-    input_data = {}
-    for col in numeric_cols:
-        input_data[col] = {}
-        for it in iterations:
-            for region in regions:
-                gen_val['id'] = region_id[region]  # return unique region id
-                index = (version, name_prefix, power_budget, tree_decider,
-                         leaf_decider, agent, node_name, it, region)
-                value = gen_val[col]
-                if col == metric:
-                    value = metric_perf[region]
-                input_data[col][index] = value
+# def make_mock_report_df(name_prefix, metric, metric_perf):
+#     ''' Make a mock report dataframe for a single run.'''
+#     input_data = {}
+#     for col in numeric_cols:
+#         input_data[col] = {}
+#         for it in iterations:
+#             for region in regions:
+#                 gen_val['id'] = region_id[region]  # return unique region id
+#                 index = (version, name_prefix, power_budget, tree_decider,
+#                          leaf_decider, agent, node_name, it, region)
+#                 value = gen_val[col]
+#                 if col == metric:
+#                     value = metric_perf[region]
+#                 input_data[col][index] = value
 
-    df = pandas.DataFrame.from_dict(input_data)
-    df.index.rename(index_names, inplace=True)
-    return df
+#     df = pandas.DataFrame.from_dict(input_data)
+#     df.index.rename(index_names, inplace=True)
+#     return df
 
 
 def get_expected_baseline_output_df(profile_names, column,
@@ -160,14 +148,14 @@ class TestPowerSweepAnalysis(unittest.TestCase):
         self._use_agent = True
         self._min_power = 160
         self._max_power = 200
-        self._step_power = 20
-        config = {'profile_prefix': self._name_prefix,
-                  'output_dir': '.',
-                  'verbose': True,
-                  'iterations': 1,
-                  'min_power': self._min_power, 'max_power': self._max_power,
-                  'step_power': self._step_power}
-        self._sweep_analysis = geopmpy.analysis.PowerSweepAnalysis(**config)
+        self._step_power = 10
+        self._powers = range(self._min_power, self._max_power+self._step_power, self._step_power)
+        self._config = {'profile_prefix': self._name_prefix,
+                        'output_dir': '.',
+                        'verbose': True,
+                        'iterations': 1,
+                        'min_power': self._min_power, 'max_power': self._max_power,
+                        'step_power': self._step_power}
         self._tmp_files = []
 
     def tearDown(self):
@@ -177,41 +165,79 @@ class TestPowerSweepAnalysis(unittest.TestCase):
             except OSError:
                 pass
 
+    def test_create_power_sweep(self):
+        # only has launch; no process methods to check
+        sweep_analysis = geopmpy.analysis.PowerSweepAnalysis(**self._config)
+        self.assertNotEqual(None, sweep_analysis)
 
-    def test_something(self):
-        x = '''
+    def test_balancer_plot_process_runtime(self):
+        metric = 'runtime'
+        report_df = make_mock_sweep_report_df(self._name_prefix, self._powers,
+                                              metric,
+                                              {'power_governor': {160: 100,
+                                                                  170: 90,
+                                                                  180: 80,
+                                                                  190: 75,
+                                                                  200: 70},
+                                               'power_balancer': {160: 91,
+                                                                  170: 82,
+                                                                  180: 73,
+                                                                  190: 70,
+                                                                  200: 70}})
+        analysis = geopmpy.analysis.BalancerAnalysis(metric=metric, **self._config)
+        process_output = analysis.plot_process(report_df)
+        expected_cols = ['reference_mean', 'reference_max', 'reference_min',
+                         'target_mean', 'target_max', 'target_min',
+                         'reference_max_delta', 'reference_min_delta',
+                         'target_max_delta', 'target_min_delta']
+        for ee, rr in zip(expected_cols, process_output.columns):
+            self.assertEqual(ee, rr)
+        expected_index = self._powers
+        for ee, rr in zip(expected_index, process_output.index):
+            self.assertEqual(ee, rr)
 
-    def test_online_baseline_comparison_report(self):
-        baseline_freq = max(self._freqs)
-        best_fit_freq = {'dgemm': self._max_freq, 'stream': self._min_freq, 'epoch': self._mid_freq}
+        for name in process_output.index:
+            row = process_output.loc[name]
+            if name == self._max_power:
+                # normalized perf to this power setting
+                self.assertEqual(1.0, row['reference_mean'])
+            if name == 200:
+                # normalized perf is the same for both
+                self.assertEqual(row['reference_mean'], row['target_mean'])
+            else:
+                self.assertGreater(row['reference_mean'], row['target_mean'])
 
-        best_fit_perf = {'dgemm': 23.0, 'stream': 34.0, 'epoch': 45.0}
+    # TODO: test balancer with other metrics
 
-        # injected energy values
-        baseline_metric_perf = {'dgemm': 23456.0, 'stream': 34567.0, 'epoch': 45678.0}
-        best_fit_metric_perf = {'dgemm': 23000.0, 'stream': 34000.0, 'epoch': 45000.0}
-        optimal_metric_perf = {'dgemm': 22345.0, 'stream': 33456.0, 'epoch': 44567.0}
+    def test_balancer_plot_process_energy(self):
+        pass
 
-        sweep_reports = make_mock_sweep_report_df(self._name_prefix, self._freqs,
-                                                  best_fit_freq, best_fit_perf,
-                                                  'energy_pkg', best_fit_metric_perf,
-                                                  baseline_freq, baseline_metric_perf)
+    def test_balancer_plot_process_power(self):
+        pass
 
-        prof_name = self._name_prefix + '_online'
-        single_run_report = make_mock_report_df(prof_name, 'energy_pkg', optimal_metric_perf)
-        parse_out = sweep_reports.append(single_run_report)
-        parse_out.sort_index(ascending=True, inplace=True)
+    def test_node_efficiency_process(self):
+        report_df = pandas.DataFrame()
+        analysis = geopmpy.analysis.NodeEfficiencyAnalysis(**self._config)
+        process_output = analysis.plot_process(report_df)
+        expected_cols = ['reference_mean', 'reference_max', 'reference_min',
+                         'target_mean', 'target_max', 'target_min',
+                         'reference_max_delta', 'reference_min_delta',
+                         'target_max_delta', 'target_min_delta']
+        for ee, rr in zip(expected_cols, process_output.columns):
+            self.assertEqual(ee, rr)
+        expected_index = self._powers
+        for ee, rr in zip(expected_index, process_output.index):
+            self.assertEqual(ee, rr)
 
-        energy_result = self._online_analysis.summary_process(parse_out)
+        # TODO: check that total of all bins adds up to num nodes
 
-        expected_energy_df = get_expected_baseline_output_df([prof_name], 'energy_pkg',
-                                                             baseline_metric_perf,
-                                                             {prof_name: optimal_metric_perf})
 
-        result = energy_result.loc[pandas.IndexSlice['epoch', int(baseline_freq * 1e-6)], 'energy_savings']
-        expected = float(expected_energy_df.loc[prof_name])
-        self.assertEqual(expected, result)
-'''
+    def test_node_power_process(self):
+        pass
+
+    def test_node_freq_range_process(self):
+        pass
+
 
 if __name__ == '__main__':
     unittest.main()

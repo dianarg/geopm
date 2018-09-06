@@ -346,6 +346,11 @@ class BalancerAnalysis(Analysis):
         if self._metric == 'energy':
             self._metric = 'energy_pkg'
 
+        self._min_power = min_power
+        self._max_power = max_power
+        # TODO:
+        self._use_agent = True
+
     # todo: why does each analysis need to define this?
     # a: in case of special naming convention like freq sweep
     def find_files(self, search_pattern='*report'):
@@ -393,11 +398,11 @@ class BalancerAnalysis(Analysis):
             target = 'power_balancer'
              # TODO: have a separate power analysis?
             if self._metric == 'power':
-                rge = report_df.loc[idx[:, :, :, :, :, reference, :, :, 'epoch'], 'energy_pkg']
-                rgr = report_df.loc[idx[:, :, :, :, :, reference, :, :, 'epoch'], 'runtime']
+                rge = report_df.loc[idx[:, self._min_power:self._max_power, :, :, :, reference, :, :, 'epoch'], 'energy_pkg']
+                rgr = report_df.loc[idx[:, self._min_power:self._max_power, :, :, :, reference, :, :, 'epoch'], 'runtime']
                 reference_g = (rge / rgr).groupby(level='name')
             else:
-                reference_g = report_df.loc[idx[:, :, :, :, :, reference, :, :, 'epoch'],
+                reference_g = report_df.loc[idx[:, self._min_power:self._max_power, :, :, :, reference, :, :, 'epoch'],
                                         self._metric].groupby(level='name')
         else:
             if self._metric == 'power':
@@ -665,10 +670,47 @@ class NodePowerAnalysis(Analysis):
         self._min_power = min_power
         self._max_power = max_power
         self._step_power = step_power
+        self._profile_name = self._name + '_nocap'
 
-    def launch(self):
-        # TODO: don't do power sweep, just run with monitor
-        pass
+    def launch(self, config):
+        agent = monitor
+        ctl_conf = geopmpy.io.CtlConf(os.path.join(self._output_dir, self._name + '_ctl.config'),
+                                      'dynamic',
+                                      {'tree_decider': 'static_policy',
+                                       'leaf_decider': 'static_policy',
+                                       'platform': 'rapl',
+                                       'power_budget': power_cap})
+        if not config.agent:
+            ctl_conf.write()
+        else:
+            # todo: clean up
+            with open(ctl_conf.get_path(), "w") as outfile:
+                    outfile.write("{}\n")
+
+        for iteration in range(self._iterations):
+            report_path = os.path.join(self._output_dir, self._profile_name + '_{}.report'.format(iteration))
+            trace_path = os.path.join(self._output_dir, self._profile_name + '_{}.trace'.format(iteration))
+            self._report_paths.append(report_path)
+            self._trace_paths.append(trace_path+'*')
+
+            if config.app_argv and not os.path.exists(report_path):
+                argv = ['dummy', '--geopm-ctl', config.geopm_ctl,
+                                 '--geopm-policy', ctl_conf.get_path(),
+                                 '--geopm-report', report_path,
+                                 '--geopm-trace', trace_path,
+                                 '--geopm-profile', profile_name]
+                if config.do_geopm_barrier:
+                    argv.append('--geopm-barrier')
+                if agent:
+                    argv.append('--geopm-agent=' + agent)
+                argv.append('--')
+                argv.extend(config.app_argv)
+                launcher = geopmpy.launcher.factory(argv, config.num_rank, config.num_node)
+                launcher.run()
+            elif os.path.exists(report_path):
+                sys.stderr.write('<geopmpy>: Warning: output file "{}" exists, skipping run.\n'.format(report_path))
+            else:
+                raise RuntimeError('<geopmpy>: output file "{}" does not exist, but no application was specified.\n'.format(report_path))
 
     def summary_process(self, parse_output):
         sys.stdout.write("<geopmpy>: Warning: No summary implemented for this analysis type.\n")
@@ -679,8 +721,8 @@ class NodePowerAnalysis(Analysis):
     def plot_process(self, parse_output):
         report_df = parse_output   # load_report_or_cache(self._report_paths, "node_power.h5")  # TODO: fix name
 
-        # TODO: need to run with no power cap
-        profile = self._name + "_" + str(self._max_power)  # "_nocap"
+        #profile = self._name + "_" + str(self._max_power)  # "_nocap"
+        profile = self._profile_name
 
         region_of_interest = 'epoch'
         energy_data = report_df.loc[pandas.IndexSlice[:, profile, :, :, :, :, :, :, region_of_interest], ].groupby('node_name').mean()['energy_pkg'].sort_values()
