@@ -48,6 +48,8 @@ namespace geopm
     }
 
     std::string hostname(void);
+
+    void debug_print(const char *file, int line);
 }
 
 #endif

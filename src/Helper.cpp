@@ -33,8 +33,10 @@
 #include <unistd.h>
 #include <limits.h>
 #include <string>
+#include <fstream>
 
 #include "Exception.hpp"
+#include "geopm_time.h"
 
 namespace geopm
 {
@@ -48,5 +50,15 @@ namespace geopm
             }
         }
         return hostname;
+    }
+
+    void debug_print(const char *file, int line)
+    {
+        static std::ofstream log_file("debug_print-" + hostname(), std::ios_base::app);
+        struct geopm_time_s time;
+        geopm_time(&time);
+        log_file << "t_sec=" << time.t.tv_sec
+                 << " : t_nsec=" << time.t.tv_nsec
+                 << " : " << file << ":" << line << std::endl;
     }
 }
