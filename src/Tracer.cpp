@@ -137,6 +137,7 @@ namespace geopm
 
     Tracer::~Tracer()
     {
+debug_print(__FILE__, __LINE__);
         if (m_stream.good() && m_is_trace_enabled) {
             m_stream << m_buffer.str();
             m_stream.close();

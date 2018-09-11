@@ -112,10 +112,13 @@ namespace geopm
     void ProfileSampler::initialize(void)
     {
         std::ostringstream shm_key;
-
+debug_print(__FILE__, __LINE__);
         m_ctl_msg->wait(); // M_STATUS_MAP_BEGIN
+debug_print(__FILE__, __LINE__);
         m_ctl_msg->step(); // M_STATUS_MAP_BEGIN
+debug_print(__FILE__, __LINE__);
         m_ctl_msg->wait(); // M_STATUS_MAP_END
+debug_print(__FILE__, __LINE__);
 
         std::set<int> rank_set;
         for (int i = 0; i < GEOPM_MAX_NUM_CPU; i++) {

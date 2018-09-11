@@ -61,6 +61,7 @@
 #include "SharedMemory.hpp"
 #include "Exception.hpp"
 #include "Comm.hpp"
+#include "Helper.hpp"
 #include "config.h"
 
 namespace geopm
@@ -114,13 +115,20 @@ namespace geopm
 
         init_prof_comm(std::move(comm), shm_num_rank);
         try {
+debug_print(__FILE__, __LINE__);
             init_ctl_msg(sample_key);
+debug_print(__FILE__, __LINE__);
             init_cpu_list(topo.num_domain(IPlatformTopo::M_DOMAIN_CPU));
+debug_print(__FILE__, __LINE__);
             init_cpu_affinity(shm_num_rank);
+debug_print(__FILE__, __LINE__);
             init_tprof_table(tprof_key, topo);
+debug_print(__FILE__, __LINE__);
             init_table(sample_key);
+debug_print(__FILE__, __LINE__);
         }
         catch (const Exception &ex) {
+debug_print(__FILE__, __LINE__);
             if (!m_rank) {
                 std::cerr << "Warning: <geopm> Controller handshake failed, running without geopm." << std::endl;
                 int err = ex.err_value();
@@ -196,9 +204,13 @@ namespace geopm
 
     void Profile::init_cpu_affinity(int shm_num_rank)
     {
+debug_print(__FILE__, __LINE__);
         m_shm_comm->barrier();
+debug_print(__FILE__, __LINE__);
         m_ctl_msg->step();  // M_STATUS_MAP_BEGIN
+debug_print(__FILE__, __LINE__);
         m_ctl_msg->wait();  // M_STATUS_MAP_BEGIN
+debug_print(__FILE__, __LINE__);
 
         for (int i = 0 ; i < shm_num_rank; ++i) {
             if (i == m_shm_rank) {

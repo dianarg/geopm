@@ -85,7 +85,9 @@ namespace geopm
     void ApplicationIO::connect(void)
     {
         if (!m_is_connected) {
+debug_print(__FILE__, __LINE__);
             m_sampler->initialize();
+debug_print(__FILE__, __LINE__);
             m_rank_per_node = m_sampler->rank_per_node();
             m_prof_sample.resize(m_sampler->capacity());
             std::vector<int> cpu_rank = m_sampler->cpu_rank();
@@ -100,6 +102,7 @@ namespace geopm
             m_start_energy_pkg = current_energy_pkg();
             m_start_energy_dram = current_energy_dram();
         }
+debug_print(__FILE__, __LINE__);
     }
 
     void ApplicationIO::controller_ready(void)

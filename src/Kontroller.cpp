@@ -165,8 +165,11 @@ namespace geopm
 
     void Kontroller::run(void)
     {
+debug_print(__FILE__, __LINE__);
         m_application_io->connect();
+debug_print(__FILE__, __LINE__);
         geopm_signal_handler_check();
+debug_print(__FILE__, __LINE__);
         m_platform_io.save_control();
         geopm_signal_handler_check();
         init_agents();
