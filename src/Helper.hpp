@@ -46,6 +46,8 @@ namespace geopm
     {
         return std::unique_ptr<Type>(new Type(std::forward<Args>(args)...));
     }
+
+    std::string hostname(void);
 }
 
 #endif

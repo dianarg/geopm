@@ -39,6 +39,7 @@
 #include "geopm_time.h"
 #include "ControlMessage.hpp"
 #include "Exception.hpp"
+#include "Helper.hpp"
 
 #include "config.h"
 
@@ -81,11 +82,12 @@ namespace geopm
             }
         }
         if (this_status() != m_last_status) {
-            char hostname[NAME_MAX];
-            int err = gethostname(hostname, NAME_MAX);
-            std::string hostname_str = "";
-            if (!err) {
-                hostname_str = std::string(hostname);
+            std::string hostname_str;
+            try {
+                hostname_str = hostname();
+            }
+            catch (Exception) {
+
             }
             throw Exception("ControlMessage::wait(): " + hostname_str +
                             " : is_ctl=" + std::to_string(m_is_ctl) +

@@ -49,6 +49,7 @@
 #include "Comm.hpp"
 #include "TreeComm.hpp"
 #include "Exception.hpp"
+#include "Helper.hpp"
 #include "geopm_hash.h"
 #include "geopm_version.h"
 #include "config.h"
@@ -132,9 +133,7 @@ namespace geopm
         }
         // per-node report
         std::ostringstream report;
-        char hostname[NAME_MAX];
-        gethostname(hostname, NAME_MAX);
-        report << "\nHost: " << hostname << std::endl;
+        report << "\nHost: " << hostname() << std::endl;
         for (const auto &kv : agent_node_report) {
             report << kv.first << ": " << kv.second << std::endl;
         }
