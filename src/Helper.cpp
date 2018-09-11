@@ -30,24 +30,23 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef HELPER_HPP_INCLUDE
-#define HELPER_HPP_INCLUDE
+#include <unistd.h>
+#include <limits.h>
+#include <string>
 
-#include <memory>
-#include <utility>
+#include "Exception.hpp"
 
 namespace geopm
 {
-    /// @brief Implementation of std::make_unique (C++14) for C++11.
-    ///        Note that this version will only work for non-array
-    ///        types.
-    template <class Type, class ...Args>
-    std::unique_ptr<Type> make_unique(Args &&...args)
+    std::string hostname(void)
     {
-        return std::unique_ptr<Type>(new Type(std::forward<Args>(args)...));
+        static char hostname[NAME_MAX] = "";
+        if (hostname[0] == '\0') {
+            int err = gethostname(hostname, NAME_MAX);
+            if (err) {
+                throw Exception("hostname() gethostname() failed", err, __FILE__, __LINE__);
+            }
+        }
+        return hostname;
     }
-
-    std::string hostname(void);
 }
-
-#endif

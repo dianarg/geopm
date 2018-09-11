@@ -113,6 +113,7 @@ src/geopm_version.h
 src/geopmwrite_main.cpp
 src/GlobalPolicy.cpp
 src/GlobalPolicy.hpp
+src/Helper.cpp
 src/Helper.hpp
 src/IOGroup.cpp
 src/IOGroup.hpp

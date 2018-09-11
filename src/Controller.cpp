@@ -1002,7 +1002,6 @@ namespace geopm
         std::map<uint64_t, std::string> region;
         std::ostringstream report;
         std::ofstream master_report;
-        char hostname[NAME_MAX];
         double energy_exit = 0.0;
 
         platform_io().read_batch();
@@ -1034,8 +1033,7 @@ namespace geopm
             master_report << "Profile: " << profile_name << std::endl;
             master_report << m_global_policy << std::endl;
         }
-        gethostname(hostname, NAME_MAX);
-        report << "Host: " << hostname << std::endl;
+        report << "Host: " << hostname() << std::endl;
         for (auto it = m_region[0].begin(); it != m_region[0].end(); ++it) {
             uint64_t region_id = it->first;
             std::string name;
