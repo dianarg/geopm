@@ -67,8 +67,10 @@ namespace geopm
     class IEndpoint
     {
         public:
-            IEndpoint() = delete;
+            IEndpoint() = default;
             virtual ~IEndpoint() = default;
+
+            // TODO: virtual methods here
     };
 
     class Endpoint : public IEndpoint

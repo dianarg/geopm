@@ -68,8 +68,7 @@ extern "C"
 namespace geopm
 {
     Kontroller::Kontroller(std::shared_ptr<Comm> ppn1_comm,
-                           const std::string &policy_path,
-                           const std::string &sample_path)
+                           const std::string &policy_path)
         : Kontroller(ppn1_comm,
                      platform_io(),
                      geopm_env_agent(),
@@ -83,7 +82,7 @@ namespace geopm
                      std::unique_ptr<ITracer>(new Tracer()),
                      std::vector<std::unique_ptr<Agent> >{},
                      std::unique_ptr<IManagerIOSampler>(new ManagerIOSampler(policy_path, true)),
-                     std::unique_ptr<IManagerIO>(new ManagerIO(sample_path, false)))
+                     std::unique_ptr<IManagerIO>(nullptr)) //new ManagerIO(sample_path, false)))
     {
 
     }

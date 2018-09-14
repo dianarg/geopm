@@ -138,7 +138,6 @@ TEST_F(EnvironmentTest, construction0)
     geopm_env_load();
 
     EXPECT_EQ(m_policy, std::string(geopm_env_policy()));
-    EXPECT_EQ("", std::string(geopm_env_sample()));
     EXPECT_EQ("/geopm-shm-" + m_shmkey, std::string(geopm_env_shmkey()));
     EXPECT_EQ(m_trace, std::string(geopm_env_trace()));
     EXPECT_EQ(m_plugin_path, std::string(geopm_env_plugin_path()));
@@ -173,7 +172,6 @@ TEST_F(EnvironmentTest, construction1)
 
     std::string default_shmkey("/geopm-shm-" + std::to_string(geteuid()));
     EXPECT_EQ(m_policy, std::string(geopm_env_policy()));
-    EXPECT_EQ("", std::string(geopm_env_sample()));
     EXPECT_EQ(default_shmkey, std::string(geopm_env_shmkey()));
     EXPECT_EQ(m_trace, std::string(geopm_env_trace()));
     EXPECT_EQ(m_plugin_path, std::string(geopm_env_plugin_path()));
@@ -198,7 +196,6 @@ TEST_F(EnvironmentTest, construction2)
     setenv("GEOPM_SHMKEY", m_shmkey.c_str(), 1);
     setenv("GEOPM_TRACE", m_trace.c_str(), 1);
     setenv("GEOPM_PLUGIN_PATH", m_plugin_path.c_str(), 1);
-    setenv("GEOPM_REPORT_VERBOSITY", std::to_string(m_report_verbosity).c_str(), 1);
     setenv("GEOPM_REGION_BARRIER", "", 1);
     setenv("GEOPM_PROFILE_TIMEOUT", std::to_string(m_profile_timeout).c_str(), 1);
     m_pmpi_ctl_str = std::string("process");
@@ -210,13 +207,12 @@ TEST_F(EnvironmentTest, construction2)
     geopm_env_load();
 
     EXPECT_EQ("/geopm-shm-" + m_shmkey + "-" + m_endpoint + ".policy", std::string(geopm_env_policy()));
-    EXPECT_EQ("/geopm-shm-" + m_shmkey + "-" + m_endpoint + ".sample", std::string(geopm_env_sample()));
+    //EXPECT_EQ("/geopm-shm-" + m_shmkey + "-" + m_endpoint + ".sample", std::string(geopm_env_sample()));
     EXPECT_EQ("/geopm-shm-" + m_shmkey, std::string(geopm_env_shmkey()));
     EXPECT_EQ(m_trace, std::string(geopm_env_trace()));
     EXPECT_EQ(m_plugin_path, std::string(geopm_env_plugin_path()));
     EXPECT_EQ(m_report, std::string(geopm_env_report()));
     EXPECT_EQ(m_profile, std::string(geopm_env_profile()));
-    EXPECT_EQ(m_report_verbosity, geopm_env_report_verbosity());
     EXPECT_EQ(m_pmpi_ctl, geopm_env_pmpi_ctl());
     EXPECT_EQ(1, geopm_env_do_region_barrier());
     EXPECT_EQ(1, geopm_env_do_trace());

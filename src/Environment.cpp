@@ -63,7 +63,6 @@ namespace geopm
             const char *comm(void) const;
             const char *endpoint(void) const;
             const char *policy(void) const;
-            const char *sample(void) const;
             const char *shmkey(void) const;
             const char *trace(void) const;
             const char *plugin_path(void) const;
@@ -334,11 +333,6 @@ extern "C"
     const char *geopm_env_policy(void)
     {
         return geopm::environment().policy();
-    }
-
-    const char *geopm_env_sample(void)
-    {
-        return geopm::environment().sample();
     }
 
     const char *geopm_env_agent(void)

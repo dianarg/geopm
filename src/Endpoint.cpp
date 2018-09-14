@@ -224,7 +224,7 @@ namespace geopm
         std::cout << "In Endpoint::shmem_create() " << std::endl;
 
         std::cout << "DEBUG - Policy shmem region = " << geopm_env_policy() << std::endl;
-        std::cout << "DEBUG - Sample shmem region = " << geopm_env_sample() << std::endl;
+        //std::cout << "DEBUG - Sample shmem region = " << geopm_env_sample() << std::endl;
         std::string policy_path (geopm_env_policy());
 
         if (policy_path[0] != '/' || policy_path.find_last_of('/') != 0) {
@@ -238,7 +238,7 @@ namespace geopm
         *policy_data = {};
         setup_mutex(policy_data->lock);
 
-        SharedMemory sample_shmem (geopm_env_sample(), shmem_size, true);
+        SharedMemory sample_shmem ("TODO"/*geopm_env_sample()*/, shmem_size, true);
         struct geopm_endpoint_shmem_s * sample_data = (struct geopm_endpoint_shmem_s *) sample_shmem.pointer();
         *sample_data = {};
         setup_mutex(sample_data->lock);
@@ -248,11 +248,11 @@ namespace geopm
     {
         std::cout << "In Endpoint::shmem_destroy() " << std::endl;
         std::cout << "Policy shmem region = " << geopm_env_policy() << std::endl;
-        std::cout << "Sample shmem region = " << geopm_env_sample() << std::endl;
+        //std::cout << "Sample shmem region = " << geopm_env_sample() << std::endl;
 
         m_policy_shmem_user = geopm::make_unique<SharedMemoryUser>(geopm_env_policy(), 5);
         m_policy_shmem_user->unlink();
-        m_sample_shmem_user = geopm::make_unique<SharedMemoryUser>(geopm_env_sample(), 5);
+        m_sample_shmem_user = geopm::make_unique<SharedMemoryUser>("TODO"/*geopm_env_sample()*/, 5);
         m_sample_shmem_user->unlink();
     }
 
@@ -269,7 +269,7 @@ namespace geopm
 
         m_policy_shmem_user = geopm::make_unique<SharedMemoryUser>(geopm_env_policy(), 5);
         m_policy_data = (struct geopm_endpoint_shmem_s *) m_policy_shmem_user->pointer();
-        m_sample_shmem_user = geopm::make_unique<SharedMemoryUser>(geopm_env_sample(), 5);
+        m_sample_shmem_user = geopm::make_unique<SharedMemoryUser>("TODO"/*geopm_env_sample()*/, 5);
         m_sample_data = (struct geopm_endpoint_shmem_s *) m_sample_shmem_user->pointer();
     }
 
@@ -495,4 +495,3 @@ int geopm_endpoint_agent_sample(struct geopm_endpoint_c *endpoint,
     }
     return err;
 }
-
