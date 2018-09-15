@@ -129,6 +129,11 @@ zero upon success; see [ERRORS][] section below for details.
     indicating that the shmem regions were removed.  Otherwise an error code is
     returned.
 
+  * `geopm_endpoint_shmem_attach`():
+    will attach the _endpoint_ object to the shared memory regions with shmem
+    keys matching _endpoint_name_.  This must be called before attempting to
+    read and/or write policies and samples with this endpoint.
+
   * `geopm_endpoint_agent`():
     checks to see if an agent specified by _agent_name_ has attached to the
     _endpoint_.  The number of bytes reserved for _agent_name_ is specified in

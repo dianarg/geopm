@@ -122,6 +122,9 @@ namespace geopm
         m_endpoint = "";
         m_policy = "";
         m_agent = "monitor";
+        // TODO: RM needs to know this somehow. Consider just using this prefix without userid
+        // and don't allow user to change it with env variable
+        // userid might be okay since the RM should know this
         m_shmkey = "/geopm-shm-" + std::to_string(geteuid());
         m_trace = "";
         m_plugin_path = "";

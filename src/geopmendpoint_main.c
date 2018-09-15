@@ -301,13 +301,17 @@ int main(int argc, char **argv)
         err = geopm_endpoint_create(endpoint_str, &endpoint);
         if (!err) {
             err = geopm_endpoint_shmem_attach(endpoint);
-        } if (!err) {
+        }
+        if (!err) {
             err = geopm_endpoint_agent(endpoint, GEOPMENDPOINT_STRING_LENGTH, agent_name_str);
-        } if (!err) {
+        }
+        if (!err) {
             err = geopm_agent_num_sample(agent_name_str, &num_sample);
-        } if (!err) {
+        }
+        if (!err) {
             err = geopm_endpoint_agent_sample(endpoint, sample_vals, &sample_age_sec);
-        } if (!err) {
+        }
+        if (!err) {
             char name_str[GEOPMENDPOINT_STRING_LENGTH] = {0};
             if (!err) {
                 for (int i = 0; !err && i < num_sample; ++i) {
@@ -346,4 +350,3 @@ int main(int argc, char **argv)
 
     return err;
 }
-

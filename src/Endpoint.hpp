@@ -70,32 +70,64 @@ namespace geopm
             IEndpoint() = default;
             virtual ~IEndpoint() = default;
 
-            // TODO: virtual methods here
+            /// @brief Create shared memory regions for passing
+            ///        policies to the Agent and reading samples from
+            ///        the Agent.
+            virtual void shmem_create(void) = 0;
+            /// @brief Release shared memory regions.
+            virtual void shmem_destroy(void) = 0;
+            /// @brief ??  Used by geopm_endpoint_shmem_attach(), which is missing documentation
+            /// Attach to the shared memory region as a user (not owner).
+            /// I think this needs to be called before any read/write
+            virtual void attach_shmem(void) = 0;
+            /// @brief Returns the name of the attached Agent, if any.
+            virtual std::string agent_name(void) = 0;
+            /// @brief Returns the number of nodes contained within
+            ///        this endpoint.
+            virtual int num_node(void) = 0;
+            /// @brief Returns the name of the node at a given index
+            ///        in the list of nodes contained within this
+            ///        endpoint.
+            /// @todo this might be nicer with vector return value. let the C api do indexing.
+            virtual std::string node_name(int node_idx) = 0;
+            /// @brief Returns the number of Agent policy fields.
+            virtual int num_policy(void) = 0;
+            /// @brief Returns the latest policy values from shared memory.
+            virtual std::vector<double> read_policy_shmem(void) = 0;
+            /// @brief Writes the given policy values to shared memory.
+            virtual void write_policy_shmem(std::vector<double> policy_array) = 0;
+            /// @brief Returns the latest sample values.
+            virtual std::vector<double> read_sample_shmem(void) = 0;
+            /// @brief Write the sample values to shared memory.
+            virtual void write_sample_shmem(std::vector<double> sample_array) = 0;
+            /// @brief ???
+            /// @todo do these need to be public?
+            virtual void update(void) = 0;
+            virtual void update_sample(const std::vector<double> &values) = 0;
     };
 
     class Endpoint : public IEndpoint
     {
         public:
-            Endpoint(std::string endpoint);
+            Endpoint(const std::string &endpoint);
             Endpoint(const Endpoint &other) = delete;
             ~Endpoint();
+
             void shmem_create(void);
             void shmem_destroy(void);
             void attach_shmem(void);
-            static void setup_mutex(pthread_mutex_t &lock);
             std::string agent_name(void);
             int num_node(void);
             std::string node_name(int node_idx);
             int num_policy(void);
-
             std::vector<double> read_policy_shmem(void);
             void write_policy_shmem(std::vector<double> policy_array);
             std::vector<double> read_sample_shmem(void);
             void write_sample_shmem(std::vector<double> policy_array);
-
             void update(void);
             void update_sample(const std::vector<double> &values);
 
+            static void setup_mutex(pthread_mutex_t &lock);
         private:
             std::map<std::string, double> parse_json(void);
             const std::string read_file(void);
@@ -116,7 +148,6 @@ namespace geopm
             std::string m_sample_shmem_str;
 
     };
-
 }
 
 #endif

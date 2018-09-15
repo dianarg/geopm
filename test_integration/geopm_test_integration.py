@@ -184,7 +184,6 @@ class TestIntegration(unittest.TestCase):
             trace = self._output.get_trace(nn)
             self.assertNotEqual(0, len(trace))
 
-
     def test_no_report_and_trace_generation(self):
         name = 'test_no_report_and_trace_generation'
         num_node = 4
@@ -1353,6 +1352,105 @@ class TestIntegrationGeopmio(unittest.TestCase):
         self.assertEqual(max_freq, result)
 
         self.check_no_error(['FREQUENCY', write_domain, '0', str(old_freq)])
+
+
+class TestIntegrationEndpoint(unittest.TestCase):
+    def setUp(self):
+        self.EXE = 'geopmendpoint'
+
+    def run_with_args(self, *args):
+        print args
+        proc = subprocess.Popen([self.EXE] + list(args),
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc.wait()
+        return proc.returncode, self.stream_str(proc.stdout)
+
+    def stream_str(self, stdout):
+        total = ""
+        line = stdout.readline()
+        while line != "":
+            total += line
+            line = stdout.readline()
+        return total
+
+    def test_help(self):
+        rc, result = self.run_with_args('--help')
+        self.assertIn('Usage: geopmendpoint', result)
+        self.assertEqual(0, rc)
+
+    def test_list_no_endpoints(self):
+        rc, result = self.run_with_args()
+        self.assertIn("No endpoints found", result)
+        self.assertEqual(0, rc)
+
+    def test_create_destroy_endpoints(self):
+        # create endpoints
+        rc, result = self.run_with_args('-c', 'job1')
+        print result
+        self.assertEqual(0, rc)
+        rc, _ = self.run_with_args('-c', 'job2')
+        self.assertEqual(0, rc)
+
+        # list all endpoints
+        rc, result = self.run_with_args()
+        expected = "job1\njob2"
+        self.assertIn(expected, result)
+        self.assertEqual(0, rc)
+
+        # destroy endpoints
+        rc, _ = self.run_with_args('-d', 'job1')
+        self.assertEqual(0, rc)
+        rc, _ = self.run_with_args('-d', 'job2')
+        self.assertEqual(0, rc)
+
+        # list all endpoints
+        rc, result = self.run_with_args()
+        expected = ""
+        self.assertEqual(expected, result)
+        self.assertEqual(0, rc)
+
+        # destroy invalid endpoint
+        rc, result = self.run_with_args('-d', 'job9')
+        self.assertIn("asdfsadf?", result)
+        self.assertNotEqual(0, rc)
+
+    @unittest.skip("WIP")
+    def test_attach_no_endpoint(self):
+        proc = subprocess.Popen([self.EXE, '-a', 'job1'],
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        expected = "Error: No endpoints found"
+        self.assertEqual(expected, proc.stdout.readline())
+
+    @unittest.skip("WIP")
+    def test_no_agent_attached(self):
+        proc = subprocess.Popen([self.EXE, '-c', 'job1'],
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen([self.EXE, '-a', 'job1'],
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        expected = "Error: No agent has attached to endpoint"
+        self.assertEqual(expected, proc.stdout.readline())
+    @unittest.skip("WIP")
+    def test_agent_attached(self):
+        proc = subprocess.Popen([self.EXE, '-c', 'job1'],
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        # run an agent
+        #proc = subprocess.Popen([],
+        #                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        proc = subprocess.Popen([self.EXE, '-a', 'job1'],
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        expected = "Agent: some agent\nNodes: ..."
+        self.assertEqual(expected, proc.stdout.readline())
+    @unittest.skip("WIP")
+    def test_agent_sample_policy(self):
+        argv = ['-c', 'job1']
+        argv = ['run agent']
+        argv = ['-s', 'job1']
+        expected = "POWER: 555, IS_CONVERGED: 1"
+
+        argv = ['-p', '250', 'job1']
+        argv = ['-s', 'job1']
+        expected = "POWER: 250, IS_CONVERGED: 1"
 
 
 if __name__ == '__main__':

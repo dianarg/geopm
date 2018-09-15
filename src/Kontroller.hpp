@@ -65,8 +65,7 @@ namespace geopm
             ///        file or shared memory.
             /// @param [in] sample_path Path to the sample output in
             ///        shared memory.
-            Kontroller(std::shared_ptr<Comm> ppn1_comm,
-                       const std::string &policy_path);
+            Kontroller(std::shared_ptr<Comm> ppn1_comm);
             /// @brief Constructor for testing that allows injecting mocked
             ///        versions of internal objects.
             Kontroller(std::shared_ptr<Comm> comm,

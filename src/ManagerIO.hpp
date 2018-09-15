@@ -52,6 +52,7 @@ namespace geopm
         double values;        // 8 bytes
     };
 
+    // TODO: this should now be handled by endpoint
     struct geopm_manager_shmem_s {
         /// @brief Lock to ensure r/w consistency between GEOPM and the resource manager.
         pthread_mutex_t lock;
@@ -70,6 +71,9 @@ namespace geopm
         public:
             IManagerIO() = default;
             virtual ~IManagerIO() = default;
+
+            /// OLD API
+
             /// @brief Set the value for a specific signal or policy
             ///        to be written.
             /// @param [in] signal_name Name of the signal or policy.
@@ -85,6 +89,14 @@ namespace geopm
             /// @brief Returns the expected signal or policy names.
             /// @return Vector of signal or policy names.
             virtual std::vector<std::string> signal_names(void) const = 0;
+
+
+            /// NEW API
+
+            /// @brief Read updated policy
+            //virtual bool read_policy(void) = 0;
+            /// @brief Write values of latest telemetry sample.
+            //virtual bool write_sample(const std::vector<double> &settings) = 0;
     };
 
     class ManagerIO : public IManagerIO

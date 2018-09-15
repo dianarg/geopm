@@ -48,7 +48,7 @@ using json11::Json;
 
 namespace geopm
 {
-    Endpoint::Endpoint(std::string endpoint)
+    Endpoint::Endpoint(const std::string &endpoint)
         : m_policy_data(nullptr)
         , m_sample_data(nullptr)
         , m_is_using_shmem(false)
@@ -225,6 +225,8 @@ namespace geopm
 
         std::cout << "DEBUG - Policy shmem region = " << geopm_env_policy() << std::endl;
         //std::cout << "DEBUG - Sample shmem region = " << geopm_env_sample() << std::endl;
+
+        // TODO: why is policy path required if we want to use GEOPM_ENDPOINT instead?
         std::string policy_path (geopm_env_policy());
 
         if (policy_path[0] != '/' || policy_path.find_last_of('/') != 0) {
