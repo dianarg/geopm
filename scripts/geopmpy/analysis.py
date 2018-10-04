@@ -1169,16 +1169,10 @@ class OfflineBaselineComparisonAnalysis(Analysis):
                                        'leaf_decider': 'efficient_freq',
                                        'platform': 'rapl'})
 
-        if config.agent:
-            with open(ctl_conf.get_path(), "w") as outfile:
-                outfile.write("{{\"FREQ_MIN\" : {}, \"FREQ_MAX\" : {}}}\n".format(self._min_freq, self._max_freq))
-        else:
-            ctl_conf.write()
-
         # Run frequency sweep
         self._sweep_analysis.launch(config)
         self._min_freq = self._sweep_analysis._min_freq
-        self._max_freq = self._sweep_analysis._min_freq
+        self._max_freq = self._sweep_analysis._max_freq
         self._sweep_analysis.find_files()
         parse_output = self._sweep_analysis.parse()
         process_output = self._sweep_analysis.summary_process(parse_output)
@@ -1187,6 +1181,14 @@ class OfflineBaselineComparisonAnalysis(Analysis):
             sys.stdout.write(self._sweep_analysis._region_freq_str_pretty(process_output['region_freq_map']))
 
         # Run offline frequency decider
+
+        if config.agent:
+            print 'DRG write offline config'
+            with open(ctl_conf.get_path(), "w") as outfile:
+                outfile.write("{{\"FREQ_MIN\" : {}, \"FREQ_MAX\" : {}}}\n".format(self._min_freq, self._max_freq))
+        else:
+            ctl_conf.write()
+
         for iteration in range(self._iterations):
             os.environ['GEOPM_EFFICIENT_FREQ_RID_MAP'] = region_freq_str
             if 'GEOPM_EFFICIENT_FREQ_ONLINE' in os.environ:
