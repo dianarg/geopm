@@ -324,8 +324,8 @@ namespace geopm
     {
         std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > result;
         for (const auto &region : m_region_map) {
-            // TODO: these are not showing up for every region because of the hints
-            result[region.first] = {std::make_pair("REQUESTED_FREQUENCY", std::to_string(region.second->freq()))};
+            result[geopm_region_id_hash(region.first)] =
+                {std::make_pair("REQUESTED_FREQUENCY", std::to_string(region.second->freq()))};
         }
 
         return result;
@@ -338,6 +338,8 @@ namespace geopm
 
     void EnergyEfficientAgent::trace_values(std::vector<double> &values)
     {
+        /// @todo: for debugging, might make sense to put target runtime
+        ///        in the trace.
     }
 
     double EnergyEfficientAgent::get_limit(const std::string &sig_name) const

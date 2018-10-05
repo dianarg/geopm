@@ -1025,7 +1025,7 @@ class TestIntegration(unittest.TestCase):
         Test of the EnergyEfficientAgent offline auto mode.
         """
         name = 'test_plugin_efficient_freq_offline'
-        loop_count = 100
+        loop_count = 10
         dgemm_bigo = 20.25
         stream_bigo = 1.449
         dgemm_bigo_jlse = 35.647
