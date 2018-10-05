@@ -137,10 +137,10 @@ namespace geopm
         if (result) {
             for (auto &child_policy : out_policy) {
 #ifdef GEOPM_DEBUG
-        if (child_policy.size() != M_NUM_POLICY) {
-            throw Exception("EnergyEfficientAgent::" + std::string(__func__) + "(): child_policy vector not correctly sized.",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
+                if (child_policy.size() != M_NUM_POLICY) {
+                    throw Exception("EnergyEfficientAgent::" + std::string(__func__) + "(): child_policy vector not correctly sized.",
+                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+                }
 #endif
                 child_policy[M_POLICY_FREQ_MIN] = m_freq_min;
                 child_policy[M_POLICY_FREQ_MAX] = m_freq_max;
@@ -312,7 +312,7 @@ namespace geopm
         std::vector<std::pair<std::string, std::string> > result;
         std::ostringstream oss;
         for (const auto &region : m_region_map) {
-            oss << region.first << ":" << region.second->freq() << " ";
+            oss << std::hex << region.first << ":" << std::dec << region.second->freq() << " ";
         }
         if (m_region_map.size()) {
             result.push_back({"Final freq map", oss.str()});
@@ -324,6 +324,7 @@ namespace geopm
     {
         std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > result;
         for (const auto &region : m_region_map) {
+            // TODO: these are not showing up for every region because of the hints
             result[region.first] = {std::make_pair("REQUESTED_FREQUENCY", std::to_string(region.second->freq()))};
         }
 
