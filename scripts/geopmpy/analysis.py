@@ -50,7 +50,6 @@ import geopmpy.launcher
 import geopmpy.plotter
 from geopmpy import __version__
 
-
 def all_region_data_pretty(combined_df):
     rs = 'All region data:\n'
     for region, df in combined_df.groupby('region'):
@@ -807,7 +806,9 @@ class NodePowerAnalysis(Analysis):
         power_data = energy_data / runtime_data
         power_data = power_data.sort_values()
         power_data = pandas.DataFrame(power_data, columns=['power'])
-        return power_data
+        energy_data = pandas.DataFrame(energy_data)
+        energy_data.columns = ['energy']
+        return power_data, energy_data
 
     # Note: there is also a generate_power_plot method in plotter.
     def plot(self, process_output):
@@ -817,10 +818,16 @@ class NodePowerAnalysis(Analysis):
         config.profile_name = self._name
         config.min_drop = self._min_power
         config.max_drop = self._max_power - self._step_power
-
         bin_size = self._step_power
 
-        geopmpy.plotter.generate_histogram(process_output, config, 'power',
+        power_data, energy_data = process_output
+        geopmpy.plotter.generate_histogram(power_data, config, 'power',
+                                           bin_size, 0)
+
+        config.min_drop = energy_data.min().item() - 1000
+        config.max_drop = energy_data.max().item() + 1000
+        bin_size = 500
+        geopmpy.plotter.generate_histogram(energy_data, config, 'energy',
                                            bin_size, 0)
 
 

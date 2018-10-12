@@ -1246,7 +1246,7 @@ def generate_histogram(data, config, label, bin_size, xprecision):
         axis_units = 'W'
         title_units = 'W'
         range_factor = 1
-        title = '{}: Histogram of Power (No Capping)'.format(config.profile_name)
+        title = '{} Histogram of Power (No Capping)'.format(config.profile_name)
         bar_color = 'red'
     elif label.lower() == 'frequency':
         axis_units = 'GHz'
@@ -1258,7 +1258,7 @@ def generate_histogram(data, config, label, bin_size, xprecision):
         axis_units = 'J'
         title_units = 'J'
         range_factor = 1
-        title = '{} Histogram of Energy'.format(config.profile_name)
+        title = '{} Histogram of Energy (No Capping)'.format(config.profile_name)
         bar_color = 'cyan'
     else:
         raise RuntimeError("<geopmpy>: Unknown type for histogram: {}".format(label))
