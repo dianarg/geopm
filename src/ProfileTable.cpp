@@ -152,6 +152,9 @@ namespace geopm
             }
         }
         if (!is_stored) {
+            throw Exception("ProfileTable::insert(): table overflowed.",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+
             std::cout << "compressing table" << std::endl;
             // Overwrite all sequential entry/exit pairs in array and
             // move others to head of the array, then insert new value.

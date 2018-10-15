@@ -134,7 +134,7 @@ TEST_F(ProfileTableTest, insert_overflow_test) {
     std::vector<std::pair<uint64_t, struct geopm_prof_message_s> > contents(size);
     size_t length;
     m_table->dump(contents.begin(), length);
-    EXPECT_EQ(size, length);
+    ASSERT_EQ(3ULL, length); // expect first entry and last exit, plus new entry
 
     // first entry
     EXPECT_EQ(0.0, contents[0].second.progress);
@@ -144,7 +144,7 @@ TEST_F(ProfileTableTest, insert_overflow_test) {
     EXPECT_EQ(1.0, contents[1].second.progress);
     EXPECT_EQ(size-1, geopm_time(&contents[1].second.timestamp));
 
-    // other entries get condensed
+    // other entries get condensed away
 
     // new entry
     EXPECT_EQ(0.0, contents[2].second.progress);
