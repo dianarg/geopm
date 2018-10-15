@@ -62,6 +62,8 @@
 #include "Exception.hpp"
 #include "Comm.hpp"
 #include "config.h"
+#include <iostream>
+#include <sstream>
 
 namespace geopm
 {
@@ -328,7 +330,8 @@ namespace geopm
         struct geopm_time_s overhead_entry;
         geopm_time(&overhead_entry);
 #endif
-
+        std::ostringstream ss;
+        ss << "ENTER " << std::hex << region_id << std::dec << ": ";
         // if we are not currently in a region
         if (!m_curr_region_id && region_id) {
             if (!geopm_region_id_is_mpi(region_id) &&
@@ -339,6 +342,7 @@ namespace geopm
             m_num_enter = 0;
             m_progress = 0.0;
             sample();
+            ss << "top level ";
         }
         else {
             m_tprof_table->enable(false);
@@ -353,14 +357,18 @@ namespace geopm
                 m_curr_region_id = geopm_region_id_set_mpi(m_curr_region_id);
                 m_progress = 0.0;
                 sample();
+                ss << "nested ";
             }
         }
         // keep track of number of entries to account for nesting
         if (m_curr_region_id == region_id ||
-            (geopm_region_id_is_mpi(m_curr_region_id) &&
+            (geopm_region_id_is_mpi(m_curr_region_id) && // TODO: this looks wrong
              geopm_region_id_is_mpi(region_id))) {
             ++m_num_enter;
+            ss << "+ enter ";
         }
+        ss << std::endl;
+        std::cout << ss.str() << std::flush;
 
 #ifdef GEOPM_OVERHEAD
         m_overhead_time += geopm_time_since(&overhead_entry);
@@ -378,12 +386,14 @@ namespace geopm
         struct geopm_time_s overhead_entry;
         geopm_time(&overhead_entry);
 #endif
-
+        std::ostringstream ss;
+        ss << "EXIT " << std::hex << region_id << std::dec << ": ";
         // keep track of number of exits to account for nesting
         if (m_curr_region_id == region_id ||
             (geopm_region_id_is_mpi(m_curr_region_id) &&
              geopm_region_id_is_mpi(region_id))) {
             --m_num_enter;
+            ss << "- enter ";
         }
         if (m_num_enter == 1) {
             m_tprof_table->enable(true);
@@ -395,6 +405,7 @@ namespace geopm
                 m_curr_region_id = geopm_region_id_set_mpi(m_parent_region);
             }
             m_progress = 1.0;
+            ss << "nested ";
             sample();
             m_curr_region_id = 0;
             m_scheduler->clear();
@@ -413,6 +424,8 @@ namespace geopm
             }
 
         }
+        ss << std::endl;
+        std::cout << ss.str() << std::flush;
 
 #ifdef GEOPM_OVERHEAD
         m_overhead_time += geopm_time_since(&overhead_entry);

@@ -112,6 +112,48 @@ TEST_F(ProfileTableTest, hello)
     }
 }
 
+TEST_F(ProfileTableTest, insert_overflow_test) {
+    size_t size = 16;
+    // fill up the table (size 16) with entry-exit pairs
+    struct geopm_prof_message_s insert_message;
+    insert_message.region_id = 1234;
+    for (int ii = 0; ii < size; ii += 2) {
+        insert_message.progress = 0.0;
+        insert_message.timestamp = {{ii, 0}};
+        m_table->insert(1234, insert_message);
+        insert_message.progress = 1.0;
+        insert_message.timestamp = {{ii, 0}};
+        m_table->insert(1234, insert_message);
+    }
+
+    // new entry
+    insert_message.progress = 0.0;
+    insert_message.timestamp = {{99, 0}};
+    m_table->insert(1234, insert_message);
+
+    std::vector<std::pair<uint64_t, struct geopm_prof_message_s> > contents(size);
+    size_t length;
+    m_table->dump(contents.begin(), length);
+    EXPECT_EQ(size, length);
+
+    // first entry
+    EXPECT_EQ(0.0, contents[0].second.progress);
+    EXPECT_EQ(0, geopm_time(&contents[0].second.timestamp));
+
+    // last exit should move up
+    EXPECT_EQ(1.0, contents[1].second.progress);
+    EXPECT_EQ(size-1, geopm_time(&contents[1].second.timestamp));
+
+    // other entries get condensed
+
+    // new entry
+    EXPECT_EQ(0.0, contents[2].second.progress);
+    EXPECT_EQ(99, geopm_time(&contents[2].second.timestamp));
+}
+
+// TODO: test insert overflow for MPI where region ids can be different but hash is the same
+//
+
 TEST_F(ProfileTableTest, name_set_fill_short)
 {
     std::set<std::string> input_set = {"hello", "goodbye"};

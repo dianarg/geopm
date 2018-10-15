@@ -331,6 +331,7 @@ namespace geopm
                     m_last_telemetry[m_region_id_idx] = geopm_field_to_signal(reg.region_id);
                     m_last_telemetry[m_region_progress_idx] = reg.progress;
                     m_last_telemetry[m_region_runtime_idx] = reg.runtime;
+                    m_buffer << "E|";
                     write_line();
                 }
                 ++idx;
@@ -339,6 +340,7 @@ namespace geopm
             m_last_telemetry[m_region_id_idx] = region_id;
             m_last_telemetry[m_region_progress_idx] = region_progress;
             m_last_telemetry[m_region_runtime_idx] = region_runtime;
+            m_buffer << "s|";
             write_line();
         }
 

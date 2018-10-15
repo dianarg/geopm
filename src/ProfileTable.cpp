@@ -45,6 +45,7 @@
 
 #include "config.h"
 
+#include <iostream>
 
 namespace geopm
 {
@@ -151,6 +152,7 @@ namespace geopm
             }
         }
         if (!is_stored) {
+            std::cout << "compressing table" << std::endl;
             // Overwrite all sequential entry/exit pairs in array and
             // move others to head of the array, then insert new value.
             uint64_t *key_ptr = m_table[table_idx].key;
@@ -237,7 +239,7 @@ namespace geopm
             }
             m_key_set.insert(result);
             m_key_map.insert(std::pair<const std::string, uint64_t>(name, result));
-            m_key_map_last = m_key_map.begin();
+            m_key_map_last = m_key_map.begin(); // TODO: is this needed here?
             err = pthread_mutex_unlock(&(m_key_map_lock));
             if (err) {
                 throw Exception("ProfileTable::key(): pthread_mutex_unlock()", err, __FILE__, __LINE__);
