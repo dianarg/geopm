@@ -49,6 +49,27 @@ namespace geopm
     class CombinedSignal;
     class IPlatformTopo;
 
+    /// Handles signals provided by the PlatformIO itself
+    class SignalGroup
+    {
+        public:
+            SignalGroup();
+            ~SignalGroup() = default;
+            std::set<std::string> signal_names(const std::set<std::string> &available_signals) const;
+            bool is_valid_signal(const std::string &signal_name, const std::set<std::string> &available_signals) const;
+            std::string domain_signal(const std::string &signal_name) const;
+            std::vector<std::string> required_signals(const std::string &signal_name) const;
+            std::function<double(const std::vector<double> &)> agg_function(const std::string &signal_name) const;
+        private:
+            struct m_signal_info_s {
+                public:
+                    // required signals in the order passed to CombinedSignal
+                    std::vector<std::string> required_signals;
+                    std::string domain_signal;
+            };
+            std::map<std::string, m_signal_info_s> m_signal_info;
+    };
+
     class PlatformIO : public IPlatformIO
     {
         public:
@@ -119,6 +140,7 @@ namespace geopm
             std::map<int, std::pair<std::vector<int>,
                                     std::unique_ptr<CombinedSignal> > > m_combined_signal;
             bool m_do_restore;
+            SignalGroup m_signal_group;
     };
 }
 

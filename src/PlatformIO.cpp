@@ -92,6 +92,12 @@ namespace geopm
         }
     }
 
+    SignalGroup::SignalGroup()
+    {
+        m_signal_info["POWER_PACKAGE"] = {{"REGION_ID#", "TIME", "ENERGY_PACKAGE"}, "ENERGY_PACKAGE"};
+        m_signal_info["POWER_DRAM"] = {{"REGION_ID#", "TIME", "ENERGY_DRAM"}, "ENERGY_DRAM"};
+    }
+
     void PlatformIO::register_iogroup(std::shared_ptr<IOGroup> iogroup)
     {
         if (m_do_restore) {
@@ -104,15 +110,52 @@ namespace geopm
 
     std::set<std::string> PlatformIO::signal_names(void) const
     {
-        /// @todo better handling for signals provided by PlatformIO
-        /// These depend on ENERGY signals and should not be available
-        /// if ENERGY_PACKAGE and ENERGY_DRAM are not available.
-        std::set<std::string> result {"POWER_PACKAGE", "POWER_DRAM"};
+        std::set<std::string> result;
         for (const auto &io_group : m_iogroup_list) {
             auto names = io_group->signal_names();
             result.insert(names.begin(), names.end());
         }
+        std::set<std::string> compound_signals = m_signal_group.signal_names(result);
+        result.insert(compound_signals.begin(), compound_signals.end());
         return result;
+    }
+
+    std::set<std::string> SignalGroup::signal_names(const std::set<std::string> &available_signals) const
+    {
+        std::set<std::string> result;
+        // loop through provided signals and check that signals they depend on are available
+        for (const auto &sig : m_signal_info) {
+            if (is_valid_signal(sig.first, available_signals)) {
+                result.insert(sig.first);
+            }
+        }
+        return result;
+    }
+
+    bool SignalGroup::is_valid_signal(const std::string &signal_name, const std::set<std::string> &available_signals) const
+    {
+        // signal is only valid if all dependencies are available
+        bool valid = false;
+        auto it = m_signal_info.find(signal_name);
+        if (it != m_signal_info.end()) {
+            valid = true;
+            for (const auto &rs : it->second.required_signals) {
+                if (available_signals.find(rs) == available_signals.end()) {
+                    valid = false;
+                }
+            }
+            if (available_signals.find(it->second.domain_signal) == available_signals.end()) {
+                valid = false;
+            }
+        }
+        std::cout << "is_valid " << signal_name << " " << valid << std::endl;
+        return valid;
+    }
+
+    std::vector<std::string> SignalGroup::required_signals(const std::string &signal_name) const
+    {
+        // todo: better error message
+        return m_signal_info.at(signal_name).required_signals;
     }
 
     std::set<std::string> PlatformIO::control_names(void) const
@@ -137,13 +180,8 @@ namespace geopm
                 is_found = true;
             }
         }
-        /// @todo better handling for signals provided by PlatformIO
-        if (signal_name == "POWER_PACKAGE") {
-            result = signal_domain_type("ENERGY_PACKAGE");
-            is_found = true;
-        }
-        if (signal_name == "POWER_DRAM") {
-            result = signal_domain_type("ENERGY_DRAM");
+        if (!is_found && m_signal_group.is_valid_signal(signal_name, signal_names())) {
+            result = signal_domain_type(m_signal_group.domain_signal(signal_name));
             is_found = true;
         }
         if (!is_found) {
@@ -151,6 +189,16 @@ namespace geopm
                             signal_name + "\" not found",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
+        return result;
+    }
+
+    std::string SignalGroup::domain_signal(const std::string &signal_name) const
+    {
+        std::string result;
+        if (m_signal_info.find(signal_name) != m_signal_info.end()) {
+            result = m_signal_info.at(signal_name).domain_signal;
+        }
+        std::cout << result << std::endl;
         return result;
     }
 
@@ -201,13 +249,11 @@ namespace geopm
                 }
             }
         }
-        if (result == -1 && signal_name.find("POWER") != std::string::npos) {
+        if (result == -1) {
             result = push_signal_power(signal_name, domain_type, domain_idx);
-            m_existing_signal[sig_tup] = result;
         }
         if (result == -1) {
             result = push_signal_convert_domain(signal_name, domain_type, domain_idx);
-            m_existing_signal[sig_tup] = result;
         }
         if (result == -1) {
             throw Exception("PlatformIO::push_signal(): no support for signal name \"" +
@@ -215,29 +261,28 @@ namespace geopm
                             std::to_string(domain_type) + "\"",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
+        else {
+            m_existing_signal[sig_tup] = result;
+        }
         return result;
     }
 
+    // todo: rename
     int PlatformIO::push_signal_power(const std::string &signal_name,
                                       int domain_type,
                                       int domain_idx)
     {
         int result = -1;
-        if (signal_name == "POWER_PACKAGE" || signal_name == "POWER_DRAM") {
-            int energy_idx = -1;
-            if (signal_name == "POWER_PACKAGE") {
-                energy_idx = push_signal("ENERGY_PACKAGE", domain_type, domain_idx);
+        if (m_signal_group.is_valid_signal(signal_name, signal_names())) {
+            std::vector<int> req_idx;
+            for (const auto &sig : m_signal_group.required_signals(signal_name)) {
+                req_idx.push_back(push_signal(sig, domain_type, domain_idx));
             }
-            else if (signal_name == "POWER_DRAM") {
-                energy_idx = push_signal("ENERGY_DRAM", domain_type, domain_idx);
-            }
-
-            int time_idx = push_signal("TIME", PlatformTopo::M_DOMAIN_BOARD, 0);
-            int region_id_idx = push_signal("REGION_ID#", domain_type, domain_idx);
             result = m_active_signal.size();
 
-            register_combined_signal(result,
-                                     {region_id_idx, time_idx, energy_idx},
+            // TODO: this assumes all SignalGroup signals use per region derivative;
+            // need a function that retures a unique_ptr<CombinedSignal>
+            register_combined_signal(result, req_idx,
                                      std::unique_ptr<CombinedSignal>(new PerRegionDerivativeCombinedSignal));
 
             m_active_signal.emplace_back(nullptr, result);
@@ -465,9 +510,8 @@ namespace geopm
     std::function<double(const std::vector<double> &)> PlatformIO::agg_function(const std::string &signal_name) const
     {
         // Special signals from PlatformIO
-        /// @todo: find a better way to track signals produced by PlatformIO itself
-        if (signal_name == "POWER_PACKAGE" || signal_name == "POWER_DRAM") {
-            return Agg::sum;
+        if (m_signal_group.is_valid_signal(signal_name, signal_names())) {
+            return m_signal_group.agg_function(signal_name);
         }
         // Find the most recently loaded IOGroup that provides the signal
         auto it = m_iogroup_list.rbegin();
@@ -481,5 +525,21 @@ namespace geopm
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return (*it)->agg_function(signal_name);
+    }
+
+    std::function<double(const std::vector<double> &)> SignalGroup::agg_function(const std::string &signal_name) const
+    {
+        static const std::map<std::string, std::function<double(const std::vector<double> &)> > fn_map {
+            {"POWER_PACKAGE", Agg::sum},
+            {"POWER_DRAM", Agg::sum}
+        };
+        auto it = fn_map.find(signal_name);
+#ifdef GEOPM_DEBUG
+        if (it == fn_map.end()) {
+            throw Exception("PlatformIO::agg_function(): unknown how to aggregate \"" + signal_name + "\"",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+        return it->second;
     }
 }
