@@ -75,6 +75,19 @@ namespace geopm
         private:
             void load_trace_columns(void);
 
+            enum m_policy_e {
+                M_POLICY_DEVIATION_PERCENT,
+                M_POLICY_POWER_MEAN,
+                M_POLICY_FREQ_MEAN,
+                M_POLICY_INST_RETIRED_MEAN,
+                M_NUM_POLICY
+            };
+            enum m_sample_e {
+                M_SAMPLE_POWER_SUM,
+                M_SAMPLE_FREQ_SUM,
+                M_SAMPLE_INST_RET_SUM,
+                M_NUM_SAMPLE
+            };
             IPlatformIO &m_platform_io;
             IPlatformTopo &m_platform_topo;
             geopm_time_s m_last_wait;

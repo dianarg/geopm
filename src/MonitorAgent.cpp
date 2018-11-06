@@ -35,7 +35,15 @@
 #include "PlatformTopo.hpp"
 #include "Helper.hpp"
 #include "Exception.hpp"
+#include "Agg.hpp"
 #include "config.h"
+
+// power across all packages: sum, mean, variance
+// frequency across all nodes: mean, variance
+// inst retired across all nodes: sum, mean, variance
+// warn for any nodes that deviate by configurable percent
+// variance: pass up sq. dev from mean?  requires two phase.
+// maybe this request is for something else.  min, max?
 
 namespace geopm
 {
@@ -49,18 +57,25 @@ namespace geopm
         : m_platform_io(plat_io)
         , m_platform_topo(topo)
         , m_last_wait{{0, 0}}
+        , m_sample_idx(M_NUM_SAMPLE)
+        , m_agg_func(M_NUM_SAMPLE)
         , m_num_ascend(0)
         , M_SEND_PERIOD(10)
         , M_WAIT_SEC(0.005)
     {
         geopm_time(&m_last_wait);
 
-        for (auto name : sample_names()) {
-            m_sample_idx.push_back(m_platform_io.push_signal(name,
-                                                             IPlatformTopo::M_DOMAIN_BOARD,
-                                                             0));
-            m_agg_func.push_back(m_platform_io.agg_function(name));
-        }
+        m_agg_func[M_SAMPLE_POWER_SUM] = Agg::sum;
+        m_agg_func[M_SAMPLE_FREQ_SUM] = Agg::sum;
+        m_agg_func[M_SAMPLE_INST_RET_SUM] = Agg::sum;
+
+        m_sample_idx[M_SAMPLE_POWER_SUM] = m_platform_io.push_signal("POWER_PACKAGE",
+                                                                     IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_sample_idx[M_SAMPLE_FREQ_SUM] = m_platform_io.push_signal("FREQUENCY",
+                                                                    IPlatformTopo::M_DOMAIN_BOARD, 0);
+        m_sample_idx[M_SAMPLE_INST_RET_SUM] = m_platform_io.push_signal("INSTRUCTIONS_RETIRED",
+                                                                        IPlatformTopo::M_DOMAIN_BOARD, 0);
+
         m_num_sample = m_sample_idx.size();
     }
 
@@ -136,12 +151,21 @@ namespace geopm
 
     std::vector<std::string> MonitorAgent::policy_names(void)
     {
-        return {};
+        std::vector<std::string> names(M_NUM_POLICY);
+        names[M_POLICY_DEVIATION_PERCENT] = "DEVIATION_PERCENT";
+        names[M_POLICY_POWER_MEAN] = "POWER_MEAN";
+        names[M_POLICY_FREQ_MEAN] = "FREQ_MEAN";
+        names[M_POLICY_INST_RETIRED_MEAN] = "INST_RETIRED_MEAN";
+        return names;
     }
 
     std::vector<std::string> MonitorAgent::sample_names(void)
     {
-        return {"POWER_PACKAGE", "FREQUENCY"};
+        std::vector<std::string> names(M_NUM_SAMPLE);
+        names[M_SAMPLE_POWER_SUM] = "POWER_SUM";
+        names[M_SAMPLE_FREQ_SUM] = "FREQUENCY_SUM";
+        names[M_SAMPLE_INST_RET_SUM] = "INST_RETIRED_SUM";
+        return names;
     }
 
     std::vector<std::pair<std::string, std::string> > MonitorAgent::report_header(void) const
