@@ -70,6 +70,15 @@ The available analysis types are:
   Compares the energy efficiency plugin using per-region hints to the
   baseline at sticker frequency.
 
+* _stream_mix_:
+  Runs a full frequency sweep, then offline and online modes of the
+  energy efficiency plugin. The energy and runtime of the
+  application best-fit, per-phase offline mode, and per-phase
+  online mode are compared to the run at sticker frequency.
+  Note: unlike other analysis types, this analysis uses the
+  geopmbench application, and application arguments should *not* be
+  passed to it.
+
 * _power_sweep_:
   Runs the application under a range of socket power limits.
 
@@ -260,6 +269,22 @@ the following additional options:
                           --geopm-analysis-skip-launch \
                           --geopm-analysis-min-freq 1.0e9 \
                           --geopm-analysis-max-freq 2.0e9
+
+  The _stream_mix_ analysis type uses the geopmbench application and
+  varies the ratio between the runtimes of the stream and dgemm
+  regions from around 20% stream to around 80% stream. For each ratio,
+  it launches a frequency sweep and the offline and online analysis
+  modes described above. The resulting analysis produces plots
+  comparing the runtime and energy savings of the different plugin
+  modes at each stream mix ratio.  Note that no application arguments
+  are passed to the command below, although other launch arguments are
+  required.
+
+    geopmanalysis stream_mix --geopm-analysis-profile-prefix myprof \
+                             --geopm-analysis-output-dir myprof \
+                             --geopm-analysis-plot \
+                             --geopm-ctl=process
+                             -N1 -n1
 
 ## COPYRIGHT
 Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.

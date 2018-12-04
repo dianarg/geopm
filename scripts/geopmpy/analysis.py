@@ -1241,37 +1241,9 @@ class StreamDgemmMixAnalysis(Analysis):
         self._max_freq = max_freq
         self._mix_ratios = [(1.0, 0.25), (1.0, 0.5), (1.0, 0.75), (1.0, 1.0),
                             (0.75, 1.0), (0.5, 1.0), (0.25, 1.0)]
-        loop_count = 10
-        dgemm_bigo = 20.25
-        stream_bigo = 1.449
-        dgemm_bigo_jlse = 35.647
-        dgemm_bigo_quartz = 29.12
-        stream_bigo_jlse = 1.6225
-        stream_bigo_quartz = 1.7941
-        hostname = socket.gethostname()
-        if hostname.endswith('.alcf.anl.gov'):
-            dgemm_bigo = dgemm_bigo_jlse
-            stream_bigo = stream_bigo_jlse
-        else:
-            dgemm_bigo = dgemm_bigo_quartz
-            stream_bigo = stream_bigo_quartz
 
         for (ratio_idx, ratio) in enumerate(self._mix_ratios):
             profile_prefix = self._name + '_mix_{}'.format(ratio_idx)
-            app_conf_name = os.path.join(self._output_dir, profile_prefix + '_app.config')
-            app_conf = geopmpy.io.BenchConf(app_conf_name)
-            app_conf.set_loop_count(loop_count)
-            app_conf.append_region('dgemm',  ratio[0] * dgemm_bigo)
-            app_conf.append_region('stream', ratio[1] * stream_bigo)
-            app_conf.append_region('all2all', 1.0)
-            app_conf.write()
-
-            source_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-            app_path = os.path.join(source_dir, '.libs', 'geopmbench')
-            # if not found, use geopmbench from user's PATH
-            if not os.path.exists(app_path):
-                app_path = "geopmbench"
-            app_argv = [app_path, app_conf_name]
             # Analysis class that runs the frequency sweep (will append _freq_XXXX to name)
             self._sweep_analysis[ratio_idx] = FreqSweepAnalysis(profile_prefix=profile_prefix,
                                                                 output_dir=self._output_dir,
@@ -1298,57 +1270,90 @@ class StreamDgemmMixAnalysis(Analysis):
                                                                                 enable_turbo=self._enable_turbo)
 
     def launch(self, config):
+        source_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+        app_path = os.path.join(source_dir, '.libs', 'geopmbench')
+        # if not found, use geopmbench from user's PATH
+        if not os.path.exists(app_path):
+            app_path = "geopmbench"
+
+        loop_count = 10
+        dgemm_bigo = 20.25
+        stream_bigo = 1.449
+        dgemm_bigo_jlse = 35.647
+        dgemm_bigo_quartz = 29.12
+        stream_bigo_jlse = 1.6225
+        stream_bigo_quartz = 1.7941
+        hostname = socket.gethostname()
+        if hostname.endswith('.alcf.anl.gov'):
+            dgemm_bigo = dgemm_bigo_jlse
+            stream_bigo = stream_bigo_jlse
+        else:
+            dgemm_bigo = dgemm_bigo_quartz
+            stream_bigo = stream_bigo_quartz
+
         for (ratio_idx, ratio) in enumerate(self._mix_ratios):
-            # TODO: this is using the app from command line, not mix ratios
-            self._sweep_analysis[ratio_idx].launch(config)
-            self._offline_analysis[ratio_idx].launch(config)
-            self._online_analysis[ratio_idx].launch(config)
+            profile_prefix = self._name + '_mix_{}'.format(ratio_idx)
+            app_conf_name = os.path.join(self._output_dir, profile_prefix + '_app.config')
+            app_conf = geopmpy.io.BenchConf(app_conf_name)
+            app_conf.set_loop_count(loop_count)
+            app_conf.append_region('dgemm',  ratio[0] * dgemm_bigo)
+            app_conf.append_region('stream', ratio[1] * stream_bigo)
+            app_conf.append_region('all2all', 1.0)
+            app_conf.write()
+            app_argv = [app_path, app_conf_name]
+            self._sweep_analysis[ratio_idx].launch(config + app_argv)
+            self._offline_analysis[ratio_idx].launch(config + app_argv)
+            self._online_analysis[ratio_idx].launch(config + app_argv)
 
     def find_files(self):
-        super(StreamDgemmMixAnalysis, self).find_files('*_mix*report')
+        for (ratio_idx, ratio) in enumerate(self._mix_ratios):
+            self._sweep_analysis[ratio_idx].find_files()
+            self._offline_analysis[ratio_idx].find_files()
+            self._online_analysis[ratio_idx].find_files()
 
     def parse(self):
-        parse_output = super(StreamDgemmMixAnalysis, self).parse()
-        return parse_output
+        sweep_output = {}
+        offline_output = {}
+        online_output = {}
+        for (ratio_idx, ratio) in enumerate(self._mix_ratios):
+            sweep_output[ratio_idx] = self._sweep_analysis[ratio_idx].parse()
+            _, offline_output[ratio_idx] = self._offline_analysis[ratio_idx].parse()
+            _, online_output[ratio_idx] = self._online_analysis[ratio_idx].parse()
+
+        return sweep_output, offline_output, online_output
 
     def summary_process(self, parse_output):
+        sweep_output, offline_output, online_output = parse_output
         app_freq_data = []
         series_names = ['offline application', 'offline per-phase', 'online per-phase']
-        regions = parse_output.get_report_df().index.get_level_values('region').unique().tolist()
+        regions = sweep_output[0].get_report_df().index.get_level_values('region').unique().tolist()
 
         energy_result_df = pandas.DataFrame()
         runtime_result_df = pandas.DataFrame()
         for (ratio_idx, ratio) in enumerate(self._mix_ratios):
             name = self._name + '_mix_{}'.format(ratio_idx)
 
-            optimal_freq = self._sweep_analysis[ratio_idx]._region_freq_map(parse_output)
+            optimal_freq = self._sweep_analysis[ratio_idx]._region_freq_map(sweep_output[ratio_idx])
 
             freq_temp = [optimal_freq[region]
                          for region in sorted(regions)]
             app_freq_data.append(freq_temp)
 
-            freq_pname = FreqSweepAnalysis.get_freq_profiles(parse_output, name)
+            freq_pname = FreqSweepAnalysis.get_freq_profiles(sweep_output[ratio_idx].get_report_df(), name)
 
             baseline_freq, baseline_name = freq_pname[0]
             best_fit_freq = optimal_freq['epoch']
             best_fit_name = FreqSweepAnalysis.fixed_freq_name(name, best_fit_freq)
 
-            baseline_df = parse_output.get_report_data(profile=baseline_name)
-            best_fit_df = parse_output.get_report_data(profile=best_fit_name)
-            combo_df = baseline_df.append(best_fit_df)
-            comp_df = baseline_comparison(combo_df, best_fit_name)
+            comp_df = baseline_comparison(sweep_output[ratio_idx], best_fit_name, sweep_output[ratio_idx])
             offline_app_energy = comp_df.loc[pandas.IndexSlice['epoch', int(baseline_freq * 1e-6)], 'energy_savings']
             offline_app_runtime = comp_df.loc[pandas.IndexSlice['epoch', int(baseline_freq * 1e-6)], 'runtime_savings']
 
-            offline_df = parse_output(profile=name+'_offline')
-            combo_df = baseline_df.append(offline_df)
-            comp_df = baseline_comparison(combo_df, name + '_offline')
+            comp_df = baseline_comparison(offline_output[ratio_idx], name + '_offline', sweep_output[ratio_idx])
             offline_phase_energy = comp_df.loc[pandas.IndexSlice['epoch', int(baseline_freq * 1e-6)], 'energy_savings']
             offline_phase_runtime = comp_df.loc[pandas.IndexSlice['epoch', int(baseline_freq * 1e-6)], 'runtime_savings']
 
-            online_df = parse_output.get_report_df(profile=name+'_online')
-            combo_df = baseline_df.append(online_df)
-            comp_df = baseline_comparison(combo_df, name + '_online')
+            comp_df = baseline_comparison(online_output[ratio_idx], name + '_online', sweep_output[ratio_idx])
             online_phase_energy = comp_df.loc[pandas.IndexSlice['epoch', int(baseline_freq * 1e-6)], 'energy_savings']
             online_phase_runtime = comp_df.loc[pandas.IndexSlice['epoch', int(baseline_freq * 1e-6)], 'runtime_savings']
 
@@ -1403,7 +1408,7 @@ Usage: {argv_0} [-h|--help] [--version]
 geopmanalysis - Used to run applications and analyze results for specific
                 GEOPM use cases.
 
-  ANALYSIS_TYPE values: freq_sweep, offline, online, hint,
+  ANALYSIS_TYPE values: freq_sweep, offline, online, hint, stream_mix
                         power_sweep, balancer, node_efficiency,
                         node_power.
 
@@ -1427,6 +1432,7 @@ Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
                          'offline': OfflineBaselineComparisonAnalysis,
                          'online': OnlineBaselineComparisonAnalysis,
                          'hint': HintBaselineComparisonAnalysis,
+                         'stream_mix': StreamDgemmMixAnalysis,
                          'power_sweep': PowerSweepAnalysis,
                          'balancer': BalancerAnalysis,
                          'node_efficiency': NodeEfficiencyAnalysis,

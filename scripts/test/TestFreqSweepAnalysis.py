@@ -286,7 +286,6 @@ class TestFreqSweepAnalysis(unittest.TestCase):
         expected = float(expected_energy_df.loc[prof_name])
         self.assertEqual(expected, result)
 
-    @unittest.skip("Move to integration tests.")
     def test_stream_dgemm_mix_report(self):
         baseline_freq = self._max_freq
         best_fit_freq = {'dgemm': self._max_freq, 'stream': self._min_freq, 'epoch': self._mid_freq}
@@ -298,21 +297,22 @@ class TestFreqSweepAnalysis(unittest.TestCase):
         offline_metric_perf = {'dgemm': 12345.0, 'stream': 23456.0, 'epoch': 34567.0}
         online_metric_perf = {'dgemm': 22345.0, 'stream': 33456.0, 'epoch': 44567.0}
 
-        all_reports = pandas.DataFrame()
+        sweep_reports = {}
+        offline_reports = {}
+        online_reports = {}
         expected_energy_df = pandas.DataFrame()
         for mix_idx in ratio_inds:
             name = self._name_prefix + '_mix_{}'.format(mix_idx)
             self._tmp_files.append(name + '_app.config')
-            sweep_reports = make_mock_sweep_report_df(name, self._freqs,
-                                                      best_fit_freq, best_fit_perf,
-                                                      'energy_pkg', best_fit_metric_perf,
-                                                      baseline_freq, baseline_metric_perf)
-            offline_report = make_mock_report_df(name+'_offline', 'energy_pkg', offline_metric_perf)
-            online_report = make_mock_report_df(name+'_online', 'energy_pkg', online_metric_perf)
-
-            all_reports = all_reports.append(sweep_reports)
-            all_reports = all_reports.append(offline_report)
-            all_reports = all_reports.append(online_report)
+            sweep_df = make_mock_sweep_report_df(name, self._freqs,
+                                                               best_fit_freq, best_fit_perf,
+                                                               'energy_pkg', best_fit_metric_perf,
+                                                               baseline_freq, baseline_metric_perf)
+            sweep_reports[mix_idx] = MockAppOutput(sweep_df)
+            offline_df = make_mock_report_df(name+'_offline', 'energy_pkg', offline_metric_perf)
+            offline_reports[mix_idx] = MockAppOutput(offline_df)
+            online_df = make_mock_report_df(name+'_online', 'energy_pkg', online_metric_perf)
+            online_reports[mix_idx] = MockAppOutput(online_df)
 
             profiles = ['freq_'+str(best_fit_freq['epoch']), 'offline', 'online']
             perfs = [best_fit_metric_perf, offline_metric_perf, online_metric_perf]
@@ -329,8 +329,7 @@ class TestFreqSweepAnalysis(unittest.TestCase):
                                                    metric_perfs)
             expected_energy_df = expected_energy_df.append(energy_df, ignore_index=True)
 
-        parse_output = all_reports
-        parse_output.sort_index(ascending=True, inplace=True)
+        parse_output = sweep_reports, offline_reports, online_reports
         energy_result, runtime_result, app_freq_df = self._mix_analysis.summary_process(parse_output)
 
         expected_columns = expected_energy_df.columns
