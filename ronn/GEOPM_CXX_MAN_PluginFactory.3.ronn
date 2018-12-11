@@ -37,6 +37,83 @@ geopm::PluginFactory(3) -- abstract factory for plugins
 
 ## DESCRIPTION
 
+GEOPM can be extended though `Agent`, `IOGroup`, and `Comm` plugins.
+This man page describes the steps for adding a plugin.  Refer to
+**geopm::Agent(3)**, **geopm::Comm(3)**, and **geopm::IOGroup(3)** for
+more details about these interfaces.  Any C++ class that derives from
+one of these plugin base classes and is compiled into a shared object
+file can be loaded at application launch time through the GEOPM plugin
+interface.  This allows users and system administrators to extend the
+features and behavior of the monitor and control process that GEOPM
+executes without recompiling the GEOPM runtime.
+
+The steps for adding a plugin are as follows:
+- define plugin_name and make_plugin static helper methods
+- add attribute constructor plugin load method that registers with the factory. see below.
+
+## TERMS
+Below are some definitions of terms that are used to describe
+different parts of the GEOPM runtime.  Understanding these terms will
+help to interpret the documentation about how to extend the GEOPM
+runtime.  These are arranged from from highest levels of abstraction
+down to the lowest levels of abstraction.
+
+  * _launcher_:
+    Wrapper of system application launch (e.g. srun or aprun) that
+    executes the GEOPM runtime with the application.
+
+  * _report_:
+    Text file containing summary of aggregated stats collected during
+    application run.
+
+  * _trace_:
+    Time series of signals collected over application run in a pipe
+    separated ASCII table.
+
+  * _policy_:
+    Array of floating-point settings for `Agent`-specific control
+    parameters in SI units.
+
+  * _sample_:
+    Array of floating-point values providing `Agent`-specific runtime
+    data in SI units.
+
+  * _endpoint_:
+    Interface between resource manager and GEOPM runtime.
+
+  * _profile_:
+    Interface for annotating compute application; provides PlatformIO
+    region signals.
+
+  * _controller_:
+    Thread on each compute node that loads plugins and runs GEOPM
+    algorithm.
+
+  * _level_:
+    Attribute of an `Agent` describing the number of edges between it
+    and the nearest leaf `Agent` in the communication Tree (a leaf
+    `Agent` is _level_ zero).
+
+  * _signal_:
+    Named parameter in SI units that can be measured using PlatformIO.
+
+  * _control_:
+    Named parameter in SI units that can be set using PlatformIO.
+
+## PLUGIN LOAD CONSTRUCTOR
+
+- need for attribute(constructor)
+static void __attribute__((constructor)) example_agent_load(void)
+{
+    geopm::agent_factory().register_plugin(ExampleAgent::plugin_name(),
+                                           ExampleAgent::make_plugin,
+                                           Agent::make_dictionary(ExampleAgent::policy_names(),
+                                                                  ExampleAgent::sample_names()));
+}
+
+
+## BACKUP
+
 For more details, see the doxygen
 page at <https://geopm.github.io/dox/classgeopm_1_1_plugin_factory.html>.
 
@@ -44,4 +121,7 @@ page at <https://geopm.github.io/dox/classgeopm_1_1_plugin_factory.html>.
 Copyright (c) 2015, 2016, 2017, 2018, Intel Corporation. All rights reserved.
 
 ## SEE ALSO
-**geopm(7)**
+**geopm(7)**,
+**geopm::Agent(3)**,
+**geopm::Comm(3)**,
+**geopm::IOGroup(3)**
