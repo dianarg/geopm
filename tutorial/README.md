@@ -140,7 +140,7 @@ from from tutorial by 3 having the application sleep for a period of
 time proportional to the amount of work done rather than simply
 increasing the amount of work done.  This type of modeling is useful
 when the amount of work within cannot be easily scaled.  The imbalance
-is controlled by a file who's path is given by the IMBALANCER_CONFIG
+is controlled by a file whose path is given by the IMBALANCER_CONFIG
 environment variable.  This file gives a list of hostnames and
 imbalance injection fraction.  An example file might be:
 
@@ -159,7 +159,7 @@ arbitrarily by a race if the configuration file is not present.
 5. Using the progress interface
 -------------------------------
 A computational application may make use of the geopm_prof_progress()
-or the geopm_tprof_post() interfaces to report fractional progress
+or geopm_tprof_post() interfaces to report fractional progress
 through a region to the controller.  These interfaces are documented
 in the geopm_prof_c(3) man page.  In tutorial 5 we modify the stream
 region to send progress updates though either the threaded or
@@ -172,7 +172,7 @@ progress values recorded can be seen in the trace output.
 ------------------------
 Tutoral 6 uses the geopmbench tool and configures it with the json
 input file.  The geopmbench application is documented in the
-geopmbench(1) man page and can be use to to a wide range of
+geopmbench(1) man page and can be used to to a wide range of
 experiments with GEOPM.  Note that geopmbench is used in most
 of the GEOPM integration tests.
 
@@ -193,6 +193,6 @@ September 2016 when they were recorded.  In particular, the videos do
 not use the geopmpy.launcher launch wrapper which was introduced prior
 to the v0.3.0 alpha release.  The tutorial scripts have been updated
 to use the launcher, but the videos have not.  These videos also use
-the Decider/Platform/PlatformImp code path which are deprecated and
-will be removed in the 1.0 release in favor of the
+the Decider/Platform/PlatformImp code path which is deprecated and
+has been removed in the 1.0 release in favor of the
 Agent/PlatformIO/IOGroup class relationship.

@@ -13,7 +13,7 @@ and are based on this example.
 0. IOGroup Interface
 --------------------
 
-IOGroups extend the IOGroup base class found in src/IOGroup.hpp.  The
+IOGroups extend the IOGroup base class found in geopm/IOGroup.hpp.  The
 pure virtual methods in this interface must be implemented by every
 IOGroup.  If an IOGroup provides only signals, the methods related to
 controls can have empty or degenerate implementations; the reverse is

@@ -48,7 +48,7 @@ namespace geopm
         public:
             IPowerGovernor() = default;
             virtual ~IPowerGovernor() = default;
-            /// @brief Registsters signals and controls with PlatformIO.
+            /// @brief Registers signals and controls with PlatformIO.
             virtual void init_platform_io(void) = 0;
             /// @brief To be called inside of the Agent's
             ///        sample_platform() method to read any values
