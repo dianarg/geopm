@@ -84,13 +84,14 @@ geopm::SharedMemory(3)           GEOPM_CXX_MAN_SharedMemory.3
 geopm::TimeIOGroup(3)            GEOPM_CXX_MAN_TimeIOGroup.3
 
 #external pages
-CPU_SET(3)                      http://linux.die.net/man/3/cpu_set
-pthread_attr_setaffinity_np(3)  http://linux.die.net/man/3/pthread_attr_setaffinity_np
-pthread_setaffinity_np(3)       http://linux.die.net/man/3/pthread_setaffinity_np
-sched_getaffinity(2)            http://linux.die.net/man/2/sched_getaffinity
-sched_getcpu(3)                 http://linux.die.net/man/3/sched_getcpu
-errno(3)                        http://linux.die.net/man/3/errno
-git-describe(1)                 http://linux.die.net/man/1/git-describe
-ld.so(8)                        http://linux.die.net/man/8/ld.so
-lscpu(1)                        http://linux.die.net/man/1/lscpu
+CPU_SET(3)                      https://linux.die.net/man/3/cpu_set
+pthread_attr_setaffinity_np(3)  https://linux.die.net/man/3/pthread_attr_setaffinity_np
+pthread_setaffinity_np(3)       https://linux.die.net/man/3/pthread_setaffinity_np
+sched_getaffinity(2)            https://linux.die.net/man/2/sched_getaffinity
+sched_getcpu(3)                 https://linux.die.net/man/3/sched_getcpu
+errno(3)                        https://linux.die.net/man/3/errno
+git-describe(1)                 https://linux.die.net/man/1/git-describe
+ld.so(8)                        https://linux.die.net/man/8/ld.so
+lscpu(1)                        https://linux.die.net/man/1/lscpu
 asctime_r(3)                    https://linux.die.net/man/3/asctime_r
+dlopen(3)                       https://linux.die.net/man/3/dlopen
