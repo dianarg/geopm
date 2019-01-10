@@ -32,7 +32,7 @@
 # GLOBAL SETTINGS
 ACLOCAL_AMFLAGS = -I m4
 AM_CPPFLAGS += -I$(top_srcdir)/src \
-               -DGEOPM_PLUGIN_PATH=\"$(pkglibdir)\" \
+               -DGEOPM_DEFAULT_PLUGIN_PATH=\"$(pkglibdir)\" \
                -D_POSIX_C_SOURCE=200809L \
                -DOMPI_SKIP_MPICXX
 
@@ -312,6 +312,11 @@ TUTORIAL_DIST = tutorial/Makefile \
                 tutorial/iogroup/ExampleIOGroup.cpp \
                 tutorial/iogroup/ExampleIOGroup.hpp \
                 tutorial/iogroup/README.md \
+                tutorial/plugin_load/alice/AliceIOGroup.cpp \
+                tutorial/plugin_load/alice/AliceIOGroup.hpp \
+                tutorial/plugin_load/bob/BobIOGroup.cpp \
+                tutorial/plugin_load/bob/BobIOGroup.hpp \
+                tutorial/plugin_load/README.md \
                 tutorial/tutorial_0.c \
                 tutorial/tutorial_0.sh \
                 tutorial/tutorial_1.c \
@@ -482,7 +487,7 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/geopm_hash.h \
                             src/geopm_imbalancer.h \
                             src/geopm_internal.h \
-                            src/geopm_plugin.c \
+                            src/geopm_plugin.cpp \
                             src/geopm_region_id.h \
                             src/geopm_sched.c \
                             src/geopm_sched.h \

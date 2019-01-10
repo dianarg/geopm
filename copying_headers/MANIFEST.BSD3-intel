@@ -165,7 +165,7 @@ src/geopm_hash.h
 src/geopm_imbalancer.h
 src/geopm_internal.h
 src/geopm_mpi_comm_split.h
-src/geopm_plugin.c
+src/geopm_plugin.cpp
 src/geopm_pmpi.c
 src/geopm_pmpi.h
 src/geopm_pmpi_fortran.c
@@ -277,6 +277,10 @@ tutorial/agent/ExampleAgent.hpp
 tutorial/agent/agent_tutorial.sh
 tutorial/iogroup/ExampleIOGroup.cpp
 tutorial/iogroup/ExampleIOGroup.hpp
+tutorial/plugin_load/alice/AliceIOGroup.cpp
+tutorial/plugin_load/alice/AliceIOGroup.hpp
+tutorial/plugin_load/bob/BobIOGroup.cpp
+tutorial/plugin_load/bob/BobIOGroup.hpp
 tutorial/tutorial_0.c
 tutorial/tutorial_0.sh
 tutorial/tutorial_1.c
