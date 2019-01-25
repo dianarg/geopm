@@ -885,6 +885,15 @@ namespace geopm
                       .units     = IMSR::M_UNITS_JOULES,
                       .scalar    = 6.103515625e-05}}},
                 {}),
+            MSR("PP0_ENERGY_STATUS", 0x639,
+                {{"ENERGY", (struct IMSR::m_encode_s) {
+                      .begin_bit = 0,
+                      .end_bit   = 32,
+                      .domain    = IPlatformTopo::M_DOMAIN_PACKAGE,
+                      .function  = IMSR::M_FUNCTION_OVERFLOW,
+                      .units     = IMSR::M_UNITS_JOULES,
+                      .scalar    = 6.103515625e-05}}},
+                {}),
             MSR("PKG_POWER_INFO", 0x614,
                 {{"THERMAL_SPEC_POWER", (struct IMSR::m_encode_s) {
                       .begin_bit = 0,
