@@ -59,6 +59,17 @@ AC_ARG_VAR([MPIFC],
 AC_ARG_VAR([MPIF77],
            [MPIF77 the MPI Fortran 77 compiler wrapper used to determine flags required for inclusion of MPI for Fortran 77.])
 
+AC_ARG_ENABLE([intel-compiler],
+  [AS_HELP_STRING([--enable-intel-compiler], [Build using icc, icpc and ifort])],
+[if test "x$enable_intel_compiler" = "xno" ; then
+  enable_intel_compiler="0"
+else
+  enable_intel_compiler="1"
+fi
+],
+[enable_intel_compiler="0"]
+)
+
 AC_ARG_ENABLE([debug],
   [AS_HELP_STRING([--enable-debug], [Build debugging code and compile with -O0 -g])],
 [if test "x$enable_debug" = "xno" ; then
@@ -119,6 +130,13 @@ if test "x$enable_openmp" = "xno" ; then
   enable_openmp="0"
 else
   enable_openmp="1"
+fi
+
+if test "x$enble_intel_compiler" = "x1" ; then
+  CC=icc
+  CXX=icpc
+  FC=ifort
+  F77=ifort
 fi
 
 if test "x$enable_debug" = "x1" ; then
@@ -308,15 +326,21 @@ AC_SEARCH_LIBS([dlopen], [dl dld])
 # Checks for programs.
 AC_PROG_AWK
 AC_PROG_CXX
-AC_PROG_CC
+if test -z "$CC"; then
+    AC_PROG_CC
+fi
+
 if test "x$enable_fortran" = "x1"; then
-AC_PROG_FC
-AC_PROG_F77
+if test -z "$FC"; then
+    AC_PROG_FC
+fi
+if test -z "$77"; then
+    AC_PROG_F77
+fi
 fi
 AC_PROG_MAKE_SET
 m4_pattern_allow([AM_PROG_AR])
 AM_PROG_AR
-AM_PROG_CC_C_O
 LT_INIT
 
 AC_CHECK_LIB([pthread], [pthread_mutex_init], [], [
@@ -509,6 +533,7 @@ AC_MSG_RESULT([datarootdir        : ${datarootdir}])
 AC_MSG_RESULT([datadir            : ${datadir}])
 AC_MSG_RESULT([mandir             : ${mandir}])
 AC_MSG_RESULT([])
+AC_MSG_RESULT([intel_compiler     : ${enable_intel_compiler}])
 AC_MSG_RESULT([debug              : ${enable_debug}])
 AC_MSG_RESULT([coverage           : ${enable_coverage}])
 AC_MSG_RESULT([overhead           : ${enable_overhead}])
