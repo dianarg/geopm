@@ -328,7 +328,12 @@ class Launcher(object):
             self.is_override_enabled = False
         self.parse_launcher_argv()
 
+        # gah.. what is this about..
+        # seems to be used by test launcher, sets cpu_per_rank as follows
+        # rank_per_node = int(math.ceil(float(self._num_rank) / float(self._num_node)))
+        # self._cpu_per_rank = int(math.floor(self._num_cpu / rank_per_node))
         is_cpu_per_rank_override = False
+        self.cpu_per_rank=None
 
         # Override values if they are passed in construction call
         if num_rank is not None:
@@ -373,8 +378,11 @@ class Launcher(object):
         self.num_app_rank = self.num_rank
         self.num_app_mask = self.rank_per_node
 
-        if self.cpu_per_rank is None:
-            self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
+        #if self.cpu_per_rank is None:
+        #    self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
+        if self.cpu_per_rank is None and 'OMP_NUM_THREADS' in os.environ:
+            self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', None))
+
 
         # Initialize GEOPM required values
         if self.is_geopm_enabled:
@@ -385,9 +393,18 @@ class Launcher(object):
                 raise SyntaxError('Number of nodes must be specified.')
             self.init_topo()
             if not is_cpu_per_rank_override and 'OMP_NUM_THREADS' not in os.environ:
-                self.cpu_per_rank = (self.num_linux_cpu - self.thread_per_core) // self.rank_per_node
+                reserved_cores = self.num_socket
+                total_cores = self.num_linux_cpu // self.thread_per_core
+                app_cores = total_cores - reserved_cores
+                print reserved_cores, total_cores, app_cores, self.thread_per_core, self.rank_per_node
+                self.cpu_per_rank = (app_cores * self.thread_per_core) // self.rank_per_node
+                # if self.config.allow_ht_pinning:
+                #     self.cpu_per_rank = (self.num_linux_cpu - self.thread_per_core) // self.rank_per_node
+                # else:
+                #     self.cpu_per_rank = (self.num_linux_cpu // self.thread_per_core - 1) // self.rank_per_node
                 if self.cpu_per_rank == 0:
                     self.cpu_per_rank = 1
+                sys.stderr.write('Warning: user did not provide OMP_NUM_THREADS, setting to {}\n'.format(self.cpu_per_rank))
             if self.config.get_ctl() == 'process':
                 self.num_rank += self.num_node
                 self.rank_per_node += 1
@@ -529,8 +546,6 @@ class Launcher(object):
         # Number of application ranks per socket (floored)
         rank_per_socket = app_rank_per_node // self.num_socket
         rank_per_socket_remainder = app_rank_per_node % self.num_socket
-        # Number of logical CPUs per socket
-        cpu_per_socket = self.num_linux_cpu // self.num_socket
 
         app_thread_per_core = 1
         while app_thread_per_core * core_per_node < app_cpu_per_node:
