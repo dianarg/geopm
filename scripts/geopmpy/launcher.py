@@ -379,7 +379,7 @@ class Launcher(object):
         self.num_app_mask = self.rank_per_node
 
         if self.cpu_per_rank is None:
-           self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
+            self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
         # if self.cpu_per_rank is None and 'OMP_NUM_THREADS' in os.environ:
         #     self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', None))
 
@@ -392,7 +392,7 @@ class Launcher(object):
                 raise SyntaxError('Number of nodes must be specified.')
             self.init_topo()
             if not is_cpu_per_rank_override and 'OMP_NUM_THREADS' not in os.environ:
-                reserved_cores = self.num_socket
+                reserved_cores = self.num_socket  # todo: just one core for geopm+OS, or balanced across socket
                 total_cores = self.num_linux_cpu // self.thread_per_core
                 app_cores = total_cores - reserved_cores
                 print 'reserved: {}, total: {}, app: {}, thread per core: {}, ranks: {}'.format(
@@ -566,20 +566,30 @@ class Launcher(object):
             raise RuntimeError('Cores cannot be shared between MPI ranks')
 
         result = []
-        core_index = core_per_node - 1
+        core_index = core_per_node - 2 # drg changed from -1
 
-        if rank_per_socket_remainder == 0:
-            socket_boundary = self.core_per_socket * (self.num_socket - 1)  # 22
+        def calc_cpus_for_rank(self, start_core, total_cores, threads, result):
+            base_cores = range(start_core, start_core - total_cores, -1)
+            cpu_range = set()
+            for ht in range(num_threads):
+                cpu_range.update({bc%core_per_node + ht * core_per_node for bc in base_cores})
+            if not is_geopmctl:
+                result.insert(0, cpu_range)
+            core_index -= app_core_per_rank
+
+        if rank_per_socket_remainder == 0:  # ranks will not span sockets
+            socket_boundary = self.core_per_socket * (self.num_socket - 1)
             for socket in range(self.num_socket - 1, -1, -1):
                 for rank in range(rank_per_socket - 1, -1, -1):  # Start assigning ranks to cores from the highest rank/core backwards
-                    base_cores = range(core_index, core_index - app_core_per_rank, -1)
-                    cpu_range = set()
-                    for ht in range(app_thread_per_core):
-                        cpu_range.update({bc + ht * core_per_node for bc in base_cores})
-
-                    if not is_geopmctl:
-                        result.insert(0, cpu_range)
-                    core_index -= app_core_per_rank
+                    ###
+                    # base_cores = range(core_index, core_index - app_core_per_rank, -1)
+                    # cpu_range = set()
+                    # for ht in range(app_thread_per_core):
+                    #     cpu_range.update({bc%core_per_node + ht * core_per_node for bc in base_cores})
+                    # if not is_geopmctl:
+                    #     result.insert(0, cpu_range)
+                    # core_index -= app_core_per_rank
+                    ###
 
                 if not (rank == 0 and socket == 0):
                     # Do not subtract the socket boundary if we've pinned the last rank on the last socket
@@ -588,27 +598,49 @@ class Launcher(object):
                 socket_boundary -= self.core_per_socket
         else:
             for rank in range(app_rank_per_node - 1, -1, -1):  # Start assigning ranks to cores from the highest rank/core backwards
-                base_cores = range(core_index, core_index - app_core_per_rank, -1)
-                cpu_range = set()
-                for ht in range(app_thread_per_core):
-                    cpu_range.update({bc + ht * core_per_node for bc in base_cores})
-                if not is_geopmctl:
-                    result.insert(0, cpu_range)
-                core_index -= app_core_per_rank
+                calc_cpus_for_rank(self, core_index, app_core_per_rank, app_thread_per_core, result)
+                ###
+                # base_cores = range(core_index, core_index - app_core_per_rank, -1)
+                # cpu_range = set()
+                # for ht in range(app_thread_per_core):
+                #     cpu_range.update({bc%core_per_node + ht * core_per_node for bc in base_cores})
+                # if not is_geopmctl:
+                #     result.insert(0, cpu_range)
+                # core_index -= app_core_per_rank
+                ###
+
+        # when app will share core 0 with OS, try to use a hyperthread
+        if self.config.allow_ht_pinning and len(result) >= 1 and 0 in result[0]:
+            last_ht = 0 + (core_per_node * (self.thread_per_core-1))
+            if last_ht not in result[0]:
+                result[0].remove(0)
+                result[0].add(last_ht)
 
         if core_index <= 0:
             sys.stderr.write("Warning: User requested all cores for application. ")
-            if self.config.allow_ht_pinning and core_per_node * app_thread_per_core < self.num_linux_cpu:
+            if core_per_node * app_thread_per_core < self.num_linux_cpu:
                 sys.stderr.write("GEOPM controller will share a core with the application.\n")
-                # Run controller on the lowest hyperthread that is not
-                # occupied by the application
-                geopm_ctl_cpu = core_per_node * app_thread_per_core
+                if self.config.allow_ht_pinning:
+                    # Run controller on the lowest hyperthread that is not
+                    # occupied by the application
+                    #geopm_ctl_cpu = core_per_node * app_thread_per_core
+
+                    # Run controller on last core's hyperthread
+                    geopm_ctl_cpu = (core_per_node - 1) + core_per_node
+                else:
+                    # run Controller on last core to avoid interference with OS
+                    geopm_ctl_cpu = core_per_node - 1
             else:
                 sys.stderr.write("GEOPM controller will share a core with the OS.\n")
-                # Oversubscribe Linux CPU 0, no better solution
-                geopm_ctl_cpu = 0
+                if self.config.allow_ht_pinning and self.thread_per_core > 1:
+                    # Share core 0, but use a hyperthread
+                    geopm_ctl_cpu = 0 + core_per_node
+                else:
+                    print self.config.allow_ht_pinning, self.thread_per_core
+                    # Oversubscribe Linux CPU 0, no better solution
+                    geopm_ctl_cpu = 0
         else:
-            geopm_ctl_cpu = 1
+            geopm_ctl_cpu = core_per_node - 1
 
         if self.config.get_ctl() == 'process' or is_geopmctl:
             result.insert(0, {geopm_ctl_cpu})
