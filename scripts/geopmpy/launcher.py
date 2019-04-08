@@ -378,11 +378,10 @@ class Launcher(object):
         self.num_app_rank = self.num_rank
         self.num_app_mask = self.rank_per_node
 
-        #if self.cpu_per_rank is None:
-        #    self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
-        if self.cpu_per_rank is None and 'OMP_NUM_THREADS' in os.environ:
-            self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', None))
-
+        if self.cpu_per_rank is None:
+           self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', '1'))
+        # if self.cpu_per_rank is None and 'OMP_NUM_THREADS' in os.environ:
+        #     self.cpu_per_rank = int(os.environ.get('OMP_NUM_THREADS', None))
 
         # Initialize GEOPM required values
         if self.is_geopm_enabled:
@@ -396,15 +395,15 @@ class Launcher(object):
                 reserved_cores = self.num_socket
                 total_cores = self.num_linux_cpu // self.thread_per_core
                 app_cores = total_cores - reserved_cores
-                print reserved_cores, total_cores, app_cores, self.thread_per_core, self.rank_per_node
-                self.cpu_per_rank = (app_cores * self.thread_per_core) // self.rank_per_node
-                # if self.config.allow_ht_pinning:
-                #     self.cpu_per_rank = (self.num_linux_cpu - self.thread_per_core) // self.rank_per_node
-                # else:
-                #     self.cpu_per_rank = (self.num_linux_cpu // self.thread_per_core - 1) // self.rank_per_node
+                print 'reserved: {}, total: {}, app: {}, thread per core: {}, ranks: {}'.format(
+                    reserved_cores, total_cores, app_cores, self.thread_per_core, self.rank_per_node)
+                if self.config.allow_ht_pinning:
+                    self.cpu_per_rank = (app_cores * self.thread_per_core) // self.rank_per_node
+                else:
+                    self.cpu_per_rank = app_cores // self.rank_per_node
                 if self.cpu_per_rank == 0:
                     self.cpu_per_rank = 1
-                sys.stderr.write('Warning: user did not provide OMP_NUM_THREADS, setting to {}\n'.format(self.cpu_per_rank))
+                sys.stderr.write('Warning: User did not provide OMP_NUM_THREADS, setting to {}\n'.format(self.cpu_per_rank))
             if self.config.get_ctl() == 'process':
                 self.num_rank += self.num_node
                 self.rank_per_node += 1

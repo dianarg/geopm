@@ -32,6 +32,7 @@
 #
 
 import unittest
+import math
 import geopm_context
 import geopmpy.launcher
 
@@ -272,6 +273,8 @@ class TestAffinity(unittest.TestCase):
         self.assertEqual(expect, actual)
 
 
+
+
 class Topo():
     def __init__(self, num_socket, core_per_socket, hthread_per_core):
         self._hthread_per_core = hthread_per_core
@@ -281,11 +284,18 @@ class Topo():
         self._num_linux_cpu = self._hthread_per_core * self._num_core
         # used by tests
         self.core_list = range(self._num_core)
-
         self.hyperthreads = {}
         for core in self.core_list:
             self.hyperthreads[core] = [core + ht*self._num_core for ht in range(1, self._hthread_per_core)]
+        assert math.ceil(self._num_core / self._num_socket) == (self._num_core // self._num_socket)
+        self.socket_cores = {}
+        for sock in range(self._num_socket):
+            self.socket_cores[sock] = [sock*self._core_per_socket + cc for cc in range(self._core_per_socket)]
 
+# TODO: tests for these
+KNLTopo = Topo(num_socket=1, core_per_socket=64, hthread_per_core=4)
+QuartzTopo = Topo(num_socket=2, core_per_socket=18, hthread_per_core=2)
+XeonTopo = Topo(num_socket=2, core_per_socket=22, hthread_per_core=2)
 
 class ToyAffinityLauncher2(TestAffinityLauncher):
     def __init__(self, argv, num_rank, num_node, cpu_per_rank, topo):
@@ -298,8 +308,8 @@ class ToyAffinityLauncher2(TestAffinityLauncher):
         self.num_socket = self.topo._num_socket
         self.num_linux_cpu = self.topo._num_linux_cpu
 
-
-class TestAffinity2(unittest.TestCase):
+# TODO: tests for pthread and application mode
+class TestAffinityProcess(unittest.TestCase):
     def setUp(self):
         self.maxDiff = 4096
         self.argv = ['--geopm-ctl', 'process']
@@ -347,18 +357,18 @@ class TestAffinity2(unittest.TestCase):
     def test_1rank_geopm_os_shared_noht(self):
         topo = self.default_topo
         app_cores = 5
-        self.argv.append('--geopm-disable-hyperthread')
+        self.argv.append('--geopm-hyperthreads-disable')
         launcher = ToyAffinityLauncher2(self.argv, num_rank=1, num_node=1,
                                         cpu_per_rank=app_cores, topo=topo)
         actual = launcher.affinity_list(False)
-        expect = [{0},  # core 0
+        expect = [{0},  # core 0, shared with OS
                   set(topo.core_list[-app_cores:])]  # app_core cores from the end
         self.assertEqual(expect, actual)
 
     def test_1rank_geopm_os_app_shared_noht(self):
         topo = self.default_topo
         app_cores = 6
-        self.argv.append('--geopm-disable-hyperthread')
+        self.argv.append('--geopm-hyperthreads-disable')
         launcher = ToyAffinityLauncher2(self.argv, num_rank=1, num_node=1,
                                         cpu_per_rank=app_cores, topo=topo)
         actual = launcher.affinity_list(False)
@@ -366,6 +376,113 @@ class TestAffinity2(unittest.TestCase):
                   set(topo.core_list)]  # app uses all cores
         self.assertEqual(expect, actual)
 
+    def test_1rank_no_env_threads(self):
+        topo = self.default_topo
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=1, num_node=1,
+                                        cpu_per_rank=None, topo=topo)
+        actual = launcher.affinity_list(False)
+        expected_app = set()
+        for core in topo.core_list[2:]:  # cores reserved for OS and geopm
+            expected_app.add(core)
+            for ht in topo.hyperthreads[core]:
+                expected_app.add(ht)
+        expect = [{1},  # ?
+                  expected_app]  # ?
+        self.assertEqual(expect, actual)
+
+    def test_1rank_no_env_threads_noht(self):
+        topo = self.default_topo
+        self.argv.append('--geopm-hyperthreads-disable')
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=1, num_node=1,
+                                        cpu_per_rank=None, topo=topo)
+        actual = launcher.affinity_list(False)
+        expect = [{1},  # not shared
+                  set(topo.core_list[2:])]  # app uses all cores?  app uses 4 cores?
+        self.assertEqual(expect, actual)
+
+    def test_per_core_rank(self):
+        topo = self.default_topo
+        app_cores = topo._num_core
+        self.argv.append('--geopm-hyperthreads-disable')
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=1, num_node=1,
+                                        cpu_per_rank=app_cores, topo=topo)
+        actual = launcher.affinity_list(False)
+        expect = [{0},  # core 0, shared with app
+                  set(topo.core_list)]  # app uses all cores
+        self.assertEqual(expect, actual)
+
+    def test_per_core_rank_1reserved(self):
+        topo = self.default_topo
+        app_cores = topo._num_core - 1
+        self.argv.append('--geopm-hyperthreads-disable')
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=1, num_node=1,
+                                        cpu_per_rank=app_cores, topo=topo)
+        actual = launcher.affinity_list(False)
+        expect = [{0},  # core 0, shared with OS
+                  set(topo.core_list[1:])]  # app uses all cores except 0
+        self.assertEqual(expect, actual)
+
+    def test_per_core_rank_2reserved(self):
+        topo = self.default_topo
+        app_cores = topo._num_core - 2
+        self.argv.append('--geopm-hyperthreads-disable')
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=1, num_node=1,
+                                        cpu_per_rank=app_cores, topo=topo)
+        actual = launcher.affinity_list(False)
+        expect = [{1},  # not shared
+                  set(topo.core_list[2:])]  # app uses all cores except 0 and 1
+        self.assertEqual(expect, actual)
+
+    def test_2rank_no_env_threads(self):
+        topo = self.default_topo
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=2, num_node=1,
+                                        cpu_per_rank=None, topo=topo)
+        actual = launcher.affinity_list(False)
+        expected_app = [set() for _ in range(topo._num_socket)]
+        for sock in range(topo._num_socket):
+            for core in topo.socket_cores[sock][2:]:  # skip reserved
+                expected_app[sock].add(core)
+                for ht in topo.hyperthreads[core]:
+                    expected_app[sock].add(ht)
+        print topo.socket_cores[1]
+        expect = [{topo.socket_cores[1][0]},  # ?  geopm on other socket?
+                  expected_app[0],  # ?
+                  expected_app[1]]  # ?
+        self.assertEqual(expect, actual)
+
+    def test_2rank_no_env_threads_noht(self):
+        topo = self.default_topo
+        self.argv.append('--geopm-hyperthreads-disable')
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=2, num_node=1,
+                                        cpu_per_rank=None, topo=topo)
+        actual = launcher.affinity_list(False)
+        expect = [{topo.socket_cores[1][0]},  # ? geopm on other socket?
+                  set(topo.socket_cores[0][1:]),  # ?
+                  set(topo.socket_cores[1][1:])]  # ?
+        self.assertEqual(expect, actual)
+
+    def test_3rank_no_env_threads_noht(self):
+        topo = self.default_topo
+        self.argv.append('--geopm-hyperthreads-disable')
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=3, num_node=1,
+                                        cpu_per_rank=None, topo=topo)
+        actual = launcher.affinity_list(False)
+        expect = [{1},
+                  {topo.socket_cores[1][-3]},  # ? keep app on one socket?
+                  {topo.socket_cores[1][-2]},  # ?
+                  {topo.socket_cores[1][-1]}]  # ?
+        self.assertEqual(expect, actual)
+
+    def test_3rank_no_env_threads(self):
+        topo = self.default_topo
+        launcher = ToyAffinityLauncher2(self.argv, num_rank=3, num_node=1,
+                                        cpu_per_rank=None, topo=topo)
+        actual = launcher.affinity_list(False)
+        expect = [{topo.socket_cores[1][0]},  # geopm on other socket?  hyperthread?
+                  {topo.socket_cores[1][-3]},  # ??
+                  {topo.socket_cores[1][-2]},  # ??
+                  {topo.socket_cores[1][-1]}]  # ??
+        self.assertEqual(expect, actual)
 
 
     @unittest.skip('')
