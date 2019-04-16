@@ -72,6 +72,7 @@ class MinifeBenchmark:
         self.threads_per_rank = 34 if not threads_per_rank else threads_per_rank
         problem_sizes = {
             1: '"-nx=264 -ny=256 -nz=256"',
+            8: '"-nx=792 -ny=768 -nz=768"',
             64: '"-nx=1056 -ny=1024 -nz=1024"',
             128: '"-nx=1330 -ny=1290 -nz=1290"',
             256: '"-nx=1676 -ny=1625 -nz=1625"',
@@ -80,7 +81,7 @@ class MinifeBenchmark:
         if self.num_nodes not in problem_sizes:
             raise RuntimeError("No input size defined for minife on {} nodes".format(self.num_nodes))
         self.app_params = problem_sizes[self.num_nodes]
-        self.exe_path = '/p/lustre2/guttman1/benchmarks/minife/miniFE_openmp-2.0-rc3/src/miniFE.x'
+        self.exe_path = '$HOME/benchmarks/minife/miniFE_openmp-2.0-rc3/src/miniFE.x'
 
     def setup(self):
         return ''
@@ -103,7 +104,7 @@ class NekboneBenchmark:
         self.ranks_per_node = 1 if not ranks_per_node else ranks_per_node
         self.threads_per_rank = 34 if not threads_per_rank else threads_per_rank
 
-        nekbone_path = '/p/lustre2/guttman1/benchmarks/nekbone/nekbone-2.3.4/test/example1/'
+        nekbone_path = '$HOME/benchmarks/nekbone/nekbone-2.3.4/test/example1/'
         self.exe_path = os.path.join(nekbone_path, 'nekbone')
         self.app_params = os.path.join(nekbone_path, 'data.rea')
 
@@ -130,7 +131,7 @@ class AmgBenchmark:
             self.app_params = '-problem 1 -n 96 96 96 -P 16 16 8'  # total product of -P must == total ranks
         else:
             raise RuntimeError("No input size defined for amg on {} nodes with {} ranks per node".format(self.num_nodes, self.ranks_per_node))
-        self.exe_path = '/p/lustre2/guttman1/benchmarks/amg/AMG-master/test/amg'
+        self.exe_path = '$HOME/benchmarks/amg/AMG-master/test/amg'
 
     def setup(self):
         return ''
@@ -188,7 +189,7 @@ if __name__ == '__main__':
     agent = args.agent
 
     # common
-    results_dir = '/p/lustre2/guttman1/analysis'
+    results_dir = '$HOME/analysis'
 
     # job config
     time_limit = '08:00:00'  # todo: depends on app
@@ -222,7 +223,7 @@ if __name__ == '__main__':
     #SBATCH -N {num_nodes}
     #SBATCH -J {job_name}
     #SBATCH -t {time_limit}
-    #SBATCH -p {queue}
+    ##SBATCH -p {queue}
     #SBATCH --mail-type=END,FAIL
     #SBATCH -o {results_dir}/%j_{app_name}.out
 
