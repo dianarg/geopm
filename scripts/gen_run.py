@@ -171,7 +171,7 @@ if __name__ == '__main__':
     args = parser.parse_args(sys.argv[1:])
 
     if not (args.analysis_type or args.agent) or (args.analysis_type and args.agent):
-        raise RuntimeError('Only one of --analysis-type or --agent may be set')
+        raise RuntimeError('Exactly one of --analysis-type or --agent must be set')
 
     if args.benchmark not in benchmarks:
         raise RuntimeError('No run parameters available for {}'.format(args.benchmark))
@@ -280,8 +280,7 @@ if __name__ == '__main__':
             --geopm-analysis-profile-prefix=$PROFILE_NAME \\
             -- $APP_EXECUTABLE $APP_PARAMS
 
-        '''.format(analysis_type=analysis_type,
-               num_nodes=num_nodes))
+        '''.format(analysis_type=analysis_type, num_nodes=num_nodes))
     elif agent:
         # todo: this is messy
         nans=''
