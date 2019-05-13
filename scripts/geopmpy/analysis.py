@@ -928,7 +928,10 @@ class FreqSweepAnalysis(Analysis):
         means_df = report_df.groupby(['region', 'freq_mhz'])[cols].mean()
         # Define ref_freq to be three steps back from the end of the list.  The end of the list should always be
         # the turbo frequency.
-        ref_freq = report_df.index.get_level_values('freq_mhz').unique().tolist()[-4]
+        # TODO: this doesn't work if there are fewer than 4 frequencies.  Also
+        # shouldn't this compare with the sticker or last freq?  turbo is not in the list
+        # unless included in the range
+        ref_freq = report_df.index.get_level_values('freq_mhz').unique().tolist()[-1]
 
         # Calculate the energy/runtime comparisons against the ref_freq
         ref_energy = means_df.loc[idx[:, ref_freq], ]['energy_pkg'].reset_index(level='freq_mhz', drop=True)
@@ -1137,6 +1140,7 @@ class FrequencyMapBaselineComparisonAnalysis(Analysis):
         sweep_summary_process, sweep_means_df, comp_df = process_output
         name = self._name + self._prefix_label()
         ref_freq_idx = 0 if self._enable_turbo else 1
+        print self._freq_pnames[ref_freq_idx][0]
         ref_freq = int(self._freq_pnames[ref_freq_idx][0] * 1e-6)
 
         rs = 'Summary for {}\n\n'.format(name)
@@ -1236,18 +1240,19 @@ class EnergyEfficientAgentAnalysis(Analysis):
         """
         Run the frequency sweep, then run the desired comparison configuration.
         """
-        agent = 'energy_efficient'
-        options = {'frequency_min': self._min_freq,
-                   'frequency_max': self._max_freq}
-        agent_conf = geopmpy.io.AgentConf(self._name + '_agent.config', agent, options)
-        agent_conf.write()
-
         # Run frequency sweep
         self._sweep_analysis.launch(launcher_name, args)
 
         # Set up min and max frequency
         self._min_freq = self._sweep_analysis._min_freq
         self._max_freq = self._sweep_analysis._max_freq
+
+        agent = 'energy_efficient'
+        options = {'frequency_min': self._min_freq,
+                   'frequency_max': self._max_freq,
+                   'perf_margin': 0.10}
+        agent_conf = geopmpy.io.AgentConf(self._name + '_agent.config', agent, options)
+        agent_conf.write()
 
         profile_name = self._name + '_' + self._mode
         for iteration in range(self._iterations):
@@ -1284,7 +1289,9 @@ class EnergyEfficientAgentAnalysis(Analysis):
     def summary(self, process_output):
         sweep_summary_process, sweep_means_df, comp_df = process_output
         name = self._name + '_' + self._mode
-        ref_freq_idx = 0 if self._enable_turbo else 1
+        ref_freq_idx = 0 #if self._enable_turbo else 1  # todo: does not work when min==max frequency
+        print self._freq_pnames
+        print self._freq_pnames[ref_freq_idx][0]
         ref_freq = int(self._freq_pnames[ref_freq_idx][0] * 1e-6)
 
         rs = 'Summary for {}\n\n'.format(name)
