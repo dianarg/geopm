@@ -64,16 +64,17 @@ namespace geopm
             void update_exit(double curr_perf_metric) override;
             void update_perf_margin(double perf_margin) override;
         private:
+            static const int M_MIN_PERF_SAMPLE = 5;
             struct FreqContext {
                 FreqContext()
                     : num_increase(0)
-                    , perf(NAN)
+                    , perf(M_MIN_PERF_SAMPLE)
                 {
                 };
 
                 virtual ~FreqContext() = default;
                 size_t num_increase;
-                double perf;
+                CircularBuffer<double> perf;
             };
 
             const size_t M_MAX_INCREASE;
@@ -83,7 +84,8 @@ namespace geopm
             double m_freq_step;
             int m_curr_step;
             double m_freq_min;
-            double m_last_perf;
+            // todo: why is this here instead of .perf in freq context?
+            //double m_last_perf;
             double m_target;
             double m_perf_margin;
 
