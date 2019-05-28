@@ -39,6 +39,7 @@ _ffi.cdef("""
     struct geopm_model_region_c;
     int geopm_model_region_factory(const char *name, double big_o, int verbosity, struct geopm_model_region_c **result);
     int geopm_model_region_run(struct geopm_model_region_c *model_region_c);
+    int geopm_model_region_delete(struct geopm_model_region_c *model_region_c);
 """)
 _dl = _ffi.dlopen('libgeopm.so')
 
@@ -57,7 +58,7 @@ def model_region_run(model_region):
         raise RuntimeError("geopm_model_region_run() failed: {}".format(
             error.message(err)))
 
-def model_region_delete(model_region)
+def model_region_delete(model_region):
     err = _dl.geopm_model_region_delete(model_region)
     if err:
         raise RuntimeError("geopm_model_region_delete() failed: {}".format(
