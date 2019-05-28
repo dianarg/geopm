@@ -103,6 +103,19 @@ extern "C"
         }
         return err;
     }
+
+    int geopm_model_region_delete(struct geopm_model_region_c *model_region_c)
+    {
+        int err = 0;
+        try {
+            geopm::ModelRegionBase *model_region = (geopm::ModelRegionBase *)model_region_c;
+            delete model_region;
+        }
+        catch (...) {
+            err = geopm::exception_handler(std::current_exception());
+        }
+        return err;
+    }
 }
 
 

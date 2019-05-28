@@ -67,7 +67,9 @@ if '--bench' in sys.argv:
                 geopmpy.bench.model_region_run(stream_model)
                 geopmpy.bench.model_region_run(dgemm_model)
                 geopmpy.prof.exit(region_id)
-                
+            geopmpy.bench.model_region_delete(dgemm_model)
+            geopmpy.bench.model_region_delete(stream_model)
+
         geopmpy.prof.shutdown()
 
     if __name__ == '__main__':

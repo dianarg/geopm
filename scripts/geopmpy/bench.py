@@ -56,3 +56,9 @@ def model_region_run(model_region):
     if err:
         raise RuntimeError("geopm_model_region_run() failed: {}".format(
             error.message(err)))
+
+def model_region_delete(model_region)
+    err = _dl.geopm_model_region_delete(model_region)
+    if err:
+        raise RuntimeError("geopm_model_region_delete() failed: {}".format(
+            error.message(err)))
