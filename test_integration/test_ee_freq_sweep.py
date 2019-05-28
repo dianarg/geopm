@@ -60,10 +60,10 @@ if '--bench' in sys.argv:
             stream_model = geopmpy.bench.model_region_factory('stream-unmarked', big_o[0], is_verbose)
             dgemm_name = 'dgemm-{}'.format(big_o[1])
             dgemm_model = geopmpy.bench.model_region_factory('dgemm-unmarked', big_o[1], is_verbose)
-            region_name = '-'.join((stream_name, dgemm_name)) 
+            region_name = '-'.join((stream_name, dgemm_name))
             region_id = geopmpy.prof.region(region_name, geopmpy.prof.REGION_HINT_UNKNOWN)
             for iter in range(repeat):
-                geopmpy.prof.enter(region_id)                
+                geopmpy.prof.enter(region_id)
                 geopmpy.bench.model_region_run(stream_model)
                 geopmpy.bench.model_region_run(dgemm_model)
                 geopmpy.prof.exit(region_id)
