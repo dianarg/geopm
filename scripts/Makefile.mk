@@ -40,11 +40,13 @@ EXTRA_DIST += scripts/MANIFEST.in \
               scripts/geopmplotter \
               scripts/geopmpy/__init__.py \
               scripts/geopmpy/analysis.py \
+              scripts/geopmpy/bench.py \
               scripts/geopmpy/error.py \
               scripts/geopmpy/io.py \
               scripts/geopmpy/launcher.py \
               scripts/geopmpy/pio.py \
               scripts/geopmpy/plotter.py \
+              scripts/geopmpy/prof.py \
               scripts/geopmpy/topo.py \
               scripts/geopmpy/version.py \
               scripts/requirements.txt \
@@ -65,6 +67,7 @@ EXTRA_DIST += scripts/MANIFEST.in \
               scripts/test/geopm_context.py \
               scripts/test/geopmpy_test.sh \
               # end
+
 
 PYTEST_TESTS = scripts/test/pytest_links/TestAffinity.test_affinity_0 \
                scripts/test/pytest_links/TestAffinity.test_affinity_1 \
