@@ -39,5 +39,6 @@ EXTRA_DIST += test_integration/geopm_context.py \
               test_integration/__main__.py \
               test_integration/Makefile.mk \
               test_integration/README.md \
+              test_integration/test_ee_freq_sweep.py \
               test_integration/test_monitor_sleep.py \
               # end

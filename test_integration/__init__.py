@@ -33,4 +33,5 @@
 import geopm_context
 from geopm_test_integration import *
 from test_monitor_sleep import *
+from test_ee_freq_sweep import *
 from geopmpy.version import __version__
