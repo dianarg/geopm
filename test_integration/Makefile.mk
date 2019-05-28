@@ -29,9 +29,15 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-EXTRA_DIST += test_integration/README.md \
-              test_integration/geopm_context.py \
+EXTRA_DIST += test_integration/geopm_context.py \
               test_integration/geopm_test_integration.py \
               test_integration/geopm_test_launcher.py \
               test_integration/geopm_test_loop.sh \
+              test_integration/geopm_test_main_example_config.json \
+              test_integration/geopm_test_main_example.py \
+              test_integration/__init__.py \
+              test_integration/__main__.py \
+              test_integration/Makefile.mk \
+              test_integration/README.md \
+              test_integration/test_monitor_sleep.py \
               # end

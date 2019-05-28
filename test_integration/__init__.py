@@ -30,6 +30,7 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import geopm_context
 from geopm_test_integration import *
 from test_monitor_sleep import *
 from geopmpy.version import __version__

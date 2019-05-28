@@ -31,22 +31,28 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+"""File containing all tests that can be executed based on using the
+monitor agent and a single sleep region.
+
+"""
+
 import sys
-_do_bench = False
+
 if '--bench' in sys.argv:
-    _do_bench = True
+    # When --bench is given the script is an MPI application that
+    # executes the sleep region.
+
     import geopmpy.bench
     import geopmpy.prof
     import ctypes
-    ctypes.CDLL('libgeopm.so', mode=ctypes.RTLD_GLOBAL) # Load the GEOPM PMPI wrappers
+    # Load the GEOPM PMPI wrappers prior to importing mpi4py
+    ctypes.CDLL('libgeopm.so', mode=ctypes.RTLD_GLOBAL)
     import mpi4py.MPI
 
-    def root_print(msg):
-        rank = mpi4py.MPI.COMM_WORLD.Get_rank()
-        if rank == 0:
-            sys.stdout.write(msg)
-
     def bench_main():
+        """Function that is executed when the script is run as a benchmark.
+
+        """
         is_verbose = (mpi4py.MPI.COMM_WORLD.Get_rank() == 0 and
                       ('--verbose' in sys.argv or '-v' in sys.argv))
         model_region = geopmpy.bench.model_region_factory('sleep', 1.0, is_verbose)
@@ -63,39 +69,81 @@ else:
     import geopmpy.io
     import geopm_test_launcher
 
-    class AppConfig(object):
+    class AppConf(object):
+        """Class that is used by the test launcher as a geopmpy.io.BenchConf
+        when running the script as a benchmark.
+
+        """
         def write(self):
+            """No configuration files are required.
+
+            """
             pass
 
         def get_exec_path(self):
-            return os.path.realpath(__file__)
+            """Execute this script.
+
+            """
+            result = os.path.realpath(__file__)
+            if result.endswith('.pyc'):
+                result = result[:-1]
+            return result
 
         def get_exec_args(self):
+            """Pass this script --bench to indicate that MPI application should be
+            run.
+
+            """
             return ['--bench']
 
 
     class TestIntegrationMonitorSleep(unittest.TestCase):
-        def setUp(self):
-            test_name = 'test_monitor_sleep'
-            self._num_node = 4
-            self._num_rank = 16
-            app_conf = AppConfig()
-            agent_conf = geopmpy.io.AgentConf(test_name + '-agent-config.json')
-            report_path = test_name + '.report'
-            self._launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path)
-            self._launcher.set_num_node(self._num_node)
-            self._launcher.set_num_rank(self._num_rank)
-            self._launcher.run(test_name)
-            self._output = geopmpy.io.AppOutput(report_path)
+        @classmethod
+        def setUpClass(cls):
+            """Create launcher, execute this script as a benchmark and store the
+            output.
 
-        def tearDown(self):
-            if sys.exc_info() == (None, None, None) and os.getenv('GEOPM_KEEP_FILES') is None:
-                self._output.remove_files()
-                self._launcher.remove_files()
+            """
+            test_name = 'test_monitor_sleep'
+            cls._num_node = 4
+            cls._num_rank = 16
+            app_conf = AppConf()
+            agent_conf = geopmpy.io.AgentConf(test_name + '-agent-config.json')
+            cls._report_path = test_name + '.report'
+            cls._launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, cls._report_path)
+            cls._launcher.set_num_node(cls._num_node)
+            cls._launcher.set_num_rank(cls._num_rank)
+            cls._launcher.run(test_name)
+            cls._output = geopmpy.io.AppOutput(cls._report_path)
+
+        @classmethod
+        def tearDownClass(cls):
+            """If we are not handling an exception and the GEOPM_KEEP_FILES
+            environment variable is unset, clean up output.
+
+            """
+
+            if (sys.exc_info() == (None, None, None) and
+                os.getenv('GEOPM_KEEP_FILES') is None):
+                cls._output.remove_files()
+                cls._launcher.remove_files()
 
         def test_report_exists(self):
+            """Test that a report is generated."""
+            self.assertTrue(os.path.exists(self._report_path))
+
+        def test_number_nodes(self):
+            """Test that report has the correct number of nodes.
+
+            """
             node_names = self._output.get_node_names()
             self.assertEqual(self._num_node, len(node_names))
+
+        def test_report_not_empty(self):
+            """Test that reports are not empty.
+
+            """
+            node_names = self._output.get_node_names()
             for nn in node_names:
                 report = self._output.get_report_data(node_name=nn)
                 self.assertNotEqual(0, len(report))
