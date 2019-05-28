@@ -121,7 +121,7 @@ else:
             cls._num_node = 4
             cls._num_rank = 16
             app_conf = AppConf()
-            agent_conf = geopmpy.io.AgentConf(test_name + '-agent-config.json', 'energy_efficient', {'frequency_min':1.0, 'frequency_max':1.3})
+            agent_conf = geopmpy.io.AgentConf(test_name + '-agent-config.json', 'energy_efficient', {'frequency_min':1.0e9, 'frequency_max':1.3e9})
             cls._report_path = test_name + '.report'
             cls._launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, cls._report_path)
             cls._launcher.set_num_node(cls._num_node)
