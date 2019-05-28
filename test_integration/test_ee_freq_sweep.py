@@ -54,7 +54,8 @@ if '--bench' in sys.argv:
                       ('--verbose' in sys.argv or '-v' in sys.argv))
         repeat = 100
         regions = ['stream-unmarked', 'dgemm-unmarked']
-        big_o_list = [[1.0 - 0.1 * xx, 0.1 * xx] for xx in range(0, 11)]
+        factor = 0.1
+        big_o_list = [[factor * (1.0 - 0.1 * xx), 0.1 * factor * xx] for xx in range(0, 11)]
         for big_o in big_o_list:
             stream_name = 'stream-{}'.format(big_o[0])
             stream_model = geopmpy.bench.model_region_factory('stream-unmarked', big_o[0], is_verbose)
@@ -123,7 +124,7 @@ else:
             app_conf = AppConf()
             agent_conf = geopmpy.io.AgentConf(test_name + '-agent-config.json', 'energy_efficient', {'frequency_min':1.0e9, 'frequency_max':1.3e9})
             cls._report_path = test_name + '.report'
-            cls._launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, cls._report_path)
+            cls._launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, cls._report_path, time_limit=6000)
             cls._launcher.set_num_node(cls._num_node)
             cls._launcher.set_num_rank(cls._num_rank)
             cls._launcher.run(test_name)
