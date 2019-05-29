@@ -52,10 +52,10 @@ if '--bench' in sys.argv:
         """
         is_verbose = (mpi4py.MPI.COMM_WORLD.Get_rank() == 0 and
                       ('--verbose' in sys.argv or '-v' in sys.argv))
-        repeat = 100
+        repeat = 60
         regions = ['stream-unmarked', 'dgemm-unmarked']
-        dgemm_factor = 10
-        stream_factor = 1.0
+        dgemm_factor = 1.0
+        stream_factor = 5.0
         big_o_list = [[(1.0 - 0.1 * xx), 0.1 * xx] for xx in range(0, 11)]
         for big_o in big_o_list:
             stream_big_o = stream_factor * big_o[0]
@@ -125,15 +125,16 @@ else:
             """
             test_name = 'test_ee_freq_sweep'
             cls._num_node = 4
-            cls._num_rank = 16
+            cls._num_rank = 4
             app_conf = AppConf()
             agent_conf = geopmpy.io.AgentConf(test_name + '-agent-config.json', 'energy_efficient', {'frequency_min':1.0e9, 'frequency_max':1.3e9})
             cls._report_path = test_name + '.report'
-            cls._launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, cls._report_path, time_limit=6000)
+            cls._trace_path = test_name + '.trace'
+            cls._launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, cls._report_path, cls._trace_path, time_limit=6000)
             cls._launcher.set_num_node(cls._num_node)
             cls._launcher.set_num_rank(cls._num_rank)
             cls._launcher.run(test_name)
-            cls._output = geopmpy.io.AppOutput(cls._report_path)
+            cls._output = geopmpy.io.AppOutput(cls._report_path, cls._trace_path + '*')
 
         @classmethod
         def tearDownClass(cls):
