@@ -54,13 +54,16 @@ if '--bench' in sys.argv:
                       ('--verbose' in sys.argv or '-v' in sys.argv))
         repeat = 100
         regions = ['stream-unmarked', 'dgemm-unmarked']
-        factor = 0.1
-        big_o_list = [[factor * (1.0 - 0.1 * xx), 0.1 * factor * xx] for xx in range(0, 11)]
+        dgemm_factor = 10
+        stream_factor = 1.0
+        big_o_list = [[(1.0 - 0.1 * xx), 0.1 * xx] for xx in range(0, 11)]
         for big_o in big_o_list:
-            stream_name = 'stream-{}'.format(big_o[0])
-            stream_model = geopmpy.bench.model_region_factory('stream-unmarked', big_o[0], is_verbose)
-            dgemm_name = 'dgemm-{}'.format(big_o[1])
-            dgemm_model = geopmpy.bench.model_region_factory('dgemm-unmarked', big_o[1], is_verbose)
+            stream_big_o = stream_factor * big_o[0]
+            stream_name = 'stream-{}'.format(stream_big_o)
+            stream_model = geopmpy.bench.model_region_factory('stream-unmarked', stream_big_o, is_verbose)
+            dgemm_big_o = dgemm_factor * big_o[1]
+            dgemm_name = 'dgemm-{}'.format(dgemm_big_o)
+            dgemm_model = geopmpy.bench.model_region_factory('dgemm-unmarked', dgemm_big_o, is_verbose)
             region_name = '-'.join((stream_name, dgemm_name))
             region_id = geopmpy.prof.region(region_name, geopmpy.prof.REGION_HINT_UNKNOWN)
             for iter in range(repeat):
@@ -68,6 +71,7 @@ if '--bench' in sys.argv:
                 geopmpy.bench.model_region_run(stream_model)
                 geopmpy.bench.model_region_run(dgemm_model)
                 geopmpy.prof.exit(region_id)
+                mpi4py.MPI.COMM_WORLD.Barrier()
             geopmpy.bench.model_region_delete(dgemm_model)
             geopmpy.bench.model_region_delete(stream_model)
 
@@ -98,17 +102,18 @@ else:
             """Execute this script.
 
             """
-            result = os.path.realpath(__file__)
-            if result.endswith('.pyc'):
-                result = result[:-1]
-            return result
+            return 'python'
 
         def get_exec_args(self):
             """Pass this script --bench to indicate that MPI application should be
             run.
 
             """
-            return ['--bench']
+            script_path = os.path.realpath(__file__)
+            if script_path.endswith('.pyc'):
+                script_path = script_path[:-1]
+
+            return [script_path, '--bench']
 
 
     class TestIntegrationEEFreqSweep(unittest.TestCase):
