@@ -52,10 +52,11 @@ if '--bench' in sys.argv:
         """
         is_verbose = (mpi4py.MPI.COMM_WORLD.Get_rank() == 0 and
                       ('--verbose' in sys.argv or '-v' in sys.argv))
-        repeat = 60
+        repeat = 500
         regions = ['stream-unmarked', 'dgemm-unmarked']
-        dgemm_factor = 1.0
-        stream_factor = 5.0
+        sleep_model = geopmpy.bench.model_region_factory('sleep', 0.1, is_verbose)
+        dgemm_factor = 6
+        stream_factor = 0.5
         big_o_list = [[(1.0 - 0.1 * xx), 0.1 * xx] for xx in range(0, 11)]
         for big_o in big_o_list:
             stream_big_o = stream_factor * big_o[0]
@@ -71,7 +72,8 @@ if '--bench' in sys.argv:
                 geopmpy.bench.model_region_run(stream_model)
                 geopmpy.bench.model_region_run(dgemm_model)
                 geopmpy.prof.exit(region_id)
-                mpi4py.MPI.COMM_WORLD.Barrier()
+                geopmpy.bench.model_region_run(sleep_model)
+                #mpi4py.MPI.COMM_WORLD.Barrier()
             geopmpy.bench.model_region_delete(dgemm_model)
             geopmpy.bench.model_region_delete(stream_model)
 
@@ -124,10 +126,10 @@ else:
 
             """
             test_name = 'test_ee_freq_sweep'
-            cls._num_node = 4
-            cls._num_rank = 4
+            cls._num_node = 2
+            cls._num_rank = 2
             app_conf = AppConf()
-            agent_conf = geopmpy.io.AgentConf(test_name + '-agent-config.json', 'energy_efficient', {'frequency_min':1.0e9, 'frequency_max':1.3e9})
+            agent_conf = geopmpy.io.AgentConf(test_name + '-agent-config.json', 'energy_efficient', {'frequency_min':1.0e9, 'frequency_max':2.1e9})
             cls._report_path = test_name + '.report'
             cls._trace_path = test_name + '.trace'
             cls._launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, cls._report_path, cls._trace_path, time_limit=6000)

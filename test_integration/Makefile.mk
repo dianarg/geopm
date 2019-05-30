@@ -43,8 +43,8 @@ EXTRA_DIST += test_integration/geopm_context.py \
               test_integration/test_monitor_sleep.py \
               # end
 
-check_PROGRAMS += test_integration/test_ee_stream_dgemm_mix \
-                  # end
+noinst_PROGRAMS += test_integration/test_ee_stream_dgemm_mix \
+                   # end
 
 test_integration_test_ee_stream_dgemm_mix_SOURCES = test_integration/test_ee_stream_dgemm_mix.cpp \
                                                     src/ModelRegion.cpp \

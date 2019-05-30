@@ -71,7 +71,7 @@ class TestIntegrationEEFreqSweep(unittest.TestCase):
         """Create launcher, execute benchmark and store the output.
 
         """
-        test_name = 'test_ee_freq_sweep'
+        test_name = 'test_ee_stream_dgemm_mix'
         cls._num_node = 2
         cls._num_rank = 2
         app_conf = AppConf()

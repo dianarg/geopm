@@ -58,21 +58,21 @@ int main(int argc, char **argv)
     }
     int repeat = 500;
     std::vector<std::string> regions {"stream-unmarked", "dgemm-unmarked"};
-    geopm::ModelRegion *sleep_model = geopm::model_region_factory("sleep", 0.1, is_verbose);
-    double dgemm_factor = 6.0
-    double stream_factor = 0.5
+    geopm::ModelRegionBase *sleep_model = geopm::model_region_factory("sleep", 0.1, is_verbose);
+    double dgemm_factor = 6.0;
+    double stream_factor = 0.5;
     int num_mix = 11;
-    double max_factor = 1.0 / (num_mix - 1);
+    double mix_factor = 1.0 / (num_mix - 1);
     std::vector<std::pair<double, double> > big_o_list;
     for (int mix_idx = 0;  !err && mix_idx != num_mix; ++mix_idx) {
-        stream_idx = num_mix - 1 - mix_idx;
-        dgemm_idx = mix_idx;
-        stream_big_o = stream_factor * mix_factor * stream_idx;
-        dgemm_big_o = dgemm_factor * mix_factor * dgemm_idx;
+        int stream_idx = num_mix - 1 - mix_idx;
+        int dgemm_idx = mix_idx;
+        double stream_big_o = stream_factor * mix_factor * stream_idx;
+        double dgemm_big_o = dgemm_factor * mix_factor * dgemm_idx;
         std::string stream_name("stream-" + std::to_string(stream_idx));
         std::string dgemm_name("dgemm-" + std::to_string(dgemm_idx));
-        ModelRegionBase *stream_model = model_region_factory(stream_name, stream_big_o, is_verbose);
-        ModelRegionBase *dgemm_model = model_region_factory(dgemm_name, dgemm_big_o, is_verbose);
+        geopm::ModelRegionBase *stream_model = geopm::model_region_factory(stream_name, stream_big_o, is_verbose);
+        geopm::ModelRegionBase *dgemm_model = geopm::model_region_factory(dgemm_name, dgemm_big_o, is_verbose);
         std::string region_name(stream_name + '-' + dgemm_name);
         uint64_t region_id;
         err = geopm_prof_region(region_name.c_str(), GEOPM_REGION_HINT_UNKNOWN, &region_id);
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
             dgemm_model->run();
             err = geopm_prof_exit(region_id);
             if (err) goto exit;
-            MPI_Comm_barrier(MPI_COMM_WORLD);
+            MPI_Barrier(MPI_COMM_WORLD);
         }
 exit:
         delete dgemm_model;
