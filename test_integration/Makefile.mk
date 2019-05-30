@@ -42,3 +42,15 @@ EXTRA_DIST += test_integration/geopm_context.py \
               test_integration/test_ee_freq_sweep.py \
               test_integration/test_monitor_sleep.py \
               # end
+
+check_PROGRAMS += test_integration/test_ee_stream_dgemm_mix \
+                  # end
+
+test_integration_test_ee_stream_dgemm_mix_SOURCES = test_integration/test_ee_stream_dgemm_mix.cpp \
+                                                    src/ModelRegion.cpp \
+                                                    src/ModelRegion.hpp \
+                                                    # end
+test_integration_test_ee_stream_dgemm_mix_LDADD = libgeopm.la $(MATH_LIB)
+test_integration_test_ee_stream_dgemm_mix_LDFLAGS = $(AM_LDFLAGS) $(MPI_LDFLAGS) $(MATH_LDFLAGS)
+test_integration_test_ee_stream_dgemm_mix_CXXFLAGS = $(AM_CXXFLAGS) $(MPI_CFLAGS) -D_GNU_SOURCE -std=c++11 $(MATH_CFLAGS)
+
