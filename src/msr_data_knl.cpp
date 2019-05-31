@@ -135,6 +135,29 @@ namespace geopm
                 }
             }
         },
+        "TURBO_RATIO_LIMIT": {
+            "offset": "0x1AD",
+            "domain": "package",
+            "fields": {
+                "MAX_GROUP_0_CORES": {
+                    "begin_bit": 1,
+                    "end_bit":   7,
+                    "function":  "scale",
+                    "units":     "none",
+                    "scalar":    1.0,
+                    "writeable": false
+                },
+                "MAX_GROUP_0_RATIO_LIMIT": {
+                    "begin_bit": 8,
+                    "end_bit":   15,
+                    "function":  "scale",
+                    "units":     "hertz",
+                    "scalar":    1e8,
+                    "writeable": false
+                },
+
+            },
+        },
         "RAPL_POWER_UNIT": {
             "offset": "0x606",
             "domain": "package",
