@@ -85,7 +85,6 @@ namespace geopm
             double m_freq_min;
             double m_target;
             std::vector<std::unique_ptr<FreqContext> > m_freq_ctx;
-            bool m_is_disabled;
     };
 
 } // namespace geopm

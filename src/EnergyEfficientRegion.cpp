@@ -53,7 +53,6 @@ namespace geopm
         , m_curr_step(-1)
         , m_freq_min(freq_min)
         , m_target(0.0)
-        , m_is_disabled(false)
     {
         /// @brief we are not clearing the m_freq_ctx vector once created, such that we
         ///        do not have to re-learn frequencies that were temporarily removed via
@@ -85,7 +84,7 @@ namespace geopm
 
     void EnergyEfficientRegionImp::update_exit(double curr_perf_metric)
     {
-        if (m_is_learning && !m_is_disabled) {
+        if (m_is_learning) {
             auto &curr_freq_ctx = m_freq_ctx[m_curr_step];
             if (!std::isnan(curr_perf_metric) && curr_perf_metric != 0.0) {
                 curr_freq_ctx->perf.insert(curr_perf_metric);
@@ -125,7 +124,7 @@ namespace geopm
 
     void EnergyEfficientRegionImp::disable(void)
     {
-        m_is_disabled = true;
+        m_is_learning = false;
     }
 
     bool EnergyEfficientRegionImp::is_learning(void) const
