@@ -96,6 +96,7 @@ namespace geopm
                 M_SIGNAL_REGION_HASH,
                 M_SIGNAL_REGION_HINT,
                 M_SIGNAL_REGION_RUNTIME,
+                M_SIGNAL_REGION_COUNT,
                 M_NUM_SIGNAL,
             };
 
@@ -112,8 +113,8 @@ namespace geopm
             std::vector<struct geopm_region_info_s> m_last_region_info;
             std::vector<double> m_target_freq;
             std::vector<std::map<uint64_t, double> > m_adapt_freq_map;
-            std::vector<std::map<uint64_t, std::shared_ptr<EnergyEfficientRegion> > > m_region_map;
             std::vector<int> m_samples_since_boundary;
+            std::map<uint64_t, std::shared_ptr<EnergyEfficientRegion> > m_region_map;
             geopm_time_s m_last_wait;
             std::vector<std::vector<int> > m_signal_idx;
             int m_level;
