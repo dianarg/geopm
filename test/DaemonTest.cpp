@@ -30,21 +30,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef GEOPM_MANAGER_H_INCLUDE
-#define GEOPM_MANAGER_H_INCLUDE
+#include "gtest/gtest.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "Helper.hpp"
+#include "geopm_daemon.h"
 
-int geopm_env_agent(size_t size, char *agent);
+#include <string>
 
-int geopm_manager_set_host_policy(const char *hostname,
-                                  const char *policy_file_path,
-                                  const char *policy_json);
+class DaemonTest: public :: testing :: Test {};
 
-#ifdef __cplusplus
+TEST(DaemonTest, geopm_daemon_set_host_policy)
+{
+    std::string testjson = "{ \"TEST\": 80, \"POLICY\": 100 }";
+    std::string hostname = geopm::hostname();
+    std::string node_policy = "./node_policy.json";
+    int err = geopm_daemon_set_host_policy(hostname.c_str(),
+                                  node_policy.c_str(),
+                                  testjson.c_str());
+    std::string result = geopm::read_file(node_policy);
+    EXPECT_EQ(0, err);
+    EXPECT_EQ(testjson, result);
+
+    // not yet implemented
+    EXPECT_NE(0, geopm_daemon_set_host_policy("myhost", node_policy.c_str(), testjson.c_str()));
 }
-#endif
-
-#endif
