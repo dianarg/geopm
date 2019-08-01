@@ -48,11 +48,12 @@ before_install:
     - rvm install 2.0.0
     - git fetch origin --tags
     - git fetch origin $TRAVIS_BRANCH
+    - git rebase origin/dev
     - ./autogen.sh
     - pip install --user -r ./scripts/requirements.txt
 
 install:
-    - ./configure --disable-fortran --enable-debug --prefix=$GEOPM_INSTALL_ROOT
+    - ./configure --disable-fortran --enable-debug --enable-overhead --prefix=$GEOPM_INSTALL_ROOT
 
 cache:
     directories:
