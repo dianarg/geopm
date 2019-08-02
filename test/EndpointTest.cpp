@@ -57,34 +57,34 @@
 #include "Endpoint.hpp"
 #include "SharedMemoryImp.hpp"
 
-using geopm::ManagerIOImp;
-using geopm::ManagerIOSamplerImp;
+using geopm::ShmemEndpoint;
+using geopm::ShmemEndpointClient;
 using geopm::SharedMemoryImp;
-using geopm::geopm_manager_shmem_s;
+using geopm::geopm_endpoint_shmem_s;
 using geopm::Exception;
 
 using json11::Json;
 
-class ManagerIOTest: public :: testing :: Test
+class EndpointTest: public :: testing :: Test
 {
     public:
-        ManagerIOTest();
-        ~ManagerIOTest() = default;
+        EndpointTest();
+        ~EndpointTest() = default;
 
     protected:
-        const std::string m_json_file_path = "ManagerIOTest_data";
-        const std::string m_shm_path = "/ManagerIOTest_data_" + std::to_string(geteuid());
+        const std::string m_json_file_path = "EndpointTest_data";
+        const std::string m_shm_path = "/EndpointTest_data_" + std::to_string(geteuid());
         std::string m_valid_json;
 };
 
-class ManagerIOTestIntegration : public ManagerIOTest
+class EndpointTestIntegration : public EndpointTest
 {
     public:
-        ManagerIOTestIntegration() : ManagerIOTest() {}
-        ~ManagerIOTestIntegration() = default;
+        EndpointTestIntegration() : EndpointTest() {}
+        ~EndpointTestIntegration() = default;
 };
 
-ManagerIOTest::ManagerIOTest()
+EndpointTest::EndpointTest()
 {
     std::string tab = std::string(4, ' ');
     std::ostringstream valid_json;
@@ -96,17 +96,17 @@ ManagerIOTest::ManagerIOTest()
     m_valid_json = valid_json.str();
 }
 
-TEST_F(ManagerIOTest, write_json_file)
+TEST_F(EndpointTest, write_json_file)
 {
     std::vector<std::string> signal_names = {"POWER_CONSUMED", "RUNTIME", "GHZ"};
-    ManagerIOImp jio(m_json_file_path, nullptr, signal_names);
+    ShmemEndpoint jio(m_json_file_path, nullptr, signal_names);
 
     jio.adjust("GHZ", 2.3e9);
     jio.adjust("RUNTIME", 12.3456);
     jio.adjust("POWER_CONSUMED", 777);
     jio.write_batch();
 
-    ManagerIOSamplerImp jios(m_json_file_path, nullptr, signal_names);
+    ShmemEndpointClient jios(m_json_file_path, nullptr, signal_names);
 
     EXPECT_EQ(777, jios.sample("POWER_CONSUMED"));
     EXPECT_EQ(12.3456, jios.sample("RUNTIME"));
@@ -115,14 +115,14 @@ TEST_F(ManagerIOTest, write_json_file)
     std::remove(m_json_file_path.c_str());
 }
 
-TEST_F(ManagerIOTest, write_shm)
+TEST_F(EndpointTest, write_shm)
 {
-    size_t shmem_size = sizeof(struct geopm_manager_shmem_s);
+    size_t shmem_size = sizeof(struct geopm_endpoint_shmem_s);
     std::unique_ptr<MockSharedMemory> shmem(new MockSharedMemory(shmem_size));
-    struct geopm_manager_shmem_s *data = (struct geopm_manager_shmem_s *) shmem->pointer();
+    struct geopm_endpoint_shmem_s *data = (struct geopm_endpoint_shmem_s *) shmem->pointer();
 
     std::vector<std::string> signal_names = {"POWER_CONSUMED", "RUNTIME", "GHZ"};
-    ManagerIOImp jio(m_shm_path, std::move(shmem), signal_names);
+    ShmemEndpoint jio(m_shm_path, std::move(shmem), signal_names);
 
     jio.adjust("POWER_CONSUMED", 777);
     jio.adjust("RUNTIME", 12.3456);
@@ -136,26 +136,26 @@ TEST_F(ManagerIOTest, write_shm)
     EXPECT_EQ(2.3e9, test[2]);
 }
 
-TEST_F(ManagerIOTest, negative_write_json_file)
+TEST_F(EndpointTest, negative_write_json_file)
 {
-    std::string path ("ManagerIOTest_empty");
+    std::string path ("EndpointTest_empty");
     std::ofstream empty_file(path, std::ofstream::out);
     empty_file.close();
     chmod(path.c_str(), 0);
 
     const std::vector<std::string> signal_names = {"FAKE_SIGNAL"};
-    ManagerIOImp jio (path, nullptr, signal_names);
+    ShmemEndpoint jio (path, nullptr, signal_names);
 
     GEOPM_EXPECT_THROW_MESSAGE(jio.write_batch(),
                                GEOPM_ERROR_INVALID, "output file \"" + path + "\" could not be opened");
     std::remove(path.c_str());
 }
 
-TEST_F(ManagerIOTestIntegration, write_shm)
+TEST_F(EndpointTestIntegration, write_shm)
 {
     std::vector<std::string> signal_names = {"POWER_CONSUMED", "RUNTIME", "GHZ1", "GHZ2", "GHZ3", "GHZ4", "GHZ5", "GHZ6",
                                              "GHZ7", "GHZ8"};
-    ManagerIOImp mio(m_shm_path, nullptr, signal_names);
+    ShmemEndpoint mio(m_shm_path, nullptr, signal_names);
 
     mio.adjust("POWER_CONSUMED", 777);
     mio.adjust("RUNTIME", 12.3456);
@@ -169,7 +169,7 @@ TEST_F(ManagerIOTestIntegration, write_shm)
     mio.adjust("GHZ2", 2.2e9);
     mio.write_batch();
 
-    ManagerIOSamplerImp mios(m_shm_path, nullptr, signal_names);
+    ShmemEndpointClient mios(m_shm_path, nullptr, signal_names);
 
     EXPECT_EQ(777, mios.sample("POWER_CONSUMED"));
     EXPECT_EQ(12.3456, mios.sample("RUNTIME"));
@@ -186,29 +186,29 @@ TEST_F(ManagerIOTestIntegration, write_shm)
 
 /*************************************************************************************************/
 
-class ManagerIOSamplerTest: public :: testing :: Test
+class EndpointClientTest: public :: testing :: Test
 {
     public:
-        ManagerIOSamplerTest();
+        EndpointClientTest();
 
     protected:
         void SetUp();
         void TearDown();
-        const std::string m_json_file_path = "ManagerIOSamplerTest_data";
-        const std::string m_json_file_path_bad = "ManagerIOSamplerTest_data_bad";
-        const std::string m_shm_path = "/ManagerIOSamplerTest_data_" + std::to_string(geteuid());
+        const std::string m_json_file_path = "EndpointClientTest_data";
+        const std::string m_json_file_path_bad = "EndpointClientTest_data_bad";
+        const std::string m_shm_path = "/EndpointClientTest_data_" + std::to_string(geteuid());
         std::string m_valid_json;
         std::string m_valid_json_bad_type;
 };
 
-class ManagerIOSamplerTestIntegration : public ManagerIOSamplerTest
+class EndpointClientTestIntegration : public EndpointClientTest
 {
     public:
-        ManagerIOSamplerTestIntegration() : ManagerIOSamplerTest() {}
-        ~ManagerIOSamplerTestIntegration() = default;
+        EndpointClientTestIntegration() : EndpointClientTest() {}
+        ~EndpointClientTestIntegration() = default;
 };
 
-ManagerIOSamplerTest::ManagerIOSamplerTest()
+EndpointClientTest::EndpointClientTest()
 {
     std::string tab = std::string(4, ' ');
     std::ostringstream valid_json;
@@ -236,7 +236,7 @@ ManagerIOSamplerTest::ManagerIOSamplerTest()
     m_valid_json_bad_type = bad_json.str();
 }
 
-void ManagerIOSamplerTest::SetUp()
+void EndpointClientTest::SetUp()
 {
     std::ofstream json_stream(m_json_file_path);
     std::ofstream json_stream_bad(m_json_file_path_bad);
@@ -248,17 +248,17 @@ void ManagerIOSamplerTest::SetUp()
     json_stream_bad.close();
 }
 
-void ManagerIOSamplerTest::TearDown()
+void EndpointClientTest::TearDown()
 {
     std::remove(m_json_file_path.c_str());
     std::remove(m_json_file_path_bad.c_str());
 }
 
-TEST_F(ManagerIOSamplerTest, parse_json_file)
+TEST_F(EndpointClientTest, parse_json_file)
 {
     std::vector<std::string> signal_names = {"POWER_MAX", "FREQUENCY_MAX", "FREQUENCY_MIN", "PI",
                                              "DEFAULT1", "DEFAULT2", "DEFAULT3"};
-    ManagerIOSamplerImp gp(m_json_file_path, nullptr, signal_names);
+    ShmemEndpointClient gp(m_json_file_path, nullptr, signal_names);
 
     EXPECT_EQ(400, gp.sample("POWER_MAX"));
     EXPECT_EQ(2.3e9, gp.sample("FREQUENCY_MAX"));
@@ -269,32 +269,32 @@ TEST_F(ManagerIOSamplerTest, parse_json_file)
     EXPECT_TRUE(std::isnan(gp.sample("DEFAULT3")));
 }
 
-TEST_F(ManagerIOSamplerTest, negative_parse_json_file)
+TEST_F(EndpointClientTest, negative_parse_json_file)
 {
     const std::vector<std::string> signal_names = {"FAKE_SIGNAL"};
-    GEOPM_EXPECT_THROW_MESSAGE(new ManagerIOSamplerImp(m_json_file_path_bad, nullptr, signal_names),
+    GEOPM_EXPECT_THROW_MESSAGE(new ShmemEndpointClient(m_json_file_path_bad, nullptr, signal_names),
                                GEOPM_ERROR_FILE_PARSE, "unsupported type or malformed json config file");
 
     // Don't parse if Agent doesn't require any policies
     const std::vector<std::string> signal_names_empty;
-    ManagerIOSamplerImp("", nullptr, signal_names_empty);
+    ShmemEndpointClient("", nullptr, signal_names_empty);
 }
 
-TEST_F(ManagerIOSamplerTest, parse_shm)
+TEST_F(EndpointClientTest, parse_shm)
 {
-    size_t shmem_size = sizeof(struct geopm_manager_shmem_s);
+    size_t shmem_size = sizeof(struct geopm_endpoint_shmem_s);
     std::unique_ptr<MockSharedMemoryUser> shmem(new MockSharedMemoryUser(shmem_size));
-    struct geopm_manager_shmem_s *data = (struct geopm_manager_shmem_s *) shmem->pointer();
+    struct geopm_endpoint_shmem_s *data = (struct geopm_endpoint_shmem_s *) shmem->pointer();
 
     // Build the data
     data->is_updated = true;
-    ManagerIOImp::setup_mutex(data->lock);
+    ShmemEndpoint::setup_mutex(data->lock);
     double tmp[] = { 1.1, 2.2, 3.3, 4.4, 5.5 };
     data->count = sizeof(tmp) / sizeof(tmp[0]);
     memcpy(data->values, tmp, sizeof(tmp));
 
     std::vector<std::string> signal_names = {"ONE", "TWO", "THREE", "FOUR", "FIVE"};
-    ManagerIOSamplerImp gp("/FAKE_PATH", std::move(shmem), signal_names);
+    ShmemEndpointClient gp("/FAKE_PATH", std::move(shmem), signal_names);
 
     EXPECT_FALSE(gp.is_update_available());
     EXPECT_EQ(1.1, gp.sample("ONE"));
@@ -304,74 +304,74 @@ TEST_F(ManagerIOSamplerTest, parse_shm)
     EXPECT_EQ(5.5, gp.sample("FIVE"));
 }
 
-TEST_F(ManagerIOSamplerTest, negative_parse_shm)
+TEST_F(EndpointClientTest, negative_parse_shm)
 {
-    size_t shmem_size = sizeof(struct geopm_manager_shmem_s);
+    size_t shmem_size = sizeof(struct geopm_endpoint_shmem_s);
     std::unique_ptr<MockSharedMemoryUser> shmem(new MockSharedMemoryUser(shmem_size));
-    struct geopm_manager_shmem_s *data = (struct geopm_manager_shmem_s *) shmem->pointer();
+    struct geopm_endpoint_shmem_s *data = (struct geopm_endpoint_shmem_s *) shmem->pointer();
 
     // Build the data
     data->is_updated = false; // This will force the parsing logic to throw since the structure is "not updated".
-    ManagerIOImp::setup_mutex(data->lock);
+    ShmemEndpoint::setup_mutex(data->lock);
 
     double tmp[] = { 1.1, 2.2, 3.3, 4.4, 5.5 };
     data->count = sizeof(tmp) / sizeof(tmp[0]);
     memcpy(data->values, tmp, sizeof(tmp));
 
     std::vector<std::string> signal_names = {"ONE", "TWO", "THREE", "FOUR", "FIVE"};
-    GEOPM_EXPECT_THROW_MESSAGE(new ManagerIOSamplerImp("/FAKE_PATH", std::move(shmem), signal_names),
+    GEOPM_EXPECT_THROW_MESSAGE(new ShmemEndpointClient("/FAKE_PATH", std::move(shmem), signal_names),
                                GEOPM_ERROR_INVALID, "reread of shm region requested before update");
 }
 
-TEST_F(ManagerIOSamplerTest, negative_shm_setup_mutex)
+TEST_F(EndpointClientTest, negative_shm_setup_mutex)
 {
     // This test requires PTHREAD_MUTEX_ERRORCHECK
-    size_t shmem_size = sizeof(struct geopm_manager_shmem_s);
+    size_t shmem_size = sizeof(struct geopm_endpoint_shmem_s);
     std::unique_ptr<MockSharedMemoryUser> shmem(new MockSharedMemoryUser(shmem_size));
-    struct geopm_manager_shmem_s *data = (struct geopm_manager_shmem_s *) shmem->pointer();
+    struct geopm_endpoint_shmem_s *data = (struct geopm_endpoint_shmem_s *) shmem->pointer();
     *data = {};
 
     // Build the data
     data->is_updated = true;
-    ManagerIOImp::setup_mutex(data->lock);
+    ShmemEndpoint::setup_mutex(data->lock);
     (void) pthread_mutex_lock(&data->lock); // Force pthread_mutex_lock to puke by trying to lock a locked mutex.
 
-    GEOPM_EXPECT_THROW_MESSAGE(new ManagerIOSamplerImp("/FAKE_PATH", std::move(shmem), {""}),
+    GEOPM_EXPECT_THROW_MESSAGE(new ShmemEndpointClient("/FAKE_PATH", std::move(shmem), {""}),
                                EDEADLK, "Resource deadlock avoided");
 }
 
-TEST_F(ManagerIOSamplerTest, negative_bad_files)
+TEST_F(EndpointClientTest, negative_bad_files)
 {
-    std::string path ("ManagerIOSamplerTest_empty");
+    std::string path ("EndpointClientTest_empty");
     std::ofstream empty_file(path, std::ofstream::out);
     empty_file.close();
     const std::vector<std::string> signal_names = {"FAKE_SIGNAL"};
-    GEOPM_EXPECT_THROW_MESSAGE(new ManagerIOSamplerImp(path, nullptr, signal_names),
+    GEOPM_EXPECT_THROW_MESSAGE(new ShmemEndpointClient(path, nullptr, signal_names),
                                GEOPM_ERROR_INVALID, "input file invalid");
     chmod(path.c_str(), 0);
-    GEOPM_EXPECT_THROW_MESSAGE(new ManagerIOSamplerImp(path, nullptr, signal_names),
+    GEOPM_EXPECT_THROW_MESSAGE(new ShmemEndpointClient(path, nullptr, signal_names),
                                EACCES, "file \"" + path + "\" could not be opened");
     std::remove(path.c_str());
 }
 
-TEST_F(ManagerIOSamplerTestIntegration, parse_shm)
+TEST_F(EndpointClientTestIntegration, parse_shm)
 {
     std::string full_path("/dev/shm" + m_shm_path);
     std::remove(full_path.c_str());
 
-    size_t shmem_size = sizeof(struct geopm_manager_shmem_s);
+    size_t shmem_size = sizeof(struct geopm_endpoint_shmem_s);
     SharedMemoryImp sm(m_shm_path, shmem_size);
-    struct geopm_manager_shmem_s *data = (struct geopm_manager_shmem_s *) sm.pointer();
+    struct geopm_endpoint_shmem_s *data = (struct geopm_endpoint_shmem_s *) sm.pointer();
 
     // Build the data
     data->is_updated = true;
-    ManagerIOImp::setup_mutex(data->lock);
+    ShmemEndpoint::setup_mutex(data->lock);
     double tmp[] = { 1.1, 2.2, 3.3, 4.4, 5.5 };
     data->count = sizeof(tmp) / sizeof(tmp[0]);
     memcpy(data->values, tmp, sizeof(tmp));
 
     std::vector<std::string> signal_names = {"ONE", "TWO", "THREE", "FOUR", "FIVE"};
-    ManagerIOSamplerImp gp(m_shm_path, nullptr, signal_names);
+    ShmemEndpointClient gp(m_shm_path, nullptr, signal_names);
 
     EXPECT_FALSE(gp.is_update_available());
     EXPECT_EQ(1.1, gp.sample("ONE"));

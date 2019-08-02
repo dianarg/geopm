@@ -42,14 +42,14 @@
 
 namespace geopm
 {
-    struct geopm_manager_shmem_header {
+    struct geopm_endpoint_shmem_header {
         pthread_mutex_t lock; // 40 bytes
         uint8_t is_updated;   // 1 byte + 7 bytes of padding
         size_t count;         // 8 bytes
         double values;        // 8 bytes
     };
 
-    struct geopm_manager_shmem_s {
+    struct geopm_endpoint_shmem_s {
         /// @brief Lock to ensure r/w consistency between GEOPM and the resource manager.
         pthread_mutex_t lock;
         /// @brief Enables notification of updates to GEOPM.
@@ -57,16 +57,16 @@ namespace geopm
         /// @brief Specifies the size of the following array.
         size_t count;
         /// @brief Holds resource manager data.
-        double values[(4096 - offsetof(struct geopm_manager_shmem_header, values)) / sizeof(double)];
+        double values[(4096 - offsetof(struct geopm_endpoint_shmem_header, values)) / sizeof(double)];
     };
 
-    static_assert(sizeof(struct geopm_manager_shmem_s) == 4096, "Alignment issue with geopm_manager_shmem_s.");
+    static_assert(sizeof(struct geopm_endpoint_shmem_s) == 4096, "Alignment issue with geopm_endpoint_shmem_s.");
 
-    class ManagerIO
+    class Endpoint
     {
         public:
-            ManagerIO() = default;
-            virtual ~ManagerIO() = default;
+            Endpoint() = default;
+            virtual ~Endpoint() = default;
             /// @brief Set the value for a specific signal or policy
             ///        to be written.
             /// @param [in] signal_name Name of the signal or policy.
@@ -86,19 +86,19 @@ namespace geopm
 
     class SharedMemory;
 
-    class ManagerIOImp : public ManagerIO
+    class ShmemEndpoint : public Endpoint
     {
         public:
-            ManagerIOImp() = delete;
-            ManagerIOImp(const ManagerIOImp &other) = delete;
+            ShmemEndpoint() = delete;
+            ShmemEndpoint(const ShmemEndpoint &other) = delete;
 
-            ManagerIOImp(const std::string &data_path, bool is_policy);
-            ManagerIOImp(const std::string &data_path, bool is_policy, const std::string &agent_name);
-            ManagerIOImp(const std::string &data_path,
+            ShmemEndpoint(const std::string &data_path, bool is_policy);
+            ShmemEndpoint(const std::string &data_path, bool is_policy, const std::string &agent_name);
+            ShmemEndpoint(const std::string &data_path,
                          std::unique_ptr<SharedMemory> shmem,
                          const std::vector<std::string> &signal_names);
 
-            ~ManagerIOImp() = default;
+            ~ShmemEndpoint() = default;
             void adjust(const std::string &signal_name, double setting) override;
             void adjust(const std::vector<double> &settings) override;
             void write_batch(void) override;
@@ -112,16 +112,16 @@ namespace geopm
             std::string m_path;
             std::vector<std::string> m_signal_names;
             std::unique_ptr<SharedMemory> m_shmem;
-            struct geopm_manager_shmem_s *m_data;
+            struct geopm_endpoint_shmem_s *m_data;
             std::vector<double> m_samples_up;
             bool m_is_shm_data;
     };
 
-    class ManagerIOSampler
+    class EndpointClient
     {
         public:
-            ManagerIOSampler() = default;
-            virtual ~ManagerIOSampler() = default;
+            EndpointClient() = default;
+            virtual ~EndpointClient() = default;
             /// @brief Read values from the resource manager.
             virtual void read_batch(void) = 0;
             /// @brief Returns the most recent value for the given
@@ -143,18 +143,18 @@ namespace geopm
 
     class SharedMemoryUser;
 
-    class ManagerIOSamplerImp : public ManagerIOSampler
+    class ShmemEndpointClient : public EndpointClient
     {
         public:
-            ManagerIOSamplerImp() = delete;
-            ManagerIOSamplerImp(const ManagerIOSamplerImp &other) = delete;
-            ManagerIOSamplerImp(const std::string &data_path, bool is_policy);
-            ManagerIOSamplerImp(const std::string &data_path, bool is_policy,
+            ShmemEndpointClient() = delete;
+            ShmemEndpointClient(const ShmemEndpointClient &other) = delete;
+            ShmemEndpointClient(const std::string &data_path, bool is_policy);
+            ShmemEndpointClient(const std::string &data_path, bool is_policy,
                                 const std::string &agent_name);
-            ManagerIOSamplerImp(const std::string &data_path,
+            ShmemEndpointClient(const std::string &data_path,
                                 std::unique_ptr<SharedMemoryUser> shmem,
                                 const std::vector<std::string> &signal_names);
-            ~ManagerIOSamplerImp() = default;
+            ~ShmemEndpointClient() = default;
             void read_batch(void) override;
             double sample(const std::string &signal_name) const override;
             std::vector<double> sample(void) const override;
@@ -169,7 +169,7 @@ namespace geopm
             std::string m_path;
             std::vector<std::string> m_signal_names;
             std::unique_ptr<SharedMemoryUser> m_shmem;
-            struct geopm_manager_shmem_s *m_data;
+            struct geopm_endpoint_shmem_s *m_data;
             std::vector<double> m_signals_down;
             const bool m_is_shm_data;
     };

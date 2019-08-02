@@ -35,7 +35,7 @@
 
 #include "Endpoint.hpp"
 
-class MockManagerIOSampler : public geopm::ManagerIOSampler
+class MockEndpointClient : public geopm::EndpointClient
 {
     public:
         MOCK_METHOD0(read_batch,
