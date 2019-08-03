@@ -67,11 +67,6 @@ namespace geopm
         public:
             Endpoint() = default;
             virtual ~Endpoint() = default;
-            /// @brief Set the value for a specific signal or policy
-            ///        to be written.
-            /// @param [in] signal_name Name of the signal or policy.
-            /// @param [in] setting Value to set.
-            virtual void adjust(const std::string &signal_name, double setting) = 0;
             /// @brief Set values for all signals or policies to be
             ///        written.
             /// @param [in] settings Vector of values for each signal
@@ -99,12 +94,10 @@ namespace geopm
                          const std::vector<std::string> &signal_names);
 
             ~ShmemEndpoint() = default;
-            void adjust(const std::string &signal_name, double setting) override;
             void adjust(const std::vector<double> &settings) override;
             void write_batch(void) override;
             std::vector<std::string> signal_names(void) const override;
             static void setup_mutex(pthread_mutex_t &lock);
-
         private:
             void write_file();
             void write_shmem();
@@ -124,11 +117,6 @@ namespace geopm
             virtual ~EndpointClient() = default;
             /// @brief Read values from the resource manager.
             virtual void read_batch(void) = 0;
-            /// @brief Returns the most recent value for the given
-            ///        signal or policy.
-            /// @param [in] signal_name Name of the signal or policy.
-            /// @return Value of the signal or policy.
-            virtual double sample(const std::string &signal_name) const = 0;
             /// @brief Returns all the latest values.
             /// @return Vector of signal or policy values.
             virtual std::vector<double> sample(void) const = 0;
@@ -156,11 +144,9 @@ namespace geopm
                                 const std::vector<std::string> &signal_names);
             ~ShmemEndpointClient() = default;
             void read_batch(void) override;
-            double sample(const std::string &signal_name) const override;
             std::vector<double> sample(void) const override;
             bool is_update_available(void) override;
             std::vector<std::string> signal_names(void) const override;
-
         private:
             bool is_valid_signal(const std::string &signal_name) const;
             std::map<std::string, double> parse_json(void);
