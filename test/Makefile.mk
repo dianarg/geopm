@@ -80,17 +80,6 @@ GTEST_TESTS = test/gtest_links/AgentFactoryTest.static_info_monitor \
               test/gtest_links/CpuinfoIOGroupTest.parse_sticker_without_at \
               test/gtest_links/CpuinfoIOGroupTest.plugin \
               test/gtest_links/CpuinfoIOGroupTest.valid_signals \
-              test/gtest_links/EndpointClientTest.negative_bad_files \
-              test/gtest_links/EndpointClientTest.negative_parse_json_file \
-              test/gtest_links/EndpointClientTest.negative_parse_shm \
-              test/gtest_links/EndpointClientTest.negative_shm_setup_mutex \
-              test/gtest_links/EndpointClientTest.parse_json_file \
-              test/gtest_links/EndpointClientTest.parse_shm \
-              test/gtest_links/EndpointClientTestIntegration.parse_shm \
-              test/gtest_links/EndpointTest.negative_write_json_file \
-              test/gtest_links/EndpointTest.write_json_file \
-              test/gtest_links/EndpointTest.write_shm \
-              test/gtest_links/EndpointTestIntegration.write_shm \
               test/gtest_links/EnergyEfficientAgentTest.aggregate_sample \
               test/gtest_links/EnergyEfficientAgentTest.do_write_batch \
               test/gtest_links/EnergyEfficientAgentTest.enforce_policy \
@@ -118,6 +107,11 @@ GTEST_TESTS = test/gtest_links/AgentFactoryTest.static_info_monitor \
               test/gtest_links/EpochRuntimeRegulatorTest.rank_enter_exit_trace \
               test/gtest_links/EpochRuntimeRegulatorTest.unknown_region \
               test/gtest_links/ExceptionTest.hello \
+              test/gtest_links/FileEndpointClientTest.negative_bad_files \
+              test/gtest_links/FileEndpointClientTest.negative_parse_json_file \
+              test/gtest_links/FileEndpointTest.negative_write_json_file \
+              test/gtest_links/FileEndpointTest.write_json_file \
+              test/gtest_links/FileEndpointClientTest.parse_json_file \
               test/gtest_links/FrequencyGovernorTest.frequency_control_domain_default \
               test/gtest_links/FrequencyGovernorTest.adjust_platform \
               test/gtest_links/FrequencyGovernorTest.adjust_platform_clamping \
@@ -261,6 +255,12 @@ GTEST_TESTS = test/gtest_links/AgentFactoryTest.static_info_monitor \
               test/gtest_links/SharedMemoryTest.invalid_construction \
               test/gtest_links/SharedMemoryTest.share_data \
               test/gtest_links/SharedMemoryTest.share_data_ipc \
+              test/gtest_links/ShmemEndpointClientTest.negative_parse_shm \
+              test/gtest_links/ShmemEndpointClientTest.negative_shm_setup_mutex \
+              test/gtest_links/ShmemEndpointClientTest.parse_shm \
+              test/gtest_links/ShmemEndpointClientTestIntegration.parse_shm \
+              test/gtest_links/ShmemEndpointTest.write_shm \
+              test/gtest_links/ShmemEndpointTestIntegration.write_shm \
               test/gtest_links/TimeIOGroupTest.adjust \
               test/gtest_links/TimeIOGroupTest.is_valid \
               test/gtest_links/TimeIOGroupTest.push \
