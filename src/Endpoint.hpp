@@ -103,7 +103,6 @@ namespace geopm
             std::string m_path;
             std::vector<std::string> m_signal_names;
             std::unique_ptr<SharedMemory> m_shmem;
-            struct geopm_endpoint_shmem_s *m_data;
             std::vector<double> m_samples_up;
     };
 
@@ -174,7 +173,6 @@ namespace geopm
             std::string m_path;
             std::vector<std::string> m_signal_names;
             std::unique_ptr<SharedMemoryUser> m_shmem;
-            struct geopm_endpoint_shmem_s *m_data;
             std::vector<double> m_signals_down;
     };
 

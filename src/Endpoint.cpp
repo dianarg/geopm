@@ -53,6 +53,50 @@ using json11::Json;
 
 namespace geopm
 {
+    /// @todo: why is this not in SharedMemory?
+    /// A: specific to endpoint shmem structure fields
+    ///  could also have mutex in SharedMemory itself
+    static void write_shmem(const std::unique_ptr<SharedMemory> &shmem,
+                            const std::vector<double> &values)
+    {
+        struct geopm_endpoint_shmem_s *data_ptr = (struct geopm_endpoint_shmem_s *)shmem->pointer();
+        int err = pthread_mutex_lock(&data_ptr->lock); // Default mutex will block until this completes.
+        if (err) {
+            throw Exception("ShmemEndpoint::pthread_mutex_lock()", err, __FILE__, __LINE__);
+        }
+
+        data_ptr->is_updated = true;
+        data_ptr->count = values.size();
+        std::copy(values.begin(), values.end(), data_ptr->values);
+
+        pthread_mutex_unlock(&data_ptr->lock);
+    }
+
+    static void read_shmem(const std::unique_ptr<SharedMemoryUser> &shmem,
+                           std::vector<double> &values)
+    {
+        struct geopm_endpoint_shmem_s *data_ptr = (struct geopm_endpoint_shmem_s *)shmem->pointer(); // Managed by shmem subsystem.
+
+        int err = pthread_mutex_lock(&data_ptr->lock); // Default mutex will block until this completes.
+        if (err) {
+            throw Exception("ShmemEndpointUser::pthread_mutex_lock()", err, __FILE__, __LINE__);
+        }
+
+        if (data_ptr->is_updated == 0) {
+            (void) pthread_mutex_unlock(&data_ptr->lock);
+            throw Exception("ShmemEndpointUser::" + std::string(__func__) + "(): reread of shm region requested before update.",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+
+        // Fill in missing policy values with NAN (default)
+        std::fill(values.begin(), values.end(), NAN);
+        //values = std::vector<double>(m_signal_names.size(), NAN);
+        std::copy(data_ptr->values, data_ptr->values + data_ptr->count, values.begin());
+
+        data_ptr->is_updated = 0;
+        (void) pthread_mutex_unlock(&data_ptr->lock);
+    }
+
     ShmemEndpoint::ShmemEndpoint(const std::string &data_path, bool is_policy)
         : ShmemEndpoint(data_path, is_policy, environment().agent())
     {
@@ -71,7 +115,6 @@ namespace geopm
         : m_path(path)
         , m_signal_names(signal_names)
         , m_shmem(std::move(shmem))
-        , m_data(nullptr)
         , m_samples_up(signal_names.size())
     {
         if (m_shmem == nullptr) {
@@ -79,9 +122,9 @@ namespace geopm
             m_shmem = geopm::make_unique<SharedMemoryImp>(m_path, shmem_size);
         }
 
-        m_data = (struct geopm_endpoint_shmem_s *) m_shmem->pointer();
-        *m_data = {};
-        setup_mutex(m_data->lock);
+        auto data = (struct geopm_endpoint_shmem_s *) m_shmem->pointer();
+        *data = {};
+        setup_mutex(data->lock);
     }
 
     FileEndpoint::FileEndpoint(const std::string &data_path, bool is_policy)
@@ -186,16 +229,7 @@ namespace geopm
 
     void ShmemEndpoint::write_shmem(void)
     {
-        int err = pthread_mutex_lock(&m_data->lock); // Default mutex will block until this completes.
-        if (err) {
-            throw Exception("ShmemEndpoint::pthread_mutex_lock()", err, __FILE__, __LINE__);
-        }
-
-        m_data->is_updated = true;
-        m_data->count = m_samples_up.size();
-        std::copy(m_samples_up.begin(), m_samples_up.end(), m_data->values);
-
-        pthread_mutex_unlock(&m_data->lock);
+        geopm::write_shmem(m_shmem, m_samples_up);
     }
 
     /*********************************************************************************************************/
@@ -217,7 +251,6 @@ namespace geopm
         : m_path(path)
         , m_signal_names(signal_names)
         , m_shmem(std::move(shmem))
-        , m_data(nullptr)
     {
         read_batch();
     }
@@ -285,30 +318,15 @@ namespace geopm
             m_shmem = geopm::make_unique<SharedMemoryUserImp>(m_path, environment().timeout());
         }
 
-        m_data = (struct geopm_endpoint_shmem_s *) m_shmem->pointer(); // Managed by shmem subsystem.
+        m_signals_down.resize(m_signal_names.size());
 
-        int err = pthread_mutex_lock(&m_data->lock); // Default mutex will block until this completes.
-        if (err) {
-            throw Exception("ShmemEndpointUser::pthread_mutex_lock()", err, __FILE__, __LINE__);
-        }
-
-        if (m_data->is_updated == 0) {
-            (void) pthread_mutex_unlock(&m_data->lock);
-            throw Exception("ShmemEndpointUser::" + std::string(__func__) + "(): reread of shm region requested before update.",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-
-        // Fill in missing policy values with NAN (default)
-        m_signals_down = std::vector<double>(m_signal_names.size(), NAN);
-        std::copy(m_data->values, m_data->values + m_data->count, m_signals_down.begin());
-
-        m_data->is_updated = 0;
-        (void) pthread_mutex_unlock(&m_data->lock);
+        geopm::read_shmem(m_shmem, m_signals_down);
 
         if (m_signals_down.size() != m_signal_names.size()) {
             throw Exception("ShmemEndpointUser::" + std::string(__func__) + "(): Data read from shmem does not match size of signal names.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
+
     }
 
     void ShmemEndpointUser::read_batch(void)
@@ -346,10 +364,11 @@ namespace geopm
 
     bool ShmemEndpointUser::is_update_available(void)
     {
-        if(m_data == nullptr) {
-            throw Exception("ShmemEndpointUser::" + std::string(__func__) + "(): m_data is null", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        const geopm_endpoint_shmem_s *data = (const geopm_endpoint_shmem_s *)m_shmem->pointer();
+        if(data == nullptr) {
+            throw Exception("ShmemEndpointUser::" + std::string(__func__) + "(): shmem data is null", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        return m_data->is_updated != 0;
+        return data->is_updated != 0;
     }
 
     bool FileEndpointUser::is_update_available(void)
