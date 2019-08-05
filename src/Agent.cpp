@@ -426,10 +426,10 @@ int geopm_agent_enforce_policy(void)
 {
     int err = 0;
     try {
-        std::vector<double> policy(geopm::Agent::create_endpoint_user(geopm::environment().policy())->sample());
-        std::shared_ptr<geopm::Agent> agent(
-            geopm::agent_factory().make_plugin(
-                geopm::environment().agent()));
+        std::string agent_name = geopm::environment().agent();
+        std::shared_ptr<geopm::Agent> agent(geopm::agent_factory().make_plugin(agent_name));
+        std::vector<double> policy(geopm::Agent::num_policy(geopm::agent_factory().dictionary(agent_name)));
+        geopm::Agent::create_endpoint_user(geopm::environment().policy())->read_policy(policy);
         agent->validate_policy(policy);
         agent->enforce_policy(policy);
     }

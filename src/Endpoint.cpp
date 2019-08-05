@@ -64,8 +64,6 @@ namespace geopm
         if (err) {
             throw Exception("ShmemEndpoint::pthread_mutex_lock()", err, __FILE__, __LINE__);
         }
-
-        data_ptr->is_updated = true;
         data_ptr->count = values.size();
         std::copy(values.begin(), values.end(), data_ptr->values);
 
@@ -82,18 +80,11 @@ namespace geopm
             throw Exception("ShmemEndpointUser::pthread_mutex_lock()", err, __FILE__, __LINE__);
         }
 
-        if (data_ptr->is_updated == 0) {
-            (void) pthread_mutex_unlock(&data_ptr->lock);
-            throw Exception("ShmemEndpointUser::" + std::string(__func__) + "(): reread of shm region requested before update.",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-
         // Fill in missing policy values with NAN (default)
         std::fill(values.begin(), values.end(), NAN);
         //values = std::vector<double>(m_signal_names.size(), NAN);
         std::copy(data_ptr->values, data_ptr->values + data_ptr->count, values.begin());
 
-        data_ptr->is_updated = 0;
         (void) pthread_mutex_unlock(&data_ptr->lock);
     }
 
@@ -170,31 +161,23 @@ namespace geopm
         }
     }
 
-    void ShmemEndpoint::adjust(const std::vector<double> &settings)
+    void ShmemEndpoint::write_policy(const std::vector<double> &policy)
     {
-        if (settings.size() != m_signal_names.size()) {
-            throw Exception("ShmemEndpoint::" + std::string(__func__) + "(): size of settings does not match signal names.",
+        if (policy.size() != m_signal_names.size()) {
+            throw Exception("ShmemEndpoint::" + std::string(__func__) + "(): size of policy does not match signal names.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        m_samples_up = settings;
-    }
-
-    void ShmemEndpoint::write_batch(void)
-    {
+        m_samples_up = policy;
         write_shmem();
     }
 
-    void FileEndpoint::adjust(const std::vector<double> &settings)
+    void FileEndpoint::write_policy(const std::vector<double> &policy)
     {
-        if (settings.size() != m_signal_names.size()) {
-            throw Exception("FileEndpoint::" + std::string(__func__) + "(): size of settings does not match signal names.",
+        if (policy.size() != m_signal_names.size()) {
+            throw Exception("FileEndpoint::" + std::string(__func__) + "(): size of policy does not match signal names.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        m_samples_up = settings;
-    }
-
-    void FileEndpoint::write_batch(void)
-    {
+        m_samples_up = policy;
         write_file();
     }
 
@@ -224,6 +207,32 @@ namespace geopm
         geopm::write_shmem(m_shmem, m_samples_up);
     }
 
+    int ShmemEndpoint::read_sample(std::vector<double> &sample)
+    {
+        return -1;
+    }
+
+    std::string ShmemEndpoint::get_agent(void)
+    {
+        throw Exception("ShmemEndpoint::" + std::string(__func__) + "(): get_agent not yet supported",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+        return "";
+    }
+
+    int FileEndpoint::read_sample(std::vector<double> &sample)
+    {
+        throw Exception("FileEndpoint::" + std::string(__func__) + "(): sending samples via file not yet supported",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+        return -1;
+    }
+
+    std::string FileEndpoint::get_agent(void)
+    {
+        throw Exception("FileEndpoint::" + std::string(__func__) + "(): get_agent via file not yet supported",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+        return "";
+    }
+
     /*********************************************************************************************************/
 
     ShmemEndpointUser::ShmemEndpointUser(const std::string &data_path, bool is_policy)
@@ -244,7 +253,9 @@ namespace geopm
         , m_signal_names(signal_names)
         , m_shmem(std::move(shmem))
     {
-        read_batch();
+        /// @todo: need to read_policy() here?
+        std::vector<double> temp(signal_names.size());
+        read_policy(temp);
     }
 
     FileEndpointUser::FileEndpointUser(const std::string &data_path, bool is_policy)
@@ -263,7 +274,9 @@ namespace geopm
         : m_path(path)
         , m_signal_names(signal_names)
     {
-        read_batch();
+        /// @todo: need to read_policy() here?
+        std::vector<double> temp(signal_names.size());
+        read_policy(temp);
     }
 
     std::map<std::string, double> FileEndpointUser::parse_json(void)
@@ -318,20 +331,16 @@ namespace geopm
             throw Exception("ShmemEndpointUser::" + std::string(__func__) + "(): Data read from shmem does not match size of signal names.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-
     }
 
-    void ShmemEndpointUser::read_batch(void)
+    int ShmemEndpointUser::read_policy(std::vector<double> &policy)
     {
         read_shmem();
+        policy = m_signals_down;
+        return -1; // @todo
     }
 
-    std::vector<double> ShmemEndpointUser::sample(void) const
-    {
-        return m_signals_down;
-    }
-
-    void FileEndpointUser::read_batch(void)
+    int FileEndpointUser::read_policy(std::vector<double> &policy)
     {
         if (m_signal_names.size() > 0) {
             std::map<std::string, double> signal_value_map = parse_json();
@@ -347,26 +356,19 @@ namespace geopm
                 }
             }
         }
+        policy = m_signals_down;
+        return -1;  //@todo
     }
 
-    std::vector<double> FileEndpointUser::sample(void) const
+    void ShmemEndpointUser::write_sample(const std::vector<double> &sample)
     {
-        return m_signals_down;
+
     }
 
-    bool ShmemEndpointUser::is_update_available(void)
+    void FileEndpointUser::write_sample(const std::vector<double> &sample)
     {
-        const geopm_endpoint_shmem_s *data = (const geopm_endpoint_shmem_s *)m_shmem->pointer();
-        if(data == nullptr) {
-            throw Exception("ShmemEndpointUser::" + std::string(__func__) + "(): shmem data is null", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        return data->is_updated != 0;
-    }
-
-    bool FileEndpointUser::is_update_available(void)
-    {
-        /// @todo: this method may be more useful as private method in shmem only
-        return false;
+        throw Exception("FileEndpoint::" + std::string(__func__) + "(): sending samples via file not yet supported",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     std::vector<std::string> ShmemEndpointUser::signal_names(void) const

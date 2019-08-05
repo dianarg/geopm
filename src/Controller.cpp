@@ -329,8 +329,8 @@ namespace geopm
     {
         bool do_send = false;
         if (m_is_root) {
-            /// @todo Pass m_in_policy by reference into the sampler, and return an is_updated bool.
-            m_in_policy = m_endpoint->sample();
+            /// @todo Return an is_updated bool.
+            m_endpoint->read_policy(m_in_policy);
             do_send = true;
         }
         else {
