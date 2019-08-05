@@ -42,39 +42,60 @@
 #include <vector>
 #include <map>
 
+#include "geopm_time.h"
+
 namespace geopm
 {
-    struct geopm_endpoint_shmem_header {
+    struct geopm_endpoint_policy_shmem_header {
         pthread_mutex_t lock; // 40 bytes
-        uint64_t timestamp;   // 8 bytes
+        size_t count;         // 8 bytes
+        double values;        // 8 bytes
+    };
+
+    struct geopm_endpoint_sample_shmem_header {
+        pthread_mutex_t lock; // 40 bytes
+        geopm_time_s timestamp;   // 8 bytes
         char agent[NAME_MAX];
         size_t count;         // 8 bytes
         double values;        // 8 bytes
     };
 
-    struct geopm_endpoint_shmem_s {
+    struct geopm_endpoint_policy_shmem_s {
+        /// @brief Lock to ensure r/w consistency between GEOPM and the resource manager.
+        pthread_mutex_t lock;
+        /// @brief Specifies the size of the following array.
+        size_t count;
+        /// @brief Holds resource manager data.
+        double values[(4096 - offsetof(struct geopm_endpoint_policy_shmem_header, values)) / sizeof(double)];
+    };
+
+    struct geopm_endpoint_sample_shmem_s {
         /// @brief Lock to ensure r/w consistency between GEOPM and the resource manager.
         pthread_mutex_t lock;
         /// @brief Time that the memory was last updated.
-        uint64_t timestamp;
+        geopm_time_s timestamp;
         /// @brief Holds the name of the Agent attached, if any.
         char agent[NAME_MAX];
         /// @brief Specifies the size of the following array.
         size_t count;
         /// @brief Holds resource manager data.
-        double values[(4096 - offsetof(struct geopm_endpoint_shmem_header, values)) / sizeof(double)];
+        double values[(4096 - offsetof(struct geopm_endpoint_sample_shmem_header, values)) / sizeof(double)];
     };
 
-    static_assert(sizeof(struct geopm_endpoint_shmem_s) == 4096, "Alignment issue with geopm_endpoint_shmem_s.");
+    // todo: different struct for policy without agent, timestamp
+    // read_policy is still void; all NAN indicates no policy from RM yet
+
+    static_assert(sizeof(struct geopm_endpoint_policy_shmem_s) == 4096, "Alignment issue with geopm_endpoint_policy_shmem_s.");
+    static_assert(sizeof(struct geopm_endpoint_sample_shmem_s) == 4096, "Alignment issue with geopm_endpoint_sample_shmem_s.");
 
     class Endpoint
     {
         public:
             Endpoint() = default;
             virtual ~Endpoint() = default;
-            /// @brief Returns the expected signal or policy names.
-            /// @return Vector of signal or policy names.
-            virtual std::vector<std::string> signal_names(void) const = 0;
+            // /// @brief Returns the expected signal or policy names.
+            // /// @return Vector of signal or policy names.
+            // virtual std::vector<std::string> signal_names(void) const = 0;
 
             /// @brief Write a set of policy values for the Agent.
             /// @param [in] policy The policy values.  The order is
@@ -98,13 +119,14 @@ namespace geopm
             ShmemEndpoint() = delete;
             ShmemEndpoint(const ShmemEndpoint &other) = delete;
 
-            ShmemEndpoint(const std::string &data_path, bool is_policy);
-            ShmemEndpoint(const std::string &data_path, bool is_policy, const std::string &agent_name);
+            ShmemEndpoint(const std::string &data_path, const std::string &agent_name);
             ShmemEndpoint(const std::string &data_path,
-                         std::unique_ptr<SharedMemory> shmem,
-                         const std::vector<std::string> &signal_names);
+                          std::unique_ptr<SharedMemory> policy_shmem,
+                          std::unique_ptr<SharedMemory> sample_shmem);
             ~ShmemEndpoint() = default;
-            std::vector<std::string> signal_names(void) const override;
+            // tofo: don't need this?
+            //std::vector<std::string> signal_names(void) const override;
+            /// @todo: move to SharedMemory
             static void setup_mutex(pthread_mutex_t &lock);
 
             void write_policy(const std::vector<double> &policy) override;
@@ -114,8 +136,9 @@ namespace geopm
             void write_shmem();
 
             std::string m_path;
-            std::vector<std::string> m_signal_names;
-            std::unique_ptr<SharedMemory> m_shmem;
+            //std::vector<std::string> m_signal_names;
+            std::unique_ptr<SharedMemory> m_policy_shmem;
+            std::unique_ptr<SharedMemory> m_sample_shmem;
             std::vector<double> m_samples_up;
     };
 
@@ -125,19 +148,18 @@ namespace geopm
             FileEndpoint() = delete;
             FileEndpoint(const FileEndpoint &other) = delete;
 
-            FileEndpoint(const std::string &data_path, bool is_policy);
-            FileEndpoint(const std::string &data_path, bool is_policy, const std::string &agent_name);
+            FileEndpoint(const std::string &data_path, const std::string &agent_name);
             FileEndpoint(const std::string &data_path,
                          const std::vector<std::string> &signal_names);
 
             ~FileEndpoint() = default;
-            std::vector<std::string> signal_names(void) const override;
+            //std::vector<std::string> signal_names(void) const override;
 
             void write_policy(const std::vector<double> &policy) override;
             int read_sample(std::vector<double> &sample) override;
             std::string get_agent(void) override;
         private:
-            void write_file();
+            void write_file(const std::vector<double> &values);
 
             std::string m_path;
             std::vector<std::string> m_signal_names;
@@ -152,16 +174,16 @@ namespace geopm
             /// @brief Returns the signal or policy names expected by
             ///        the resource manager.
             /// @return Vector of signal or policy names.
-            virtual std::vector<std::string> signal_names(void) const = 0;
+            //virtual std::vector<std::string> signal_names(void) const = 0;
 
             /// @brief TODO
             virtual void attach(void) {};
             /// @brief TODO
-            virtual void detatch(void) {}
-            /// @brief Read the latest policy values;
+            virtual void detach(void) {}
+            /// @brief Read the latest policy values.  All NAN indicates
+            ///        that a policy has not been written yet.
             /// @param [out] policy The policy values read. The order
             ///        is specified by the Agent.
-            /// @return The policy timestamp.
             virtual int read_policy(std::vector<double> &policy) = 0;
             /// @brief Write sample values and update the sample age.
             /// @param [in] sample The values to write.  The order is
@@ -176,14 +198,13 @@ namespace geopm
         public:
             ShmemEndpointUser() = delete;
             ShmemEndpointUser(const ShmemEndpointUser &other) = delete;
-            ShmemEndpointUser(const std::string &data_path, bool is_policy);
-            ShmemEndpointUser(const std::string &data_path, bool is_policy,
+
+            ShmemEndpointUser(const std::string &data_path,
                               const std::string &agent_name);
             ShmemEndpointUser(const std::string &data_path,
-                              std::unique_ptr<SharedMemoryUser> shmem,
-                              const std::vector<std::string> &signal_names);
+                              std::unique_ptr<SharedMemoryUser> policy_shmem,
+                              std::unique_ptr<SharedMemoryUser> sample_shmem);
             ~ShmemEndpointUser() = default;
-            std::vector<std::string> signal_names(void) const override;
 
             int read_policy(std::vector<double> &policy) override;
             void write_sample(const std::vector<double> &sample) override;
@@ -192,8 +213,9 @@ namespace geopm
             void read_shmem(void);
 
             std::string m_path;
-            std::vector<std::string> m_signal_names;
-            std::unique_ptr<SharedMemoryUser> m_shmem;
+            //std::vector<std::string> m_signal_names;
+            std::unique_ptr<SharedMemoryUser> m_policy_shmem;
+            std::unique_ptr<SharedMemoryUser> m_sample_shmem;
             std::vector<double> m_signals_down;
     };
 
@@ -202,21 +224,21 @@ namespace geopm
         public:
             FileEndpointUser() = delete;
             FileEndpointUser(const FileEndpointUser &other) = delete;
-            FileEndpointUser(const std::string &data_path, bool is_policy);
-            FileEndpointUser(const std::string &data_path, bool is_policy,
+
+            FileEndpointUser(const std::string &data_path,
                              const std::string &agent_name);
             FileEndpointUser(const std::string &data_path,
-                             const std::vector<std::string> &signal_names);
+                             const std::vector<std::string> &policy_names);
             ~FileEndpointUser() = default;
-            std::vector<std::string> signal_names(void) const override;
+            //std::vector<std::string> signal_names(void) const override;
 
-            int read_policy(std::vector<double> &policy) override;
+            geopm_time_s read_policy(std::vector<double> &policy) override;
             void write_sample(const std::vector<double> &sample) override;
         private:
             std::map<std::string, double> parse_json(void);
 
             std::string m_path;
-            std::vector<std::string> m_signal_names;
+            std::vector<std::string> m_policy_names;
             std::vector<double> m_signals_down;
     };
 }

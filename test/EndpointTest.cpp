@@ -122,13 +122,13 @@ TEST_F(ShmemEndpointTest, write_shm_policy)
     std::unique_ptr<MockSharedMemory> shmem(new MockSharedMemory(shmem_size));
     struct geopm_endpoint_shmem_s *data = (struct geopm_endpoint_shmem_s *) shmem->pointer();
 
-    std::vector<std::string> signal_names = {"POWER_CONSUMED", "RUNTIME", "GHZ"};
-    ShmemEndpoint jio(m_shm_path, std::move(shmem), signal_names);
+    ShmemEndpoint jio(m_shm_path, std::move(shmem));
 
     std::vector<double> values = {777, 12.3456, 2.3e9};
     jio.write_policy(values);
 
-    std::vector<double> test = std::vector<double>(data->values, data->values + signal_names.size());
+    //std::vector<double> test = std::vector<double>(data->values, data->values + signal_names.size());
+    std::vector<double> test = std::vector<double>(data->values, data->values + data->count);
 
     EXPECT_EQ(values, test);
 }
@@ -145,12 +145,11 @@ TEST_F(ShmemEndpointTest, parse_shm_sample)
     data->count = sizeof(tmp) / sizeof(tmp[0]);
     memcpy(data->values, tmp, sizeof(tmp));
 
-    std::vector<std::string> signal_names = {"ONE", "TWO", "THREE", "FOUR", "FIVE"};
-    ShmemEndpoint gp(m_shm_path, std::move(shmem), signal_names);
+    ShmemEndpoint gp(m_shm_path, std::move(shmem));
 
     std::vector<double> result(signal_names.size());
     gp.read_sample(result);
-    std::vector<double> expected {tmp, tmp + signal_names.size()};
+    std::vector<double> expected {tmp, tmp + data->count};
     EXPECT_EQ(expected, result);
 }
 
@@ -171,17 +170,15 @@ TEST_F(FileEndpointTest, negative_write_json_file)
 
 TEST_F(ShmemEndpointTestIntegration, write_shm)
 {
-    std::vector<std::string> signal_names = {"POWER_CONSUMED", "RUNTIME", "GHZ1", "GHZ2", "GHZ3", "GHZ4", "GHZ5", "GHZ6",
-                                             "GHZ7", "GHZ8"};
-    ShmemEndpoint mio(m_shm_path, nullptr, signal_names);
+    ShmemEndpoint mio(m_shm_path, nullptr);
 
     std::vector<double> values = {777, 12.3456, 2.1e9, 2.3e9, 2.5e9,
                                   2.6e9, 2.7e9, 2.8e9, 2.4e9, 2.2e9};
     mio.write_policy(values);
 
-    ShmemEndpointUser mios(m_shm_path, nullptr, signal_names);
+    ShmemEndpointUser mios(m_shm_path, nullptr);
 
-    std::vector<double> result(signal_names.size());
+    std::vector<double> result(values.size());
     mios.read_policy(result);
     EXPECT_EQ(values, result);
 }
@@ -192,11 +189,6 @@ TEST_F(FileEndpointTest, read_sample_not_implemented)
     FileEndpoint jio(m_json_file_path, signal_names);
     std::vector<double> sample(signal_names.size());
     GEOPM_EXPECT_THROW_MESSAGE(jio.read_sample(sample), GEOPM_ERROR_NOT_IMPLEMENTED, "");
-}
-
-TEST_F(ShmemEndpointTest, read_sample)
-{
-    FAIL() << "requires ShmemEndpointUser::write_sample() ?";
 }
 
 TEST_F(FileEndpointTest, get_agent)
@@ -323,12 +315,11 @@ TEST_F(ShmemEndpointUserTest, parse_shm_policy)
     data->count = sizeof(tmp) / sizeof(tmp[0]);
     memcpy(data->values, tmp, sizeof(tmp));
 
-    std::vector<std::string> signal_names = {"ONE", "TWO", "THREE", "FOUR", "FIVE"};
-    ShmemEndpointUser gp("/FAKE_PATH", std::move(shmem), signal_names);
+    ShmemEndpointUser gp("/FAKE_PATH", std::move(shmem));
 
     std::vector<double> result(signal_names.size());
     gp.read_policy(result);
-    std::vector<double> expected {tmp, tmp + signal_names.size()};
+    std::vector<double> expected {tmp, tmp + data->count};
     EXPECT_EQ(expected, result);
 }
 
@@ -338,13 +329,12 @@ TEST_F(ShmemEndpointUserTest, write_shm_sample)
     std::unique_ptr<MockSharedMemoryUser> shmem(new MockSharedMemoryUser(shmem_size));
     struct geopm_endpoint_shmem_s *data = (struct geopm_endpoint_shmem_s *) shmem->pointer();
 
-    std::vector<std::string> signal_names = {"POWER_CONSUMED", "RUNTIME", "GHZ"};
-    ShmemEndpointUser jio("/FAKE_PATH", std::move(shmem), signal_names);
+    ShmemEndpointUser jio("/FAKE_PATH", std::move(shmem));
 
     std::vector<double> values = {777, 12.3456, 2.3e9};
     jio.write_sample(values);
 
-    std::vector<double> test = std::vector<double>(data->values, data->values + signal_names.size());
+    std::vector<double> test = std::vector<double>(data->values, data->values + data->count);
 
     EXPECT_EQ(values, test);
 }
@@ -361,7 +351,7 @@ TEST_F(ShmemEndpointUserTest, negative_shm_setup_mutex)
     ShmemEndpoint::setup_mutex(data->lock);
     (void) pthread_mutex_lock(&data->lock); // Force pthread_mutex_lock to puke by trying to lock a locked mutex.
 
-    GEOPM_EXPECT_THROW_MESSAGE(new ShmemEndpointUser("/FAKE_PATH", std::move(shmem), {""}),
+    GEOPM_EXPECT_THROW_MESSAGE(new ShmemEndpointUser("/FAKE_PATH", std::move(shmem)),
                                EDEADLK, "Resource deadlock avoided");
 }
 
@@ -394,12 +384,11 @@ TEST_F(ShmemEndpointUserTestIntegration, parse_shm)
     data->count = sizeof(tmp) / sizeof(tmp[0]);
     memcpy(data->values, tmp, sizeof(tmp));
 
-    std::vector<std::string> signal_names = {"ONE", "TWO", "THREE", "FOUR", "FIVE"};
-    ShmemEndpointUser gp(m_shm_path, nullptr, signal_names);
+    ShmemEndpointUser gp(m_shm_path, nullptr);
 
     std::vector<double> result(signal_names.size());
     gp.read_policy(result);
-    std::vector<double> expected {tmp, tmp + signal_names.size()};
+    std::vector<double> expected {tmp, tmp + data->count};
     EXPECT_EQ(expected, result);
 
     tmp[0] = 1.5;
