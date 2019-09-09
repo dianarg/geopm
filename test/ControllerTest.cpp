@@ -97,7 +97,33 @@ class ControllerTestMockPlatformIO : public MockPlatformIO
         int m_index = 0;
 };
 
+class ControllerTestMockComm : public MockComm
+{
+    public:
+        ControllerTestMockComm(const std::vector<std::string> &hostnames);
+        int num_rank(void) const override;
+        void gather(const void *send_buf, size_t send_size, void *recv_buf,
+                    size_t recv_size, int root) const override;
+    private:
+        std::vector<std::string> m_hostlist;
+};
 
+ControllerTestMockComm::ControllerTestMockComm(const std::vector<std::string> &hostnames)
+    : m_hostlist(hostnames)
+{
+
+}
+
+int ControllerTestMockComm::num_rank(void) const
+{
+    return m_hostlist.size();
+}
+
+void ControllerTestMockComm::gather(const void *send_buf, size_t send_size, void *recv_buf,
+                                    size_t recv_size, int root) const
+{
+    *((size_t*)(recv_buf)) = *((size_t*)(send_buf));
+}
 
 class ControllerTest : public ::testing::Test
 {
@@ -141,6 +167,21 @@ void ControllerTest::SetUp()
 
     // called during clean up
     EXPECT_CALL(m_platform_io, restore_control());
+}
+
+TEST_F(ControllerTest, get_hostnames)
+{
+    std::vector<std::string> single_node_list = {"node3"};
+    auto single_node_comm = std::make_shared<ControllerTestMockComm>(single_node_list);
+    EXPECT_CALL(*single_node_comm, rank());
+    std::vector<std::string> result = Controller::get_hostnames(single_node_comm);
+    EXPECT_EQ(single_node_list, result);
+
+    std::vector<std::string> multi_node_list = {"node4", "node6", "node8"};
+    auto multi_node_comm = std::make_shared<ControllerTestMockComm>(multi_node_list);
+    EXPECT_CALL(*multi_node_comm, rank());
+    result = Controller::get_hostnames(multi_node_comm);
+    EXPECT_EQ(multi_node_list, result);
 }
 
 TEST_F(ControllerTest, single_node)
