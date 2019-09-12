@@ -32,12 +32,15 @@
 
 #include <unistd.h>
 #include <signal.h>
+#include <getopt.h>
 
 #include <iostream>
 
+#include "geopm_version.h"
 #include "Endpoint.hpp"
 #include "PolicyStore.hpp"
 #include "geopm_endpoint_demo.hpp"
+
 
 static bool g_continue = true;
 static void handler(int sig)
@@ -56,8 +59,89 @@ int main(int argc, char **argv)
     sigaction(SIGINT, &act, NULL);
 
     // Parse command line
+    const char *usage =
+        "\n"
+        "Usage: geopm_static_policy_demo [-p POLICYSTORE] [-s SHMEM_PREFIX]\n"
+        "       geopm_static_policy_demo [--help] [--version]\n"
+        "\n"
+        "Mandatory arguments to long options are mandatory for short options too.\n"
+        "\n"
+        "  -p, --policystore=POLICYSTORE     location of the policystore database file\n"
+        "  -s, --shmem-prefix=SHMEM_PREFIX   shmem location used for Controller's GEOPM_POLICY\n"
+        "  -h, --help                        print  brief summary of the command line\n"
+        "                                    usage information, then exit\n"
+        "  -v, --version                     print version of GEOPM to standard output,\n"
+        "                                    then exit\n"
+        "\n"
+        "Copyright (c) 2015, 2016, 2017, 2018, 2019, Intel Corporation. All rights reserved.\n"
+        "\n";
 
-    geopm::ShmemEndpoint endpoint("/geopm_endpoint_test");
+    static struct option long_options[] = {
+        {"policystore", no_argument, NULL, 'p'},
+        {"shmem-prefix", required_argument, NULL, 's'},
+        {"help", no_argument, NULL, 'h'},
+        {"version", no_argument, NULL, 'v'},
+        {NULL, 0, NULL, 0}
+    };
+
+    int opt;
+    int err = 0;
+    char *arg_ptr = NULL;
+    bool do_help = false;
+    bool do_version = false;
+    std::string shmem_prefix = "/geopmcd_endpoint_test";
+    std::string policystore_path = "/home/drguttma/policystore.db";
+    while (!err && (opt = getopt_long(argc, argv, "s:p:hv", long_options, NULL)) != -1) {
+        switch (opt) {
+            case 'p':
+                policystore_path.assign(optarg);
+                break;
+            case 's':
+                shmem_prefix.assign(optarg);
+                break;
+            case 'h':
+                do_help = true;
+                break;
+            case 'v':
+                do_version = true;
+                break;
+            case '?': // opt is ? when an option required an arg but it was missing
+                do_help = true;
+                err = EINVAL;
+                break;
+            default:
+                fprintf(stderr, "Error: getopt returned character code \"0%o\"\n", opt);
+                err = EINVAL;
+                break;
+        }
+    }
+    if (!err && optind != argc) {
+        fprintf(stderr, "Error: The following positional argument(s) are in error:\n");
+        while (optind < argc) {
+            fprintf(stderr, "%s\n", argv[optind++]);
+        }
+        err = EINVAL;
+    }
+
+
+    if (do_help) {
+        printf("%s", usage);
+    }
+    if (do_version) {
+        printf("%s\n", geopm_version());
+        printf("\n\nCopyright (c) 2015, 2016, 2017, 2018, 2019, Intel Corporation. All rights reserved.\n\n");
+    }
+    if (do_help || do_version) {
+        return err;
+    }
+    if (err) {
+        return err;
+    }
+
+    std::cout << "Using " << policystore_path << " as policystore location." << std::endl;
+    std::cout << "Using " << shmem_prefix << " as endpoint shmem prefix." << std::endl;
+
+    geopm::ShmemEndpoint endpoint(shmem_prefix);
     endpoint.open();
     try {
         // wait for attach
@@ -67,7 +151,7 @@ int main(int argc, char **argv)
         }
         if (agent != "") {
             // apply policy from the policy store
-            auto policy_store = geopm::PolicyStore::make_unique("/home/drguttma/policystore.db");
+            auto policy_store = geopm::PolicyStore::make_unique(policystore_path);
             std::string profile_name = endpoint.get_profile_name();
             auto policy = policy_store->get_best(profile_name, agent);
             std::cout << "Got policy: " << policy << std::endl;
@@ -78,5 +162,6 @@ int main(int argc, char **argv)
         endpoint.close();
         throw;
     }
+    endpoint.close();
     return 0;
 }
