@@ -35,8 +35,11 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
+#include <string>
 
 #include "geopm_time.h"
+#include "Exception.hpp"
 
 /// Helpers for printing
 template <typename T>
@@ -53,6 +56,75 @@ std::ostream& operator<<(std::ostream& os, std::vector<T> vec)
     return os;
 }
 
-std::ostream& operator<<(std::ostream& os, geopm_time_s time);
+std::ostream& operator<<(std::ostream& os, struct geopm_time_s time);
+
+/// Helper class for parsing command line options
+class OptionParser
+{
+    public:
+        OptionParser(const std::string &prog_name);
+        /// @brief Add a boolean flag
+        void add_option(const std::string &name,
+                        char short_form, const std::string &long_form,
+                        bool required,
+                        bool default_val);
+        /// @brief Add an option that takes a string argument
+        void add_option(const std::string &name,
+                        char short_form, const std::string &long_form,
+                        bool required,
+                        const std::string &default_val);
+        /// @brief Parse and save option values.  Returns whether program
+        ///        should exit because -h or -v was passed.
+        bool parse(int argc, char *argv[]);
+        /// @brief Look up value of an option by name
+        template <typename T>
+        T get(const std::string &name);
+    private:
+        void check_add_option(char short_form, const std::string &long_form);
+        const int M_MAX_OPTS = 128;
+        int m_num_opts;
+
+        struct opt_conf
+        {
+                // struct option opt;
+                std::string name;
+                int has_arg;
+                //int *flag;
+                int val;
+
+                bool required;
+        };
+        std::map<std::string, opt_conf> m_bool_option_conf;
+        std::map<std::string, opt_conf> m_str_option_conf;
+        // parsed values
+        std::map<std::string, std::string> m_str_vals;
+        std::map<std::string, bool> m_bool_vals;
+};
+
+template <>
+bool OptionParser::get<bool>(const std::string &name)
+{
+    auto it = m_bool_vals.find(name);
+    if (it == m_bool_vals.end()) {
+        throw geopm::Exception(std::string("Invalid option ") + name, GEOPM_ERROR_INVALID);
+    }
+    return it->second;
+}
+
+template <>
+std::string OptionParser::get<std::string>(const std::string &name)
+{
+    auto it = m_str_vals.find(name);
+    if (it == m_str_vals.end()) {
+        throw geopm::Exception(std::string("Invalid option ") + name, GEOPM_ERROR_INVALID);
+    }
+    return it->second;
+}
+
+template <typename T>
+T OptionParser::get(const std::string &name)
+{
+    static_assert(false, "OptionParser::get<T>(): Only bool and string value types are defined.");
+}
 
 #endif
