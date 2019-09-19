@@ -128,6 +128,7 @@ class AppOutput(object):
                     # load dataframes from cache
                     self._reports_df = pandas.read_hdf(report_h5_name, 'report')
                     self._app_reports_df = pandas.read_hdf(report_h5_name, 'app_report')
+                    self._policies_df = pandas.read_hdf(report_h5_name, 'policies')
                     if verbose:
                         sys.stdout.write('Loaded reports from {}.\n'.format(report_h5_name))
                 except IOError as err:
@@ -141,12 +142,15 @@ class AppOutput(object):
                             sys.stdout.write('Generating HDF5 files... ')
                         self._reports_df.to_hdf(report_h5_name, 'report', format='table')
                         self._app_reports_df.to_hdf(report_h5_name, 'app_report', format='table', append=True)
+                        self._policies_df.to_hdf(report_h5_name, 'policies', format='table', append=True)
                     except ImportError as error:
                         sys.stderr.write('<geopmy> Warning: unable to write HDF5 file: {}\n'.format(str(error)))
 
                     if verbose:
                         sys.stdout.write('Done.\n')
                         sys.stdout.flush()
+                except KeyError as err:
+                    raise RuntimeError('Unable to load HDF5 file. Reason: {}\n'.format(err.message))
             else:
                 self.parse_reports(report_paths, verbose)
 
@@ -207,6 +211,7 @@ class AppOutput(object):
     def parse_reports(self, report_paths, verbose):
         reports_df_list = []
         reports_app_df_list = []
+        policies_df_list = []
         files = 0
         filesize = 0
         for rp in report_paths:  # Get report count for verbose progress
@@ -226,12 +231,12 @@ class AppOutput(object):
                 sys.stdout.write('\rParsing report {} of {} ({})... '.format(fileno, files, filesize))
                 sys.stdout.flush()
             fileno += 1
-            self.add_report_df(rr, reports_df_list, reports_app_df_list)
+            self.add_report_df(rr, reports_df_list, reports_app_df_list, policies_df_list)
             # Parse the remaining reports in this file
             while (rr.get_last_offset() != rr_size):
                 rr = Report(rp, rr.get_last_offset())
                 if rr.get_node_name() is not None:
-                    self.add_report_df(rr, reports_df_list, reports_app_df_list)
+                    self.add_report_df(rr, reports_df_list, reports_app_df_list, policies_df_list)
                     if verbose:
                         sys.stdout.write('\rParsing report {} of {} ({})... '.format(fileno, files, filesize))
                         sys.stdout.flush()
@@ -248,6 +253,8 @@ class AppOutput(object):
         self._reports_df = self._reports_df.sort_index(ascending=True)
         self._app_reports_df = pandas.concat(reports_app_df_list)
         self._app_reports_df = self._app_reports_df.sort_index(ascending=True)
+        self._policies_df = pandas.concat(policies_df_list)
+        self._policies_df = self._policies_df.sort_index(ascending=True)
         if verbose:
             sys.stdout.write('Done.\n')
             sys.stdout.flush()
@@ -293,7 +300,7 @@ class AppOutput(object):
             except OSError:
                 pass
 
-    def add_report_df(self, rr, reports_df_list, reports_app_df_list):
+    def add_report_df(self, rr, reports_df_list, reports_app_df_list, policies_df_list):
         """Adds a report DataFrame to the tracking list.
 
         The report tracking list is used to create the combined
@@ -321,13 +328,18 @@ class AppOutput(object):
                'mpi-runtime': rr.get_mpi_runtime(),
                'ignore-runtime': rr.get_ignore_runtime(),
                'memory-hwm': rr.get_memory_hwm(),
-               'network-bw': rr.get_network_bw()
+               'network-bw': rr.get_network_bw(),
               }
         index = index.droplevel('region').drop_duplicates()
         app_df = pandas.DataFrame(app, index=index)
         numeric_cols = app.keys()
         app_df[numeric_cols] = app_df[numeric_cols].apply(pandas.to_numeric)
         reports_app_df_list.append(app_df)
+
+        # Add the policy
+        policy_df = pandas.DataFrame(rr.get_policy(), index=index)
+        policy_df = policy_df.apply(pandas.to_numeric)
+        policies_df_list.append(policy_df)
 
     def add_trace_df(self, tt, traces_df_list):
         """Adds a trace DataFrame to the tracking list.
@@ -387,9 +399,32 @@ class AppOutput(object):
         return df
 
     # TODO Call this from outside code to get totals
-    def get_app_total_data(self, node_name=None):
+    def get_app_total_data(self, node_name=None, profile=None, agent=None):
         idx = pandas.IndexSlice
         df = self._app_reports_df
+        if profile is not None:
+            if type(profile) is tuple:
+                minp, maxp = profile
+                df = df.loc[idx[:, :, minp:maxp, :, :, :], ]
+            else:
+                df = df.loc[idx[:, :, profile, :, :, :], ]
+        if agent is not None:
+            df = df.loc[idx[:, :, :, agent, :, :], ]
+        if node_name is not None:
+            df = df.loc[idx[:, :, :, :, node_name, :], ]
+        return df
+
+    def get_policy_data(self, node_name=None, profile=None, agent=None):
+        idx = pandas.IndexSlice
+        df = self._policies_df
+        if profile is not None:
+            if type(profile) is tuple:
+                minp, maxp = profile
+                df = df.loc[idx[:, :, minp:maxp, :, :, :], ]
+            else:
+                df = df.loc[idx[:, :, profile, :, :, :], ]
+        if agent is not None:
+            df = df.loc[idx[:, :, :, agent, :, :], ]
         if node_name is not None:
             df = df.loc[idx[:, :, :, :, node_name, :], ]
         return df
@@ -588,6 +623,7 @@ class Report(dict):
     _version = None
     _name = None
     _agent = None
+    _policy = None
     _start_time = None
 
     @staticmethod
@@ -597,8 +633,8 @@ class Report(dict):
         these fields may change.
 
         """
-        (Report._version, Report._name, Report._agent, Report._start_time) = \
-            None, None, None, None
+        (Report._version, Report._name, Report._agent, Report._policy, Report._start_time) = \
+            None, None, None, None, None
 
     def __init__(self, report_path, offset=0):
         super(Report, self).__init__()
@@ -608,6 +644,7 @@ class Report(dict):
         self._start_time = None
         self._profile_name = None
         self._agent = None
+        self._policy = None
         self._total_runtime = None
         self._total_energy_pkg = None
         self._total_energy_dram = None
@@ -641,6 +678,11 @@ class Report(dict):
                     match = re.search(r'^Agent: (\S+)$', line)
                     if match is not None:
                         self._agent = match.group(1)
+                if self._policy is None:
+                    match = re.search(r'^Policy: (.+)$', line)
+                    if match is not None:
+                        self._policy = json.loads(match.group(1),
+                                                  object_hook=lambda d: { k: float(v) for k, v in d.items() })
                 if self._node_name is None:
                     match = re.search(r'^Host: (\S+)$', line)
                     if match is not None:
@@ -745,6 +787,10 @@ class Report(dict):
             Report._agent = self._agent
         else:
             raise SyntaxError('Unable to parse agent information from report!')
+        if self._policy is None and Report._policy:
+            self._policy = Report._policy
+        else:
+            Report._policy = self._policy
         if self._start_time is None and Report._start_time:
             self._start_time = Report._start_time
         elif self._start_time:
@@ -799,6 +845,9 @@ class Report(dict):
 
     def get_network_bw(self):
         return self._total_network_bw
+
+    def get_policy(self):
+        return self._policy
 
 
 class Region(dict):
