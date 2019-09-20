@@ -41,6 +41,7 @@
 #include <dlfcn.h>
 #include <cxxabi.h>
 #include <iostream>
+#include <sstream>
 
 #include "ELF.hpp"
 #include "Exception.hpp"
@@ -89,14 +90,14 @@ namespace geopm
     ///        to an ELF encoded file.
     std::shared_ptr<ELF> elf(const std::string &file_path);
 
-    std::map<size_t, std::string> elf_symbol_map(const std::string &file_path)
+    std::map<size_t, std::string> elf_symbol_map(const std::string &file_path, size_t base_addr)
     {
         std::map<size_t, std::string> result;
         std::shared_ptr<ELF> elf_ptr = elf(file_path);
         do {
             if (elf_ptr->num_symbol()) {
                 do {
-                    result[elf_ptr->symbol_offset()] = elf_ptr->symbol_name();
+                    result[elf_ptr->symbol_offset()- base_addr] = elf_ptr->symbol_name();
                 } while (elf_ptr->next_symbol());
             }
         } while (elf_ptr->next_section());
@@ -119,7 +120,7 @@ namespace geopm
                 result.second = info.dli_sname;
             }
             else {
-                std::map<size_t, std::string> symbol_map(elf_symbol_map(info.dli_fname));
+                std::map<size_t, std::string> symbol_map(elf_symbol_map(info.dli_fname, (size_t)info.dli_fbase));
                 auto symbol_it = symbol_map.upper_bound(target);
                 if (symbol_it != symbol_map.begin()) {
                     --symbol_it;
@@ -140,6 +141,11 @@ namespace geopm
             else if (!string_ends_with(result.second, ")")) {
                 result.second += "()";
             }
+        }
+        if (target - (size_t)result.first > 1ULL<<32) {
+            std::ostringstream err_msg;
+            err_msg << "symbol_lookup(): instruction address out of range: " << info.dli_fname  << ":" << "0x" << std::hex << (size_t)instruction_ptr;
+            throw Exception(err_msg.str(), GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return result;
     }

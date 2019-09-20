@@ -51,7 +51,7 @@ namespace geopm
     ///        symbols in an ELF file.
     /// @param [in] file_path Path to ELF encoded binary file.
     /// @return Map from symbol location to symbol name.
-    std::map<size_t, std::string> elf_symbol_map(const std::string &file_path);
+    std::map<size_t, std::string> elf_symbol_map(const std::string &file_path, size_t base_addr);
 }
 
 #endif

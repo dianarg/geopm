@@ -78,6 +78,7 @@ namespace geopm
 
     uint64_t OMPT::region_id(const void *parallel_function)
     {
+        int err = 0;
         uint64_t result = GEOPM_REGION_HASH_UNMARKED;
         auto it = m_function_region_id_map.find((size_t)parallel_function);
         if (m_function_region_id_map.end() != it) {
@@ -85,8 +86,16 @@ namespace geopm
         }
         else {
             std::string rn;
-            region_name(parallel_function, rn);
-            int err = geopm_prof_region(rn.c_str(), GEOPM_REGION_HINT_UNKNOWN, &result);
+            try {
+                region_name(parallel_function, rn);
+            }
+            catch (const Exception &ex) {
+                std::cerr << "Warning: " << ex.what() << std::endl;
+                err = 1;
+            }
+            if (!err ) {
+                err = geopm_prof_region(rn.c_str(), GEOPM_REGION_HINT_UNKNOWN, &result);
+            }
             if (err) {
                 result = GEOPM_REGION_HASH_UNMARKED;
             }
@@ -103,7 +112,8 @@ namespace geopm
         std::ostringstream name_stream;
         std::string symbol_name;
         name_stream << "[OMPT]";
-        std::pair<size_t, std::string> symbol = symbol_lookup(parallel_function);
+        std::pair<size_t, std::string> symbol(symbol_lookup(parallel_function));
+
         if (symbol.second.size()) {
             name_stream << symbol.second << "+0x" << std::hex << target - symbol.first;
         }
