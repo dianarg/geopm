@@ -335,6 +335,7 @@ namespace geopm
 
     void ProfileImp::enter(uint64_t region_id)
     {
+std::cerr << "enter_region_id:" << std::hex << "0x" << region_id << std::endl;
         if (!m_is_enabled) {
             return;
         }
@@ -385,6 +386,7 @@ namespace geopm
 
     void ProfileImp::exit(uint64_t region_id)
     {
+std::cerr << "exit_region_id:" << std::hex << "0x" << region_id << std::endl;
         if (!m_is_enabled) {
             return;
         }

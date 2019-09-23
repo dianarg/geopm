@@ -33,9 +33,11 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <functional>
+#include <mkl.h>
 #include "gtest/gtest.h"
 #include "ELF.hpp"
 #include "Helper.hpp"
+#include "ModelRegion.hpp"
 #include "geopm_hash.h"
 
 class ELFTest: public :: testing :: Test
@@ -102,4 +104,33 @@ TEST_F(ELFTest, symbol_lookup)
     fn_off += 8;
     symbol = geopm::symbol_lookup((void*)fn_off);
     EXPECT_EQ("geopm_crc32_str()", symbol.second);
+
+    size_t matrix_size = 1024;
+    size_t pad_size = 128;
+    double *matrix_a = NULL;
+    double *matrix_b = NULL;
+    double *matrix_c = NULL;
+    size_t mem_size = sizeof(double) * (matrix_size * (matrix_size + pad_size));
+    posix_memalign((void **)&matrix_a, pad_size, mem_size);
+    posix_memalign((void **)&matrix_b, pad_size, mem_size);
+    posix_memalign((void **)&matrix_c, pad_size, mem_size);
+
+#pragma omp parallel for
+    for (size_t i = 0; i < mem_size / sizeof(double); ++i) {
+        matrix_a[i] = 2.0 * i;
+        matrix_b[i] = 3.0 * i;
+    }
+    int M = matrix_size;
+    int N = matrix_size;
+    int K = matrix_size;
+    int LDA = matrix_size + pad_size / sizeof(double);
+    int LDB = matrix_size + pad_size / sizeof(double);
+    int LDC = matrix_size + pad_size / sizeof(double);
+    double alpha = 2.0;
+    double beta = 3.0;
+    char transa = 'n';
+    char transb = 'n';
+
+    dgemm(&transa, &transb, &M, &N, &K, &alpha,
+          matrix_a, &LDA, matrix_b, &LDB, &beta, matrix_c, &LDC);
 }

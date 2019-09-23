@@ -409,8 +409,9 @@ test_geopm_test_LDADD = libgeopmpolicy.la \
                         # end
 
 test_geopm_test_CPPFLAGS = $(AM_CPPFLAGS) -Iplugin
-test_geopm_test_CFLAGS = $(AM_CFLAGS)
-test_geopm_test_CXXFLAGS = $(AM_CXXFLAGS)
+test_geopm_test_CFLAGS = $(AM_CFLAGS) $(MATH_CFLAGS)
+test_geopm_test_CXXFLAGS = $(AM_CXXFLAGS) $(OPENMP_CXXFLAGS)
+test_geopm_test_LDFLAGS = $(AM_LDFLAGS) $(MATH_CLDFLAGS)
 
 if GEOPM_DISABLE_INCONSISTENT_OVERRIDE
     test_geopm_test_CFLAGS += -Wno-inconsistent-missing-override

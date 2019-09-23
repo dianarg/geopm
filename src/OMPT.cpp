@@ -130,6 +130,8 @@ extern "C"
                                              int flags,
                                              const void *parallel_function)
     {
+        std::pair<size_t, std::string> symbol = geopm::symbol_lookup(parallel_function);
+        std::cerr << "func:0x" << std::hex << parallel_function << " symbol:" << symbol.second << std::endl;
         if (geopm_is_pmpi_prof_enabled() &&
             g_curr_parallel_function != parallel_function) {
             g_curr_parallel_function = parallel_function;
