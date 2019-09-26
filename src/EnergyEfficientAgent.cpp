@@ -238,7 +238,7 @@ namespace geopm
                     auto current_region_it = m_region_map[ctl_idx].find(current_region_info.hash);
                     if (current_region_it == m_region_map[ctl_idx].end()) {
                         auto tmp = m_region_map[ctl_idx].emplace(current_region_info.hash,
-                                                                 std::make_shared<EnergyEfficientRegionImp>
+                                                                 EnergyEfficientRegion::make_shared
                                                                  (freq_min, freq_max, freq_step, m_perf_margin));
                         current_region_it = tmp.first;
                     }
