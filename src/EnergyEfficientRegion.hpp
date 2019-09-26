@@ -52,6 +52,8 @@ namespace geopm
             virtual void update_exit(double curr_perf_metric) = 0;
             virtual void disable(void) = 0;
             virtual bool is_learning(void) const = 0;
+            /// @brief Suggest a frequency for this region
+            virtual void suggest_freq(double freq) = 0;
 
             /// @brief Factory to create an EnergyEfficientRegion instance
             static std::shared_ptr<EnergyEfficientRegion> make_shared(

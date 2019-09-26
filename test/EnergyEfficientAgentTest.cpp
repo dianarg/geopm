@@ -77,6 +77,7 @@ class EnergyEfficientAgentTest : public :: testing :: Test
         const int RUNTIME_SIG = 3000;
         const int COUNT_SIG = 4000;
         std::map<uint64_t, std::shared_ptr<MockEnergyEfficientRegion> > m_region_map;
+        std::vector<uint64_t> m_region_hashes;
 };
 
 void EnergyEfficientAgentTest::SetUp()
@@ -92,6 +93,10 @@ void EnergyEfficientAgentTest::SetUp()
     m_region_map[0x12] = std::make_shared<MockEnergyEfficientRegion>();
     m_region_map[0x34] = std::make_shared<MockEnergyEfficientRegion>();
     m_region_map[0x56] = std::make_shared<MockEnergyEfficientRegion>();
+    m_region_map[0x78] = std::make_shared<MockEnergyEfficientRegion>();
+    std::transform(
+        m_region_map.begin(), m_region_map.end(), std::back_inserter(m_region_hashes),
+        [](decltype(m_region_map)::value_type entry) { return entry.first; });
     // expectations for constructor
     EXPECT_CALL(m_topo, num_domain(M_FREQ_DOMAIN)).Times(2);
     EXPECT_CALL(*m_gov, frequency_domain_type()).Times(2);
@@ -130,7 +135,7 @@ TEST_F(EnergyEfficientAgentTest, validate_policy_default)
     std::vector<double> in_policy {NAN, NAN, NAN};
     std::vector<double> expected {sys_min, sys_max, 0.10};
     m_agent0->validate_policy(in_policy);
-    EXPECT_EQ(expected, in_policy);
+    EXPECT_THAT(in_policy, IsEqualToPolicy(expected));
 }
 
 TEST_F(EnergyEfficientAgentTest, validate_policy_clamp)
@@ -140,7 +145,7 @@ TEST_F(EnergyEfficientAgentTest, validate_policy_clamp)
     std::vector<double> wide_policy {0.9e9, 2.1e9, 0.5};
     std::vector<double> in_policy = wide_policy;
     m_agent0->validate_policy(in_policy);
-    EXPECT_EQ(wide_policy, in_policy);
+    EXPECT_THAT(in_policy, IsEqualToPolicy(wide_policy));
 }
 
 TEST_F(EnergyEfficientAgentTest, validate_policy_perf_margin)
@@ -149,6 +154,37 @@ TEST_F(EnergyEfficientAgentTest, validate_policy_perf_margin)
     EXPECT_THROW(m_agent0->validate_policy(in_policy), geopm::Exception);
     in_policy = {NAN, NAN, 1.2};
     EXPECT_THROW(m_agent0->validate_policy(in_policy), geopm::Exception);
+}
+
+TEST_F(EnergyEfficientAgentTest, validate_policy_variable_length)
+{
+    std::vector<double> in_policy {NAN, NAN, 0.2};
+    std::vector<double> expected_policy(in_policy);
+
+    m_agent0->validate_policy(in_policy);
+    EXPECT_THAT(in_policy, IsEqualToPolicy(expected_policy));
+
+    in_policy = {NAN, NAN, 0.2, NAN};
+    EXPECT_THROW(m_agent0->validate_policy(in_policy), geopm::Exception)
+        << "Incomplete hash/frequency pair";
+
+    in_policy = {NAN, NAN, 0.2, NAN, NAN};
+    expected_policy = in_policy;
+    m_agent0->validate_policy(in_policy);
+    EXPECT_THAT(in_policy, IsEqualToPolicy(expected_policy));
+
+    in_policy = {NAN, NAN, 0.2, NAN, NAN, NAN};
+    EXPECT_THROW(m_agent0->validate_policy(in_policy), geopm::Exception)
+        << "Trailing NAN after an empty hash/frequency pair";
+
+    in_policy = {NAN, NAN, 0.2, NAN, NAN, static_cast<double>(m_region_hashes[0]), NAN};
+    expected_policy = in_policy;
+    m_agent0->validate_policy(in_policy);
+    EXPECT_THAT(in_policy, IsEqualToPolicy(expected_policy));
+
+    in_policy = {NAN, NAN, 0.2, NAN, NAN, NAN, 0.6};
+    EXPECT_THROW(m_agent0->validate_policy(in_policy), geopm::Exception)
+        << "Attempt to map a frequency to a non-region";
 }
 
 TEST_F(EnergyEfficientAgentTest, split_policy_unchanged)
@@ -229,6 +265,10 @@ TEST_F(EnergyEfficientAgentTest, static_methods)
 {
     EXPECT_EQ("energy_efficient", EnergyEfficientAgent::plugin_name());
     std::vector<std::string> pol_names {"FREQ_MIN", "FREQ_MAX", "PERF_MARGIN"};
+    for (int i = 0; i < 32; ++i) {
+        pol_names.emplace_back("HASH_" + std::to_string(i));
+        pol_names.emplace_back("FREQ_" + std::to_string(i));
+    }
     std::vector<std::string> sam_names {};
     EXPECT_EQ(pol_names, EnergyEfficientAgent::policy_names());
     EXPECT_EQ(sam_names, EnergyEfficientAgent::sample_names());
@@ -245,4 +285,38 @@ TEST_F(EnergyEfficientAgentTest, enforce_policy)
     m_agent0->enforce_policy(policy);
 
     EXPECT_THROW(m_agent0->enforce_policy(bad_policy), geopm::Exception);
+}
+
+TEST_F(EnergyEfficientAgentTest, adjust_platform_with_policy_freqs)
+{
+    const double min_freq = 1.0e9;
+    const double max_freq = 2.0e9;
+    const double mapped_region_1 = m_region_hashes[1];
+    const double mapped_frequency_1 = 1.5e9;
+    const double mapped_region_2 = m_region_hashes[3];
+    const double mapped_frequency_2 = 1.6e9;
+    std::vector<double> in_policy{ min_freq, max_freq, M_PERF_MARGIN,
+                                   // Map a region
+                                   mapped_region_1, mapped_frequency_1,
+                                   // Unmapped region
+                                   NAN, NAN,
+                                   // Map another region. Doesn't need to be contiguous
+                                   mapped_region_2, mapped_frequency_2 };
+
+    EXPECT_CALL(*m_gov, set_frequency_bounds(min_freq, max_freq));
+
+    for (const auto region : m_region_map) {
+        // Frequencies are suggested ONLY for mapped regions
+        if (region.first == mapped_region_1) {
+            EXPECT_CALL(*region.second, suggest_freq(mapped_frequency_1)).Times(M_NUM_FREQ_DOMAIN);
+        }
+        else if (region.first == mapped_region_2) {
+            EXPECT_CALL(*region.second, suggest_freq(mapped_frequency_2)).Times(M_NUM_FREQ_DOMAIN);
+        }
+        else {
+            EXPECT_CALL(*region.second, suggest_freq(_)).Times(0);
+        }
+    }
+
+    m_agent0->adjust_platform(in_policy);
 }

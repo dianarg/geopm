@@ -50,6 +50,7 @@ namespace geopm
             void update_exit(double curr_perf_metric) override;
             void disable(void) override;
             bool is_learning(void) const override;
+            void suggest_freq(double freq) override;
         private:
             const int M_MIN_PERF_SAMPLE;
             bool m_is_learning;
@@ -58,6 +59,8 @@ namespace geopm
             int m_curr_step;
             double m_freq_min;
             double m_target;
+            // Frequency suggested for use by other regions matching this one
+            double m_suggested_freq;
             std::vector<std::unique_ptr<CircularBuffer<double> > > m_freq_perf;
             bool m_is_disabled;
             double m_perf_margin;
@@ -171,5 +174,10 @@ namespace geopm
     bool EnergyEfficientRegionImp::is_learning(void) const
     {
         return m_is_learning;
+    }
+
+    void EnergyEfficientRegionImp::suggest_freq(double freq)
+    {
+        m_suggested_freq = freq;
     }
 }

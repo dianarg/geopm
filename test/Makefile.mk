@@ -107,6 +107,7 @@ GTEST_TESTS = test/gtest_links/AgentFactoryTest.static_info_monitor \
               test/gtest_links/EndpointUserTest.profile_name_too_long \
               test/gtest_links/EndpointUserTest.write_shm_sample \
               test/gtest_links/EndpointUserTestIntegration.parse_shm \
+              test/gtest_links/EnergyEfficientAgentTest.adjust_platform_with_policy_freqs \
               test/gtest_links/EnergyEfficientAgentTest.aggregate_sample \
               test/gtest_links/EnergyEfficientAgentTest.do_write_batch \
               test/gtest_links/EnergyEfficientAgentTest.enforce_policy \
@@ -116,6 +117,7 @@ GTEST_TESTS = test/gtest_links/AgentFactoryTest.static_info_monitor \
               test/gtest_links/EnergyEfficientAgentTest.static_methods \
               test/gtest_links/EnergyEfficientAgentTest.validate_policy_clamp \
               test/gtest_links/EnergyEfficientAgentTest.validate_policy_default \
+              test/gtest_links/EnergyEfficientAgentTest.validate_policy_variable_length \
               test/gtest_links/EnergyEfficientRegionTest.freq_starts_at_maximum \
               test/gtest_links/EnergyEfficientRegionTest.invalid_perf_margin \
               test/gtest_links/EnergyEfficientRegionTest.update_ignores_nan_sample \

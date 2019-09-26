@@ -112,7 +112,7 @@ namespace geopm
     bool EnergyEfficientAgent::update_policy(const std::vector<double> &in_policy)
     {
 #ifdef GEOPM_DEBUG
-        if (in_policy.size() != M_NUM_POLICY) {
+        if (!is_valid_policy_size(in_policy)) {
             throw Exception("EnergyEfficientAgent::" + std::string(__func__) +
                             "(): in_policy vector not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
@@ -120,14 +120,37 @@ namespace geopm
 #endif
         m_perf_margin = in_policy[M_POLICY_PERF_MARGIN];
         // @todo: to support dynamic policies, policy values need to be passed to regions
-        return m_freq_governor->set_frequency_bounds(in_policy[M_POLICY_FREQ_MIN],
-                                                     in_policy[M_POLICY_FREQ_MAX]);
+        bool is_updated = m_freq_governor->set_frequency_bounds(
+            in_policy[M_POLICY_FREQ_MIN], in_policy[M_POLICY_FREQ_MAX]);
+
+        for (auto it = in_policy.begin() + M_POLICY_FIRST_HASH;
+             it < in_policy.end() && std::next(it) < in_policy.end(); std::advance(it, 2)) {
+            if (!std::isnan(*it)) {
+                auto hash = static_cast<uint64_t>(*it);
+                auto freq = *(it + 1);
+
+                for (size_t ctl_idx = 0;
+                     ctl_idx < (size_t)m_num_freq_ctl_domain; ++ctl_idx) {
+                    auto region_it = m_region_map[ctl_idx].find(hash);
+                    if (region_it == m_region_map[ctl_idx].end()) {
+                        region_it = m_region_map[ctl_idx].emplace(
+                            hash, EnergyEfficientRegion::make_shared(
+                                      m_freq_governor->get_frequency_min(),
+                                      m_freq_governor->get_frequency_max(),
+                                      m_freq_governor->get_frequency_step(),
+                                      m_perf_margin)).first;
+                    }
+                    region_it->second->suggest_freq(freq);
+                }
+            }
+        }
+        return is_updated;
     }
 
     void EnergyEfficientAgent::validate_policy(std::vector<double> &policy) const
     {
 #ifdef GEOPM_DEBUG
-        if (policy.size() != M_NUM_POLICY) {
+        if (!is_valid_policy_size(policy)) {
             throw Exception("EnergyEfficientAgent::" + std::string(__func__) +
                             "(): policy vector not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
@@ -142,6 +165,30 @@ namespace geopm
         }
         m_freq_governor->validate_policy(policy[M_POLICY_FREQ_MIN],
                                          policy[M_POLICY_FREQ_MAX]);
+
+        // Validate all (hash, frequency) pairs
+        std::set<double> policy_regions;
+        for (auto it = policy.begin() + M_POLICY_FIRST_HASH;
+             it < policy.end() && std::next(it) < policy.end(); std::advance(it, 2)) {
+            auto mapped_freq = *(it + 1);
+            if (!std::isnan(*it)) {
+                auto region = static_cast<uint64_t>(*it);
+                // A valid region will either set or clear its mapped frequency.
+                // Just make sure it does not have multiple definitions.
+                if (!policy_regions.insert(region).second) {
+                    throw Exception("EnergyEfficientAgent policy has multiple entries for region: " +
+                                        std::to_string(region),
+                                    GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                }
+            }
+            else if (!std::isnan(mapped_freq)) {
+                // An invalid region is only a problem if we are trying to map
+                // a frequency to it. Otherwise (NaN, NaN) just ignore it.
+                throw Exception("EnergyEfficientAgent policy maps a NaN region with frequency: " +
+                                    std::to_string(mapped_freq),
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
     }
 
     void EnergyEfficientAgent::split_policy(const std::vector<double> &in_policy,
@@ -154,7 +201,7 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
         for (auto &child_policy : out_policy) {
-            if (child_policy.size() != M_NUM_POLICY) {
+            if (!is_valid_policy_size(child_policy)) {
                 throw Exception("EnergyEfficientAgent::" + std::string(__func__) +
                                 "(): child_policy vector not correctly sized.",
                                 GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
@@ -283,7 +330,15 @@ namespace geopm
 
     std::vector<std::string> EnergyEfficientAgent::policy_names(void)
     {
-        return {"FREQ_MIN", "FREQ_MAX", "PERF_MARGIN"};
+        std::vector<std::string> names{ "FREQ_MIN", "FREQ_MAX", "PERF_MARGIN" };
+        names.reserve(M_NUM_POLICY);
+
+        for (size_t i = 0; names.size() < M_NUM_POLICY; ++i) {
+            names.emplace_back("HASH_" + std::to_string(i));
+            names.emplace_back("FREQ_" + std::to_string(i));
+        }
+
+        return names;
     }
 
     std::vector<std::string> EnergyEfficientAgent::sample_names(void)
@@ -360,7 +415,7 @@ namespace geopm
 
     void EnergyEfficientAgent::enforce_policy(const std::vector<double> &policy) const
     {
-        if (policy.size() != M_NUM_POLICY) {
+        if (!is_valid_policy_size(policy)) {
             throw Exception("EnergyEfficientAgent::enforce_policy(): policy vector incorrectly sized.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
@@ -385,5 +440,13 @@ namespace geopm
                             m_freq_ctl_domain_type, ctl_idx));
             }
         }
+    }
+
+    bool EnergyEfficientAgent::is_valid_policy_size(const std::vector<double> &policy) const
+    {
+        // Allow a variable number of policy values after the header, as long
+        // as the variable-sized section is composed of pairs
+        return policy.size() >= M_POLICY_FIRST_HASH && policy.size() <= M_NUM_POLICY &&
+               (policy.size() - M_POLICY_FIRST_HASH) % 2 == 0;
     }
 }

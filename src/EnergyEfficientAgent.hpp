@@ -86,12 +86,18 @@ namespace geopm
         private:
             bool update_policy(const std::vector<double> &in_policy);
             void init_platform_io(void);
+            bool is_valid_policy_size(const std::vector<double> &policy) const;
 
             enum m_policy_e {
                 M_POLICY_FREQ_MIN,
                 M_POLICY_FREQ_MAX,
                 M_POLICY_PERF_MARGIN,
-                M_NUM_POLICY,
+
+                M_POLICY_FIRST_HASH,
+                M_POLICY_FIRST_FREQUENCY,
+                // The remainder of policy values can be additional pairs of
+                // (hash, frequency)
+                M_NUM_POLICY = M_POLICY_FIRST_HASH + 2 * 32,
             };
 
             enum m_signal_e {
