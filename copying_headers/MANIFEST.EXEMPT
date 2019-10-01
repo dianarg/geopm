@@ -30,6 +30,7 @@ examples/fft/README
 examples/hacc/README
 examples/minife/README
 examples/nekbone/README
+examples/ompt_mkl_test.c
 examples/qbox/README
 geopm-ohpc.spec.in
 geopm-theta.spec.in

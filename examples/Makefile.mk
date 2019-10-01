@@ -45,6 +45,7 @@ EXTRA_DIST += examples/README.md \
               examples/nekbone/0002-Marked-up-nekbone-code-for-use-with-GEOPM.patch \
               examples/nekbone/0003-Increase-problem-size-for-Theta.patch \
               examples/nekbone/README \
+              examples/ompt_mkl_test.c \
               examples/qbox/0001-Adding-geopm-markup-for-qbox.patch \
               examples/qbox/0002-Fixing-run-scripts-and-adding-run-scipt-for-qbox.patch \
               examples/qbox/README \
