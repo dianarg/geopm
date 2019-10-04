@@ -373,8 +373,12 @@ test_geopm_test_SOURCES = test/AgentFactoryTest.cpp \
                           test/MSRIOGroupTest.cpp \
                           test/MSRIOTest.cpp \
                           test/MSRTest.cpp \
+                          test/PolicyStoreImpTest.cpp \
+                          test/MockAgent.cpp \
                           test/MockAgent.hpp \
+                          test/MockApplicationIO.cpp \
                           test/MockApplicationIO.hpp \
+                          test/MockComm.cpp \
                           test/MockComm.hpp \
                           test/MockControlMessage.hpp \
                           test/MockEndpointUser.hpp \
@@ -382,6 +386,7 @@ test_geopm_test_SOURCES = test/AgentFactoryTest.cpp \
                           test/MockEpochRuntimeRegulator.hpp \
                           test/MockFrequencyGovernor.hpp \
                           test/MockIOGroup.hpp \
+                          test/MockPlatformIO.cpp \
                           test/MockPlatformIO.hpp \
                           test/MockPlatformTopo.hpp \
                           test/MockPowerBalancer.hpp \

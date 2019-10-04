@@ -33,12 +33,18 @@
 #ifndef MOCKPLATFORMIO_HPP_INCLUDE
 #define MOCKPLATFORMIO_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "PlatformIO.hpp"
 #include "IOGroup.hpp"
 
 class MockPlatformIO : public geopm::PlatformIO
 {
     public:
+        MockPlatformIO();
+        virtual ~MockPlatformIO();
+
         MOCK_METHOD1(register_iogroup,
                      void(std::shared_ptr<geopm::IOGroup> iogroup));
         MOCK_CONST_METHOD0(signal_names,

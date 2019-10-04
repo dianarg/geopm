@@ -33,12 +33,18 @@
 #ifndef MOCKAGENT_HPP_INCLUDE
 #define MOCKAGENT_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "Agent.hpp"
 #include "PlatformIO.hpp"
 
 class MockAgent : public geopm::Agent
 {
     public:
+        MockAgent();
+        virtual ~MockAgent();
+
         MOCK_METHOD3(init,
                      void(int level, const std::vector<int> &fan_in, bool is_level_root));
         MOCK_CONST_METHOD1(validate_policy,

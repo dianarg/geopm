@@ -33,11 +33,17 @@
 #ifndef MOCKAPPLICATIONIO_HPP_INCLUDE
 #define MOCKAPPLICATIONIO_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "ApplicationIO.hpp"
 
 class MockApplicationIO : public geopm::ApplicationIO
 {
     public:
+        MockApplicationIO();
+        virtual ~MockApplicationIO();
+
         MOCK_METHOD0(connect,
                      void(void));
         MOCK_CONST_METHOD0(do_shutdown,
@@ -78,8 +84,6 @@ class MockApplicationIO : public geopm::ApplicationIO
                            int(uint64_t region_id));
         MOCK_METHOD1(update,
                      void(std::shared_ptr<geopm::Comm> comm));
-        MOCK_METHOD0(profile_io_group,
-                     std::shared_ptr<geopm::IOGroup>(void));
         MOCK_CONST_METHOD0(region_info,
                            std::list<geopm_region_info_s>(void));
         MOCK_METHOD0(clear_region_info,

@@ -33,11 +33,17 @@
 #ifndef MOCKCOMM_HPP_INCLUDE
 #define MOCKCOMM_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "Comm.hpp"
 
 class MockComm : public geopm::Comm
 {
     public:
+        MockComm();
+        virtual ~MockComm();
+
         MOCK_CONST_METHOD0(split,
             std::shared_ptr<Comm> (void));
         MOCK_CONST_METHOD2(split,
