@@ -33,11 +33,17 @@
 #ifndef MOCKPLATFORMTOPO_HPP_INCLUDE
 #define MOCKPLATFORMTOPO_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
+
 #include "PlatformTopo.hpp"
 
 class MockPlatformTopo : public geopm::PlatformTopo
 {
     public:
+        MockPlatformTopo();
+        virtual ~MockPlatformTopo();
+
         MOCK_CONST_METHOD1(num_domain,
                            int(int domain_type));
         MOCK_CONST_METHOD2(domain_idx,

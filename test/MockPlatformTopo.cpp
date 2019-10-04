@@ -29,39 +29,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "MockPlatformTopo.hpp"
 
-#ifndef MOCKFREQUENCYGOVERNOR_HPP_INCLUDE
-#define MOCKFREQUENCYGOVERNOR_HPP_INCLUDE
-
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-#include "FrequencyGovernor.hpp"
-
-class MockFrequencyGovernor : public geopm::FrequencyGovernor
-{
-    public:
-        MockFrequencyGovernor();
-        virtual ~MockFrequencyGovernor();
-
-        MOCK_METHOD0(init_platform_io,
-                     void(void));
-        MOCK_CONST_METHOD0(frequency_domain_type,
-                           int(void));
-        MOCK_METHOD1(adjust_platform,
-                     void(const std::vector<double> &frequency_request));
-        MOCK_CONST_METHOD0(do_write_batch,
-                           bool());
-        MOCK_METHOD2(set_frequency_bounds,
-                     bool(double freq_min, double freq_max));
-        MOCK_CONST_METHOD0(get_frequency_min,
-                           double());
-        MOCK_CONST_METHOD0(get_frequency_max,
-                           double());
-        MOCK_CONST_METHOD0(get_frequency_step,
-                           double());
-        MOCK_CONST_METHOD2(validate_policy,
-                           void(double &freq_min, double &freq_max));
-};
-
-#endif
+// Nothing special is explicitly happening here, but this ensures that the
+// constructors are not inlined every place they are used. It is expected
+// to reduce average build time of unit tests.
+MockPlatformTopo::MockPlatformTopo() {}
+MockPlatformTopo::~MockPlatformTopo() {}

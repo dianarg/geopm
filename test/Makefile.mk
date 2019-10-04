@@ -384,10 +384,12 @@ test_geopm_test_SOURCES = test/AgentFactoryTest.cpp \
                           test/MockEndpointUser.hpp \
                           test/MockEnergyEfficientRegion.hpp \
                           test/MockEpochRuntimeRegulator.hpp \
+                          test/MockFrequencyGovernor.cpp \
                           test/MockFrequencyGovernor.hpp \
                           test/MockIOGroup.hpp \
                           test/MockPlatformIO.cpp \
                           test/MockPlatformIO.hpp \
+                          test/MockPlatformTopo.cpp \
                           test/MockPlatformTopo.hpp \
                           test/MockPowerBalancer.hpp \
                           test/MockPowerGovernor.hpp \
