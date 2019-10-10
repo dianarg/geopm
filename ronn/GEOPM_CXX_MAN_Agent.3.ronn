@@ -256,8 +256,7 @@ I/O implementations by different `Agent` classes.
     Read signals from the platform and interpret/aggregate these
     signals to create a sample which can be sent up the tree.  The
     _sample_ parameter is an output vector of agent specific sample
-    values to be sent up the tree. Returns true if the sample has been
-    updated since the last call.
+    values to be sent up the tree.
 
   * `wait`():
     Called to wait for the sample period to elapse. This controls the
