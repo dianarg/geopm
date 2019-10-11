@@ -33,6 +33,8 @@
 #ifndef ENERGYEFFICIENTAGENT_HPP_INCLUDE
 #define ENERGYEFFICIENTAGENT_HPP_INCLUDE
 
+
+#include <cstddef>
 #include <vector>
 #include <map>
 #include <string>
@@ -87,6 +89,42 @@ namespace geopm
             bool update_policy(const std::vector<double> &in_policy);
             void init_platform_io(void);
             bool is_valid_policy_size(const std::vector<double> &policy) const;
+            bool is_valid_sample_size(const std::vector<double> &sample) const;
+
+            struct m_learned_frequency_s {
+                // Learned frequency for a region
+                double frequency;
+                // Number of times the region's frequency has been learned
+                size_t count;
+            };
+
+            /// @brief Add a learned frequency to an aggregator
+            /// @details Adds new entries to @p learned_frequencies as needed.
+            ///          Updates the region's aggregated frequency, incrementing
+            ///          the learner count if the region already exists in the
+            ///          tracker.
+            /// @param [in] hash  Hash identifying the region that was learned
+            /// @param [in] frequency  Frequency that was learned for the region
+            /// @param [in, out] learned_frequencies  Information about learned
+            ///        frequencies, aggregated per region.
+            void add_learned_frequency(uint64_t hash, double frequency,
+                                       std::map<uint64_t, m_learned_frequency_s> &learned_frequencies);
+
+            /// @brief Sample from frequency aggregator
+            /// @details Populates out_sample with a series of hash, frequency
+            ///          pairs for all fully-learned region frequencies.
+            /// @param [in] learner_count  Number of learners contributing to
+            ///             the aggregated region data.
+            /// @param [in] learned_frequencies  Aggregated learning information
+            /// @param [in, out] out_sample  Sample vector where fully-learned
+            ///                  regions are stored. Only existing vector elements
+            ///                  are overwritten, and the vector is not resized
+            ///                  by this function.
+            /// @return True if at least one frequency has been fully learned,
+            ///         and out_sample has been modified. Otherwise, false.
+            bool sample_learner(size_t learner_count,
+                                const std::map<uint64_t, m_learned_frequency_s> &learned_frequencies,
+                                std::vector<double> &out_sample);
 
             enum m_policy_e {
                 M_POLICY_FREQ_MIN,
@@ -98,6 +136,14 @@ namespace geopm
                 // The remainder of policy values can be additional pairs of
                 // (hash, frequency)
                 M_NUM_POLICY = M_POLICY_FIRST_HASH + 2 * 32,
+            };
+
+            enum m_sample_e {
+                M_SAMPLE_FIRST_HASH,
+                M_SAMPLE_FIRST_FREQUENCY,
+                // The remainder of sample values can be additional pairs of
+                // (hash, frequency)
+                M_NUM_SAMPLE = M_SAMPLE_FIRST_HASH + 2 * 32,
             };
 
             enum m_signal_e {
@@ -129,12 +175,14 @@ namespace geopm
             std::vector<struct m_region_info_s> m_last_region_info;
             std::vector<double> m_target_freq;
             std::vector<std::map<uint64_t, std::shared_ptr<EnergyEfficientRegion> > > m_region_map;
+            std::map<uint64_t, struct m_learned_frequency_s> m_locally_learned_frequencies;
             std::vector<int> m_samples_since_boundary;
             geopm_time_s m_last_wait;
             std::vector<std::vector<int> > m_signal_idx;
             int m_level;
             int m_num_children;
             bool m_do_send_policy;
+            bool m_do_send_sample;
             double m_perf_margin;
     };
 }

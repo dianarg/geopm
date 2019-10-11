@@ -42,24 +42,51 @@ int main(int argc, char **argv)
 
 IsEqualToPolicyMatcher::IsEqualToPolicyMatcher(const std::vector<double> &expected)
     : m_expected(expected)
+    , m_expected_size(expected.size())
 {
+}
+
+IsEqualToPolicyMatcher::IsEqualToPolicyMatcher(const std::vector<double> &expected,
+                                               size_t expected_size)
+    : m_expected(expected)
+    , m_expected_size(expected_size)
+{
+    if (expected.size() > expected_size) {
+        throw std::logic_error(
+            "expected_size must be greater-than or "
+            "equal-to the size of the expected vector");
+    }
 }
 
 bool IsEqualToPolicyMatcher::MatchAndExplain(
     std::vector<double> policy, ::testing::MatchResultListener * listener) const
 {
-    if (policy.size() != m_expected.size()) {
-        *listener << "expected size " << m_expected.size() << ", got size "
+    if (policy.size() != m_expected_size) {
+        *listener << "expected size " << m_expected_size << ", got size "
                   << policy.size();
         return false;
     }
 
+    // The expected vector may be smaller than the actual vector. In this case,
+    // we check for equality of the vectors in their shared size portions, and
+    // check for the expected trailing values in the non-overlapping part.
+    size_t shared_size = std::min(policy.size(), m_expected.size());
+
     // Check for elementwise equality, allowing NANs to be equal to each other
-    for (size_t i = 0; i < policy.size(); ++i) {
+    for (size_t i = 0; i < shared_size; ++i) {
         if (std::isnan(policy[i]) != std::isnan(m_expected[i]) ||
             (!std::isnan(policy[i]) && policy[i] != m_expected[i])) {
             *listener << "expected[" << i << "] = " << m_expected[i]
                       << ", policy[" << i << "] = " << policy[i];
+            return false;
+        }
+    }
+
+    // Trailing values in the observed vector are required to be NAN.
+    for (size_t i = shared_size; i < policy.size(); ++i) {
+        if (!std::isnan(policy[i])) {
+            *listener << "expected size is " << m_expected_size
+                      << ", but policy[" << i << "] = " << policy[i];
             return false;
         }
     }
@@ -84,4 +111,10 @@ void IsEqualToPolicyMatcher::DescribeNegationTo(std::ostream *os) const
 ::testing::Matcher<std::vector<double> > IsEqualToPolicy(const std::vector<double> &policy)
 {
     return MakeMatcher(new IsEqualToPolicyMatcher(policy));
+}
+
+::testing::Matcher<std::vector<double> > IsEqualToPolicy(const std::vector<double> &policy,
+                                                         size_t expected_size)
+{
+    return MakeMatcher(new IsEqualToPolicyMatcher(policy, expected_size));
 }

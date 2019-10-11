@@ -78,6 +78,9 @@ class EnergyEfficientAgentTest : public :: testing :: Test
         const int COUNT_SIG = 4000;
         std::map<uint64_t, std::shared_ptr<MockEnergyEfficientRegion> > m_region_map;
         std::vector<uint64_t> m_region_hashes;
+        void expect_aggregation(std::unique_ptr<EnergyEfficientAgent>& agent,
+                                const std::vector<double> &expected_out,
+                                const std::vector<std::vector<double> > &in_sample);
 };
 
 void EnergyEfficientAgentTest::SetUp()
@@ -123,6 +126,18 @@ void EnergyEfficientAgentTest::SetUp()
     m_agent0->init(0, fan_in, false);
     m_agent1->init(1, fan_in, false);
 }
+
+// Set an exception that a given vector of samples is aggregated into a given
+// output vector.
+void EnergyEfficientAgentTest::expect_aggregation(
+    std::unique_ptr<EnergyEfficientAgent> &agent, const std::vector<double> &expected_out,
+    const std::vector<std::vector<double> > &in_sample)
+{
+    std::vector<double> out_sample(expected_out.size(), NAN);
+    agent->aggregate_sample(in_sample, out_sample);
+    EXPECT_THAT(out_sample, IsEqualToPolicy(expected_out));
+}
+
 
 TEST_F(EnergyEfficientAgentTest, validate_policy_default)
 {
@@ -242,13 +257,54 @@ TEST_F(EnergyEfficientAgentTest, split_policy_errors)
 
 TEST_F(EnergyEfficientAgentTest, aggregate_sample)
 {
-    std::vector<double> empty;
-    std::vector<double> out_sample;
-    std::vector<std::vector<double> > in_sample {M_NUM_CHILDREN, empty};
-    m_agent0->aggregate_sample(in_sample, out_sample);
+    expect_aggregation(
+        m_agent1, { NAN, NAN, NAN, NAN },
+        { { NAN, NAN, NAN, NAN }, { NAN, NAN, NAN, NAN }, { NAN, NAN, NAN, NAN } });
+    EXPECT_FALSE(m_agent1->do_send_sample());
+
+    expect_aggregation(m_agent1, { 0x1234, 1e9, NAN, NAN },
+                       { { 0x1234, 1e9, NAN, NAN },
+                         { 0x1234, 1e9, NAN, NAN },
+                         { 0x2468, 2e9, 0x1234, 1e9 } });
+    EXPECT_TRUE(m_agent1->do_send_sample());
+
+    expect_aggregation(m_agent1, { 0x1234, 2e9, NAN, NAN },
+                       { { 0x1234, 1e9, NAN, NAN },
+                         { 0x1234, 2e9, NAN, NAN },
+                         { 0x2468, 2e9, 0x1234, 1e9 } });
+    EXPECT_TRUE(m_agent1->do_send_sample());
+
+    expect_aggregation(m_agent1, { 0x1234, 2e9, NAN, NAN },
+                       { { 0x1234, 1e9, NAN, NAN },
+                         { 0x1234, 2e9, NAN, NAN },
+                         { 0x2468, 2e9, 0x1234, 1e9 } });
+    EXPECT_TRUE(m_agent1->do_send_sample());
+
+    expect_aggregation(m_agent1, { 0x1234, 2e9, 0x2468, 3e9 },
+                       { { 0x1234, 1e9, 0x2468, 3e9 },
+                         { 0x1234, 2e9, 0x2468, 3e9 },
+                         { 0x2468, 2e9, 0x1234, 1e9 } });
+    EXPECT_TRUE(m_agent1->do_send_sample());
+}
+
+TEST_F(EnergyEfficientAgentTest, aggregate_sample_level0)
+{
+    std::vector<double> empty{ NAN, NAN };
+    std::vector<double> out_sample{ NAN, NAN };
+    std::vector<std::vector<double> > in_sample{ M_NUM_CHILDREN, empty };
+#ifdef GEOPM_DEBUG
+    EXPECT_THROW(m_agent0->aggregate_sample(in_sample, out_sample), geopm::Exception)
+        << "aggregate_sample() shouldn't be called on level 0. On GEOPM_DEBUG "
+           "builds, it should fail to indicate the bad call";
+#else
+    EXPECT_NO_THROW(m_agent0->aggregate_sample(in_sample, out_sample))
+        << "aggregate_sample() shouldn't be called on level 0, but "
+           "it should do nothing if that does happen";
+#endif
     EXPECT_FALSE(m_agent0->do_send_sample());
+
     // no samples to aggregate
-    EXPECT_EQ(empty, out_sample);
+    EXPECT_THAT(out_sample, IsEqualToPolicy(empty));
 }
 
 TEST_F(EnergyEfficientAgentTest, do_write_batch)
@@ -270,6 +326,10 @@ TEST_F(EnergyEfficientAgentTest, static_methods)
         pol_names.emplace_back("FREQ_" + std::to_string(i));
     }
     std::vector<std::string> sam_names {};
+    for (int i = 0; i < 32; ++i) {
+        sam_names.emplace_back("HASH_" + std::to_string(i));
+        sam_names.emplace_back("FREQ_" + std::to_string(i));
+    }
     EXPECT_EQ(pol_names, EnergyEfficientAgent::policy_names());
     EXPECT_EQ(sam_names, EnergyEfficientAgent::sample_names());
 }
@@ -319,4 +379,50 @@ TEST_F(EnergyEfficientAgentTest, adjust_platform_with_policy_freqs)
     }
 
     m_agent0->adjust_platform(in_policy);
+}
+
+TEST_F(EnergyEfficientAgentTest, sample_platform)
+{
+    ON_CALL(*m_gov, get_frequency_min()).WillByDefault(Return(1e9));
+    ON_CALL(*m_gov, get_frequency_max()).WillByDefault(Return(2e9));
+    ON_CALL(*m_gov, get_frequency_step()).WillByDefault(Return(1e8));
+
+    const uint64_t test_region = 0x12;
+    const double test_frequency = 2.1e9;
+
+    for (int idx = 0; idx < M_NUM_FREQ_DOMAIN; ++idx) {
+        EXPECT_CALL(m_platio, sample(HASH_SIG + idx)).WillOnce(Return(test_region));
+        EXPECT_CALL(m_platio, sample(HINT_SIG + idx)).WillOnce(Return(GEOPM_REGION_HINT_UNKNOWN));
+        EXPECT_CALL(m_platio, sample(RUNTIME_SIG + idx)).WillOnce(Return(0.1));
+        EXPECT_CALL(m_platio, sample(COUNT_SIG + idx)).WillOnce(Return(1));
+    }
+
+    // First sample: initialize regions for the first time
+    const size_t expected_size = m_agent0->sample_names().size();
+    std::vector<double> out_sample(expected_size, NAN);
+    m_agent0->sample_platform(out_sample);
+    EXPECT_THAT(out_sample, IsEqualToPolicy({}, expected_size));
+    EXPECT_FALSE(m_agent0->do_send_sample());
+
+    // Prepare the second sample: all instances in the frequency domain have
+    // re-entered the region
+    for (int idx = 0; idx < M_NUM_FREQ_DOMAIN; ++idx) {
+        EXPECT_CALL(m_platio, sample(HASH_SIG + idx)).WillOnce(Return(test_region));
+        EXPECT_CALL(m_platio, sample(HINT_SIG + idx)).WillOnce(Return(GEOPM_REGION_HINT_UNKNOWN));
+        EXPECT_CALL(m_platio, sample(RUNTIME_SIG + idx)).WillOnce(Return(0.1));
+        EXPECT_CALL(m_platio, sample(COUNT_SIG + idx)).WillOnce(Return(2));
+    }
+    // Expect that learning has finished at the test frequency
+    EXPECT_CALL(*m_region_map[test_region], update_exit(_))
+        .Times(M_NUM_FREQ_DOMAIN)
+        .WillRepeatedly(Return(true));
+    EXPECT_CALL(*m_region_map[test_region], freq())
+        .Times(M_NUM_FREQ_DOMAIN)
+        .WillRepeatedly(Return(test_frequency));
+
+    m_agent0->sample_platform(out_sample);
+
+    EXPECT_THAT(out_sample,
+                IsEqualToPolicy({ test_region, test_frequency }, expected_size));
+    EXPECT_TRUE(m_agent0->do_send_sample());
 }

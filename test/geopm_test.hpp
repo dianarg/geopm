@@ -86,6 +86,7 @@ class IsEqualToPolicyMatcher : public ::testing::MatcherInterface<std::vector<do
 {
     public:
         IsEqualToPolicyMatcher(const std::vector<double> &expected);
+        IsEqualToPolicyMatcher(const std::vector<double> &expected, size_t expected_size);
 
         bool MatchAndExplain(std::vector<double> policy,
                              ::testing::MatchResultListener *listener) const override;
@@ -94,6 +95,7 @@ class IsEqualToPolicyMatcher : public ::testing::MatcherInterface<std::vector<do
 
     private:
         std::vector<double> m_expected;
+        size_t m_expected_size;
 };
 
 /// @brief Create a gtest matcher that checks for equality between two policies
@@ -101,5 +103,16 @@ class IsEqualToPolicyMatcher : public ::testing::MatcherInterface<std::vector<do
 ///          values are equal across vectors. Two NAN values are considered equal.
 /// @param policy Policy to match against.
 ::testing::Matcher<std::vector<double> > IsEqualToPolicy(const std::vector<double> &policy);
+
+/// @brief Create a gtest matcher that checks for equality between two policies
+/// @details Policy vectors are equal if, all numeric values are equal across
+/// vectors. Two NAN values are considered equal. Absent values in the expected
+/// policy are treated as NAN.
+/// @param policy Policy to match against.
+/// @param expected_size Expected size of the other policy. Must be at least as
+///        big as the size of the expected policy. If expected_size is bigger than
+///        the expected policy, all trailing values are expected to be NAN.
+::testing::Matcher<std::vector<double> > IsEqualToPolicy(const std::vector<double> &policy,
+                                                         size_t expected_size);
 
 #endif

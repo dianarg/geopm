@@ -47,7 +47,7 @@ namespace geopm
             virtual ~EnergyEfficientRegionImp() = default;
             double freq(void) const override;
             void update_freq_range(double freq_min, double freq_max, double freq_step) override;
-            void update_exit(double curr_perf_metric) override;
+            bool update_exit(double curr_perf_metric) override;
             void disable(void) override;
             bool is_learning(void) const override;
             void suggest_freq(double freq) override;
@@ -124,8 +124,9 @@ namespace geopm
         return m_freq_min + (m_curr_step * m_freq_step);
     }
 
-    void EnergyEfficientRegionImp::update_exit(double curr_perf_metric)
+    bool EnergyEfficientRegionImp::update_exit(double curr_perf_metric)
     {
+        bool was_learning = m_is_learning;
         if (m_is_learning && !m_is_disabled) {
             auto &curr_perf_buffer = m_freq_perf[m_curr_step];
             if (!std::isnan(curr_perf_metric) && curr_perf_metric != 0.0) {
@@ -164,6 +165,7 @@ namespace geopm
                 }
             }
         }
+        return was_learning && !m_is_learning;
     }
 
     void EnergyEfficientRegionImp::disable(void)

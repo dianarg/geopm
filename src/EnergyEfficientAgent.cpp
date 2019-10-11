@@ -77,14 +77,15 @@ namespace geopm
         , m_freq_ctl_domain_type(m_freq_governor->frequency_domain_type())
         , m_num_freq_ctl_domain(m_platform_topo.num_domain(m_freq_ctl_domain_type))
         , m_region_map(m_num_freq_ctl_domain, region_map)
+        , m_locally_learned_frequencies()
         , m_samples_since_boundary(m_num_freq_ctl_domain)
         , m_last_wait(GEOPM_TIME_REF)
         , m_level(-1)
         , m_num_children(0)
         , m_do_send_policy(false)
+        , m_do_send_sample(false)
         , m_perf_margin(M_POLICY_PERF_MARGIN_DEFAULT)
     {
-
     }
 
     std::string EnergyEfficientAgent::plugin_name(void)
@@ -223,7 +224,46 @@ namespace geopm
     void EnergyEfficientAgent::aggregate_sample(const std::vector<std::vector<double> > &in_sample,
                                                 std::vector<double> &out_sample)
     {
+#ifdef GEOPM_DEBUG
+        if (!is_valid_sample_size(out_sample)) {
+            throw Exception("EnergyEfficientAgent::" + std::string(__func__) +
+                                "(): out_sample vector not correctly sized.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+        if (m_level == 0) {
+            throw Exception("EnergyEfficientAgent::" + std::string(__func__) +
+                                "(): level 0 agent not expected to call ascend.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+        if (in_sample.size() != (size_t)m_num_children) {
+            throw Exception("EnergyEfficientAgent::" + std::string(__func__) +
+                                "(): in_sample vector not correctly sized.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+        std::map<uint64_t, struct m_learned_frequency_s> globally_learned_frequencies;
 
+        for (const auto &child_sample : in_sample) {
+#ifdef GEOPM_DEBUG
+            if (!is_valid_sample_size(child_sample)) {
+                throw Exception("EnergyEfficientAgent::" + std::string(__func__) +
+                                    "(): one of the in_sample vectors is not "
+                                    "correctly sized.",
+                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+            }
+#endif
+            for (auto it = child_sample.begin() + M_SAMPLE_FIRST_HASH;
+                 it < child_sample.end() && std::next(it) < child_sample.end();
+                 std::advance(it, 2)) {
+                if (!std::isnan(*it)) {
+                    auto hash = static_cast<uint64_t>(*it);
+                    auto freq = *(it + 1);
+                    add_learned_frequency(hash, freq, globally_learned_frequencies);
+                }
+            }
+        }
+
+        m_do_send_sample = sample_learner(in_sample.size(), globally_learned_frequencies, out_sample);
     }
 
     bool EnergyEfficientAgent::do_write_batch(void) const
@@ -259,12 +299,23 @@ namespace geopm
                                     GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
                 }
             }
+
+            // Stop tracking this region's local learning  since it has finished
+            // both local and global learning.
+            m_locally_learned_frequencies.erase(hash);
         }
         m_freq_governor->adjust_platform(m_target_freq);
     }
 
     void EnergyEfficientAgent::sample_platform(std::vector<double> &out_sample)
     {
+#ifdef GEOPM_DEBUG
+        if (!is_valid_sample_size(out_sample)) {
+            throw Exception("EnergyEfficientAgent::" + std::string(__func__)  + "(): out_sample vector not correctly sized.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+
         double freq_min = m_freq_governor->get_frequency_min();
         double freq_max = m_freq_governor->get_frequency_max();
         double freq_step = m_freq_governor->get_frequency_step();
@@ -304,8 +355,16 @@ namespace geopm
                         last_region_info.runtime < M_MIN_LEARNING_RUNTIME) {
                         last_region_it->second->disable();
                     }
-                    // Higher is better for performance, so negate
-                    last_region_it->second->update_exit(-1.0 * last_region_info.runtime);
+                    // Negate because lower runtime is better for performance,
+                    // and the EE region aims to increase the performance metric
+                    bool finished_learning = last_region_it->second->update_exit(
+                        -1.0 * last_region_info.runtime);
+
+                    if (finished_learning) {
+                        auto hash = last_region_it->first;
+                        auto freq = last_region_it->second->freq();
+                        add_learned_frequency(hash, freq, m_locally_learned_frequencies);
+                    }
                 }
                 m_last_region_info[ctl_idx] = current_region_info;
             }
@@ -313,11 +372,15 @@ namespace geopm
                 ++m_samples_since_boundary[ctl_idx];
             }
         }
+
+        // Only send information up the tree if a local learner is ready
+        m_do_send_sample = sample_learner(
+            m_num_freq_ctl_domain, m_locally_learned_frequencies, out_sample);
     }
 
     bool EnergyEfficientAgent::do_send_sample(void) const
     {
-        return false;
+        return m_do_send_sample;
     }
 
     void EnergyEfficientAgent::wait(void)
@@ -343,7 +406,15 @@ namespace geopm
 
     std::vector<std::string> EnergyEfficientAgent::sample_names(void)
     {
-        return {};
+        std::vector<std::string> names;
+        names.reserve(M_NUM_SAMPLE);
+
+        for (size_t i = 0; names.size() < M_NUM_SAMPLE; ++i) {
+            names.emplace_back("HASH_" + std::to_string(i));
+            names.emplace_back("FREQ_" + std::to_string(i));
+        }
+
+        return names;
     }
 
     std::vector<std::pair<std::string, std::string> > EnergyEfficientAgent::report_header(void) const
@@ -448,5 +519,54 @@ namespace geopm
         // as the variable-sized section is composed of pairs
         return policy.size() >= M_POLICY_FIRST_HASH && policy.size() <= M_NUM_POLICY &&
                (policy.size() - M_POLICY_FIRST_HASH) % 2 == 0;
+    }
+
+    bool EnergyEfficientAgent::is_valid_sample_size(const std::vector<double> &sample) const
+    {
+        // Allow a variable number of sample values after the header, as long
+        // as the variable-sized section is composed of pairs
+        return sample.size() >= M_SAMPLE_FIRST_HASH && sample.size() <= M_NUM_SAMPLE &&
+               (sample.size() - M_SAMPLE_FIRST_HASH) % 2 == 0;
+    }
+
+    void EnergyEfficientAgent::add_learned_frequency(
+        uint64_t hash, double frequency,
+        std::map<uint64_t, m_learned_frequency_s> &learned_frequencies)
+    {
+        auto learning_tracker = learned_frequencies.find(hash);
+        if (learning_tracker == learned_frequencies.end()) {
+            // First time this region has learned a frequency
+            learned_frequencies.emplace(hash, m_learned_frequency_s{ frequency, 1 });
+        }
+        else {
+            // Keep count of how many entities in the frequency
+            // control domain have participated in locally
+            // learning the frequency. We will only share the
+            // learned frequency up the tree once all members
+            // of the domain have contributed.
+            learning_tracker->second.frequency = std::max(
+                learning_tracker->second.frequency, frequency);
+            learning_tracker->second.count += 1;
+        }
+    }
+
+    bool EnergyEfficientAgent::sample_learner(
+        size_t learner_count,
+        const std::map<uint64_t, m_learned_frequency_s> &learned_frequencies,
+        std::vector<double> &out_sample)
+    {
+        bool do_send_sample = false;
+        auto out_sample_it = out_sample.begin();
+        for (const auto &learned_frequency : learned_frequencies) {
+            if (learned_frequency.second.count == learner_count) {
+                *(out_sample_it++) = static_cast<double>(learned_frequency.first);
+                *(out_sample_it++) = learned_frequency.second.frequency;
+                do_send_sample = true;
+            }
+        }
+        if (do_send_sample) {
+            std::fill(out_sample_it, out_sample.end(), NAN);
+        }
+        return do_send_sample;
     }
 }
