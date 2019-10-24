@@ -176,7 +176,7 @@ namespace geopm
         // per-host report
         std::ostringstream report;
         report << "\n" << "Host:\n"
-               << "    Hostname: " << hostname() << "\n";
+               << "    Host name: " << hostname() << "\n";
         for (const auto &kv : agent_host_report) {
             report << "    " << kv.first << ": " << kv.second << "\n";
         }
@@ -229,10 +229,12 @@ namespace geopm
                                     GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
                 }
 #endif
-                report << "    Region " << region.name << " (0x" << std::hex
-                       << std::setfill('0') << std::setw(16)
-                       << region.hash << std::dec << "):"
-                       << std::setfill('\0') << std::setw(0)
+                report << "    Region:\n"
+                       << "        Region name: " << region.name << "\n"
+                       << "        Region hash: 0x"
+                       << std::hex << std::setfill('0') << std::setw(16)
+                       << region.hash
+                       << std::dec << std::setfill('\0') << std::setw(0)
                        << "\n";
             }
             else {
@@ -249,12 +251,19 @@ namespace geopm
                    << "        power (watts): " << power << "\n";
             double numer = m_region_agg->sample_total(m_clk_core_idx, region.hash);
             double denom = m_region_agg->sample_total(m_clk_ref_idx, region.hash);
-            double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
-            report << "        frequency (%): " << freq << "\n"
-                   << "        frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0) << "\n";
+            double freq_hz = m_platform_io.read_signal("CPUINFO::FREQ_STICKER",
+                                                       GEOPM_DOMAIN_BOARD, 0);
+            double freq_pct = denom ? numer / denom : 0.0;
+            freq_hz *= freq_pct;
+            freq_pct *= 100;
+            report << "        frequency (%): " << freq_pct << "\n"
+                   << "        frequency (Hz): " << freq_hz << "\n";
             double mpi_runtime = 0.0;
             if (GEOPM_REGION_HASH_EPOCH == region.hash ) {
                 mpi_runtime = application_io.total_epoch_runtime_mpi();
+            }
+            else if (geopm::string_begins_with(region.name, "MPI_")) {
+                mpi_runtime = region.per_rank_avg_runtime;
             }
             else {
                 mpi_runtime = application_io.total_region_runtime_mpi(region.hash);
