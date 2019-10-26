@@ -52,6 +52,7 @@ namespace geopm
         public:
             enum m_policy_e {
                 M_POLICY_POWER,
+                M_POLICY_STATIC_POWER,
                 M_NUM_POLICY,
             };
             enum m_plat_signal_e {

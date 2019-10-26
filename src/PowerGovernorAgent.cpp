@@ -95,9 +95,6 @@ namespace geopm
                 m_power_gov = PowerGovernor::make_unique();
             }
             init_platform_io(); // Only do this at the leaf level.
-        }
-
-        if (level == 0) {
             m_num_children = 0;
         }
         else {
@@ -126,7 +123,19 @@ namespace geopm
 
     void PowerGovernorAgent::validate_policy(std::vector<double> &policy) const
     {
-
+#ifdef GEOPM_DEBUG
+        if (policy.size() != M_NUM_POLICY) {
+            throw Exception("PowerGovernorAgent::" + std::string(__func__) + "(): number of policies was different from expected.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+        // If NAN, use default
+        if (std::isnan(policy[M_POLICY_POWER])) {
+            policy[M_POLICY_POWER] = m_tdp_power_setting;
+        }
+        if (std::isnan(policy[M_POLICY_STATIC_POWER])) {
+            policy[M_POLICY_STATIC_POWER] = m_tdp_power_setting;
+        }
     }
 
     void PowerGovernorAgent::split_policy(const std::vector<double> &in_policy,
@@ -147,11 +156,6 @@ namespace geopm
         }
 #endif
         double power_budget_in = in_policy[M_POLICY_POWER];
-        // If NAN, use default
-        if (std::isnan(power_budget_in)) {
-            power_budget_in = m_tdp_power_setting;
-        }
-
         if (power_budget_in > m_max_power_setting ||
             power_budget_in < m_min_power_setting) {
             throw Exception("PowerGovernorAgent::split_policy(): "
@@ -166,7 +170,7 @@ namespace geopm
             m_last_power_budget = power_budget_in;
             // Convert power budget vector into a vector of policy vectors
             for (int child_idx = 0; child_idx != m_num_children; ++child_idx) {
-                out_policy[child_idx][M_POLICY_POWER] = power_budget_in;
+                out_policy[child_idx] = in_policy;
             }
             m_epoch_power_buf->clear();
             m_is_converged = false;
@@ -235,15 +239,11 @@ namespace geopm
     {
 #ifdef GEOPM_DEBUG
         if (in_policy.size() != M_NUM_POLICY) {
-            throw Exception("PowerGovernorAgent::" + std::string(__func__) + "(): one control was expected.",
+            throw Exception("PowerGovernorAgent::" + std::string(__func__) + "(): input policy not correctly sized.",
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        // If NAN, use default
         double power_budget_in = in_policy[M_POLICY_POWER];
-        if (std::isnan(power_budget_in)) {
-            power_budget_in = m_tdp_power_setting;
-        }
         m_power_gov->adjust_platform(power_budget_in, m_adjusted_power);
         m_last_power_budget = power_budget_in;
     }
@@ -336,7 +336,7 @@ namespace geopm
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         int control_domain = m_platform_io.control_domain_type("POWER_PACKAGE_LIMIT");
-        double pkg_policy = policy[M_POLICY_POWER] / m_platform_topo.num_domain(control_domain);
+        double pkg_policy = policy[M_POLICY_STATIC_POWER] / m_platform_topo.num_domain(control_domain);
         m_platform_io.write_control("POWER_PACKAGE_LIMIT", GEOPM_DOMAIN_BOARD, 0, pkg_policy);
     }
 
@@ -352,7 +352,8 @@ namespace geopm
 
     std::vector<std::string> PowerGovernorAgent::policy_names(void)
     {
-        return {"POWER_PACKAGE_LIMIT_TOTAL"};
+        return {"POWER_PACKAGE_LIMIT_TOTAL",
+                "POWER_PACKAGE_LIMIT_TOTAL_STATIC"};
     }
 
     std::vector<std::string> PowerGovernorAgent::sample_names(void)
