@@ -62,6 +62,7 @@ namespace geopm
             /// @param [in] min_pkg_power Minimum package power.
             /// @param [in] max_pkg_power Maximum package power.
             virtual void set_power_bounds(double min_pkg_power, double max_pkg_power) = 0;
+            virtual void validate_power_policy(double power_setting) = 0;
             /// @brief Get the time window for controling package power.
             /// @return Time window in units of seconds.
             virtual double power_package_time_window(void) const = 0;
