@@ -36,11 +36,6 @@
 #include "geopm_hash.h"
 #include "config.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
 uint64_t geopm_crc32_u64(uint64_t begin, uint64_t key)
 {
     return _mm_crc32_u64(begin, key);
@@ -64,7 +59,3 @@ uint64_t geopm_crc32_str(const char *key)
     }
     return result;
 }
-
-#ifdef __cplusplus
-}
-#endif
