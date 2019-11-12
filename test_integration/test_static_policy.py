@@ -54,8 +54,8 @@ class TestIntegrationStaticPolicy(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         script_dir = os.path.dirname(os.path.realpath(__file__))
-        #cls._app_exec_path = os.path.join(script_dir, '.libs', 'test_static_policy')
-        cls._app_exec_path = os.path.join(script_dir, 'test_static_policy')
+        cls._app_exec_path = os.path.join(script_dir, '.libs', 'test_static_policy')
+        #cls._app_exec_path = os.path.join(script_dir, 'test_static_policy')
 
     def setUp(self):
         # make sure controls are at default
@@ -84,16 +84,22 @@ class TestIntegrationStaticPolicy(unittest.TestCase):
         self._report_path = test_name + '.report'
         self._keep_files = os.getenv('GEOPM_KEEP_FILES') is not None
         self._agent_conf_path = test_name + '-agent-config.json'
+
         agent_conf = geopmpy.io.AgentConf(self._agent_conf_path,
                                           agent_name,
                                           policy_setting)
         agent_conf.write()
 
-        # set environment in launch using geopmlauncher options
-        environ = {
+        # set environment in launch using geopmlaunch options instead of
+        # files from /etc/geopm
+        # note: if /etc/geopm/environment-override.json sets these, this
+        # test will not work.
+        # TODO: check for that
+        environ = os.environ.copy()
+        environ.update({
             "GEOPM_POLICY": agent_conf.get_path(),
             "GEOPM_AGENT": agent_name
-        }
+        })
         # argv = "dummy -- {app}".format(app=self._app_exec_path)
         # launch the fake slurm plugin
         # geopm_test_launcher.allocation_node_test(argv, self._stdout, self._stderr, environ)
@@ -119,7 +125,7 @@ class TestIntegrationStaticPolicy(unittest.TestCase):
         test_freq = sticker_freq - 2 * step_freq
         current_freq = geopm_test_launcher.geopmread("MSR::PERF_CTL:FREQ board 0")
         self.assertNotEqual(test_freq, current_freq)
-        self.run_tool('energy_efficient', {'frequency_max': test_freq})
+        self.run_tool('energy_efficient', {'static_frequency_max': test_freq})
 
         current_freq = geopm_test_launcher.geopmread("MSR::PERF_CTL:FREQ board 0")
         self.assertEqual(test_freq, current_freq)
