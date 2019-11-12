@@ -42,6 +42,9 @@
 
 class MockTreeCommLevel : public geopm::TreeCommLevel {
     public:
+        MockTreeCommLevel();
+        virtual ~MockTreeCommLevel();
+
         MOCK_CONST_METHOD0(level_rank,
                      int(void));
         MOCK_METHOD1(send_up,

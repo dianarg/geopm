@@ -33,11 +33,16 @@
 #ifndef MOCKPROFILETHREADTABLE_HPP_INCLUDE
 #define MOCKPROFILETHREADTABLE_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+
 #include "ProfileThread.hpp"
 
 class MockProfileThreadTable : public geopm::ProfileThreadTable
 {
     public:
+        MockProfileThreadTable();
+        virtual ~MockProfileThreadTable();
+
         MOCK_METHOD1(enable,
                      void (bool is_enabled));
         MOCK_METHOD3(init,

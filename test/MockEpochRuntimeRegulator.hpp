@@ -33,13 +33,17 @@
 #ifndef MOCKEPOCHRUNTIMEREGULATOR_HPP_INCLUDE
 #define MOCKEPOCHRUNTIMEREGULATOR_HPP_INCLUDE
 
-#include "geopm_time.h"
+#include "gmock/gmock.h"
 
 #include "EpochRuntimeRegulator.hpp"
 #include "RuntimeRegulator.hpp"
+#include "geopm_time.h"
 
 class MockEpochRuntimeRegulator : public geopm::EpochRuntimeRegulator {
     public:
+        MockEpochRuntimeRegulator();
+        virtual ~MockEpochRuntimeRegulator();
+
         MOCK_METHOD0(init_unmarked_region,
                      void());
         MOCK_METHOD2(epoch,

@@ -42,18 +42,8 @@
 class MockSharedMemoryUser : public geopm::SharedMemoryUser
 {
     public:
-        MockSharedMemoryUser() = delete;
-        MockSharedMemoryUser(size_t size) {
-            m_buffer = std::vector<char>(size);
-            EXPECT_CALL(*this, size())
-                .WillRepeatedly(testing::Return(size));
-            EXPECT_CALL(*this, pointer())
-                .WillRepeatedly(testing::Return(m_buffer.data()));
-            EXPECT_CALL(*this, unlink())
-                .WillRepeatedly(testing::Return());
-        };
-
-        virtual ~MockSharedMemoryUser() = default;
+        MockSharedMemoryUser(size_t size);
+        virtual ~MockSharedMemoryUser();
 
         MOCK_CONST_METHOD0(pointer,
                            void *(void));

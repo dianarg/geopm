@@ -33,6 +33,8 @@
 #ifndef MOCKPROFILESAMPLER_HPP_INCLUDE
 #define MOCKPROFILESAMPLER_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+
 #include "Comm.hpp"
 #include "ProfileThread.hpp"
 #include "ProfileSampler.hpp"
@@ -40,6 +42,9 @@
 class MockProfileSampler : public geopm::ProfileSampler
 {
     public:
+        MockProfileSampler();
+        virtual ~MockProfileSampler();
+
         MOCK_CONST_METHOD0(capacity,
                            size_t (void));
         MOCK_METHOD3(sample,

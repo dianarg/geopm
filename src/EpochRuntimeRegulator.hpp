@@ -41,8 +41,7 @@
 #include <list>
 
 #include "geopm_time.h"
-
-struct geopm_region_info_s;
+#include "geopm.h"
 
 namespace geopm
 {

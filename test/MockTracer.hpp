@@ -33,6 +33,8 @@
 #ifndef MOCKTRACER_HPP_INCLUDE
 #define MOCKTRACER_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+
 #include "Tracer.hpp"
 #include "PlatformIO.hpp"
 #include "geopm.h"
@@ -40,6 +42,9 @@
 class MockTracer : public geopm::Tracer
 {
     public:
+        MockTracer();
+        virtual ~MockTracer();
+
         MOCK_METHOD2(columns,
                      void(const std::vector<std::string> &agent_cols,
                           const std::vector<std::function<std::string(double)> > &agent_formats));

@@ -33,11 +33,16 @@
 #ifndef MOCKENDPOINTUSER_HPP_INCLUDE
 #define MOCKENDPOINTUSER_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+
 #include "EndpointUser.hpp"
 
 class MockEndpointUser : public geopm::EndpointUser
 {
     public:
+        MockEndpointUser();
+        virtual ~MockEndpointUser();
+
         MOCK_METHOD1(read_policy,
                      double(std::vector<double> &policy));
         MOCK_METHOD1(write_sample,

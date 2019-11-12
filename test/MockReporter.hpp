@@ -33,6 +33,8 @@
 #ifndef MOCKREPORTER_HPP_INCLUDE
 #define MOCKREPORTER_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+
 #include "Reporter.hpp"
 #include "ApplicationIO.hpp"
 #include "Comm.hpp"
@@ -40,6 +42,9 @@
 class MockReporter : public geopm::Reporter
 {
     public:
+        MockReporter();
+        virtual ~MockReporter();
+
         MOCK_METHOD0(init, void(void));
         MOCK_METHOD0(update, void(void));
         MOCK_METHOD7(generate,

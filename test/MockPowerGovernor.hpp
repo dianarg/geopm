@@ -33,11 +33,16 @@
 #ifndef MOCKPOWERGOVERNOR_HPP_INCLUDE
 #define MOCKPOWERGOVERNOR_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+
 #include "PowerGovernor.hpp"
 
 class MockPowerGovernor : public geopm::PowerGovernor
 {
     public:
+        MockPowerGovernor();
+        virtual ~MockPowerGovernor();
+
         MOCK_METHOD0(init_platform_io,
                      void(void));
         MOCK_METHOD0(sample_platform,

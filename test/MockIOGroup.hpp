@@ -33,11 +33,16 @@
 #ifndef MOCKIOGROUP_HPP_INCLUDE
 #define MOCKIOGROUP_HPP_INCLUDE
 
+#include "gmock/gmock.h"
+
 #include "IOGroup.hpp"
 
 class MockIOGroup : public geopm::IOGroup
 {
     public:
+        MockIOGroup();
+        virtual ~MockIOGroup();
+
         MOCK_CONST_METHOD0(signal_names,
                            std::set<std::string>(void));
         MOCK_CONST_METHOD0(control_names,

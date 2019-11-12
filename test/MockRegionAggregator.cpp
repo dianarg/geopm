@@ -29,28 +29,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "MockRegionAggregator.hpp"
 
-#ifndef MOCKENERGYEFFICIENTREGION_HPP_INCLUDE
-#define MOCKENERGYEFFICIENTREGION_HPP_INCLUDE
-
-#include "gmock/gmock.h"
-
-#include "EnergyEfficientRegion.hpp"
-
-class MockEnergyEfficientRegion : public geopm::EnergyEfficientRegion
-{
-    public:
-        MockEnergyEfficientRegion();
-        virtual ~MockEnergyEfficientRegion();
-
-        MOCK_CONST_METHOD0(freq, double(void));
-        MOCK_METHOD3(update_freq_range,
-                     void(double freq_min, double freq_max, double freq_step));
-        MOCK_METHOD1(update_exit,
-                     void(double curr_perf_metric));
-        MOCK_METHOD0(disable, void(void));
-        MOCK_CONST_METHOD0(is_learning,
-                     bool(void));
-};
-
-#endif
+// Nothing special is explicitly happening here, but this ensures that the
+// constructors are not inlined every place they are used. It is expected
+// to reduce average build time of unit tests.
+MockRegionAggregator::MockRegionAggregator() {}
+MockRegionAggregator::~MockRegionAggregator() {}
