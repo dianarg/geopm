@@ -29,40 +29,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "MockProfileIOSample.hpp"
 
-#ifndef MOCKPROFILEIOSAMPLE_HPP_INCLUDE
-#define MOCKPROFILEIOSAMPLE_HPP_INCLUDE
-
-#include "geopm.h"
-#include "ProfileIOSample.hpp"
-
-class MockProfileIOSample : public geopm::ProfileIOSample {
-    public:
-        MockProfileIOSample();
-        virtual ~MockProfileIOSample();
-
-        MOCK_METHOD0(finalize_unmarked_region,
-                     void(void));
-        MOCK_METHOD2(update,
-                     void(std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_begin, std::vector<std::pair<uint64_t, struct geopm_prof_message_s> >::const_iterator prof_sample_end));
-        MOCK_METHOD1(update_thread,
-                     void(const std::vector<double> &));
-        MOCK_CONST_METHOD0(per_cpu_region_id,
-                           std::vector<uint64_t>(void));
-        MOCK_CONST_METHOD1(per_cpu_progress,
-                           std::vector<double>(const struct geopm_time_s &extrapolation_time));
-        MOCK_CONST_METHOD0(per_cpu_thread_progress,
-                           std::vector<double>(void));
-        MOCK_CONST_METHOD1(per_cpu_runtime,
-                           std::vector<double>(uint64_t region_id));
-        MOCK_CONST_METHOD0(per_cpu_count,
-                           std::vector<int64_t>());
-        MOCK_CONST_METHOD1(per_rank_runtime,
-                           std::vector<double>(uint64_t region_id));
-        MOCK_CONST_METHOD0(total_app_runtime,
-                           double(void));
-        MOCK_CONST_METHOD0(cpu_rank,
-                           std::vector<int>(void));
-};
-
-#endif
+// Nothing special is explicitly happening here, but this ensures that the
+// constructors are not inlined every place they are used. It is expected
+// to reduce average build time of unit tests.
+MockProfileIOSample::MockProfileIOSample() {}
+MockProfileIOSample::~MockProfileIOSample() {}
