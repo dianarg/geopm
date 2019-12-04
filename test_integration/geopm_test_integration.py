@@ -47,6 +47,7 @@ import collections
 import socket
 import shlex
 import json
+from io import BytesIO
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from test_integration import util
@@ -1257,14 +1258,14 @@ class TestIntegrationGeopmio(unittest.TestCase):
 
     def check_output(self, args, expected):
         try:
-            proc = subprocess.Popen([self.exec_name] + args,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = BytesIO(subprocess.check_output([self.exec_name] + args,
+                                                     stderr=subprocess.STDOUT))
             for exp in expected:
-                line = proc.stdout.readline()
+                line = output.readline()
                 while self.skip_warning_string.encode() in line:
-                    line = proc.stdout.readline()
+                    line = output.readline()
                 self.assertIn(exp.encode(), line)
-            for line in proc.stdout:
+            for line in output:
                 if self.skip_warning_string.encode() not in line:
                     self.assertNotIn(b'Error', line)
         except subprocess.CalledProcessError as ex:
@@ -1272,9 +1273,9 @@ class TestIntegrationGeopmio(unittest.TestCase):
 
     def check_output_range(self, args, min_exp, max_exp):
         try:
-            proc = subprocess.Popen([self.exec_name] + args,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            for line in proc.stdout:
+            output = BytesIO(subprocess.check_output([self.exec_name] + args,
+                                                     stderr=subprocess.STDOUT))
+            for line in output:
                 if self.skip_warning_string.encode() in line:
                     continue
                 if line.startswith(b'0x'):
@@ -1288,9 +1289,9 @@ class TestIntegrationGeopmio(unittest.TestCase):
 
     def check_no_error(self, args):
         try:
-            proc = subprocess.Popen([self.exec_name] + args,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            for line in proc.stdout:
+            output = BytesIO(subprocess.check_output([self.exec_name] + args,
+                                                     stderr=subprocess.STDOUT))
+            for line in output:
                 if self.skip_warning_string.encode() not in line:
                     self.assertNotIn(b'Error', line)
         except subprocess.CalledProcessError as ex:
@@ -1489,14 +1490,14 @@ class TestIntegrationGeopmagent(unittest.TestCase):
 
     def check_output(self, args, expected):
         try:
-            proc = subprocess.Popen([self.exec_name] + args,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = BytesIO(subprocess.check_output([self.exec_name] + args,
+                                                      stderr=subprocess.STDOUT))
             for exp in expected:
-                line = proc.stdout.readline()
+                line = output.readline()
                 while self.skip_warning_string.encode() in line or line == b'\n':
-                    line = proc.stdout.readline()
+                    line = output.readline()
                 self.assertIn(exp.encode(), line)
-            for line in proc.stdout:
+            for line in output:
                 if self.skip_warning_string.encode() not in line:
                     self.assertNotIn(b'Error', line)
         except subprocess.CalledProcessError as ex:
@@ -1504,27 +1505,27 @@ class TestIntegrationGeopmagent(unittest.TestCase):
 
     def check_json_output(self, args, expected):
         try:
-            proc = subprocess.Popen([self.exec_name] + args,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            output = BytesIO(subprocess.check_output([self.exec_name] + args,
+                                                     stderr=subprocess.STDOUT))
         except subprocess.CalledProcessError as ex:
             sys.stderr.write('{}\n'.format(ex.output))
-        line = proc.stdout.readline()
+        line = output.readline()
         while self.skip_warning_string.encode() in line or line == b'\n':
-            line = proc.stdout.readline()
+            line = output.readline()
         try:
             out_json = json.loads(line.decode())
         except ValueError:
             self.fail('Could not convert json string: {}\n'.format(line))
         self.assertEqual(expected, out_json)
-        for line in proc.stdout:
+        for line in output:
             if self.skip_warning_string.encode() not in line:
                 self.assertNotIn(b'Error', line)
 
     def check_no_error(self, args):
         try:
-            proc = subprocess.Popen([self.exec_name] + args,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            for line in proc.stdout:
+            output = BytesIO(subprocess.check_output([self.exec_name] + args,
+                                                     stderr=subprocess.STDOUT))
+            for line in output:
                 if self.skip_warning_string.encode() not in line:
                     self.assertNotIn(b'Error', line)
         except subprocess.CalledProcessError as ex:
