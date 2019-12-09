@@ -164,6 +164,8 @@ src/PlatformTopo.cpp
 src/PlatformTopo.hpp
 src/PlatformTopoImp.hpp
 src/PluginFactory.hpp
+src/Policy.cpp
+src/Policy.hpp
 src/PolicyStore.cpp
 src/PolicyStore.hpp
 src/PolicyStoreImp.cpp
@@ -321,6 +323,7 @@ test/MonitorAgentTest.cpp
 test/OptionParserTest.cpp
 test/PlatformIOTest.cpp
 test/PlatformTopoTest.cpp
+test/PolicyTest.cpp
 test/PowerBalancerAgentTest.cpp
 test/PowerBalancerTest.cpp
 test/PowerGovernorAgentTest.cpp
