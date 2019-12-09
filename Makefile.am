@@ -56,6 +56,11 @@ if ENABLE_FORTRAN
 endif
 endif
 
+if ENABLE_BETA
+    bin_PROGRAMS += geopmpolicystore \
+                    # end
+endif
+
 if !ENABLE_FORTRAN
 install-fortran:
 	-
@@ -203,6 +208,7 @@ ronn_man_noinst = man/GEOPM_CXX_MAN_Comm.3 \
 ronn_man_beta = man/geopmanalysis.1 \
                 man/geopmendpoint.1 \
                 man/geopmplotter.1 \
+                man/geopmpolicystore.1 \
                 man/geopm_daemon_c.3 \
                 man/geopm_endpoint_c.3 \
                 man/geopm_policystore_c.3 \
@@ -322,6 +328,7 @@ EXTRA_DIST = $(TUTORIAL_DIST) \
              ronn/geopmendpoint.1.ronn \
              ronn/geopmlaunch.1.ronn \
              ronn/geopmplotter.1.ronn \
+             ronn/geopmpolicystore.1.ronn \
              ronn/geopmpy.7.ronn \
              ronn/geopmread.1.ronn \
              ronn/geopmwrite.1.ronn \
@@ -427,6 +434,8 @@ geopmread_LDADD = libgeopmpolicy.la
 geopmwrite_LDADD = libgeopmpolicy.la
 geopmagent_LDADD = libgeopmpolicy.la
 geopmadmin_LDADD = libgeopmpolicy.la
+geopmpolicystore_LDADD = libgeopmpolicy.la
+
 if ENABLE_MPI
     geopmctl_LDADD = libgeopm.la $(MPI_CLIBS)
     geopmbench_LDADD = libgeopm.la $(MATH_LIB) $(MPI_CLIBS)
@@ -637,6 +646,9 @@ fortran_source_files = src/geopm.f90 \
 geopmctl_source_files = src/geopm_version.h \
                         src/geopmctl_main.c \
                         # end
+
+geopmpolicystore_SOURCES = src/geopmpolicystore_main.cpp \
+                           # end
 
 if ENABLE_MPI
     # All source files that are compiled into libgeopmpolicy are also

@@ -51,6 +51,7 @@
 /geopm.mod
 /geopm.o
 /geopmpolicy
+/geopmpolicystore
 /geopmread
 /geopm*.spec
 /geopm*.tar.gz
