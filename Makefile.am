@@ -57,7 +57,8 @@ endif
 endif
 
 if ENABLE_BETA
-    bin_PROGRAMS += geopmpolicystore \
+    bin_PROGRAMS += geopmendpoint \
+                    geopmpolicystore \
                     # end
 endif
 
@@ -435,6 +436,7 @@ geopmwrite_LDADD = libgeopmpolicy.la
 geopmagent_LDADD = libgeopmpolicy.la
 geopmadmin_LDADD = libgeopmpolicy.la
 geopmpolicystore_LDADD = libgeopmpolicy.la
+geopmendpoint_LDADD = libgeopmpolicy.la
 
 if ENABLE_MPI
     geopmctl_LDADD = libgeopm.la $(MPI_CLIBS)
@@ -649,6 +651,9 @@ geopmctl_source_files = src/geopm_version.h \
 
 geopmpolicystore_SOURCES = src/geopmpolicystore_main.cpp \
                            # end
+
+geopmendpoint_SOURCES = src/geopmendpoint_main.cpp \
+                        # end
 
 if ENABLE_MPI
     # All source files that are compiled into libgeopmpolicy are also

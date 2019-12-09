@@ -48,9 +48,9 @@
 /geopmagent
 /geopmbench
 /geopmctl
+/geopmendpoint
 /geopm.mod
 /geopm.o
-/geopmpolicy
 /geopmpolicystore
 /geopmread
 /geopm*.spec
