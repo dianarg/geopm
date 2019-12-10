@@ -108,6 +108,8 @@ src/EnergyEfficientRegion.cpp
 src/EnergyEfficientRegion.hpp
 src/Environment.cpp
 src/Environment.hpp
+src/EpochEstimatorIOGroup.cpp
+src/EpochEstimatorIOGroup.hpp
 src/EpochRuntimeRegulator.cpp
 src/EpochRuntimeRegulator.hpp
 src/Exception.cpp

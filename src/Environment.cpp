@@ -349,10 +349,15 @@ namespace geopm
 
     bool EnvironmentImp::do_profile(void) const
     {
-
         return std::any_of(m_runtime_names.begin(), m_runtime_names.end(),
                            [this](std::string var) {return (is_set(var));});
     }
+
+    bool EnvironmentImp::do_preload(void) const
+    {
+        std::string preload = lookup("LD_PRELOAD");
+        return preload.find("libgeopm.so") != std::string::npos;
+    }        
 
     int EnvironmentImp::timeout(void) const
     {

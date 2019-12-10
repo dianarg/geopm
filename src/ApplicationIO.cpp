@@ -34,8 +34,10 @@
 
 #include <utility>
 
+#include "Environment.hpp"
 #include "Exception.hpp"
 #include "EpochRuntimeRegulator.hpp"
+#include "EpochEstimatorIOGroup.hpp"
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
 #include "ProfileSampler.hpp"
@@ -57,17 +59,19 @@ namespace geopm
         : ApplicationIOImp(shm_key,
                            geopm::make_unique<ProfileSamplerImp>(M_SHMEM_REGION_SIZE),
                            nullptr, nullptr,
-                           platform_io(), platform_topo())
+                           platform_io(), platform_topo(),
+                           environment().do_preload())
     {
 
     }
 
     ApplicationIOImp::ApplicationIOImp(const std::string &shm_key,
-                                 std::unique_ptr<ProfileSampler> sampler,
-                                 std::shared_ptr<ProfileIOSample> pio_sample,
-                                 std::unique_ptr<EpochRuntimeRegulator> epoch_regulator,
-                                 PlatformIO &platform_io,
-                                 const PlatformTopo &platform_topo)
+                                       std::unique_ptr<ProfileSampler> sampler,
+                                       std::shared_ptr<ProfileIOSample> pio_sample,
+                                       std::unique_ptr<EpochRuntimeRegulator> epoch_regulator,
+                                       PlatformIO &platform_io,
+                                       const PlatformTopo &platform_topo,
+                                       bool do_preload)
         : m_sampler(std::move(sampler))
         , m_profile_io_sample(pio_sample)
         , m_platform_io(platform_io)
@@ -78,6 +82,7 @@ namespace geopm
         , m_epoch_regulator(std::move(epoch_regulator))
         , m_start_energy_pkg(NAN)
         , m_start_energy_dram(NAN)
+        , m_do_preload(do_preload)
     {
     }
 
@@ -97,7 +102,10 @@ namespace geopm
                 m_epoch_regulator = geopm::make_unique<EpochRuntimeRegulatorImp>(m_rank_per_node, m_platform_io, m_platform_topo);
                 m_epoch_regulator->init_unmarked_region();
                 m_profile_io_sample = std::make_shared<ProfileIOSampleImp>(cpu_rank, *m_epoch_regulator);
-                platform_io().register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample, *m_epoch_regulator));
+                m_platform_io.register_iogroup(geopm::make_unique<ProfileIOGroup>(m_profile_io_sample, *m_epoch_regulator));
+                if (m_do_preload) {
+                    m_platform_io.register_iogroup(geopm::make_unique<EpochEstimatorIOGroup>());
+                }
             }
             m_is_connected = true;
 

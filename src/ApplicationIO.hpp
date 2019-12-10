@@ -141,7 +141,8 @@ namespace geopm
                              std::shared_ptr<ProfileIOSample> pio_sample,
                              std::unique_ptr<EpochRuntimeRegulator>,
                              PlatformIO &platform_io,
-                             const PlatformTopo &platform_topo);
+                             const PlatformTopo &platform_topo,
+                             bool do_preload);
             virtual ~ApplicationIOImp();
             void connect(void) override;
             bool do_shutdown(void) const override;
@@ -188,6 +189,7 @@ namespace geopm
             std::unique_ptr<EpochRuntimeRegulator> m_epoch_regulator;
             double m_start_energy_pkg;
             double m_start_energy_dram;
+            bool m_do_preload;
     };
 }
 
