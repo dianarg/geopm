@@ -46,9 +46,10 @@
 
 namespace geopm
 {
-    ModelApplication::ModelApplication(uint64_t repeat, std::vector<std::string> region_name, std::vector<double> big_o, int verbosity, int rank)
+    ModelApplication::ModelApplication(uint64_t repeat, std::vector<std::string> region_name, std::vector<double> big_o, int verbosity, int rank, bool do_markup)
         : m_repeat(repeat)
         , m_rank(rank)
+        , m_do_markup(do_markup)
     {
         if (region_name.size() != big_o.size()) {
             throw Exception("ModelApplication: Length of region names is different than the length of big_o",
@@ -73,7 +74,9 @@ namespace geopm
             std::cout << "Beginning loop of " << m_repeat << " iterations." << std::endl << std::flush;
         }
         for (uint64_t i = 0; i < m_repeat; ++i) {
-            (void)geopm_prof_epoch();
+            if (m_do_markup) {
+                (void)geopm_prof_epoch();
+            }
             for (auto it = m_region.begin(); it != m_region.end(); ++it) {
                 (*it)->run();
             }

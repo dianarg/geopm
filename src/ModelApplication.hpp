@@ -45,13 +45,14 @@ namespace geopm
     {
         public:
             ModelApplication(uint64_t loop_count, std::vector<std::string> region_name,
-                             std::vector<double> big_o, int verbosity, int rank);
+                             std::vector<double> big_o, int verbosity, int rank, bool do_markup);
             virtual ~ModelApplication();
             void run(void);
         protected:
             uint64_t m_repeat;
             int m_rank;
             std::vector<ModelRegionBase *> m_region;
+            bool m_do_markup;
     };
 
 }

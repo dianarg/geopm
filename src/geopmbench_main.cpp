@@ -173,7 +173,7 @@ int main(int argc, char **argv)
     }
     if (!err) {
         // Do application initialization
-        geopm::ModelApplication app(loop_count, region_sequence, big_o_sequence, verbosity, rank);
+        geopm::ModelApplication app(loop_count, region_sequence, big_o_sequence, verbosity, rank, do_markup_init);
         if (do_markup_init == 1) {
             err = geopm_prof_exit(init_rid);
         }
