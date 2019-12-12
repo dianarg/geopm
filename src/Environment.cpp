@@ -140,7 +140,8 @@ namespace geopm
                 "GEOPM_DEBUG_ATTACH",
                 "GEOPM_PROFILE",
                 "GEOPM_FREQUENCY_MAP",
-                "GEOPM_MAX_FAN_OUT"};
+                "GEOPM_MAX_FAN_OUT",
+                "LD_PRELOAD"};
     }
 
     void EnvironmentImp::parse_environment()
