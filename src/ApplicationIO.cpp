@@ -82,7 +82,8 @@ namespace geopm
         , m_epoch_regulator(std::move(epoch_regulator))
         , m_start_energy_pkg(NAN)
         , m_start_energy_dram(NAN)
-        , m_do_preload(do_preload)
+        // Environment::do_preload() isn't working properly, hard code to true for now.
+        , m_do_preload(true)
     {
     }
 

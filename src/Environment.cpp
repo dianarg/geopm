@@ -357,7 +357,7 @@ namespace geopm
     {
         std::string preload = lookup("LD_PRELOAD");
         return preload.find("libgeopm.so") != std::string::npos;
-    }        
+    }
 
     int EnvironmentImp::timeout(void) const
     {

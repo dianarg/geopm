@@ -71,7 +71,7 @@ namespace geopm
     int EpochEstimatorAtom::epoch_count(void)
     {
         uint64_t region_hash = platform_io().sample(m_region_hash_idx);
-        if (region_hash == 0xd94e328ULL &&
+        if (region_hash == 0xdba57a3d &&
             region_hash != m_region_hash) {
             ++m_all_reduce_count;
         }
