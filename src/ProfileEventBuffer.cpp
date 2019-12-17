@@ -30,47 +30,4 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SHAREDMEMORYCIRCULARBUFFER_HPP_INCLUDE
-#define SHAREDMEMORYCIRCULARBUFFER_HPP_INCLUDE
-
-#include "SharedMemoryImp.hpp"
-
-namespace geopm
-{
-    template <class type>
-    class SharedMemoryCircularBuffer
-    {
-        public:
-            SharedMemoryCircularBuffer(std::string shm_key, size_t capacity);
-            virtual ~SharedMemoryCircularBuffer();
-            size_t insert(const type value);
-            struct {
-                /// @brief Total number of elements that can be stored
-                size_t capacity;
-                /// @brief Total number of elemetns currently stored
-                size_t size;
-                /// @breif Offset into buffer to the oldest stored element
-                size_t begin;
-                /// @brief Number of elements inserted that have been overwritten
-                size_t num_lost;
-            } m_header_s;
-        private:
-            std::unique_ptr <SharedMemoryImp> m_shmem;
-            struct m_header_s *m_header;
-            type *m_buffer;
-    };
-
-    template <class type>
-    class SharedMemoryCircularBufferUser
-    {
-        public:
-            SharedMemoryCircularBufferUser(std::string shm_key, int timeout);
-            void sample(size_t last_update, size_t &this_update, std::vector<type> &result);
-        private:
-            std::unique_ptr <SharedMemoryImp> m_shmem;
-            struct SharedMemoryCircularBuffer::m_header_s *m_header;
-            type *m_buffer;
-    };
-}
-
-#endif
+#include "ProfileEventBuffer.hpp"

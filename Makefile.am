@@ -517,6 +517,8 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/PowerGovernorAgent.hpp \
                             src/Profile.cpp \
                             src/Profile.hpp \
+                            src/ProfileEventBuffer.cpp \
+                            src/ProfileEventBuffer.hpp \
                             src/ProfileIOGroup.cpp \
                             src/ProfileIOGroup.hpp \
                             src/ProfileIOSample.cpp \

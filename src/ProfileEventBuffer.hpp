@@ -35,22 +35,78 @@
 
 namespace geopm
 {
+    class ProfileEventQuery;
+
     class ProfileEventBuffer
     {
         public:
-            struct m_event_s {
-                size_t serial;
-                geopm_time_s time;
-                uint64_t region_hash;
+            struct m_rank_series_s {
+                int rank;
+                size_t begin;
+                size_t end;
             };
-            ProfileEventBuffer(int num_rank, size_t capacity);
+            std::unique_ptr<ProfileEventBuffer> make_unique(int num_rank, size_t capacity);
+            ProfileEventBuffer() = default;
             virtual ~ProfileEventBuffer() = default;
-            int num_rank(void) const;
-            size_t insert(int rank, const struct m_event_s value);
-            uint32_t hint(int rank) const;
-            size_t epoch_count(int rank) const;
-            m_event_s sample(int rank) const;
-            size_t sample_since(int rank, size_t last_serial, std::vector<m_event_s> &result) const;
+            virtual int num_rank(void) const = 0;
+            virtual size_t insert(const struct geopm_prof_message_s &prof_msg) = 0;
+            virtual size_t serial_begin(void) = 0;
+            virtual size_t serial_end(void) = 0;
+            virtual int epoch_begin(void) const = 0;
+            virtual uint64_t hash_begin(void) const = 0;
+            virtual uint64_t hint_begin(void) const = 0;
+            virtual void update_epoch_count(const ProfileEventQuery &query,
+                                            int &num_epoch) const = 0;
+            virtual void update_epoch_time(const ProfileEventQuery &query,
+                                           double &total_epoch_time) const = 0;
+            virtual std::set<uint64_t> hash_set(const ProfileEventQuery &query) const = 0;
+            virtual void update_region_count(const ProfileEventQuery &query,
+                                             uint64_t region_hash,
+                                             size_t &num_exit) const = 0;
+            virtual void update_region_time(const ProfileEventQuery &query,
+                                            uint64_t region_hash,
+                                            double &runtime) const = 0;
+            virtual void update_current_hash(const ProfileEventQuery &query,
+                                             uint64_t &current_hash) const = 0;
+            virtual void update_current_hint(const ProfileEventQuery &query,
+                                             uint64_t current_hint) const = 0;
+            virtual void update_current_progress(const ProfileEventQuery &query,
+                                                 double &current_progress) const = 0;
+    };
+
+    class ProfileEventQuery
+    {
+        public:
+            ProfileEventQuery(int rank, size_t serial_begin, size_t serial_end);
+            virtual ProfileEventQuery() = default;
+            int rank(void) const;
+            size_t serial_begin(void) const;
+            size_t serial_end(void) const;
+            void update_serial(size_t serial_end);
+        private:
+            int m_rank;
+            size_t m_serial_begin;
+            size_t m_serial_end;
+    };
+
+    class ProfileEvent
+    {
+        public:
+            enum m_event_e {
+                M_EVENT_EPOCH,
+                M_EVENT_ENTRY,
+                M_EVENT_EXIT,
+                M_EVENT_PROGRESS,
+            };
+            ProfileEvent(const struct geopm_prof_message_s &prof_msg);
+            int rank(void);
+            struct geopm_time_s time(void);
+            int event(void);
+            uint64_t hash(void);
+            uint64_t hint(void);
+            double progress(void);
+        private:
+            struct geopm_prof_message_s m_prof_msg;
     };
 }
 
