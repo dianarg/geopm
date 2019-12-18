@@ -31,6 +31,7 @@
  */
 
 #include "ProfileEventBuffer.hpp"
+#include "geopm_internal.h"
 
 namespace geopm
 {

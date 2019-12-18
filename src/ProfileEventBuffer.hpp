@@ -33,14 +33,22 @@
 #ifndef PROFILEEVENTBUFFER_HPP_INCLUDE
 #define PROFILEEVENTBUFFER_HPP_INCLUDE
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <vector>
+#include <set>
+
+struct geopm_prof_message_s;
+
 namespace geopm
 {
     class ProfileEventQuery
     {
         public:
             ProfileEventQuery(int rank, size_t serial_begin, size_t serial_end);
-            virtual ProfileEventQuery() = default;
-            bool operator == (const ProfileEventQuery &lhs, const ProfileEventQuery &rhs);
+            virtual ~ProfileEventQuery() = default;
+            bool operator == (const ProfileEventQuery &other);
             int rank(void) const;
             size_t serial_begin(void) const;
             size_t serial_end(void) const;
