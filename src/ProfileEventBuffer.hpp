@@ -46,13 +46,36 @@ namespace geopm
     class ProfileEventQuery
     {
         public:
+            /// @brief Construct a query object for ProfileEventBuffer.
+            /// @param [in] rank Node local rank index to query.
+            /// @param [in] serial_begin First serial number in range
+            ///        to query (inclusive).
+            /// @param [in] serial_end Last serial number in range to
+            ///        query (exclusive)
             ProfileEventQuery(int rank, size_t serial_begin, size_t serial_end);
+            /// @brief Default destructor.
             virtual ~ProfileEventQuery() = default;
-            bool operator == (const ProfileEventQuery &other);
-            int rank(void) const;
-            size_t serial_begin(void) const;
-            size_t serial_end(void) const;
+            /// @brief Update the range to query: specified serial
+            ///        number is new last serial number, and first
+            ///        serial number is updated to privious value for
+            ///        last serial number.
+            /// @param serial_end New value for last serial number
             void update_serial(size_t serial_end);
+            /// @brief Equality comparison operator for queries.
+            /// @param [in] other Query to compare with.
+            /// @return True if rank and current serial bounds match.
+            bool operator == (const ProfileEventQuery &other) const;
+            /// @brief Get the rank of the request.
+            /// @return The node local rank.
+            int rank(void) const;
+            /// @brief Get the current value of the first serial
+            ///        number in range to query.
+            /// @return Begining of serial number range (inclusive).
+            size_t serial_begin(void) const;
+            /// @brief Get the current value of the first serial
+            ///        number in range to query.
+            /// @return Begining of serial number range (inclusive).
+            size_t serial_end(void) const;
         private:
             int m_rank;
             size_t m_serial_begin;
