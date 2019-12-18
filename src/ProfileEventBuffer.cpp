@@ -31,3 +31,26 @@
  */
 
 #include "ProfileEventBuffer.hpp"
+
+namespace geopm
+{
+    class ProfileEvent
+    {
+        public:
+            enum m_event_e {
+                M_EVENT_EPOCH,
+                M_EVENT_ENTRY,
+                M_EVENT_EXIT,
+                M_EVENT_PROGRESS,
+            };
+            ProfileEvent(const struct geopm_prof_message_s &prof_msg);
+            int rank(void);
+            struct geopm_time_s time(void);
+            int event(void);
+            uint64_t hash(void);
+            uint64_t hint(void);
+            double progress(void);
+        private:
+            struct geopm_prof_message_s m_prof_msg;
+    };
+}

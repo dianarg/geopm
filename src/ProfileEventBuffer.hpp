@@ -35,7 +35,21 @@
 
 namespace geopm
 {
-    class ProfileEventQuery;
+    class ProfileEventQuery
+    {
+        public:
+            ProfileEventQuery(int rank, size_t serial_begin, size_t serial_end);
+            virtual ProfileEventQuery() = default;
+            bool operator == (const ProfileEventQuery &lhs, const ProfileEventQuery &rhs);
+            int rank(void) const;
+            size_t serial_begin(void) const;
+            size_t serial_end(void) const;
+            void update_serial(size_t serial_end);
+        private:
+            int m_rank;
+            size_t m_serial_begin;
+            size_t m_serial_end;
+    };
 
     class ProfileEventBuffer
     {
@@ -172,41 +186,6 @@ namespace geopm
             ///         end of the query.
             virtual double current_progress(const ProfileEventQuery &query,
                                             double progress) const = 0;
-    };
-
-    class ProfileEventQuery
-    {
-        public:
-            ProfileEventQuery(int rank, size_t serial_begin, size_t serial_end);
-            virtual ProfileEventQuery() = default;
-            int rank(void) const;
-            size_t serial_begin(void) const;
-            size_t serial_end(void) const;
-            void update_serial(size_t serial_end);
-        private:
-            int m_rank;
-            size_t m_serial_begin;
-            size_t m_serial_end;
-    };
-
-    class ProfileEvent
-    {
-        public:
-            enum m_event_e {
-                M_EVENT_EPOCH,
-                M_EVENT_ENTRY,
-                M_EVENT_EXIT,
-                M_EVENT_PROGRESS,
-            };
-            ProfileEvent(const struct geopm_prof_message_s &prof_msg);
-            int rank(void);
-            struct geopm_time_s time(void);
-            int event(void);
-            uint64_t hash(void);
-            uint64_t hint(void);
-            double progress(void);
-        private:
-            struct geopm_prof_message_s m_prof_msg;
     };
 }
 
