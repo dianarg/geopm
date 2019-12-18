@@ -56,12 +56,12 @@ namespace geopm
                                            double &total_epoch_time) const = 0;
             virtual std::set<uint64_t> hash_set(const ProfileEventQuery &query) const = 0;
             virtual std::vector<std::pair<uint64_t, bool> > hash_series(const ProfileEventQuery &query) const = 0;
-            virtual void update_region_count(const ProfileEventQuery &query,
-                                             uint64_t region_hash,
-                                             size_t &num_exit) const = 0;
-            virtual void update_region_time(const ProfileEventQuery &query,
-                                            uint64_t region_hash,
-                                            double &runtime) const = 0;
+            virtual void update_hash_count(const ProfileEventQuery &query,
+                                           uint64_t hash,
+                                           size_t &num_exit) const = 0;
+            virtual void update_hash_time(const ProfileEventQuery &query,
+                                          uint64_t hash,
+                                          double &runtime) const = 0;
             virtual void update_current_hash(const ProfileEventQuery &query,
                                              uint64_t &current_hash) const = 0;
             virtual void update_current_hint(const ProfileEventQuery &query,
