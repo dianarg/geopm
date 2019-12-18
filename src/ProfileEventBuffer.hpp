@@ -40,11 +40,6 @@ namespace geopm
     class ProfileEventBuffer
     {
         public:
-            struct m_rank_series_s {
-                int rank;
-                size_t begin;
-                size_t end;
-            };
             std::unique_ptr<ProfileEventBuffer> make_unique(int num_rank, size_t capacity);
             ProfileEventBuffer() = default;
             virtual ~ProfileEventBuffer() = default;
@@ -60,6 +55,7 @@ namespace geopm
             virtual void update_epoch_time(const ProfileEventQuery &query,
                                            double &total_epoch_time) const = 0;
             virtual std::set<uint64_t> hash_set(const ProfileEventQuery &query) const = 0;
+            virtual std::vector<std::pair<uint64_t, bool> > hash_series(const ProfileEventQuery &query) const = 0;
             virtual void update_region_count(const ProfileEventQuery &query,
                                              uint64_t region_hash,
                                              size_t &num_exit) const = 0;
