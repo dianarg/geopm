@@ -95,6 +95,7 @@ namespace geopm
             /// @brief Default destructor for pure virtual base class.
             virtual ~ProfileEventBuffer() = default;
             /// @brief Enable mapping from local rank to global rank.
+            ///        Must be called prior to insert().
             /// @param [in] global_rank Vector indexed by local rank
             ///        that contains the global rank as is given in
             ///        the profile messages.
