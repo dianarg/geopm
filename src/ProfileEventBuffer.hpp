@@ -39,6 +39,7 @@
 #include <vector>
 #include <set>
 
+struct geopm_time_s;
 struct geopm_prof_message_s;
 
 namespace geopm

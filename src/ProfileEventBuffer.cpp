@@ -31,6 +31,7 @@
  */
 
 #include "ProfileEventBuffer.hpp"
+#include "geopm_time.h"
 #include "geopm_internal.h"
 
 namespace geopm
@@ -54,4 +55,146 @@ namespace geopm
         private:
             struct geopm_prof_message_s m_prof_msg;
     };
+
+    class ProfileEventBufferImp : public ProfileEventBuffer
+    {
+        public:
+            ProfileEventBufferImp() = default;
+            virtual ~ProfileEventBufferImp() = default;
+            void cpu_rank(const std::vector<int> &rank_map);
+            int num_rank(void) const;
+            size_t insert(const struct geopm_prof_message_s &prof_msg);
+            void thread_progress(std::vector<double> per_cpu_progress);
+            std::vector<double> thread_progress(void);
+            size_t serial_begin(void) const;
+            size_t serial_end(void) const;
+            int epoch_begin(void) const;
+            uint64_t hash_begin(void) const;
+            uint64_t hint_begin(void) const;
+            int epoch_count(const ProfileEventQuery &query) const;
+            std::vector<struct geopm_time_s> epoch_times(const ProfileEventQuery &query) const;
+            std::set<uint64_t> hash_set(const ProfileEventQuery &query) const;
+            std::vector<std::pair<uint64_t, bool> > hash_series(const ProfileEventQuery &query) const;
+            int hash_count(const ProfileEventQuery &query,
+                                   uint64_t hash) const;
+            double hash_time(const ProfileEventQuery &query,
+                                     uint64_t hash) const;
+            uint64_t current_hash(const ProfileEventQuery &query,
+                                          uint64_t hash) const;
+            uint64_t current_hint(const ProfileEventQuery &query,
+                                          uint64_t hint) const;
+            double current_progress(const ProfileEventQuery &query,
+                                            double progress) const;
+    };
+
+    ProfileEventBuffer &profile_event_buffer(void)
+    {
+        static ProfileEventBufferImp instance;
+        return instance;
+    }
+
+    void ProfileEventBufferImp::cpu_rank(const std::vector<int> &rank_map)
+    {
+
+    }
+
+    int ProfileEventBufferImp::num_rank(void) const
+    {
+        return 0;
+    }
+
+    size_t ProfileEventBufferImp::insert(const struct geopm_prof_message_s &prof_msg)
+    {
+        return 0;
+    }
+
+    void ProfileEventBufferImp::thread_progress(std::vector<double> per_cpu_progress)
+    {
+
+    }
+
+    std::vector<double> ProfileEventBufferImp::thread_progress(void)
+    {
+        std::vector<double> result;
+        return result;
+    }
+
+    size_t ProfileEventBufferImp::serial_begin(void) const
+    {
+        return 0;
+    }
+
+    size_t ProfileEventBufferImp::serial_end(void) const
+    {
+        return 0;
+    }
+
+    int ProfileEventBufferImp::epoch_begin(void) const
+    {
+        return -1;
+    }
+
+    uint64_t ProfileEventBufferImp::hash_begin(void) const
+    {
+        return GEOPM_REGION_HASH_UNMARKED;
+    }
+
+    uint64_t ProfileEventBufferImp::hint_begin(void) const
+    {
+        return GEOPM_REGION_HINT_UNKNOWN;
+    }
+
+    int ProfileEventBufferImp::epoch_count(const ProfileEventQuery &query) const
+    {
+        return 0;
+    }
+
+    std::vector<struct geopm_time_s> ProfileEventBufferImp::epoch_times(const ProfileEventQuery &query) const
+    {
+        std::vector<struct geopm_time_s> result;
+        return result;
+    }
+
+    std::set<uint64_t> ProfileEventBufferImp::hash_set(const ProfileEventQuery &query) const
+    {
+        std::set<uint64_t> result;
+        return result;
+    }
+
+    std::vector<std::pair<uint64_t, bool> > ProfileEventBufferImp::hash_series(const ProfileEventQuery &query) const
+    {
+        std::vector<std::pair<uint64_t, bool> > result;
+        return result;
+    }
+
+    int ProfileEventBufferImp::hash_count(const ProfileEventQuery &query,
+                                          uint64_t hash) const
+    {
+        return 0;
+    }
+
+    double ProfileEventBufferImp::hash_time(const ProfileEventQuery &query,
+                                            uint64_t hash) const
+    {
+        return 0.0;
+    }
+
+    uint64_t ProfileEventBufferImp::current_hash(const ProfileEventQuery &query,
+                                                 uint64_t hash) const
+    {
+        return GEOPM_REGION_HASH_UNMARKED;
+    }
+
+    uint64_t ProfileEventBufferImp::current_hint(const ProfileEventQuery &query,
+                                                 uint64_t hint) const
+    {
+        return GEOPM_REGION_HINT_UNKNOWN;
+    }
+
+    double ProfileEventBufferImp::current_progress(const ProfileEventQuery &query,
+                                                   double progress) const
+    {
+        return 0.0;
+    }
+
 }

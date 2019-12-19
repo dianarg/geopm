@@ -332,4 +332,10 @@ namespace geopm
     {
         return GEOPM_PROFILE_IO_GROUP_PLUGIN_NAME;
     }
+
+    std::unique_ptr<IOGroup> ProfileIOGroup::make_plugin(void)
+    {
+        return geopm::make_unique<ProfileIOGroup>();
+    }
+
 }
