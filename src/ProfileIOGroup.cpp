@@ -46,6 +46,13 @@
 
 namespace geopm
 {
+    class ProfileRank
+    {
+        public:
+            ProfileRank() = default;
+            virtual ~ProfileRank() = default;
+    };
+
     ProfileIOGroup::ProfileIOGroup()
         : ProfileIOGroup(platform_topo(),
                          profile_event_buffer())
@@ -55,7 +62,9 @@ namespace geopm
 
     ProfileIOGroup::ProfileIOGroup(const PlatformTopo &topo,
                                    ProfileEventBuffer &profile_event_buffer)
-        : m_signal_idx_map{{plugin_name() + "::REGION_HASH", M_SIGNAL_REGION_HASH},
+        : m_platform_topo(topo)
+        , m_profile_event_buffer(profile_event_buffer)
+        , m_signal_idx_map{{plugin_name() + "::REGION_HASH", M_SIGNAL_REGION_HASH},
                            {plugin_name() + "::REGION_HINT", M_SIGNAL_REGION_HINT},
                            {plugin_name() + "::REGION_PROGRESS", M_SIGNAL_REGION_PROGRESS},
                            {plugin_name() + "::REGION_COUNT", M_SIGNAL_REGION_COUNT},
@@ -75,17 +84,7 @@ namespace geopm
                            {"EPOCH_RUNTIME_NETWORK", M_SIGNAL_EPOCH_RUNTIME_NETWORK},
                            {plugin_name() + "::EPOCH_RUNTIME_IGNORE", M_SIGNAL_EPOCH_RUNTIME_IGNORE},
                            {"EPOCH_RUNTIME_IGNORE", M_SIGNAL_EPOCH_RUNTIME_IGNORE}}
-        , m_platform_topo(topo)
-        , m_profile_event_buffer(profile_event_buffer)
-        , m_do_read(M_SIGNAL_MAX, false)
-        , m_per_cpu_progress(topo.num_domain(GEOPM_DOMAIN_CPU), NAN)
-        , m_per_cpu_runtime(topo.num_domain(GEOPM_DOMAIN_CPU), NAN)
-        , m_per_cpu_count(topo.num_domain(GEOPM_DOMAIN_CPU), 0)
-        , m_thread_progress(topo.num_domain(GEOPM_DOMAIN_CPU), NAN)
-        , m_epoch_runtime_network(topo.num_domain(GEOPM_DOMAIN_CPU), 0.0)
-        , m_epoch_runtime_ignore(topo.num_domain(GEOPM_DOMAIN_CPU), 0.0)
-        , m_epoch_runtime(topo.num_domain(GEOPM_DOMAIN_CPU), 0.0)
-        , m_epoch_count(topo.num_domain(GEOPM_DOMAIN_CPU), 0.0)
+        , m_do_read_batch(M_SIGNAL_MAX, false)
     {
 
     }
@@ -150,11 +149,11 @@ namespace geopm
         if (result == -1) {
             result = m_active_signal.size();
             m_active_signal.push_back({signal_type, domain_type, domain_idx});
-            m_do_read[signal_type] = true;
+            m_do_read_batch[signal_type] = true;
             // Runtime and count signals require region hash signal to be sampled
             if (signal_type == M_SIGNAL_RUNTIME ||
                 signal_type == M_SIGNAL_REGION_COUNT) {
-                m_do_read[M_SIGNAL_REGION_HASH] = true;
+                m_do_read_batch[M_SIGNAL_REGION_HASH] = true;
             }
         }
         return result;

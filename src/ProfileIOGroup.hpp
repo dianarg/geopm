@@ -43,6 +43,7 @@ namespace geopm
 {
     class PlatformTopo;
     class ProfileEventBuffer;
+    class ProfileRank;
 
     /// @brief IOGroup that provides signals from the application.
     class ProfileIOGroup : public IOGroup
@@ -95,23 +96,14 @@ namespace geopm
             };
 
             int check_signal(const std::string &signal_name, int domain_type, int domain_idx) const;
-
-            std::map<std::string, int> m_signal_idx_map;
             const PlatformTopo &m_platform_topo;
             ProfileEventBuffer &m_profile_event_buffer;
-            std::vector<bool> m_do_read;
+            std::map<std::string, int> m_signal_idx_map;
+            std::vector<bool> m_do_read_batch;
             std::vector<struct m_signal_config> m_active_signal;
-            std::vector<uint64_t> m_per_cpu_region_id;
-            std::vector<double> m_per_cpu_progress;
-            std::vector<double> m_per_cpu_runtime;
-            std::vector<int64_t> m_per_cpu_count;
-            std::vector<double> m_thread_progress;
-            std::vector<double> m_epoch_runtime_network;
-            std::vector<double> m_epoch_runtime_ignore;
-            std::vector<double> m_epoch_runtime;
-            std::vector<double> m_epoch_count;
-            std::map<int, int> m_rid_idx; // map from runtime signal index to the region id signal it uses
             std::vector<int> m_cpu_rank;
+            std::vector<double> m_thread_progress;
+            std::vector<ProfileRank> m_profile_rank;
     };
 }
 
