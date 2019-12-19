@@ -78,6 +78,7 @@ namespace geopm
                            {plugin_name() + "::EPOCH_RUNTIME_IGNORE", M_SIGNAL_EPOCH_RUNTIME_IGNORE},
                            {"EPOCH_RUNTIME_IGNORE", M_SIGNAL_EPOCH_RUNTIME_IGNORE}}
         , m_platform_topo(topo)
+        , m_profile_event_buffer(profile_event_buffer)
         , m_do_read(M_SIGNAL_MAX, false)
         , m_is_batch_read(false)
         , m_per_cpu_progress(topo.num_domain(GEOPM_DOMAIN_CPU), NAN)
