@@ -62,10 +62,11 @@ namespace geopm
             ProfileEventBufferImp() = default;
             virtual ~ProfileEventBufferImp() = default;
             void cpu_rank(const std::vector<int> &rank_map);
+            std::vector<int> cpu_rank(void) const;
             int num_rank(void) const;
             size_t insert(const struct geopm_prof_message_s &prof_msg);
             void thread_progress(std::vector<double> per_cpu_progress);
-            std::vector<double> thread_progress(void);
+            std::vector<double> thread_progress(void) const;
             size_t serial_begin(void) const;
             size_t serial_end(void) const;
             int epoch_begin(void) const;
@@ -85,6 +86,8 @@ namespace geopm
                                   uint64_t hint) const;
             double current_progress(const ProfileEventQuery &query,
                                     double progress) const;
+        private:
+            std::vector<int> m_rank_map;
     };
 
     ProfileEventBuffer &profile_event_buffer(void)
@@ -93,9 +96,14 @@ namespace geopm
         return instance;
     }
 
+    std::vector<int> ProfileEventBufferImp::cpu_rank(void) const
+    {
+        return m_rank_map;
+    }
+
     void ProfileEventBufferImp::cpu_rank(const std::vector<int> &rank_map)
     {
-
+        m_rank_map = rank_map;
     }
 
     int ProfileEventBufferImp::num_rank(void) const
@@ -113,7 +121,7 @@ namespace geopm
 
     }
 
-    std::vector<double> ProfileEventBufferImp::thread_progress(void)
+    std::vector<double> ProfileEventBufferImp::thread_progress(void) const
     {
         std::vector<double> result;
         return result;

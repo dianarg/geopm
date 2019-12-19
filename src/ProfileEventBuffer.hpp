@@ -92,7 +92,15 @@ namespace geopm
             virtual ~ProfileEventBuffer() = default;
             /// @brief Enable mapping from local rank to global rank.
             ///        Must be called prior to insert().
+            /// @param [in] rank_map Vector over linux logical CPUs of
+            ///        global MPI rank affinitized to each CPU (-1 for
+            ///        no rank).
             virtual void cpu_rank(const std::vector<int> &rank_map) = 0;
+            /// @brief Get vector over linux logical CPUs of node
+            ///        local rank affinitized to each CPU (-1 for no
+            ///        rank).
+            /// @return Vector of node local rank for each CPU.
+            virtual std::vector<int> cpu_rank(void) const = 0;
             /// @brief Get the number of ranks per node.
             /// @return Number of ranks per node.
             virtual int num_rank(void) const = 0;
@@ -109,7 +117,7 @@ namespace geopm
             /// @return Vector indexed over linux logical CPU of the
             ///         progress of the thread affinnitized to that
             ///         CPU.
-            virtual std::vector<double> thread_progress(void) = 0;
+            virtual std::vector<double> thread_progress(void) const = 0;
             /// @brief Oldest serial number of an event that is still
             ///        stored in the object.
             /// @return Serial number that can be used to create a

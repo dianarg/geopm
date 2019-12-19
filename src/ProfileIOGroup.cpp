@@ -49,9 +49,43 @@ namespace geopm
     class ProfileRank
     {
         public:
-            ProfileRank() = default;
+            ProfileRank(const ProfileEventBuffer &profile_event_buffer,
+                        int local_rank,
+                        const std::vector<int> &signal_type);
             virtual ~ProfileRank() = default;
+            void update(void);
+            double sample(int signal_type);
+        private:
+            const ProfileEventBuffer &m_profile_event_buffer;
+            int m_local_rank;
+            std::map<int, double> m_signal_map;
     };
+
+    ProfileRank::ProfileRank(const ProfileEventBuffer &profile_event_buffer,
+                             int local_rank,
+                             const std::vector<int> &signal_type)
+        : m_profile_event_buffer(profile_event_buffer)
+        , m_local_rank(local_rank)
+    {
+        for (auto it : signal_type) {
+            m_signal_map[it] = NAN;
+        }
+    }
+
+    void ProfileRank::update(void)
+    {
+
+    }
+
+    double ProfileRank::sample(int signal_type)
+    {
+        double result = NAN;
+        const auto it = m_signal_map.find(signal_type);
+        if (it != m_signal_map.end()) {
+            result = it->second;
+        }
+        return result;
+    }
 
     ProfileIOGroup::ProfileIOGroup()
         : ProfileIOGroup(platform_topo(),
@@ -165,9 +199,38 @@ namespace geopm
                         GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }
 
+    void ProfileIOGroup::init_batch(void)
+    {
+        if (m_profile_rank.size() == 0) {
+            m_cpu_rank = m_profile_event_buffer.cpu_rank();
+            std::set<int> global_rank;
+            for (auto &rank : m_cpu_rank) {
+                global_rank.insert(rank);
+            }
+            int num_node_rank = global_rank.size();
+            m_global_rank.resize(num_node_rank);
+            int idx = 0;
+            for (auto &rank : global_rank) {
+                m_global_rank[idx] = rank;
+                std::vector<int> signal_type;
+                for (auto as : m_active_signal) {
+                    if (m_cpu_rank[as.domain_idx] == rank) {
+                        signal_type.push_back(as.signal_type);
+                    }
+                }
+                m_profile_rank.emplace_back(m_profile_event_buffer, idx, signal_type);
+                ++idx;
+            }
+        }
+    }
     void ProfileIOGroup::read_batch(void)
     {
-
+        init_batch();
+        for (auto &pr : m_profile_rank) {
+            pr.update();
+        }
+        throw Exception("ProfileIOGroup: Implementation using ProfileEventBuffer is incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     void ProfileIOGroup::write_batch(void)
@@ -196,7 +259,7 @@ namespace geopm
     double ProfileIOGroup::read_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         double result = NAN;
-        throw Exception("ProfileIOGroup: Implementation using ProfileEventBuffer is incomplete",
+        throw Exception("ProfileIOGroup::read_signal is not supported, use batch interface instead",
                         GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         return result;
     }

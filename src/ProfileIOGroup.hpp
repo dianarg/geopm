@@ -75,7 +75,6 @@ namespace geopm
             std::string control_description(const std::string &control_name) const override;
             static std::string plugin_name(void);
             static std::unique_ptr<IOGroup> make_plugin(void);
-        private:
             enum m_signal_type {
                 M_SIGNAL_EPOCH_COUNT,
                 M_SIGNAL_REGION_HASH,
@@ -89,19 +88,21 @@ namespace geopm
                 M_SIGNAL_EPOCH_RUNTIME_IGNORE,
                 M_SIGNAL_MAX,
             };
+        private:
             struct m_signal_config {
                 int signal_type;
                 int domain_type;
                 int domain_idx;
             };
-
             int check_signal(const std::string &signal_name, int domain_type, int domain_idx) const;
+            void init_batch(void);
             const PlatformTopo &m_platform_topo;
-            ProfileEventBuffer &m_profile_event_buffer;
+            const ProfileEventBuffer &m_profile_event_buffer;
             std::map<std::string, int> m_signal_idx_map;
             std::vector<bool> m_do_read_batch;
             std::vector<struct m_signal_config> m_active_signal;
             std::vector<int> m_cpu_rank;
+            std::vector<int> m_global_rank;
             std::vector<double> m_thread_progress;
             std::vector<ProfileRank> m_profile_rank;
     };
