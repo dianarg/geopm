@@ -55,9 +55,7 @@ namespace geopm
 
     ProfileIOGroup::ProfileIOGroup(const PlatformTopo &topo,
                                    ProfileEventBuffer &profile_event_buffer)
-        : m_profile_sample(profile_sample)
-        , m_epoch_regulator(epoch_regulator)
-        , m_signal_idx_map{{plugin_name() + "::REGION_HASH", M_SIGNAL_REGION_HASH},
+        : m_signal_idx_map{{plugin_name() + "::REGION_HASH", M_SIGNAL_REGION_HASH},
                            {plugin_name() + "::REGION_HINT", M_SIGNAL_REGION_HINT},
                            {plugin_name() + "::REGION_PROGRESS", M_SIGNAL_REGION_PROGRESS},
                            {plugin_name() + "::REGION_COUNT", M_SIGNAL_REGION_COUNT},
@@ -80,7 +78,6 @@ namespace geopm
         , m_platform_topo(topo)
         , m_profile_event_buffer(profile_event_buffer)
         , m_do_read(M_SIGNAL_MAX, false)
-        , m_is_batch_read(false)
         , m_per_cpu_progress(topo.num_domain(GEOPM_DOMAIN_CPU), NAN)
         , m_per_cpu_runtime(topo.num_domain(GEOPM_DOMAIN_CPU), NAN)
         , m_per_cpu_count(topo.num_domain(GEOPM_DOMAIN_CPU), 0)
@@ -89,7 +86,6 @@ namespace geopm
         , m_epoch_runtime_ignore(topo.num_domain(GEOPM_DOMAIN_CPU), 0.0)
         , m_epoch_runtime(topo.num_domain(GEOPM_DOMAIN_CPU), 0.0)
         , m_epoch_count(topo.num_domain(GEOPM_DOMAIN_CPU), 0.0)
-        , m_cpu_rank(m_profile_sample->cpu_rank())
     {
 
     }
@@ -140,10 +136,6 @@ namespace geopm
     int ProfileIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         int result = -1;
-        if (m_is_batch_read) {
-            throw Exception("ProfileIOGroup::push_signal: cannot push signal after call to read_batch().",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
         int signal_type = check_signal(signal_name, domain_type, domain_idx);
 
         int signal_idx = 0;
@@ -176,64 +168,7 @@ namespace geopm
 
     void ProfileIOGroup::read_batch(void)
     {
-        if (m_do_read[M_SIGNAL_REGION_HASH] ||
-            m_do_read[M_SIGNAL_REGION_HINT]) {
-            m_per_cpu_region_id = m_profile_sample->per_cpu_region_id();
-        }
-        if (m_do_read[M_SIGNAL_REGION_PROGRESS]) {
-            struct geopm_time_s read_time;
-            geopm_time(&read_time);
-            m_per_cpu_progress = m_profile_sample->per_cpu_progress(read_time);
-        }
-        if (m_do_read[M_SIGNAL_REGION_COUNT]) {
-            m_per_cpu_count = m_profile_sample->per_cpu_count();
-        }
-        if (m_do_read[M_SIGNAL_THREAD_PROGRESS]) {
-            m_thread_progress = m_profile_sample->per_cpu_thread_progress();
-        }
-        if (m_do_read[M_SIGNAL_EPOCH_RUNTIME]) {
-            std::vector<double> per_rank_epoch_runtime = m_epoch_regulator.last_epoch_runtime();
-            for (size_t cpu_idx = 0; cpu_idx != m_cpu_rank.size(); ++cpu_idx) {
-                m_epoch_runtime[cpu_idx] = per_rank_epoch_runtime[m_cpu_rank[cpu_idx]];
-            }
-        }
-        if (m_do_read[M_SIGNAL_EPOCH_COUNT]) {
-            std::vector<double> per_rank_epoch_count = m_epoch_regulator.epoch_count();
-            for (size_t cpu_idx = 0; cpu_idx != m_cpu_rank.size(); ++cpu_idx) {
-                m_epoch_count[cpu_idx] = per_rank_epoch_count[m_cpu_rank[cpu_idx]];
-            }
-        }
-        if (m_do_read[M_SIGNAL_RUNTIME]) {
-            // look up the region for each cpu and cache the per-cpu runtimes for that region
-            std::map<uint64_t, std::vector<double> > cache;
-            for (const auto &rid : m_per_cpu_region_id) {
-                // add runtimes for each region if not already present
-                auto it = cache.find(rid);
-                if (it == cache.end()) {
-                    cache.emplace(std::piecewise_construct,
-                                  std::forward_as_tuple(rid),
-                                  std::forward_as_tuple(m_profile_sample->per_cpu_runtime(rid)));
-                }
-            }
-            // look up the last runtime for a cpu given its current region
-            // we assume ranks don't move between cpus
-            for (size_t cpu = 0; cpu < m_per_cpu_runtime.size(); ++cpu) {
-                m_per_cpu_runtime[cpu] = cache.at(m_per_cpu_region_id[cpu])[cpu];
-            }
-        }
-        if (m_do_read[M_SIGNAL_EPOCH_RUNTIME_NETWORK]) {
-            std::vector<double> per_rank_epoch_runtime_network = m_epoch_regulator.last_epoch_runtime_network();
-            for (size_t cpu_idx = 0; cpu_idx != m_cpu_rank.size(); ++cpu_idx) {
-                m_epoch_runtime_network[cpu_idx] = per_rank_epoch_runtime_network[m_cpu_rank[cpu_idx]];
-            }
-        }
-        if (m_do_read[M_SIGNAL_EPOCH_RUNTIME_IGNORE]) {
-            std::vector<double> per_rank_epoch_runtime_ignore = m_epoch_regulator.last_epoch_runtime_ignore();
-            for (size_t cpu_idx = 0; cpu_idx != m_cpu_rank.size(); ++cpu_idx) {
-                m_epoch_runtime_ignore[cpu_idx] = per_rank_epoch_runtime_ignore[m_cpu_rank[cpu_idx]];
-            }
-        }
-        m_is_batch_read = true;
+
     }
 
     void ProfileIOGroup::write_batch(void)
@@ -248,52 +183,8 @@ namespace geopm
             throw Exception("ProfileIOGroup::sample(): signal_idx out of range",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        if (!m_is_batch_read) {
-            throw Exception("TimeIOGroup::sample(): signal has not been read",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-
-        /// @todo support for non-cpu signal domains
-        int cpu_idx = m_active_signal[signal_idx].domain_idx;
-        switch (m_active_signal[signal_idx].signal_type) {
-            case M_SIGNAL_REGION_HASH:
-                result = geopm_region_id_hash(m_per_cpu_region_id[cpu_idx]);
-                break;
-            case M_SIGNAL_REGION_HINT:
-                result = geopm_region_id_hint(m_per_cpu_region_id[cpu_idx]);
-                break;
-            case M_SIGNAL_REGION_PROGRESS:
-                result = m_per_cpu_progress[cpu_idx];
-                break;
-            case M_SIGNAL_REGION_COUNT:
-                result = m_per_cpu_count[cpu_idx];
-                break;
-            case M_SIGNAL_THREAD_PROGRESS:
-                result = m_thread_progress[cpu_idx];
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME:
-                result = m_epoch_runtime[cpu_idx];
-                break;
-            case M_SIGNAL_EPOCH_COUNT:
-                result = m_epoch_count[cpu_idx];
-                break;
-            case M_SIGNAL_RUNTIME:
-                result = m_per_cpu_runtime[cpu_idx];
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME_NETWORK:
-                result = m_epoch_runtime_network[cpu_idx];
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME_IGNORE:
-                result = m_epoch_runtime_ignore[cpu_idx];
-                break;
-            default:
-#ifdef GEOPM_DEBUG
-                throw Exception("ProfileIOGroup:sample(): Signal was pushed with an invalid signal type",
-                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-#endif
-                break;
-        }
-
+        throw Exception("ProfileIOGroup: Implementation using ProfileEventBuffer is incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         return result;
     }
 
@@ -305,52 +196,9 @@ namespace geopm
 
     double ProfileIOGroup::read_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
-        int signal_type = check_signal(signal_name, domain_type, domain_idx);
-        /// @todo Add support for non-cpu domains.
-        int cpu_idx = domain_idx;
-        struct geopm_time_s read_time;
-        uint64_t region_id;
         double result = NAN;
-        switch (signal_type) {
-            case M_SIGNAL_REGION_HASH:
-                result = geopm_region_id_hash(m_profile_sample->per_cpu_region_id()[cpu_idx]);
-                break;
-            case M_SIGNAL_REGION_HINT:
-                result = geopm_region_id_hint(m_profile_sample->per_cpu_region_id()[cpu_idx]);
-                break;
-            case M_SIGNAL_REGION_PROGRESS:
-                geopm_time(&read_time);
-                result = m_profile_sample->per_cpu_progress(read_time)[cpu_idx];
-                break;
-            case M_SIGNAL_REGION_COUNT:
-                result = m_profile_sample->per_cpu_count()[cpu_idx];
-                break;
-            case M_SIGNAL_THREAD_PROGRESS:
-                result = m_profile_sample->per_cpu_thread_progress()[cpu_idx];
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME:
-                result = m_epoch_regulator.last_epoch_runtime()[cpu_idx];
-                break;
-            case M_SIGNAL_EPOCH_COUNT:
-                result = m_epoch_regulator.epoch_count()[cpu_idx];
-                break;
-            case M_SIGNAL_RUNTIME:
-                region_id = m_profile_sample->per_cpu_region_id()[cpu_idx];
-                result = m_profile_sample->per_cpu_runtime(region_id)[cpu_idx];
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME_NETWORK:
-                result = m_epoch_regulator.last_epoch_runtime_network()[cpu_idx];
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME_IGNORE:
-                result = m_epoch_regulator.last_epoch_runtime_ignore()[cpu_idx];
-                break;
-            default:
-#ifdef GEOPM_DEBUG
-                throw Exception("ProfileIOGroup:read_signal(): Invalid signal type bug check_signal did not throw",
-                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-#endif
-                break;
-        }
+        throw Exception("ProfileIOGroup: Implementation using ProfileEventBuffer is incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         return result;
     }
 
