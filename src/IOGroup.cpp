@@ -63,6 +63,8 @@ namespace geopm
         g_plugin_factory->register_plugin(CNLIOGroup::plugin_name(),
                                           CNLIOGroup::make_plugin);
 #endif
+        g_plugin_factory->register_plugin(ProfileIOGroup::plugin_name(),
+                                          ProfileIOGroup::make_plugin);
     }
 
     std::function<std::string(double)> IOGroup::format_function(const std::string &signal_name) const

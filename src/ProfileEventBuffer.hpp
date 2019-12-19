@@ -96,10 +96,7 @@ namespace geopm
             virtual ~ProfileEventBuffer() = default;
             /// @brief Enable mapping from local rank to global rank.
             ///        Must be called prior to insert().
-            /// @param [in] global_rank Vector indexed by local rank
-            ///        that contains the global rank as is given in
-            ///        the profile messages.
-            virtual void node_local_rank(const std::vector<int> &global_rank) = 0;
+            virtual void cpu_rank(const std::vector<int> &rank_map) = 0;
             /// @brief Get the number of ranks per node.
             /// @return Number of ranks per node.
             virtual int num_rank(void) const = 0;
