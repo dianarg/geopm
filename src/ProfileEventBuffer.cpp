@@ -76,15 +76,15 @@ namespace geopm
             std::set<uint64_t> hash_set(const ProfileEventQuery &query) const;
             std::vector<std::pair<uint64_t, bool> > hash_series(const ProfileEventQuery &query) const;
             int hash_count(const ProfileEventQuery &query,
-                                   uint64_t hash) const;
+                           uint64_t hash) const;
             double hash_time(const ProfileEventQuery &query,
-                                     uint64_t hash) const;
+                             uint64_t hash) const;
             uint64_t current_hash(const ProfileEventQuery &query,
-                                          uint64_t hash) const;
+                                  uint64_t hash) const;
             uint64_t current_hint(const ProfileEventQuery &query,
-                                          uint64_t hint) const;
+                                  uint64_t hint) const;
             double current_progress(const ProfileEventQuery &query,
-                                            double progress) const;
+                                    double progress) const;
     };
 
     ProfileEventBuffer &profile_event_buffer(void)
