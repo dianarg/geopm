@@ -85,11 +85,6 @@ namespace geopm
     class ProfileEventBuffer
     {
         public:
-            /// @brief Create a ProfileEventBufer.
-            /// @param [in] capacity Maximum number of events stored
-            ///        for each rank.
-            /// @return Unique pointer to a ProfileEventBuffer object.
-            static std::unique_ptr<ProfileEventBuffer> make_unique(size_t capacity);
             /// @brief Default constructor for pure virtual base class.
             ProfileEventBuffer() = default;
             /// @brief Default destructor for pure virtual base class.
@@ -105,6 +100,15 @@ namespace geopm
             ///        application.
             /// @return Serial number assigned to the event.
             virtual size_t insert(const struct geopm_prof_message_s &prof_msg) = 0;
+            /// @brief Update with a sample of thread progress.
+            /// @param [in] Vector indexed over linux logical CPU of
+            ///        the progress of the thread affinnitized to that CPU.
+            virtual void thread_progress(std::vector<double> per_cpu_progress) = 0;
+            /// @brief Get latest sample of per thread progress.
+            /// @return Vector indexed over linux logical CPU of the
+            ///         progress of the thread affinnitized to that
+            ///         CPU.
+            virtual std::vector<double> thread_progress(void) = 0;
             /// @brief Oldest serial number of an event that is still
             ///        stored in the object.
             /// @return Serial number that can be used to create a
@@ -216,6 +220,8 @@ namespace geopm
             virtual double current_progress(const ProfileEventQuery &query,
                                             double progress) const = 0;
     };
+
+    ProfileEventBuffer &profile_event_buffer(void);
 }
 
 #endif

@@ -111,13 +111,6 @@ namespace geopm
             /// @param [in] comm Shared pointer to the comm used by
             ///        the Controller.
             virtual void update(std::shared_ptr<Comm> comm) = 0;
-            /// @brief Returns the list of all regions entered or
-            ///        exited since the last call to
-            ///        clear_region_info().
-            virtual std::list<geopm_region_info_s> region_info(void) const = 0;
-            /// @brief Resets the internal list of region entries and
-            ///        exits.
-            virtual void clear_region_info(void) = 0;
             /// @brief Signal to the application that the Controller
             ///        is ready to begin receiving samples.
             virtual void controller_ready(void) = 0;
@@ -127,6 +120,7 @@ namespace geopm
     };
 
     class ProfileSampler;
+    class ProfileEventBuffer;
     class PlatformIO;
     class PlatformTopo;
 
@@ -137,7 +131,8 @@ namespace geopm
             ApplicationIOImp(const std::string &shm_key,
                              std::unique_ptr<ProfileSampler> sampler,
                              PlatformIO &platform_io,
-                             const PlatformTopo &platform_topo);
+                             const PlatformTopo &platform_topo,
+                             ProfileEventBuffer &profile_event_buffer);
             virtual ~ApplicationIOImp();
             void connect(void) override;
             bool do_shutdown(void) const override;
@@ -159,8 +154,6 @@ namespace geopm
             double total_epoch_energy_dram(void) const override;
             int total_count(uint64_t region_id) const override;
             void update(std::shared_ptr<Comm> comm) override;
-            std::list<geopm_region_info_s> region_info(void) const override;
-            void clear_region_info(void) override;
             void controller_ready(void) override;
             void abort(void) override;
         private:
@@ -173,6 +166,7 @@ namespace geopm
             std::vector<std::pair<uint64_t, struct geopm_prof_message_s> > m_prof_sample;
             PlatformIO &m_platform_io;
             const PlatformTopo &m_platform_topo;
+            ProfileEventBuffer &m_profile_event_buffer;
             std::vector<double> m_thread_progress;
             std::vector<uint64_t> m_region_id;
             // Per rank vector counting number of entries into MPI.

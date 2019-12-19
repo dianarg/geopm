@@ -38,6 +38,7 @@
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
 #include "ProfileSampler.hpp"
+#include "ProfileEventBuffer.hpp"
 #include "ProfileThread.hpp"
 #include "Helper.hpp"
 #include "config.h"
@@ -53,8 +54,7 @@ namespace geopm
     ApplicationIOImp::ApplicationIOImp(const std::string &shm_key)
         : ApplicationIOImp(shm_key,
                            geopm::make_unique<ProfileSamplerImp>(M_SHMEM_REGION_SIZE),
-                           nullptr, nullptr,
-                           platform_io(), platform_topo())
+                           platform_io(), platform_topo(), profile_event_buffer())
     {
 
     }
@@ -62,10 +62,12 @@ namespace geopm
     ApplicationIOImp::ApplicationIOImp(const std::string &shm_key,
                                  std::unique_ptr<ProfileSampler> sampler,
                                  PlatformIO &platform_io,
-                                 const PlatformTopo &platform_topo)
+                                 const PlatformTopo &platform_topo,
+                                 ProfileEventBuffer &profile_event_buffer)
         : m_sampler(std::move(sampler))
         , m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
+        , m_profile_event_buffer(profile_event_buffer)
         , m_thread_progress(m_platform_topo.num_domain(GEOPM_DOMAIN_CPU))
         , m_is_connected(false)
         , m_rank_per_node(-1)
@@ -85,7 +87,7 @@ namespace geopm
             m_sampler->initialize();
             m_rank_per_node = m_sampler->rank_per_node();
             m_prof_sample.resize(m_sampler->capacity());
-            m_event_buffer.cpu_rank(m_sampler->cpu_rank());
+            m_profile_event_buffer.cpu_rank(m_sampler->cpu_rank());
             m_is_connected = true;
             m_start_energy_pkg = current_energy_pkg();
             m_start_energy_dram = current_energy_dram();
@@ -107,9 +109,6 @@ namespace geopm
         }
 #endif
         bool result = m_sampler->do_shutdown();
-        if (result) {
-            m_profile_io_sample->finalize_unmarked_region();
-        }
         return result;
     }
 
@@ -159,11 +158,8 @@ namespace geopm
         }
 #endif
         double result = 0.0;
-        try {
-            result = m_epoch_regulator->total_region_runtime(region_id);
-        }
-        catch (const Exception &ex) {
-        }
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         return result;
     }
 
@@ -177,11 +173,8 @@ namespace geopm
         }
 #endif
         double result = 0.0;
-        try {
-            result = m_epoch_regulator->total_region_runtime_mpi(region_id);
-        }
-        catch (const Exception &ex) {
-        }
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         return result;
     }
 
@@ -194,7 +187,8 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_epoch_regulator->total_epoch_runtime();
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     double ApplicationIOImp::total_epoch_runtime_network(void) const
@@ -206,7 +200,8 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_epoch_regulator->total_epoch_runtime_network();
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     double ApplicationIOImp::total_epoch_energy_pkg(void) const
@@ -218,7 +213,8 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_epoch_regulator->total_epoch_energy_pkg();
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     double ApplicationIOImp::total_epoch_energy_dram(void) const
@@ -230,7 +226,8 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_epoch_regulator->total_epoch_energy_dram();
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     double ApplicationIOImp::total_app_runtime(void) const
@@ -242,7 +239,10 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_profile_io_sample->total_app_runtime();
+        double result = 0.0;
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+        return result;
     }
 
     double ApplicationIOImp::current_energy_pkg(void) const
@@ -298,7 +298,8 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_epoch_regulator->total_app_runtime_mpi();
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     double ApplicationIOImp::total_app_runtime_ignore(void) const
@@ -310,7 +311,8 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_epoch_regulator->total_app_runtime_ignore();
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     int ApplicationIOImp::total_epoch_count(void) const
@@ -322,7 +324,8 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_epoch_regulator->total_epoch_count();
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     double ApplicationIOImp::total_epoch_runtime_ignore(void) const
@@ -334,7 +337,8 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        return m_epoch_regulator->total_epoch_runtime_ignore();
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     int ApplicationIOImp::total_count(uint64_t region_id) const
@@ -347,11 +351,8 @@ namespace geopm
         }
 #endif
         double result = 0.0;
-        try {
-            result = m_epoch_regulator->total_count(region_id);
-        }
-        catch (const Exception &ex) {
-        }
+        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         return result;
     }
 
@@ -366,26 +367,13 @@ namespace geopm
 #endif
         size_t length = 0;
         m_sampler->sample(m_prof_sample, length, comm);
-        m_profile_io_sample->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
-        m_sampler->tprof_table()->dump(m_thread_progress);
-        m_profile_io_sample->update_thread(m_thread_progress);
-    }
-
-    std::list<geopm_region_info_s> ApplicationIOImp::region_info(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        for (auto it = m_prof_sample.cbegin();
+             it != m_prof_sample.cbegin() + length;
+             ++it) {
+            m_profile_event_buffer.insert(it->second);
         }
-#endif
-        return m_epoch_regulator->region_info();
-    }
-
-    void ApplicationIOImp::clear_region_info(void)
-    {
-        m_epoch_regulator->clear_region_info();
+        m_sampler->tprof_table()->dump(m_thread_progress);
+        m_profile_event_buffer.thread_progress(m_thread_progress);
     }
 
     void ApplicationIOImp::abort(void)

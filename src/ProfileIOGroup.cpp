@@ -33,6 +33,7 @@
 #include "ProfileIOGroup.hpp"
 
 #include "PlatformTopo.hpp"
+#include "ProfileEventBuffer.hpp"
 #include "Helper.hpp"
 #include "Exception.hpp"
 #include "Agg.hpp"
@@ -45,16 +46,15 @@
 
 namespace geopm
 {
-    ProfileIOGroup::ProfileIOGroup(std::shared_ptr<ProfileIOSample> profile_sample,
-                                   EpochRuntimeRegulator &epoch_regulator)
-        : ProfileIOGroup(profile_sample, epoch_regulator, platform_topo())
+    ProfileIOGroup::ProfileIOGroup()
+        : ProfileIOGroup(platform_topo(),
+                         profile_event_buffer())
     {
 
     }
 
-    ProfileIOGroup::ProfileIOGroup(std::shared_ptr<ProfileIOSample> profile_sample,
-                                   EpochRuntimeRegulator &epoch_regulator,
-                                   const PlatformTopo &topo)
+    ProfileIOGroup::ProfileIOGroup(const PlatformTopo &topo,
+                                   ProfileEventBuffer &profile_event_buffer)
         : m_profile_sample(profile_sample)
         , m_epoch_regulator(epoch_regulator)
         , m_signal_idx_map{{plugin_name() + "::REGION_HASH", M_SIGNAL_REGION_HASH},

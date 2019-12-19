@@ -344,16 +344,14 @@ namespace geopm
 
         m_application_io->update(m_comm);
         m_platform_io.read_batch();
-        m_tracer->update(m_trace_sample, m_application_io->region_info());
-        m_application_io->clear_region_info();
+        m_tracer->update(m_trace_sample);
 
         while (!m_application_io->do_shutdown()) {
             step();
         }
         m_application_io->update(m_comm);
         m_platform_io.read_batch();
-        m_tracer->update(m_trace_sample, m_application_io->region_info());
-        m_application_io->clear_region_info();
+        m_tracer->update(m_trace_sample);
         generate();
         m_platform_io.restore_control();
     }
@@ -442,8 +440,7 @@ namespace geopm
         bool do_send = m_agent[0]->do_send_sample();
         m_reporter->update();
         m_agent[0]->trace_values(m_trace_sample);
-        m_tracer->update(m_trace_sample, m_application_io->region_info());
-        m_application_io->clear_region_info();
+        m_tracer->update(m_trace_sample);
 
         for (int level = 0; level < m_num_level_ctl; ++level) {
             if (do_send) {

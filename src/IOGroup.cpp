@@ -37,6 +37,7 @@
 #include "MSRIOGroup.hpp"
 #include "CpuinfoIOGroup.hpp"
 #include "TimeIOGroup.hpp"
+#include "ProfileIOGroup.hpp"
 #include "Helper.hpp"
 #include "config.h"
 #ifdef GEOPM_CNL_IOGROUP

@@ -195,7 +195,6 @@ ronn_man_noinst = man/GEOPM_CXX_MAN_Comm.3 \
                   man/GEOPM_CXX_MAN_PowerBalancerAgent.3 \
                   man/GEOPM_CXX_MAN_PowerGovernorAgent.3 \
                   man/GEOPM_CXX_MAN_ProfileIOGroup.3 \
-                  man/GEOPM_CXX_MAN_ProfileIOSample.3 \
                   # end
 
 ronn_man_beta = man/geopmanalysis.1 \
@@ -288,7 +287,6 @@ EXTRA_DIST = $(TUTORIAL_DIST) \
              ronn/GEOPM_CXX_MAN_PowerGovernor.3.ronn \
              ronn/GEOPM_CXX_MAN_PowerGovernorAgent.3.ronn \
              ronn/GEOPM_CXX_MAN_ProfileIOGroup.3.ronn \
-             ronn/GEOPM_CXX_MAN_ProfileIOSample.3.ronn \
              ronn/GEOPM_CXX_MAN_RegionAggregator.3.ronn \
              ronn/GEOPM_CXX_MAN_SharedMemory.3.ronn \
              ronn/GEOPM_CXX_MAN_TimeIOGroup.3.ronn \
@@ -464,8 +462,6 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/EnergyEfficientRegion.hpp \
                             src/Environment.cpp \
                             src/Environment.hpp \
-                            src/EpochRuntimeRegulator.cpp \
-                            src/EpochRuntimeRegulator.hpp \
                             src/Exception.cpp \
                             src/Exception.hpp \
                             src/FilePolicy.cpp \
@@ -521,8 +517,6 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/ProfileEventBuffer.hpp \
                             src/ProfileIOGroup.cpp \
                             src/ProfileIOGroup.hpp \
-                            src/ProfileIOSample.cpp \
-                            src/ProfileIOSample.hpp \
                             src/ProfileSampler.cpp \
                             src/ProfileSampler.hpp \
                             src/ProfileTable.cpp \
@@ -536,8 +530,6 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/RegionAggregatorImp.hpp \
                             src/Reporter.cpp \
                             src/Reporter.hpp \
-                            src/RuntimeRegulator.cpp \
-                            src/RuntimeRegulator.hpp \
                             src/SampleRegulator.cpp \
                             src/SampleRegulator.hpp \
                             src/SampleScheduler.cpp \

@@ -44,8 +44,6 @@
 #include "PlatformIO.hpp"
 #include "CSV.hpp"
 
-struct geopm_region_info_s;
-
 namespace geopm
 {
     /// @brief Abstract base class for the Tracer object defines the interface.
@@ -69,8 +67,7 @@ namespace geopm
             ///        regions recorded by the application.  There may
             ///        be multiple entires and exits for each
             ///        telemetry sample.
-            virtual void update(const std::vector<double> &agent_signals,
-                                std::list<geopm_region_info_s> region_entry_exit) = 0;
+            virtual void update(const std::vector<double> &agent_signals) = 0;
             /// @brief Write the remaining trace data to the file and
             ///        stop tracing.
             virtual void flush(void) = 0;
@@ -97,8 +94,7 @@ namespace geopm
             virtual ~TracerImp() = default;
             void columns(const std::vector<std::string> &agent_cols,
                          const std::vector<std::function<std::string(double)> > &agent_formats) override;
-            void update(const std::vector<double> &agent_signals,
-                        std::list<geopm_region_info_s> region_entry_exit) override;
+            void update(const std::vector<double> &agent_signals) override;
             void flush(void) override;
         private:
             struct m_request_s {
