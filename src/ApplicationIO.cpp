@@ -35,13 +35,10 @@
 #include <utility>
 
 #include "Exception.hpp"
-#include "EpochRuntimeRegulator.hpp"
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
 #include "ProfileSampler.hpp"
 #include "ProfileThread.hpp"
-#include "ProfileIOSample.hpp"
-#include "ProfileIOGroup.hpp"
 #include "Helper.hpp"
 #include "config.h"
 

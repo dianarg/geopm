@@ -34,9 +34,6 @@
 
 #include "PlatformTopo.hpp"
 #include "Helper.hpp"
-#include "EpochRuntimeRegulator.hpp"
-#include "RuntimeRegulator.hpp"
-#include "ProfileIOSample.hpp"
 #include "Exception.hpp"
 #include "Agg.hpp"
 #include "geopm_hash.h"
