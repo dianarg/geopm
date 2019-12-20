@@ -49,19 +49,55 @@ namespace geopm
     class ProfileEpoch
     {
         public:
-            ProfileEpoch() = default;
+            ProfileEpoch();
             virtual ~ProfileEpoch() = default;
+            void update(const ProfileEventBuffer &profile_event_buffer);
+            int count(void);
+            double runtime(void);
+            double runtime_network(void);
+            double runtime_ignore(void);
     };
+
+    ProfileEpoch::ProfileEpoch()
+    {
+
+    }
+
+    void ProfileEpoch::update(const ProfileEventBuffer &profile_event_buffer)
+    {
+
+    }
+
+    int ProfileEpoch::count(void)
+    {
+        return 0;
+    }
+
+    double ProfileEpoch::runtime(void)
+    {
+        return 0.0;
+    }
+
+    double ProfileEpoch::runtime_network(void)
+    {
+        return 0.0;
+    }
+
+    double ProfileEpoch::runtime_ignore(void)
+    {
+        return 0.0;
+    }
 
     class ProfileRegion
     {
         public:
             ProfileRegion() = default;
             virtual ~ProfileRegion() = default;
+            void update(const ProfileEventBuffer &profile_event_buffer);
             uint64_t hash(void);
-            double progress(void);
             int count(void);
             double runtime(void);
+            double progress(void);
         private:
             uint64_t m_hash;
     };
@@ -71,17 +107,17 @@ namespace geopm
         return m_hash;
     }
 
-    double ProfileRegion::progress(void)
-    {
-        return 0.0;
-    }
-
     int ProfileRegion::count(void)
     {
         return 0;
     }
 
     double ProfileRegion::runtime(void)
+    {
+        return 0.0;
+    }
+
+    double ProfileRegion::progress(void)
     {
         return 0.0;
     }
@@ -98,9 +134,10 @@ namespace geopm
             double epoch_runtime_network(void);
             double epoch_runtime_ignore(void);
             uint64_t region_hash(void);
-            double region_progress(void);
+            uint64_t region_hint(void);
             int region_count(void);
             double region_runtime(void);
+            double region_progress(void);
         private:
             const ProfileEventBuffer &m_profile_event_buffer;
             ProfileEventQuery m_query;
@@ -149,9 +186,9 @@ namespace geopm
         return m_current_hash;
     }
 
-    double ProfileRank::region_progress(void)
+    uint64_t ProfileRank::region_hint(void)
     {
-        return 0.0;
+        return GEOPM_REGION_HINT_UNKNOWN;
     }
 
     int ProfileRank::region_count(void)
@@ -160,6 +197,11 @@ namespace geopm
     }
 
     double ProfileRank::region_runtime(void)
+    {
+        return 0.0;
+    }
+
+    double ProfileRank::region_progress(void)
     {
         return 0.0;
     }
@@ -306,8 +348,6 @@ namespace geopm
         for (auto &pr : m_profile_rank) {
             pr.update();
         }
-        throw Exception("ProfileIOGroup: Implementation using ProfileEventBuffer is incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
     }
 
     void ProfileIOGroup::write_batch(void)
@@ -322,8 +362,47 @@ namespace geopm
             throw Exception("ProfileIOGroup::sample(): signal_idx out of range",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        throw Exception("ProfileIOGroup: Implementation using ProfileEventBuffer is incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+        int signal_type = m_active_signal[signal_idx].signal_type;
+        int cpu_idx = m_active_signal[signal_idx].domain_idx;
+        int rank = m_cpu_rank[cpu_idx];
+        switch (signal_type) {
+            case M_SIGNAL_EPOCH_COUNT:
+                result = m_profile_rank[rank].epoch_count();
+                break;
+            case M_SIGNAL_EPOCH_RUNTIME:
+                result = m_profile_rank[rank].epoch_runtime();
+                break;
+            case M_SIGNAL_EPOCH_RUNTIME_NETWORK:
+                result = m_profile_rank[rank].epoch_runtime_network();
+                break;
+            case M_SIGNAL_EPOCH_RUNTIME_IGNORE:
+                result = m_profile_rank[rank].epoch_runtime_ignore();
+                break;
+            case M_SIGNAL_REGION_HASH:
+                result = m_profile_rank[rank].region_hash();
+                break;
+            case M_SIGNAL_REGION_HINT:
+                result = m_profile_rank[rank].region_hint();
+                break;
+            case M_SIGNAL_REGION_COUNT:
+                result = m_profile_rank[rank].region_hash();
+                break;
+            case M_SIGNAL_REGION_RUNTIME:
+                result = m_profile_rank[rank].region_runtime();
+                break;
+            case M_SIGNAL_REGION_PROGRESS:
+                result = m_profile_rank[rank].region_progress();
+                break;
+            case M_SIGNAL_THREAD_PROGRESS:
+                result = m_thread_progress[cpu_idx];
+                break;
+            default:
+#ifdef GEOPM_DEBUG
+                throw Exception("ProfileIOGroup::sample() Signal type invalid",
+                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+#endif
+                break;
+        }
         return result;
     }
 
