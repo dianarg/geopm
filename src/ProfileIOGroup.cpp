@@ -46,45 +46,122 @@
 
 namespace geopm
 {
+    class ProfileEpoch
+    {
+        public:
+            ProfileEpoch() = default;
+            virtual ~ProfileEpoch() = default;
+    };
+
+    class ProfileRegion
+    {
+        public:
+            ProfileRegion() = default;
+            virtual ~ProfileRegion() = default;
+            uint64_t hash(void);
+            double progress(void);
+            int count(void);
+            double runtime(void);
+        private:
+            uint64_t m_hash;
+    };
+
+    uint64_t ProfileRegion::hash(void)
+    {
+        return m_hash;
+    }
+
+    double ProfileRegion::progress(void)
+    {
+        return 0.0;
+    }
+
+    int ProfileRegion::count(void)
+    {
+        return 0;
+    }
+
+    double ProfileRegion::runtime(void)
+    {
+        return 0.0;
+    }
+
     class ProfileRank
     {
         public:
             ProfileRank(const ProfileEventBuffer &profile_event_buffer,
-                        int local_rank,
-                        const std::vector<int> &signal_type);
+                        int local_rank);
             virtual ~ProfileRank() = default;
             void update(void);
-            double sample(int signal_type);
+            int epoch_count(void);
+            double epoch_runtime(void);
+            double epoch_runtime_network(void);
+            double epoch_runtime_ignore(void);
+            uint64_t region_hash(void);
+            double region_progress(void);
+            int region_count(void);
+            double region_runtime(void);
         private:
             const ProfileEventBuffer &m_profile_event_buffer;
-            int m_local_rank;
-            std::map<int, double> m_signal_map;
+            ProfileEventQuery m_query;
+            uint64_t m_current_hash;
+            std::map<uint64_t, ProfileRegion> m_regions;
+            ProfileEpoch m_epoch;
     };
 
     ProfileRank::ProfileRank(const ProfileEventBuffer &profile_event_buffer,
-                             int local_rank,
-                             const std::vector<int> &signal_type)
+                             int local_rank)
         : m_profile_event_buffer(profile_event_buffer)
-        , m_local_rank(local_rank)
+        , m_query(local_rank)
+        , m_current_hash(m_profile_event_buffer.hash_begin())
     {
-        for (auto it : signal_type) {
-            m_signal_map[it] = NAN;
-        }
+
     }
 
     void ProfileRank::update(void)
     {
+        m_query.update_serial(m_profile_event_buffer.serial_end());
 
     }
 
-    double ProfileRank::sample(int signal_type)
+    int ProfileRank::epoch_count(void)
     {
-        double result = NAN;
-        const auto it = m_signal_map.find(signal_type);
-        if (it != m_signal_map.end()) {
-            result = it->second;
-        }
-        return result;
+        return 0;
+    }
+
+    double ProfileRank::epoch_runtime(void)
+    {
+        return 0.0;
+    }
+
+    double ProfileRank::epoch_runtime_network(void)
+    {
+        return 0.0;
+    }
+
+    double ProfileRank::epoch_runtime_ignore(void)
+    {
+        return 0.0;
+    }
+
+    uint64_t ProfileRank::region_hash(void)
+    {
+        return m_current_hash;
+    }
+
+    double ProfileRank::region_progress(void)
+    {
+        return 0.0;
+    }
+
+    int ProfileRank::region_count(void)
+    {
+        return 0;
+    }
+
+    double ProfileRank::region_runtime(void)
+    {
+        return 0.0;
     }
 
     ProfileIOGroup::ProfileIOGroup()
@@ -112,8 +189,8 @@ namespace geopm
                            {"EPOCH_RUNTIME", M_SIGNAL_EPOCH_RUNTIME},
                            {plugin_name() + "::EPOCH_COUNT", M_SIGNAL_EPOCH_COUNT},
                            {"EPOCH_COUNT", M_SIGNAL_EPOCH_COUNT},
-                           {plugin_name() + "::REGION_RUNTIME", M_SIGNAL_RUNTIME},
-                           {"REGION_RUNTIME", M_SIGNAL_RUNTIME},
+                           {plugin_name() + "::REGION_RUNTIME", M_SIGNAL_REGION_RUNTIME},
+                           {"REGION_RUNTIME", M_SIGNAL_REGION_RUNTIME},
                            {plugin_name() + "::EPOCH_RUNTIME_NETWORK", M_SIGNAL_EPOCH_RUNTIME_NETWORK},
                            {"EPOCH_RUNTIME_NETWORK", M_SIGNAL_EPOCH_RUNTIME_NETWORK},
                            {plugin_name() + "::EPOCH_RUNTIME_IGNORE", M_SIGNAL_EPOCH_RUNTIME_IGNORE},
@@ -185,7 +262,7 @@ namespace geopm
             m_active_signal.push_back({signal_type, domain_type, domain_idx});
             m_do_read_batch[signal_type] = true;
             // Runtime and count signals require region hash signal to be sampled
-            if (signal_type == M_SIGNAL_RUNTIME ||
+            if (signal_type == M_SIGNAL_REGION_RUNTIME ||
                 signal_type == M_SIGNAL_REGION_COUNT) {
                 m_do_read_batch[M_SIGNAL_REGION_HASH] = true;
             }
@@ -218,7 +295,7 @@ namespace geopm
                         signal_type.push_back(as.signal_type);
                     }
                 }
-                m_profile_rank.emplace_back(m_profile_event_buffer, idx, signal_type);
+                m_profile_rank.emplace_back(m_profile_event_buffer, idx);
                 ++idx;
             }
         }

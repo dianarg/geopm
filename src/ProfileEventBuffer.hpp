@@ -53,7 +53,7 @@ namespace geopm
             ///        to query (inclusive).
             /// @param [in] serial_end Last serial number in range to
             ///        query (exclusive)
-            ProfileEventQuery(int rank, size_t serial_begin, size_t serial_end);
+            ProfileEventQuery(int rank);
             /// @brief Default destructor.
             virtual ~ProfileEventQuery() = default;
             /// @brief Update the range to query: specified serial
