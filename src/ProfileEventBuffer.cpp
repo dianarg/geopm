@@ -56,6 +56,47 @@ namespace geopm
             struct geopm_prof_message_s m_prof_msg;
     };
 
+
+    ProfileEventQuery::ProfileEventQuery(int rank)
+        : m_rank(rank)
+        , m_serial_begin(0)
+        , m_serial_end(0)
+    {
+
+    }
+
+    void ProfileEventQuery::update_serial(size_t serial_end)
+    {
+        m_serial_begin = m_serial_end;
+        m_serial_end = serial_end;
+    }
+
+    bool ProfileEventQuery::operator == (const ProfileEventQuery &other) const
+    {
+        bool result = false;
+        if (m_rank == other.m_rank &&
+            m_serial_begin == other.m_serial_begin &&
+            m_serial_end == other.m_serial_end) {
+            result = true;
+        }
+        return result;
+    }
+
+    int ProfileEventQuery::rank(void) const
+    {
+        return m_rank;
+    }
+
+    size_t ProfileEventQuery::serial_begin(void) const
+    {
+        return m_serial_begin;
+    }
+
+    size_t ProfileEventQuery::serial_end(void) const
+    {
+        return m_serial_end;
+    }
+
     class ProfileEventBufferImp : public ProfileEventBuffer
     {
         public:
