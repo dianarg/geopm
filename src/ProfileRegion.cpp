@@ -34,6 +34,11 @@
 
 namespace geopm
 {
+    void ProfileRegion::update(int count, double time)
+    {
+        m_count += count;
+        m_time += time;
+    }
     uint64_t ProfileRegion::hash(void)
     {
         return m_hash;
@@ -41,16 +46,11 @@ namespace geopm
 
     int ProfileRegion::count(void)
     {
-        return 0;
+        return m_count;
     }
 
     double ProfileRegion::runtime(void)
     {
-        return 0.0;
-    }
-
-    double ProfileRegion::progress(void)
-    {
-        return 0.0;
+        return m_time;
     }
 }

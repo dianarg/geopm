@@ -44,7 +44,6 @@ namespace geopm
             uint64_t hash(void);
             int count(void);
             double runtime(void);
-            double progress(void);
         private:
             uint64_t m_hash;
     };

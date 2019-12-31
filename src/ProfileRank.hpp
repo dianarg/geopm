@@ -32,9 +32,9 @@
 
 #include <map>
 
+#include "geopm_time.h"
 #include "ProfileEventBuffer.hpp"
-#include "ProfileEpoch.hpp"
-#include "ProfileRegion.hpp"
+
 
 namespace geopm
 {
@@ -56,10 +56,19 @@ namespace geopm
             double region_runtime(void);
             double region_progress(void);
         private:
+            struct m_region_s {
+                double total_time;
+                double last_time;
+                int count;
+                struct geopm_time_s entry_time;
+            };
             const ProfileEventBuffer &m_profile_event_buffer;
+            const struct m_region_s M_REGION_INIT;
             ProfileEventQuery m_query;
             uint64_t m_current_hash;
-            std::map<uint64_t, ProfileRegion> m_regions;
-            ProfileEpoch m_epoch;
+            std::map<uint64_t, struct m_region_s> m_region_map;
+            int m_epoch_count;
+            double m_epoch_last_time;
+            struct geopm_time_s m_epoch_entry_time;
     };
 }

@@ -32,12 +32,14 @@
 
 #include "geopm.h"
 #include "ProfileRank.hpp"
+#include <utility>
 
 namespace geopm
 {
     ProfileRank::ProfileRank(const ProfileEventBuffer &profile_event_buffer,
                              int local_rank)
         : m_profile_event_buffer(profile_event_buffer)
+        , M_REGION_INIT({0.0, 0.0, 0, {{0,0}}})
         , m_query(local_rank)
         , m_current_hash(m_profile_event_buffer.hash_begin())
     {
@@ -48,6 +50,12 @@ namespace geopm
     {
         m_query.update_serial(m_profile_event_buffer.serial_end());
 
+        for (uint64_t hash : m_profile_event_buffer.hash_set(m_query)) {
+            struct m_region_s &region_ref = m_region_map.emplace(
+                                                hash, M_REGION_INIT).first->second;
+            region_ref.total_time += m_profile_event_buffer.hash_time(m_query, hash);
+            // FIXME region_ref.last_time = m_profile_event_buffer.???
+        }
     }
 
     int ProfileRank::epoch_count(void)

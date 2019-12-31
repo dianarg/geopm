@@ -108,6 +108,12 @@ namespace geopm
             size_t insert(const struct geopm_prof_message_s &prof_msg);
             void thread_progress(std::vector<double> per_cpu_progress);
             std::vector<double> thread_progress(void) const;
+            void report_name(const std::string &name);
+            std::string report_name(void) const;
+            void profile_name(const std::string &name);
+            std::string profile_name(void) const;
+            void region_name_set(const std::set<std::string> &name_set);
+            std::set<std::string> region_name_set(void) const;
             size_t serial_begin(void) const;
             size_t serial_end(void) const;
             int epoch_begin(void) const;
@@ -165,6 +171,39 @@ namespace geopm
     std::vector<double> ProfileEventBufferImp::thread_progress(void) const
     {
         std::vector<double> result;
+        return result;
+    }
+
+    void ProfileEventBufferImp::report_name(const std::string &name)
+    {
+
+    }
+
+    std::string ProfileEventBufferImp::report_name(void) const
+    {
+        std::string result;
+        return result;
+    }
+
+    void ProfileEventBufferImp::profile_name(const std::string &name)
+    {
+
+    }
+
+    std::string ProfileEventBufferImp::profile_name(void) const
+    {
+        std::string result;
+        return result;
+    }
+
+    void ProfileEventBufferImp::region_name_set(const std::set<std::string> &name_set)
+    {
+
+    }
+
+    std::set<std::string> ProfileEventBufferImp::region_name_set(void) const
+    {
+        std::set<std::string> result;
         return result;
     }
 

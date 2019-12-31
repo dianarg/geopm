@@ -513,16 +513,12 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/PowerGovernorAgent.hpp \
                             src/Profile.cpp \
                             src/Profile.hpp \
-                            src/ProfileEpoch.cpp \
-                            src/ProfileEpoch.hpp \
                             src/ProfileEventBuffer.cpp \
                             src/ProfileEventBuffer.hpp \
                             src/ProfileIOGroup.cpp \
                             src/ProfileIOGroup.hpp \
                             src/ProfileRank.cpp \
                             src/ProfileRank.hpp \
-                            src/ProfileRegion.cpp \
-                            src/ProfileRegion.hpp \
                             src/ProfileSampler.cpp \
                             src/ProfileSampler.hpp \
                             src/ProfileTable.cpp \
