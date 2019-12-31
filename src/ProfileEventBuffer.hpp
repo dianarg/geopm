@@ -118,6 +118,17 @@ namespace geopm
             ///         progress of the thread affinnitized to that
             ///         CPU.
             virtual std::vector<double> thread_progress(void) const = 0;
+            virtual void report_name(const std::string &name) = 0;
+            /// @brief Returns the path to the report file.
+            virtual std::string report_name(void) const = 0;
+            virtual void profile_name(const std::string &name) = 0;
+            /// @brief Returns the profile name to be used in the
+            ///        report.
+            virtual std::string profile_name(void) const = 0;
+            virtual void region_name_set(const std::set<std::string> &name_set) = 0;
+            /// @brief Returns the set of region names recorded by the
+            ///        application.
+            virtual std::set<std::string> region_name_set(void) const = 0;
             /// @brief Oldest serial number of an event that is still
             ///        stored in the object.
             /// @return Serial number that can be used to create a
