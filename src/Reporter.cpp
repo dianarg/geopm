@@ -209,11 +209,11 @@ namespace geopm
         auto region_name_set = application_io.region_name_set();
         for (const auto &region : region_name_set) {
             uint64_t region_hash = geopm_crc32_str(region.c_str());
-            int count = application_io.total_count(region_hash);
+            int count = region_count(region_hash);
             if (count > 0) {
                 region_ordered.push_back({region,
                                           region_hash,
-                                          application_io.total_region_runtime(region_hash),
+                                          region_time(region_hash),
                                           count});
             }
         }
@@ -228,7 +228,7 @@ namespace geopm
         // GEOPM_REGION_HASH_UNMARKED to pubilc GEOPM_REGION_HASH_UNMARKED.
         region_ordered.push_back({"unmarked-region",
                                   GEOPM_REGION_HASH_UNMARKED,
-                                  application_io.total_region_runtime(GEOPM_REGION_HASH_UNMARKED),
+                                  region_time(GEOPM_REGION_HASH_UNMARKED),
                                   0});
         // Total epoch runtime for report includes MPI time and
         // ignore time, but they are removed from the runtime returned
@@ -236,8 +236,8 @@ namespace geopm
         // signal used by the balancer, but will be changed in the future.
         region_ordered.push_back({"epoch",
                                   GEOPM_REGION_HASH_EPOCH,
-                                  application_io.total_epoch_runtime(),
-                                  application_io.total_epoch_count()});
+                                  epoch_time(),
+                                  epoch_count()});
 
         for (const auto &region : region_ordered) {
             if (GEOPM_REGION_HASH_EPOCH != region.hash) {
@@ -271,8 +271,8 @@ namespace geopm
             report << "    frequency (%): " << freq << std::endl;
             report << "    frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0) << std::endl;
             double network_time = (region.hash == GEOPM_REGION_HASH_EPOCH) ?
-                                   application_io.total_epoch_runtime_network() :
-                                   application_io.total_region_runtime_mpi(region.hash);
+                                   epoch_time(GEOPM_REGION_HINT_NETWORK) :
+                                   region_time(region.hash, GEOPM_REGION_HINT_NETWORK);
             report << "    network-time (sec): " << network_time << std::endl;
             report << "    count: " << region.count << std::endl;
             for (const auto &env_it : m_env_signal_name_idx) {
@@ -286,18 +286,18 @@ namespace geopm
             }
         }
         // extra runtimes for epoch region
-        report << "    epoch-runtime-ignore (sec): " << application_io.total_epoch_runtime_ignore() << std::endl;
+        report << "    epoch-runtime-ignore (sec): " << epoch_time(GEOPM_REGION_HINT_IGNORE) << std::endl;
 
-        double total_runtime = application_io.total_app_runtime();
-        double app_energy_pkg = application_io.total_app_energy_pkg();
+        double total_runtime = application_time();
+        double app_energy_pkg = application_energy(GEOPM_DOMAIN_PACKAGE);
         double avg_power = total_runtime == 0 ? 0 : app_energy_pkg / total_runtime;
         report << "Application Totals:" << std::endl
                << "    runtime (sec): " << total_runtime << std::endl
                << "    package-energy (joules): " << app_energy_pkg << std::endl
-               << "    dram-energy (joules): " << application_io.total_app_energy_dram() << std::endl
+               << "    dram-energy (joules): " << application_energy(GEOPM_DOMAIN_BOARD_MEMORY) << std::endl
                << "    power (watts): " << avg_power << std::endl
-               << "    network-time (sec): " << application_io.total_app_runtime_mpi() << std::endl
-               << "    ignore-time (sec): " << application_io.total_app_runtime_ignore() << std::endl;
+               << "    network-time (sec): " << application_time(GEOPM_REGION_HINT_NETWORK) << std::endl
+               << "    ignore-time (sec): " << application_time(GEOPM_REGION_HINT_IGNORE) << std::endl;
 
         std::string max_memory = get_max_memory();
         report << "    geopmctl memory HWM: " << max_memory << std::endl;
@@ -382,5 +382,60 @@ namespace geopm
                             GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
         return max_memory;
+    }
+
+    double ReporterImp::application_time(void) const
+    {
+        return 0.0;
+    }
+
+    double ReporterImp::application_time(uint64_t hint) const
+    {
+        return 0.0;
+    }
+
+    double ReporterImp::application_energy(int domain) const
+    {
+        return 0.0;
+    }
+
+    int ReporterImp::epoch_count(void) const
+    {
+        return 0;
+    }
+
+    double ReporterImp::epoch_time(void) const
+    {
+        return 0.0;
+    }
+
+    double ReporterImp::epoch_time(uint64_t hint) const
+    {
+        return 0.0;
+    }
+
+    double ReporterImp::epoch_energy(int domain) const
+    {
+        return 0.0;
+    }
+
+    int ReporterImp::region_count(uint64_t hash) const
+    {
+        return 0;
+    }
+
+    double ReporterImp::region_time(uint64_t hash) const
+    {
+        return 0.0;
+    }
+
+    double ReporterImp::region_time(uint64_t hash, uint64_t hint) const
+    {
+        return 0.0;
+    }
+
+    double ReporterImp::region_energy(uint64_t hash, int domain) const
+    {
+        return 0.0;
     }
 }
