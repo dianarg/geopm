@@ -141,11 +141,6 @@ GTEST_TESTS = test/gtest_links/AgentFactoryTest.static_info_monitor \
               test/gtest_links/EnvironmentTest.default_endpoint_user_policy \
               test/gtest_links/EnvironmentTest.default_endpoint_user_policy_override_endpoint \
               test/gtest_links/EnvironmentTest.user_policy_and_endpoint \
-              test/gtest_links/EpochRuntimeRegulatorTest.all_ranks_enter_exit \
-              test/gtest_links/EpochRuntimeRegulatorTest.epoch_runtime \
-              test/gtest_links/EpochRuntimeRegulatorTest.invalid_ranks \
-              test/gtest_links/EpochRuntimeRegulatorTest.rank_enter_exit_trace \
-              test/gtest_links/EpochRuntimeRegulatorTest.unknown_region \
               test/gtest_links/ExceptionTest.hello \
               test/gtest_links/ExceptionTest.last_message \
               test/gtest_links/FilePolicyTest.parse_json_file \
@@ -279,12 +274,6 @@ GTEST_TESTS = test/gtest_links/AgentFactoryTest.static_info_monitor \
               test/gtest_links/RegionAggregatorTest.epoch_total \
               test/gtest_links/RegionAggregatorTest.sample_total \
               test/gtest_links/ReporterTest.generate \
-              test/gtest_links/RuntimeRegulatorTest.all_in_and_out \
-              test/gtest_links/RuntimeRegulatorTest.all_reenter \
-              test/gtest_links/RuntimeRegulatorTest.check_start_count \
-              test/gtest_links/RuntimeRegulatorTest.config_rank_then_workers \
-              test/gtest_links/RuntimeRegulatorTest.exceptions \
-              test/gtest_links/RuntimeRegulatorTest.one_rank_reenter_and_exit \
               test/gtest_links/SampleRegulatorTest.align_profile \
               test/gtest_links/SampleRegulatorTest.insert_platform \
               test/gtest_links/SampleRegulatorTest.insert_profile \
@@ -380,7 +369,6 @@ test_geopm_test_SOURCES = test/AgentFactoryTest.cpp \
                           test/EnergyEfficientAgentTest.cpp \
                           test/EnergyEfficientRegionTest.cpp \
                           test/EnvironmentTest.cpp \
-                          test/EpochRuntimeRegulatorTest.cpp \
                           test/ExceptionTest.cpp \
                           test/FilePolicyTest.cpp \
                           test/FrequencyGovernorTest.cpp \
@@ -398,20 +386,18 @@ test_geopm_test_SOURCES = test/AgentFactoryTest.cpp \
                           test/MockEndpointPolicyTracer.hpp \
                           test/MockEndpointUser.hpp \
                           test/MockEnergyEfficientRegion.hpp \
-                          test/MockEpochRuntimeRegulator.hpp \
                           test/MockFrequencyGovernor.hpp \
                           test/MockIOGroup.hpp \
                           test/MockPlatformIO.hpp \
                           test/MockPlatformTopo.hpp \
                           test/MockPowerBalancer.hpp \
                           test/MockPowerGovernor.hpp \
-                          test/MockProfileIOSample.hpp \
+                          test/MockProfileEventBuffer.hpp \
                           test/MockProfileSampler.hpp \
                           test/MockProfileTable.hpp \
                           test/MockProfileThreadTable.hpp \
                           test/MockRegionAggregator.hpp \
                           test/MockReporter.hpp \
-                          test/MockRuntimeRegulator.hpp \
                           test/MockSampleScheduler.hpp \
                           test/MockSharedMemory.hpp \
                           test/MockSharedMemoryUser.hpp \
@@ -431,7 +417,6 @@ test_geopm_test_SOURCES = test/AgentFactoryTest.cpp \
                           test/ProfileTracerTest.cpp \
                           test/RegionAggregatorTest.cpp \
                           test/ReporterTest.cpp \
-                          test/RuntimeRegulatorTest.cpp \
                           test/SampleRegulatorTest.cpp \
                           test/SchedTest.cpp \
                           test/SharedMemoryTest.cpp \

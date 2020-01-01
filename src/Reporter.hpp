@@ -93,6 +93,18 @@ namespace geopm
                                   const ApplicationIO &application_io,
                                   std::shared_ptr<Comm> comm,
                                   const TreeComm &tree_comm) = 0;
+
+            virtual double application_time(void) const = 0;
+            virtual double application_time(uint64_t hint) const = 0;
+            virtual double application_energy(int domain) const = 0;
+            virtual int epoch_count(void) const = 0;
+            virtual double epoch_time(void) const = 0;
+            virtual double epoch_time(uint64_t hint) const = 0;
+            virtual double epoch_energy(int domain) const = 0;
+            virtual int region_count(uint64_t hash) const = 0;
+            virtual double region_time(uint64_t hash) const = 0;
+            virtual double region_time(uint64_t hash, uint64_t hint) const = 0;
+            virtual double region_energy(uint64_t hash, int domain) const = 0;
     };
 
     class PlatformIO;
@@ -126,9 +138,19 @@ namespace geopm
                           const ApplicationIO &application_io,
                           std::shared_ptr<Comm> comm,
                           const TreeComm &tree_comm) override;
+            double application_time(void) const;
+            double application_time(uint64_t hint) const;
+            double application_energy(int domain) const;
+            int epoch_count(void) const;
+            double epoch_time(void) const;
+            double epoch_time(uint64_t hint) const;
+            double epoch_energy(int domain) const;
+            int region_count(uint64_t hash) const;
+            double region_time(uint64_t hash) const;
+            double region_time(uint64_t hash, uint64_t hint) const;
+            double region_energy(uint64_t hash, int domain) const;
         private:
             std::string get_max_memory(void);
-
             std::string m_start_time;
             std::string m_report_name;
             PlatformIO &m_platform_io;

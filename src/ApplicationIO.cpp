@@ -53,17 +53,17 @@ namespace geopm
 
     ApplicationIOImp::ApplicationIOImp(const std::string &shm_key)
         : ApplicationIOImp(shm_key,
-                           geopm::make_unique<ProfileSamplerImp>(M_SHMEM_REGION_SIZE),
+                           std::make_shared<ProfileSamplerImp>(M_SHMEM_REGION_SIZE),
                            platform_io(), platform_topo(), profile_event_buffer())
     {
 
     }
 
     ApplicationIOImp::ApplicationIOImp(const std::string &shm_key,
-                                 std::unique_ptr<ProfileSampler> sampler,
-                                 PlatformIO &platform_io,
-                                 const PlatformTopo &platform_topo,
-                                 ProfileEventBuffer &profile_event_buffer)
+                                       std::shared_ptr<ProfileSampler> sampler,
+                                       PlatformIO &platform_io,
+                                       const PlatformTopo &platform_topo,
+                                       ProfileEventBuffer &profile_event_buffer)
         : m_sampler(std::move(sampler))
         , m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
@@ -71,8 +71,6 @@ namespace geopm
         , m_thread_progress(m_platform_topo.num_domain(GEOPM_DOMAIN_CPU))
         , m_is_connected(false)
         , m_rank_per_node(-1)
-        , m_start_energy_pkg(NAN)
-        , m_start_energy_dram(NAN)
     {
     }
 
@@ -89,8 +87,6 @@ namespace geopm
             m_prof_sample.resize(m_sampler->capacity());
             m_profile_event_buffer.cpu_rank(m_sampler->cpu_rank());
             m_is_connected = true;
-            m_start_energy_pkg = current_energy_pkg();
-            m_start_energy_dram = current_energy_dram();
         }
     }
 
@@ -148,213 +144,6 @@ namespace geopm
         return m_sampler->name_set();
     }
 
-    double ApplicationIOImp::total_region_runtime(uint64_t region_id) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        double result = 0.0;
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-        return result;
-    }
-
-    double ApplicationIOImp::total_region_runtime_mpi(uint64_t region_id) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        double result = 0.0;
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-        return result;
-    }
-
-    double ApplicationIOImp::total_epoch_runtime(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
-    double ApplicationIOImp::total_epoch_runtime_network(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
-    double ApplicationIOImp::total_epoch_energy_pkg(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
-    double ApplicationIOImp::total_epoch_energy_dram(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
-    double ApplicationIOImp::total_app_runtime(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        double result = 0.0;
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-        return result;
-    }
-
-    double ApplicationIOImp::current_energy_pkg(void) const
-    {
-        double energy = 0.0;
-        int num_package = m_platform_topo.num_domain(GEOPM_DOMAIN_PACKAGE);
-        for (int pkg = 0; pkg < num_package; ++pkg) {
-            energy += m_platform_io.read_signal("ENERGY_PACKAGE", GEOPM_DOMAIN_PACKAGE, pkg);
-        }
-        return energy;
-   }
-
-    double ApplicationIOImp::current_energy_dram(void) const
-    {
-        double energy = 0.0;
-        int num_dram = m_platform_topo.num_domain(GEOPM_DOMAIN_BOARD_MEMORY);
-        for (int dram = 0; dram < num_dram; ++dram) {
-            energy += m_platform_io.read_signal("ENERGY_DRAM", GEOPM_DOMAIN_BOARD_MEMORY, dram);
-        }
-        return energy;
-    }
-
-    double ApplicationIOImp::total_app_energy_pkg(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        return current_energy_pkg() - m_start_energy_pkg;
-    }
-
-    double ApplicationIOImp::total_app_energy_dram(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        return current_energy_dram() - m_start_energy_dram;
-    }
-
-    double ApplicationIOImp::total_app_runtime_mpi(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
-    double ApplicationIOImp::total_app_runtime_ignore(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
-    int ApplicationIOImp::total_epoch_count(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
-    double ApplicationIOImp::total_epoch_runtime_ignore(void) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-    }
-
-    int ApplicationIOImp::total_count(uint64_t region_id) const
-    {
-#ifdef GEOPM_DEBUG
-        if (!m_is_connected) {
-            throw Exception("ApplicationIOImp::" + std::string(__func__) +
-                            " called before connect().",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        double result = 0.0;
-        throw Exception("ApplicationIO switch to user of ProfileEventBuffer incomplete",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-        return result;
-    }
 
     void ApplicationIOImp::update(std::shared_ptr<Comm> comm)
     {

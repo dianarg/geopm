@@ -111,8 +111,6 @@ src/EnergyEfficientRegion.cpp
 src/EnergyEfficientRegion.hpp
 src/Environment.cpp
 src/Environment.hpp
-src/EpochRuntimeRegulator.cpp
-src/EpochRuntimeRegulator.hpp
 src/Exception.cpp
 src/Exception.hpp
 src/FilePolicy.cpp
@@ -180,8 +178,6 @@ src/ProfileEventBuffer.cpp
 src/ProfileEventBuffer.hpp
 src/ProfileIOGroup.cpp
 src/ProfileIOGroup.hpp
-src/ProfileIOSample.cpp
-src/ProfileIOSample.hpp
 src/ProfileSampler.cpp
 src/ProfileSampler.hpp
 src/ProfileTable.cpp
@@ -195,8 +191,6 @@ src/RegionAggregator.hpp
 src/RegionAggregatorImp.hpp
 src/Reporter.cpp
 src/Reporter.hpp
-src/RuntimeRegulator.cpp
-src/RuntimeRegulator.hpp
 src/SampleRegulator.cpp
 src/SampleRegulator.hpp
 src/SampleScheduler.cpp
@@ -270,7 +264,6 @@ test/EndpointUserTest.cpp
 test/EnergyEfficientAgentTest.cpp
 test/EnergyEfficientRegionTest.cpp
 test/EnvironmentTest.cpp
-test/EpochRuntimeRegulatorTest.cpp
 test/ExceptionTest.cpp
 test/FilePolicyTest.cpp
 test/FrequencyGovernorTest.cpp
@@ -293,7 +286,6 @@ test/MockEndpoint.hpp
 test/MockEndpointPolicyTracer.hpp
 test/MockEndpointUser.hpp
 test/MockEnergyEfficientRegion.hpp
-test/MockEpochRuntimeRegulator.hpp
 test/MockFrequencyGovernor.hpp
 test/MockIOGroup.hpp
 test/MockPlatformIO.hpp
@@ -301,13 +293,12 @@ test/MockPlatformTopo.hpp
 test/MockPolicyStore.hpp
 test/MockPowerBalancer.hpp
 test/MockPowerGovernor.hpp
-test/MockProfileIOSample.hpp
+test/MockProfileEventSampler.hpp
 test/MockProfileSampler.hpp
 test/MockProfileTable.hpp
 test/MockProfileThreadTable.hpp
 test/MockRegionAggregator.hpp
 test/MockReporter.hpp
-test/MockRuntimeRegulator.hpp
 test/MockSampleScheduler.hpp
 test/MockSharedMemory.hpp
 test/MockSharedMemoryUser.hpp
@@ -327,7 +318,6 @@ test/ProfileTest.cpp
 test/ProfileTracerTest.cpp
 test/RegionAggregatorTest.cpp
 test/ReporterTest.cpp
-test/RuntimeRegulatorTest.cpp
 test/SampleRegulatorTest.cpp
 test/SchedTest.cpp
 test/SharedMemoryTest.cpp
