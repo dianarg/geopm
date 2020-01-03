@@ -153,3 +153,4 @@
 /tutorial/tutorial_[0-9]
 /tutorial/tutorial_[0-9]*_report-*
 /tutorial/tutorial_[0-9]*_trace-*
+/build

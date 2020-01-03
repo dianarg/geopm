@@ -1,0 +1,3 @@
+set(CMAKE_C_COMPILER icc)
+set(CMAKE_CXX_COMPILER icpc)
+set(CMAKE_FORTRAN_COMPILER ifort)
