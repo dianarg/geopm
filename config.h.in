@@ -1,0 +1,227 @@
+/* GEOPM shared object verion */
+#cmakedefine GEOPM_ABI_VERSION "@GEOPM_ABI_VERSION@"
+
+/* Enables test coverage reporting */
+#cmakedefine GEOPM_COVERAGE
+
+/* Enables code for debugging */
+#cmakedefine GEOPM_DEBUG
+
+/* MPI-3 support enabled. */
+#cmakedefine GEOPM_ENABLE_MPI3
+
+/* Enables OpenMP Tool callbacks. */
+#cmakedefine GEOPM_ENABLE_OMPT
+
+/* ompt.h is available */
+#cmakedefine GEOPM_HAS_OMPT
+
+/* xmmintrin.h is available */
+#cmakedefine GEOPM_HAS_XMMINTRIN
+
+/* hwloc supports HWLOC_OBJ_L2CACHE. */
+#cmakedefine GEOPM_HWLOC_HAS_L2CACHE
+
+/* hwloc supports HWLOC_OBJ_SOCKET. */
+#cmakedefine GEOPM_HWLOC_HAS_SOCKET
+
+/* hwloc supports hwloc_topology_dup. */
+#cmakedefine GEOPM_HWLOC_HAS_TOPOLOGY_DUP
+
+/* MPI interfaces do not use const qualifier. */
+#define GEOPM_MPI_CONST @GEOPM_MPI_CONST@
+
+/* MPI interfaces do not use const qualifier. */
+#define GEOPM_MPI_CONST_CAST(t) @GEOPM_MPI_CONST_CAST@
+
+/* Enables user of msr-safe ioctl feature for writing (broken as of msr-safe
+   version 1.2.0) */
+#cmakedefine GEOPM_MSRSAFE_IOCTL_WRITE
+
+/* Enables code for measuring overhead */
+#cmakedefine GEOPM_OVERHEAD
+
+/* Enables use of procfs for process CPU affinity */
+#cmakedefine GEOPM_PROCFS
+
+/* Define to 1 if you have the <arpa/inet.h> header file. */
+#cmakedefine HAVE_ARPA_INET_H
+
+/* Define to 1 if you have the `clock_gettime' function. */
+#cmakedefine HAVE_CLOCK_GETTIME
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#cmakedefine HAVE_DLFCN_H
+
+/* Define to 1 if you have the `dup2' function. */
+#cmakedefine HAVE_DUP2
+
+/* Define to 1 if you have the <fcntl.h> header file. */
+#cmakedefine HAVE_FCNTL_H
+
+/* Define to 1 if you have the <float.h> header file. */
+#cmakedefine HAVE_FLOAT_H
+
+/* Define to 1 if you have the `floor' function. */
+#cmakedefine HAVE_FLOOR
+
+/* Define to 1 if you have the `getcwd' function. */
+#cmakedefine HAVE_GETCWD
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#cmakedefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `hwloc' library (-lhwloc). */
+#cmakedefine HAVE_LIBHWLOC
+
+/* Define to 1 if you have the `pthread' library (-lpthread). */
+#cmakedefine HAVE_LIBPTHREAD
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#cmakedefine HAVE_MALLOC_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#cmakedefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the `memset' function. */
+#cmakedefine HAVE_MEMSET
+
+/* Define to 1 if you have the `mkfifo' function. */
+#cmakedefine HAVE_MKFIFO
+
+/* Define to 1 if you have MPI libs and headers. */
+#cmakedefine HAVE_MPI
+
+/* Define to 1 if you have the <netdb.h> header file. */
+#cmakedefine HAVE_NETDB_H
+
+/* Define to 1 if you have the `pow' function. */
+#cmakedefine HAVE_POW
+
+/* Define to 1 if you have the `sqrt' function. */
+#cmakedefine HAVE_SQRT
+
+/* Define to 1 if stdbool.h conforms to C99. */
+#cmakedefine HAVE_STDBOOL_H
+
+/* Define to 1 if you have the <stddef.h> header file. */
+#cmakedefine HAVE_STDDEF_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#cmakedefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#cmakedefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the `strdup' function. */
+#cmakedefine HAVE_STRDUP
+
+/* Define to 1 if you have the <strings.h> header file. */
+#cmakedefine HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#cmakedefine HAVE_STRING_H
+
+/* Define to 1 if you have the `strstr' function. */
+#cmakedefine HAVE_STRSTR
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#cmakedefine HAVE_SYS_SOCKET_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#cmakedefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#cmakedefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#cmakedefine HAVE_UNISTD_H
+
+/* Define to 1 if the system has the type `_Bool'. */
+#cmakedefine HAVE__BOOL
+
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#cmakedefine LT_OBJDIR
+
+/* Name of package */
+#cmakedefine PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#cmakedefine PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#cmakedefine PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#cmakedefine PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#cmakedefine PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#cmakedefine PACKAGE_URL
+
+/* Define to the version of this package. */
+#cmakedefine PACKAGE_VERSION "@PACKAGE_VERSION@"
+
+/* Define to 1 if you have the ANSI C header files. */
+#cmakedefine STDC_HEADERS
+
+/* Version number of package */
+#cmakedefine VERSION
+
+/* Define for Solaris 2.5.1 so the uint32_t typedef from <sys/synch.h>,
+   <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
+   #define below would cause a syntax error. */
+#cmakedefine _UINT32_T
+
+/* Define for Solaris 2.5.1 so the uint64_t typedef from <sys/synch.h>,
+   <pthread.h>, or <semaphore.h> is not used. If the typedef were allowed, the
+   #define below would cause a syntax error. */
+#cmakedefine _UINT64_T
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#cmakedefine inline
+#endif
+
+/* Define to the type of a signed integer type of width exactly 32 bits if
+   such a type exists and the standard includes do not define it. */
+#cmakedefine int32_t
+
+/* Define to the type of a signed integer type of width exactly 64 bits if
+   such a type exists and the standard includes do not define it. */
+#cmakedefine int64_t
+
+/* Define to the equivalent of the C99 'restrict' keyword, or to
+   nothing if this is not supported.  Do not define if restrict is
+   supported directly.  */
+#cmakedefine restrict
+/* Work around a bug in Sun C++: it does not support _Restrict or
+   __restrict__, even though the corresponding Sun C compiler ends up with
+   "#define restrict _Restrict" or "#define restrict __restrict__" in the
+   previous line.  Perhaps some future version of Sun C++ will work with
+   restrict; if so, hopefully it defines __RESTRICT like Sun C does.  */
+#if defined __SUNPRO_CC && !defined __RESTRICT
+# define _Restrict
+# define __restrict__
+#endif
+
+/* Define to `unsigned int' if <sys/types.h> does not define. */
+#cmakedefine size_t
+
+/* Define to `int' if <sys/types.h> does not define. */
+#cmakedefine ssize_t
+
+/* Define to the type of an unsigned integer type of width exactly 16 bits if
+   such a type exists and the standard includes do not define it. */
+#cmakedefine uint16_t
+
+/* Define to the type of an unsigned integer type of width exactly 32 bits if
+   such a type exists and the standard includes do not define it. */
+#cmakedefine uint32_t
+
+/* Define to the type of an unsigned integer type of width exactly 64 bits if
+   such a type exists and the standard includes do not define it. */
+#cmakedefine uint64_t
