@@ -25,5 +25,3 @@ add_subdirectory(test)
 
 # TODO add an option to not do google test
 include(GoogleTest)
-
-

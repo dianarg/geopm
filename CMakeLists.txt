@@ -11,6 +11,7 @@ geopm_project_version()
 set(PACKAGE_VERSION VERSION STRING "Package version")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+include_directories(include)
 include_directories(src)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -32,22 +33,15 @@ set(GEOPM_DEFAULT_PLUGIN_PATH "$ENV{HOME}/build/geopm/lib/geopm" CACHE STRING "G
 add_compile_options(-msse4.2)
 add_compile_options(-DGEOPM_DEFAULT_PLUGIN_PATH="${GEOPM_DEFAULT_PLUGIN_PATH}")
 
-if ($ENV{enable_coverage})
-    set(GEOPM_COVERAGE 1 CACHE BOOL "Enables test coverage reporting")
+set(GEOPM_COVERAGE 0 CACHE BOOL "Enables test coverage reporting")
+if (GEOPM_COVERAGE)
     string(APPEND CMAKE_C_FLAGS " --coverage")
     string(APPEND CMAKE_CXX_FLAGS " --coverage")
     string(APPEND CMAKE_LD_FLAGS " --coverage -lgcov")
 endif ()
 
-if ($ENV{enable_overhead})
-    set(GEOPM_OVERHEAD 1 CACHE BOOL "Enables code for measuring overhead")
-endif ()
-
-if ($ENV{disable_procfs})
-    set(GEOPM_PROCFS 0 CACHE BOOL "Enables use of procfs for process CPU affinity")
-else ()
-    set(GEOPM_PROCFS 1 CACHE BOOL "Enables use of procfs for process CPU affinity")
-endif ()
+set(GEOPM_OVERHEAD 0 CACHE BOOL "Enables code for measuring overhead")
+set(GEOPM_PROCFS 1 CACHE BOOL "Enables use of procfs for process CPU affinity")
 
 set(GEOPM_MSRSAFE_IOCTL_WRITE $ENV{enable_msrsafe_ioctl_write} CACHE BOOL "Enables user of msr-safe ioctl feature for writing (broken as of msr-safe version 1.2.0")
 
@@ -142,7 +136,26 @@ add_executable(geopmwrite main/geopmwrite_main.cpp)
 target_link_libraries(geopmwrite geopmpolicy_lib)
 add_dependencies(geopmwrite geopmpolicy_lib)
 
+#==============================================================================#
+
 include(cmake/Googletest_main.cmake)
+
+#==============================================================================#
+
+install(
+    TARGETS geopm_lib
+            geopmpolicy_lib
+            geopmagent
+            geopmbench
+            geopmctl
+            geopmread
+            geopmwrite
+)
+
+install(
+    DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 #==============================================================================#
 
