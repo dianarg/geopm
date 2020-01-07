@@ -49,6 +49,7 @@ set(ENABLE_BETA $ENV{enable_beta} CACHE BOOL "")
 set(ENABLE_OPENMP $ENV{enable_openmp} CACHE BOOL "")
 set(ENABLE_OMPT $ENV{enable_ompt} CACHE BOOL "")
 set(ENABLE_FORTRAN $ENV{enable_fortran} CACHE BOOL "")
+set(ENABLE_DOC 1 CACHE BOOL "")
 
 set(WITH_MPI_BIN "" CACHE STRING "specify directory for mpi compiler wrapper binaries")
 
@@ -191,6 +192,70 @@ install(
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/geopm"
 )
 
+#### TODO: move me
+##### DOCS ######
+
+find_program(RONN ronn)
+# TODO: skip ronn conversion if ronn not found, and just copy the ronn files instead
+if(NOT RONN)
+set(ENABLE_DOC 0)
+endif(NOT RONN)
+
+if (ENABLE_DOC)
+
+file(GLOB RONN_FILES "ronn/geopm*.ronn")
+file(GLOB CXX_RONN_FILES "ronn/GEOPM_CXX_MAN_*.ronn")
+set(EXTRA_RONN "ronn/header.txt"
+               "ronn/index.txt")
+list(TRANSFORM RONN_FILES REPLACE "^/.*/|.ronn" "" OUTPUT_VARIABLE MAN_PAGES)
+list(TRANSFORM MAN_PAGES PREPEND "ronn/")
+
+message(STATUS ${RONN_FILES})
+message(STATUS ${CXX_RONN_FILES})
+message(STATUS ${MAN_PAGES})
+
+## Q: one is source, other is in binary dir?? should we put full paths?
+configure_file(ronn/geopm.7.ronn.in ronn/geopm.7.ronn)
+
+foreach(ff ${RONN_FILES})
+    configure_file(${ff} ronn/${basename} COPYONLY)
+endforeach()
+
+
+
+## build documentation
+add_custom_target(docs ALL
+    DEPENDS ${MAN_PAGES}
+)
+# TODO: removed date from ronn command
+# --date=`date "+%Y-%m-%d"`
+# TODO: doesn't work :(
+#execute_process(COMMAND date "+%Y-%m-%d" OUTPUT_VARIABLE DATE)
+set(DATE "2020-01-08")
+
+# TODO: could be a function
+foreach(PAGE ${MAN_PAGES})
+add_custom_command(
+    OUTPUT ${PAGE}
+    DEPENDS ${PAGE}.ronn
+    COMMAND cd ${CMAKE_CURRENT_BINARY_DIR}/ronn && ${RONN} --date=${DATE} --organization="GEOPM ${VERSION}" ${PAGE}.ronn
+    COMMAND cat ${CMAKE_CURRENT_SOURCE_DIR}/ronn/header.txt ${CMAKE_CURRENT_BINARY_DIR}/${PAGE} > ${CMAKE_CURRENT_BINARY_DIR}/${PAGE}.tmp
+    COMMAND mv ${CMAKE_CURRENT_BINARY_DIR}/${PAGE}.tmp ${CMAKE_CURRENT_BINARY_DIR}/${PAGE}
+    VERBATIM
+)
+
+get_filename_component(CHAPTER ${PAGE} EXT)
+
+# TODO: should be gz?
+install(
+    FILES ${PAGE}
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/share/man/man${CHAPTER}"
+)
+
+endforeach()
+
+endif(ENABLE_DOC)
+
 #==============================================================================#
 
 configure_file(config.h.in config.h)
@@ -198,7 +263,7 @@ configure_file(dox-public/Doxyfile.in dox-public/Doxyfile)
 configure_file(geopm-ohpc.spec.in geopm-ohpc.spec)
 configure_file(geopm-theta.spec.in geopm-theta.spec)
 configure_file(geopm.spec.in geopm.spec)
-configure_file(ronn/geopm.7.ronn.in ronn/geopm.7.ronn)
+
 configure_file(scripts/MANIFEST.in scripts/MANIFEST)
 configure_file(scripts/geopmpy/version.py.in scripts/geopmpy/version.py)
 
