@@ -14,6 +14,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(include)
 include_directories(src)
 
+add_subdirectory(scripts)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_C_STANDARD 11)
@@ -166,7 +168,6 @@ configure_file(geopm-theta.spec.in geopm-theta.spec)
 configure_file(geopm.spec.in geopm.spec)
 configure_file(ronn/geopm.7.ronn.in ronn/geopm.7.ronn)
 configure_file(scripts/MANIFEST.in scripts/MANIFEST)
-configure_file(scripts/geopmpy/version.py.in scripts/geopmpy/version.py)
 
 #==============================================================================#
 
