@@ -152,9 +152,43 @@ install(
             geopmwrite
 )
 
+# Installed C headers
 install(
     DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# Installed C++ headers
+# TODO: move to include folder also?
+set(CXX_HEADERS "contrib/json11/json11.hpp"
+                 "src/Agent.hpp"
+                 "src/Agg.hpp"
+                 "src/CircularBuffer.hpp"
+                 "src/CpuinfoIOGroup.hpp"
+                 "src/EnergyEfficientRegion.hpp"
+                 "src/FrequencyGovernor.hpp"
+                 "src/Exception.hpp"
+                 "src/Helper.hpp"
+                 "src/IOGroup.hpp"
+                 "src/MSR.hpp"
+                 "src/MSRControl.hpp"
+                 "src/MSRIO.hpp"
+                 "src/MSRIOGroup.hpp"
+                 "src/MSRSignal.hpp"
+                 "src/PlatformIO.hpp"
+                 "src/PlatformTopo.hpp"
+                 "src/PluginFactory.hpp"
+                 "src/PowerBalancer.hpp"
+                 "src/PowerGovernor.hpp"
+                 "src/RegionAggregator.hpp"
+                 "src/SharedMemory.hpp"
+                 "src/SharedMemoryScopedLock.hpp"
+                 "src/SharedMemoryUser.hpp"
+                 "src/TimeIOGroup.hpp"
+)
+install(
+    FILES ${CXX_HEADERS}
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/geopm"
 )
 
 #==============================================================================#
