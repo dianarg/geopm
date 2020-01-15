@@ -38,22 +38,26 @@
 
 #include "Exception.hpp"
 #include "Helper.hpp"
-
+#include <iostream>
 namespace geopm
 {
-    Policy::Policy()
+    Policy::Policy(const std::vector<std::string> &names,
+                   const std::vector<double> &values)
+        : m_names(names)
     {
+        if (names.size() < values.size()) {
+            throw Exception("Policy(): incorrect number of policy names.",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
 
+        for (int ii = 0; ii < values.size(); ++ii) {
+            m_values[m_names.at(ii)] = values[ii];
+        }
     }
 
-    Policy::Policy(const std::vector<double> &values)
-        : m_values(values)
-    {
-
-    }
-
-    Policy::Policy(std::initializer_list<double> list)
-        : m_values(list)
+    Policy::Policy(const Policy &other)
+        : m_names(other.m_names)
+        , m_values(other.m_values)
     {
 
     }
@@ -63,32 +67,84 @@ namespace geopm
         return m_values.size();
     }
 
+    std::vector<std::string> Policy::policy_names(void) const
+    {
+        return m_names;
+    }
+
     double &Policy::operator[](size_t index)
     {
-        return m_values[index];
+        // todo: error checking test
+        if (index >= m_names.size()) {
+            throw Exception("not name index!", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+#ifdef GEOPM_DEBUG
+        if (m_values.find(m_names[index]) == m_values.end()) {
+            throw Exception("not name!", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+
+#endif
+        return m_values[m_names[index]];
+    }
+
+    double &Policy::operator[](const std::string &name)
+    {
+        // todo: error checking test
+        if (m_values.find(name) == m_values.end()) {
+            throw Exception("not name!", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        return m_values[name];
+    }
+
+    /// Compare two doubles, return true id equal or both are NaN
+    static bool float_equal(double a, double b)
+    {
+        bool result = false;
+        if (a == b || (std::isnan(a) && std::isnan(b))) {
+            result = true;
+        }
+        return result;
     }
 
     bool Policy::operator==(const Policy &other) const
     {
+        // todo: out of bounds access to map or vector is a logic error here
+
+        if (m_names.size() != other.m_names.size()) {
+            return false;
+        }
+
         bool equal = true;
-        auto it = m_values.begin();
-        auto ito = other.m_values.begin();
-        for (; equal && it != m_values.end() && ito != other.m_values.end() ;
-             ++it, ++ito) {
-            if (!(std::isnan(*it) && std::isnan(*ito)) &&
-                *it != *ito) {
+        for (int idx = 0; equal && idx < m_names.size(); ++idx) {
+            // name at each index must match
+            if (m_names[idx] != other.m_names[idx]) {
                 equal = false;
             }
-        }
-        // check trailing values
-        for (; equal && it != m_values.end(); ++it) {
-            if (!std::isnan(*it)) {
-                equal = false;
-            }
-        }
-        for (; equal && ito != other.m_values.end(); ++ito) {
-            if (!std::isnan(*ito)) {
-                equal = false;
+            else {
+                std::string key = m_names[idx];
+                auto tval = m_values.find(key);
+                auto oval = other.m_values.find(key);
+                if (tval != m_values.end() && oval != other.m_values.end() &&
+                    !float_equal(tval->second, oval->second)) {
+                    // non-NaN values must match
+                    equal = false;
+                }
+                else if (idx < m_values.size() && idx >= other.m_values.size() &&
+                         !std::isnan(tval->second)) {
+                    // trailing values in this must be nan
+                    equal = false;
+                }
+                else if (idx < other.m_values.size() && idx >= m_values.size() &&
+                         !std::isnan(oval->second)) {
+                    // trailing values in other must be nan
+                    equal = false;
+                }
+                else {
+#ifdef GEOPM_DEBUG
+                    throw Exception("Unexpected gaps in policy data structures.",
+                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+#endif
+                }
             }
         }
         return equal;
@@ -101,44 +157,42 @@ namespace geopm
 
     std::string Policy::to_string(const std::string &delimiter) const
     {
+        // todo: out of bounds access to map or vector is a logic error here
+
         std::ostringstream temp;
         for (int ii = 0; ii < m_values.size(); ++ii) {
             if (ii != 0) {
                 temp << delimiter;
             }
-            if (std::isnan(m_values.at(ii))) {
+            if (std::isnan(m_values.at(m_names.at(ii)))) {
                 temp << "NAN";
             }
             else {
-                temp << geopm::string_format_double(m_values.at(ii));
+                temp << geopm::string_format_double(m_values.at(m_names.at(ii)));
             }
         }
         return temp.str();
     }
 
     /// @todo: replace similar implementation in geopm_agent_policy_json
-    std::string Policy::to_json(const std::vector<std::string> &policy_names) const
+    std::string Policy::to_json(void) const
     {
-        if (policy_names.size() != m_values.size()) {
-            throw Exception("Policy::to_json(): incorrect number of policy names.",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
+        // todo: out of bounds access to map or vector is a logic error here
 
         std::stringstream output_str;
-
         std::string policy_value;
         output_str << "{";
-        for (size_t idx = 0; idx < m_values.size(); ++idx) {
+        for (size_t idx = 0; idx < m_names.size() && m_values.find(m_names.at(idx)) != m_values.end(); ++idx) {
             if (idx > 0) {
                 output_str << ", ";
             }
-            if (std::isnan(m_values.at(idx))) {
+            if (std::isnan(m_values.at(m_names.at(idx)))) {
                 policy_value = "\"NAN\"";
             }
             else {
-                policy_value = geopm::string_format_double(m_values.at(idx));
+                policy_value = geopm::string_format_double(m_values.at(m_names.at(idx)));
             }
-            output_str << "\"" << policy_names.at(idx) << "\": " << policy_value;
+            output_str << "\"" << m_names.at(idx) << "\": " << policy_value;
         }
         output_str << "}";
         return output_str.str();
@@ -146,7 +200,13 @@ namespace geopm
 
     std::vector<double> Policy::to_vector(void) const
     {
-        return m_values;
+        // todo: map size larger than names vector is a log error here
+
+        std::vector<double> result(m_values.size());
+        for (int ii = 0; ii < m_values.size(); ++ii) {
+            result[ii] = m_values.at(m_names.at(ii));
+        }
+        return result;
     }
 
     void Policy::pad_nan_to(size_t size)
@@ -155,7 +215,9 @@ namespace geopm
             throw Exception("Policy::pad_to_nan(): size of policy cannot be reduced.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        m_values.resize(size, NAN);
+        for (int ii = m_values.size(); ii < size; ++ii) {
+            m_values[m_names.at(ii)] = NAN;
+        }
     }
 }
 

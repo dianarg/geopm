@@ -35,6 +35,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 namespace geopm
 {
@@ -44,25 +45,23 @@ namespace geopm
     class Policy
     {
         public:
-            Policy();
-            Policy(const std::vector<double> &values);
-            Policy(std::initializer_list<double> list);
-            Policy(const Policy &other) = default;
+            Policy(const std::vector<std::string> &names,
+                   const std::vector<double> &values);
+            //Policy(std::intiastd::initializer_list<double> list);
+            Policy(const Policy &other);// = default;
             virtual ~Policy() = default;
 
             /// @brief Returns the number of values in the policy.
             size_t size(void) const;
 
-            /// @brief Access an element of the policy by index.
+            /// @brief Returns the vector of policy names.
+            std::vector<std::string> policy_names(void) const;
+
+            /// @brief Access a value of the policy by index.
             double &operator[](size_t index);
 
-            // todo: map-like interface; might want .at()?  or just have [] operator throw
-            // need to include policy names in contructor
-
-
-            // todo: Policy Policy::convert(const std::vector<std::string> &policy_names);
-            // which creates a policy for a different agent, with values for common policy names transferred.
-
+            /// @brief Access a value of the policy by name.
+            double &operator[](const std::string &name);
 
             /// @brief Equality comparison operator.  Trailing NANs are
             ///        not considered when checking for equality.
@@ -77,9 +76,7 @@ namespace geopm
 
 
             /// @brief Format the Policy values as a JSON string.
-            /// @param [in] policy_names String names to use for keys
-            ///        of each value in order.
-            std::string to_json(const std::vector<std::string> &policy_names) const;
+            std::string to_json(void) const;
 
             /// @brief Convert the policy values to a std::vector
             std::vector<double> to_vector(void) const;
@@ -89,9 +86,14 @@ namespace geopm
             ///        greater than or equal to the current size.
             void pad_nan_to(size_t size);
 
+            // todo: Policy Policy::convert(const std::vector<std::string> &policy_names);
+            // which creates a policy for a different agent, with values for common policy names transferred.
+
+
         private:
-            double m_temp;
-            std::vector<double> m_values;
+            //std::vector<double> m_values;
+            std::vector<std::string> m_names;
+            std::map<std::string, double> m_values;
     };
 }
 
