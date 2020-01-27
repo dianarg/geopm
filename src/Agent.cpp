@@ -33,11 +33,12 @@
 #include "Agent.hpp"
 
 #include <cmath>
+#include <cstring>
+
 #include <sstream>
 #include <iostream>
 
 #include "geopm_agent.h"
-#include "string.h"
 #include "MonitorAgent.hpp"
 #include "PowerBalancerAgent.hpp"
 #include "PowerGovernorAgent.hpp"
@@ -47,6 +48,7 @@
 #include "Endpoint.hpp"
 #include "SharedMemoryUser.hpp"
 #include "Helper.hpp"
+#include "Policy.hpp"
 #include "config.h"
 
 namespace geopm
@@ -368,41 +370,28 @@ int geopm_agent_policy_json_partial(const char *agent_name,
                                     char *json_string)
 {
     std::stringstream output_str;
-    char policy_name[json_string_max];
     std::string policy_value;
     int num_policy = 0;
     int err = geopm_agent_num_policy(agent_name, &num_policy);
     if (!err && (num_policy < 0 || policy_array_size > (size_t)num_policy)) {
         err = GEOPM_ERROR_INVALID;
     }
-    try {
-        if (!err) {
-            output_str << "{";
-            for (size_t i = 0; !err && i < policy_array_size; ++i) {
-                if (i > 0) {
-                    output_str << ", ";
-                }
-                err = geopm_agent_policy_name(agent_name, i, json_string_max, policy_name);
-                if (std::isnan(policy_array[i])) {
-                    policy_value = "\"NAN\"";
-                }
-                else {
-                    policy_value = geopm::string_format_double(policy_array[i]);
-                }
-                output_str << "\"" << policy_name << "\": " << policy_value;
-            }
-            output_str << "}";
+    if (!err) {
+        try {
+            std::vector<double> policy_values(policy_array, policy_array + policy_array_size);
+            geopm::Policy policy{geopm::Agent::policy_names(agent_name), policy_values};
+            output_str << policy.to_json();
         }
-    }
-    catch (...) {
-        err = geopm::exception_handler(std::current_exception(), false);
+        catch (...) {
+            err = geopm::exception_handler(std::current_exception(), false);
+        }
     }
 
     if (!err) {
         if (output_str.str().size() >= json_string_max) {
             err = GEOPM_ERROR_INVALID;
         }
-        if (!err) {
+        else {
             strncpy(json_string, output_str.str().c_str(), json_string_max);
             json_string[json_string_max - 1] = '\0';
         }

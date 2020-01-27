@@ -117,7 +117,9 @@ zero upon success; see [ERRORS][] section below for details.
     creates a JSON file based on the provided _policy_array_ that can be used
     for statically controlling the job policy for _agent_name_.  The output is
     stored in the _json_string_ buffer.  The number of bytes reserved for the
-    buffer is specified in _json_string_max_.
+    buffer is specified in _json_string_max_.  The size of the _policy_array_
+    must equal the total number of policy values available for the agent.
+    Returns zero on success, otherwise an error code is returned.
 
   * `geopm_agent_policy_json_partial`():
     creates a JSON file based on the provided _policy_array_ of length
@@ -127,7 +129,8 @@ zero upon success; see [ERRORS][] section below for details.
     is specified in _json_string_max_.  The _policy_array_ may contain
     only a partial list of the policies accepted by the Agent.  Missing
     policy values will be automatically interpreted as NAN, indicating
-    that the Agent should use a default value.
+    that the Agent should use a default value.  Returns zero on success,
+    otherwise an error code is returned.
 
   * `geopm_agent_num_sample`():
     queries GEOPM for the number of sample parameters provided by _agent_name_.

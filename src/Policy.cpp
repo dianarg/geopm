@@ -197,7 +197,6 @@ namespace geopm
         return temp.str();
     }
 
-    /// @todo: replace similar implementation in geopm_agent_policy_json
     std::string Policy::to_json(void) const
     {
         std::stringstream output_str;
