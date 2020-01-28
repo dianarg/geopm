@@ -151,6 +151,11 @@ TEST(PolicyTest, access_values)
     EXPECT_EQ(4.0, pol.at(3));
     EXPECT_EQ(4, pol.size());
 
+    pol.at("tres") = 3.3;
+    pol.at(3) = 4.4;
+    EXPECT_EQ(3.3, pol.at("tres"));
+    EXPECT_EQ(4.4, pol.at(3));
+
     // default inserted by [] operators is NaN
     EXPECT_TRUE(std::isnan(pol[4]));
     EXPECT_TRUE(std::isnan(pol["siete"]));
@@ -240,6 +245,8 @@ TEST(PolicyTest, fill_missing_with_nans)
     p1.pad_nan_to(5);
     EXPECT_EQ(5, p1.size());
     EXPECT_TRUE(PoliciesAreSame(before, p1));
+    EXPECT_EQ(4.4, p1.at("un"));
+    EXPECT_EQ(7.7, p1.at("troi"));
     EXPECT_TRUE(std::isnan(p1.at(3)));
     EXPECT_TRUE(std::isnan(p1.at("cinq")));
     EXPECT_TRUE(std::isnan(p1.at(4)));
@@ -248,4 +255,8 @@ TEST(PolicyTest, fill_missing_with_nans)
     GEOPM_EXPECT_THROW_MESSAGE(p1.pad_nan_to(3),
                                GEOPM_ERROR_INVALID,
                                "size of policy cannot be reduced");
+
+    // cannot pad beyond number of policy names
+    GEOPM_EXPECT_THROW_MESSAGE(p1.pad_nan_to(20), GEOPM_ERROR_INVALID,
+                               "cannot pad more than maximum policy size");
 }

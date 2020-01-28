@@ -279,6 +279,13 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/PlatformTopoTest.ppc_num_domain \
               test/gtest_links/PlatformTopoTest.singleton_construction \
               test/gtest_links/PlatformTopoTest.call_c_wrappers \
+              test/gtest_links/PolicyTest.construct \
+              test/gtest_links/PolicyTest.access_values \
+              test/gtest_links/PolicyTest.to_vector \
+              test/gtest_links/PolicyTest.equality \
+              test/gtest_links/PolicyTest.to_string \
+              test/gtest_links/PolicyTest.to_json_string \
+              test/gtest_links/PolicyTest.fill_missing_with_nans \
               test/gtest_links/PowerBalancerAgentTest.leaf_agent \
               test/gtest_links/PowerBalancerAgentTest.power_balancer_agent \
               test/gtest_links/PowerBalancerAgentTest.tree_agent \
