@@ -56,13 +56,6 @@ namespace geopm
         }
     }
 
-    Policy::Policy(const Policy &other)
-        : m_names(other.m_names)
-        , m_values(other.m_values)
-    {
-
-    }
-
     size_t Policy::size(void) const
     {
         return m_values.size();
@@ -76,7 +69,8 @@ namespace geopm
     double &Policy::operator[](size_t index)
     {
         if (index >= m_names.size()) {
-            throw Exception("Policy: invalid index for policy", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            throw Exception("Policy: invalid index for policy",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
 
         if (m_values.find(m_names[index]) == m_values.end()) {
@@ -97,7 +91,7 @@ namespace geopm
         return m_values[name];
     }
 
-    double Policy::at(size_t index) const
+    void Policy::check_index(size_t index) const
     {
         if (index >= m_names.size()) {
             throw Exception("Policy: invalid index for policy",
@@ -107,10 +101,21 @@ namespace geopm
             throw Exception("Policy: no value for policy at index " + std::to_string(index),
                             GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
+    }
+
+    double Policy::at(size_t index) const
+    {
+        check_index(index);
         return m_values.at(m_names[index]);
     }
 
-    double Policy::at(const std::string &name) const
+    double &Policy::at(size_t index)
+    {
+        check_index(index);
+        return m_values.at(m_names[index]);
+    }
+
+    void Policy::check_name(const std::string &name) const
     {
         if (std::find(m_names.begin(), m_names.end(), name) == m_names.end()) {
             throw Exception("Policy: invalid policy name: " + name,
@@ -120,6 +125,17 @@ namespace geopm
             throw Exception("Policy: no value for policy with name: " + name,
                             GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
+    }
+
+    double Policy::at(const std::string &name) const
+    {
+        check_name(name);
+        return m_values.at(name);
+    }
+
+    double &Policy::at(const std::string &name)
+    {
+        check_name(name);
         return m_values.at(name);
     }
 
@@ -199,13 +215,13 @@ namespace geopm
 
     std::string Policy::to_json(void) const
     {
-        std::stringstream output_str;
-        std::string policy_value;
+        std::ostringstream output_str;
         output_str << "{";
         for (size_t idx = 0; idx < m_names.size() && m_values.find(m_names.at(idx)) != m_values.end(); ++idx) {
             if (idx > 0) {
                 output_str << ", ";
             }
+            std::string policy_value;
             if (std::isnan(m_values.at(m_names.at(idx)))) {
                 policy_value = "\"NAN\"";
             }
@@ -237,6 +253,10 @@ namespace geopm
     {
         if (size < m_values.size()) {
             throw Exception("Policy::pad_to_nan(): size of policy cannot be reduced.",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        if (size > m_names.size()) {
+            throw Exception("Policy::pad_to_nan(): cannot pad more than maximum policy size",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         for (size_t ii = m_values.size(); ii < size; ++ii) {
