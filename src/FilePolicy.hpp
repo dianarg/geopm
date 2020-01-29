@@ -54,7 +54,6 @@ namespace geopm
             /// @return The policy values read.
             std::vector<double> get_policy(void);
         private:
-            std::map<std::string, double> parse_json(const std::string &path);
             std::vector<double> m_policy;
             const std::string m_policy_path;
             const std::vector<std::string> m_policy_names;
