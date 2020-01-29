@@ -59,7 +59,7 @@ PoliciesAreSame(const Policy &p1, const Policy &p2)
 {
     if (p1 != p2) {
         std::ostringstream msg;
-        msg << "{" << p1.policy_names() << "}; {" << p1.to_string(",")
+        msg << "{" << p1.policy_names() << "}: {" << p1.to_string(",")
             << "} is not equivalent to {" << p2.policy_names() << "}: {"
             << p2.to_string(",") << "}";
         return ::testing::AssertionFailure() << msg.str();
@@ -215,7 +215,7 @@ TEST(PolicyTest, to_string)
 TEST(PolicyTest, to_json_string)
 {
     std::string json1 = "{}";
-    EXPECT_EQ(json1, Policy({}, {}).to_json());
+    EXPECT_EQ(json1, Policy({{}, {}}).to_json());
 
     std::string json2 = "{\"val\": 5.5}";
     EXPECT_EQ(json2, Policy({"val"}, {5.5}).to_json());
@@ -259,4 +259,72 @@ TEST(PolicyTest, fill_missing_with_nans)
     // cannot pad beyond number of policy names
     GEOPM_EXPECT_THROW_MESSAGE(p1.pad_nan_to(20), GEOPM_ERROR_INVALID,
                                "cannot pad more than maximum policy size");
+}
+
+TEST(PolicyTest, from_string)
+{
+    std::vector<std::string> names1 = {};
+    Policy p1 = Policy::from_string(names1, "");
+    EXPECT_TRUE(PoliciesAreSame({{}, {}}, p1));
+
+    std::vector<std::string> names2 = {"a", "b"};
+    Policy p2 = Policy::from_string(names2, "");
+    EXPECT_TRUE(PoliciesAreSame({names2, {}}, p2));
+
+    std::vector<std::string> names3 = {"x", "y", "z"};
+    Policy p3 = Policy::from_string(names3, "7.7,4.5");
+    EXPECT_TRUE(PoliciesAreSame({names3, {7.7, 4.5}}, p3));
+
+    std::vector<std::string> names4 = {"f", "g", "h"};
+    Policy p4 = Policy::from_string(names4, "3,NaN,nan");
+    EXPECT_TRUE(PoliciesAreSame({names4, {3, NAN, NAN}}, p4));
+
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_string(names4, "4,bad"),
+                               GEOPM_ERROR_INVALID, "invalid value for double");
+
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_string(names1, "7,8"),
+                               GEOPM_ERROR_INVALID, "incorrect number of policy names");
+}
+
+TEST(PolicyTest, from_json_string)
+{
+    std::vector<std::string> names1 = {};
+    Policy p1 = Policy::from_json(names1, "{}");
+    EXPECT_TRUE(PoliciesAreSame({names1, {}}, p1));
+
+    std::vector<std::string> names2 = {"a", "b"};
+    Policy p2 = Policy::from_json(names2, "{}");
+    EXPECT_TRUE(PoliciesAreSame({names2, {}}, p2));
+
+    std::vector<std::string> names3 = {"x", "y", "z"};
+    Policy p3 = Policy::from_json(names3, "{\"x\": 7.7, \"y\": 4.5}");
+    EXPECT_TRUE(PoliciesAreSame({names3, {7.7, 4.5}}, p3));
+
+    std::vector<std::string> names4 = {"f", "g", "h"};
+    Policy p4 = Policy::from_json(names4, "{\"g\": \"NAN\", \"f\": 3.4, \"h\": 6e9 }");
+    EXPECT_TRUE(PoliciesAreSame({names4, {3.4, NAN, 6e9}}, p4));
+
+    // bad json errors
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names1, ""),
+                               GEOPM_ERROR_INVALID, "malformed json");
+
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names1, "{{ }"),
+                               GEOPM_ERROR_INVALID, "malformed json");
+
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names1, "{\"a\": 6, }"),
+                               GEOPM_ERROR_INVALID, "malformed json");
+
+    // invalid policy names
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": 1, \"c\": 2}"),
+                               GEOPM_ERROR_INVALID, "invalid policy name");
+
+    // invalid value
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": \"invalid\"}"),
+                               GEOPM_ERROR_INVALID, "invalid value for policy");
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": {} }"),
+                               GEOPM_ERROR_INVALID, "invalid value for policy");
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": true }"),
+                               GEOPM_ERROR_INVALID, "invalid value for policy");
+    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": null }"),
+                               GEOPM_ERROR_INVALID, "invalid value for policy");
 }

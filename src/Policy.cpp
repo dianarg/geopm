@@ -37,8 +37,12 @@
 #include <sstream>
 #include <algorithm>
 
+#include "contrib/json11/json11.hpp"
+
 #include "Exception.hpp"
 #include "Helper.hpp"
+
+using json11::Json;
 
 namespace geopm
 {
@@ -262,6 +266,73 @@ namespace geopm
         for (size_t ii = m_values.size(); ii < size; ++ii) {
             m_values[m_names.at(ii)] = NAN;
         }
+    }
+
+    Policy Policy::from_string(const std::vector<std::string> &names, const std::string &values)
+    {
+        std::vector<double> vals;
+        auto pieces = geopm::string_split(values, ",");
+        for (std::string pp : pieces) {
+            try {
+                vals.push_back(std::stod(pp));
+            }
+            catch (std::invalid_argument &) {
+                throw Exception("Policy::from_string(): invalid value for double: " + pp,
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
+        return Policy(names, vals);
+    }
+
+    Policy Policy::from_json(const std::vector<std::string> &names, const std::string &json)
+    {
+        std::map<std::string, double> vals;
+        std::string err;
+        Json root = Json::parse(json, err);
+        if (!err.empty() || !root.is_object()) {
+            throw Exception("Policy::" + std::string(__func__) + "(): detected a malformed json string: " + err,
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        for (const auto &obj : root.object_items()) {
+            if (std::find(names.begin(), names.end(), obj.first) == names.end()) {
+                throw Exception("Policy::" + std::string(__func__) + "(): invalid policy name: " + obj.first,
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+            if (obj.second.type() == Json::NUMBER) {
+                vals.emplace(obj.first, obj.second.number_value());
+            }
+            else if (obj.second.type() == Json::STRING) {
+                std::string tmp_val = obj.second.string_value();
+                std::transform(tmp_val.begin(), tmp_val.end(), tmp_val.begin(), [] (char c) { return std::tolower(c); });
+                if (tmp_val == "nan") {
+                    vals.emplace(obj.first, NAN);
+                }
+                else {
+                    throw Exception("Policy::" + std::string(__func__) + "(): invalid value for policy " + obj.first,
+                                    GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                }
+            }
+            else {
+                throw Exception("Policy::" + std::string(__func__) + "(): invalid value for policy " + obj.first,
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
+        // build the values vector from the end to skip missing values
+        std::vector<double> tmp;
+        bool fill = false;
+        for (auto nit = names.rbegin(); nit != names.rend(); ++nit) {
+            auto vit = vals.find(*nit);
+            if (vit != vals.end()) {
+                tmp.emplace_back(vit->second);
+                fill = true;
+            }
+            else if (fill) {
+                tmp.emplace_back(NAN);
+            }
+        }
+        std::reverse(tmp.begin(), tmp.end());
+
+        return Policy(names, tmp);
     }
 }
 

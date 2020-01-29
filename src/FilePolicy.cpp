@@ -92,7 +92,6 @@ namespace geopm
                                 GEOPM_ERROR_FILE_PARSE, __FILE__, __LINE__);
             }
         }
-
         return policy_value_map;
     }
 
