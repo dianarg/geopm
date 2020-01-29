@@ -96,6 +96,23 @@ namespace geopm
             ///        reaches the given size.  The new size must be
             ///        greater than or equal to the current size.
             void pad_nan_to(size_t size);
+
+            /// @brief Create a new Policy object from a string of
+            ///        comma-separated values and a vector of policy
+            ///        names for the target agent.  The string representing
+            ///        "NAN" is not case-sensitive.
+            static Policy from_string(const std::vector<std::string> &names,
+                                      const std::string &values);
+
+            /// @brief Create a new Policy object from a JSON-formatted
+            ///        string containing the values mapping to each policy
+            ///        name and the vector of all names for the target agent.
+            ///        Any missing non-trailing values will be filled in
+            ///        with NAN, but trailing values will be left empty.
+            ///        The string representing "NAN" is not case-sensitive.
+            static Policy from_json(const std::vector<std::string> &names,
+                                    const std::string &json);
+
         private:
             void check_index(size_t index) const;
             void check_name(const std::string &name) const;
