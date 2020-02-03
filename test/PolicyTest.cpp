@@ -45,7 +45,7 @@ using geopm::Exception;
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const std::vector<T> &vec)
 {
-    for (int ii = 0; ii < vec.size(); ++ii) {
+    for (size_t ii = 0; ii < vec.size(); ++ii) {
         if (ii != 0) {
             os << ", ";
         }
@@ -83,12 +83,12 @@ PoliciesAreNotSame(const Policy &p1, const Policy &p2)
 TEST(PolicyTest, construct)
 {
     Policy pol1{{}, {}};
-    EXPECT_EQ(0, pol1.size());
+    EXPECT_EQ(0u, pol1.size());
 
     std::vector<std::string> names{"one", "two"};
     std::vector<double> values{4.4, 5.5};
     Policy pol2{names, values};
-    EXPECT_EQ(2, pol2.size());
+    EXPECT_EQ(2u, pol2.size());
     EXPECT_EQ(5.5, pol2[1]);
     EXPECT_EQ(5.5, pol2["two"]);
     Policy pol2a {{"a", "b"}, {4.4, 5.5}};
@@ -97,7 +97,7 @@ TEST(PolicyTest, construct)
     EXPECT_TRUE(PoliciesAreSame(pol2, pol2b));
 
     Policy pol3 {pol2};
-    EXPECT_EQ(2, pol3.size());
+    EXPECT_EQ(2u, pol3.size());
 
     EXPECT_EQ(4.4, pol3[0]);
 
@@ -110,7 +110,7 @@ TEST(PolicyTest, construct)
 
     // more names than values is allowed
     Policy pol5 {{"a", "c"}, {7.7}};
-    EXPECT_EQ(1, pol5.size());
+    EXPECT_EQ(1u, pol5.size());
     EXPECT_EQ(std::vector<std::string>({"a", "c"}), pol5.policy_names());
 
     // not enough policy names
@@ -149,7 +149,7 @@ TEST(PolicyTest, access_values)
 
     EXPECT_EQ(3.0, pol.at("tres"));
     EXPECT_EQ(4.0, pol.at(3));
-    EXPECT_EQ(4, pol.size());
+    EXPECT_EQ(4u, pol.size());
 
     pol.at("tres") = 3.3;
     pol.at(3) = 4.4;
@@ -159,7 +159,7 @@ TEST(PolicyTest, access_values)
     // default inserted by [] operators is NaN
     EXPECT_TRUE(std::isnan(pol[4]));
     EXPECT_TRUE(std::isnan(pol["siete"]));
-    EXPECT_EQ(6, pol.size());
+    EXPECT_EQ(6u, pol.size());
 }
 
 TEST(PolicyTest, to_vector)
@@ -233,17 +233,17 @@ TEST(PolicyTest, to_json_string)
 TEST(PolicyTest, fill_missing_with_nans)
 {
     Policy p1 {{"un", "deux", "troi", "quatre", "cinq"}, {4.4, NAN, 7.7}};
-    EXPECT_EQ(3, p1.size());
+    EXPECT_EQ(3u, p1.size());
 
     // same size is not an error
     p1.pad_nan_to(3);
-    EXPECT_EQ(3, p1.size());
+    EXPECT_EQ(3u, p1.size());
     GEOPM_EXPECT_THROW_MESSAGE(p1.at("cinq"), GEOPM_ERROR_RUNTIME,
                                "no value for policy with name");
 
     Policy before = p1;
     p1.pad_nan_to(5);
-    EXPECT_EQ(5, p1.size());
+    EXPECT_EQ(5u, p1.size());
     EXPECT_TRUE(PoliciesAreSame(before, p1));
     EXPECT_EQ(4.4, p1.at("un"));
     EXPECT_EQ(7.7, p1.at("troi"));
