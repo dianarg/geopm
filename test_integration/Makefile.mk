@@ -37,9 +37,10 @@ EXTRA_DIST += test_integration/geopm_context.py \
               test_integration/__main__.py \
               test_integration/README.md \
               test_integration/test_ee_stream_dgemm_mix.py \
+              test_integration/test_enforce_policy.py \
               test_integration/test_omp_outer_loop.py \
               test_integration/test_profile_policy.py \
-              test_integration/test_static_policy.py \
+              test_integration/test_enforce_policy.py \
               test_integration/test_plugin_static_policy.py \
               test_integration/util.py \
               # end
@@ -70,13 +71,13 @@ test_integration_test_omp_outer_loop_CXXFLAGS = $(AM_CXXFLAGS) $(MPI_CFLAGS) -D_
 endif
 endif
 
-noinst_PROGRAMS += test_integration/test_static_policy \
+noinst_PROGRAMS += test_integration/test_enforce_policy \
                    # end
-test_integration_test_static_policy_SOURCES = test_integration/test_static_policy.c \
+test_integration_test_enforce_policy_SOURCES = test_integration/test_enforce_policy.c \
                                               # end
-test_integration_test_static_policy_LDADD = libgeopmpolicy.la
-test_integration_test_static_policy_LDFLAGS = $(AM_LDFLAGS)
-test_integration_test_static_policy_CFLAGS = $(AM_CFLAGS)
+test_integration_test_enforce_policy_LDADD = libgeopmpolicy.la
+test_integration_test_enforce_policy_LDFLAGS = $(AM_LDFLAGS)
+test_integration_test_enforce_policy_CFLAGS = $(AM_CFLAGS)
 
 if ENABLE_BETA
 noinst_PROGRAMS += test_integration/test_profile_policy
