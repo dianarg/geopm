@@ -53,8 +53,8 @@ def getSystemConfig():
         subprocess.check_call(shlex.split("geopmadmin"),
                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError:
-        print("geopmadmin check failed, there is an issue with the site configuration.\n")
-        raise
+        sys.stdout.write("geopmadmin check failed, there is an issue with the site configuration.\n")
+        pass
     settings = {}
     for option in ["--config-default", "--config-override"]:
         try:
