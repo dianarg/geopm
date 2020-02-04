@@ -33,6 +33,7 @@
 
 from __future__ import absolute_import
 
+
 import os
 import sys
 import unittest
@@ -43,10 +44,12 @@ import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from test_integration import geopm_context
-import geopmpy.io
-from test_integration import util
-import geopmpy.topo
 import geopmpy.pio
+import geopmpy.topo
+from test_integration import util
+import geopmpy.io
+from test_integration import geopm_test_launcher
+
 
 def getSystemConfig():
     try:
@@ -67,6 +70,7 @@ def getSystemConfig():
             pass
     return settings
 
+
 def getSystemConfigAgent():
     ret = ''
     try:
@@ -75,11 +79,13 @@ def getSystemConfigAgent():
         pass
     return ret
 
+
 def getSystemConfigPolicy():
     geopm_system_config = getSystemConfig()
     proc = subprocess.Popen(shlex.split("cat {}".format(geopm_system_config['GEOPM_POLICY'])),
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return json.loads(proc.communicate()[0])
+
 
 @util.skip_unless_batch()
 class TestIntegrationPluginStaticPolicy(unittest.TestCase):
@@ -103,7 +109,7 @@ class TestIntegrationPluginStaticPolicy(unittest.TestCase):
         current_freq = geopmpy.pio.read_signal("MSR::PERF_CTL:FREQ", "board", 0)
         self.assertEqual(test_freq, current_freq)
 
-    @unittest.skipUnless(getSystemConfigAgent() in ['power_governor','power_balancer'],
+    @unittest.skipUnless(getSystemConfigAgent() in ['power_governor', 'power_balancer'],
                          'Requires environment default/override to be configured to cap power.')
     def test_power_cap_enforced(self):
         num_pkg = geopmpy.topo.num_domain('package')
@@ -111,6 +117,47 @@ class TestIntegrationPluginStaticPolicy(unittest.TestCase):
         for pkg in range(num_pkg):
             current_power = geopmpy.pio.read_signal("MSR::PKG_POWER_LIMIT:PL1_POWER_LIMIT", "package", pkg)
             self.assertEqual(test_power, current_power)
+
+    # TODO: move shared code to util.py
+    def assert_geopm_uses_agent_policy(self, expected_agent, expected_policy, context):
+        """Assert that geopm uses the given policy.
+        Arguments:
+        expected_policy (dict str->float): Policy to expect in generated reports.
+        context (str): Additional context for test file names and failure messages.
+        user_policy (dict str->float): Policy to request in the geopmlaunch command.
+        """
+        report_path = '{}.report'.format(context)
+        num_node = 1
+        num_rank = 1
+        app_conf = geopmpy.io.BenchConf(context + '.app.config')
+        self._tmp_files.append(app_conf.get_path())
+        app_conf.append_region('sleep', 0.01)
+        launcher = geopm_test_launcher.TestLauncher(app_conf=app_conf, report_path=report_path)
+        launcher.set_num_node(num_node)
+        launcher.set_num_rank(num_rank)
+        launcher.run(context)
+        self._tmp_files.append(report_path)
+
+        actual_agent = geopmpy.io.RawReport(report_path).meta_data()['Agent']
+        self.assertEqual(expected_agent, actual_agent)
+        actual_policy = geopmpy.io.RawReport(report_path).meta_data()['Policy']
+        for expected_key, expected_value in expected_policy.items():
+            self.assertEqual(expected_value, actual_policy[expected_key],
+                             msg='Wrong policy value for {} (context: {})'.format(expected_key, context))
+        for actual_key, actual_value in actual_policy.items():
+            if actual_key not in expected_policy:
+                self.assertEqual('NAN', actual_value,
+                                 msg='Unexpected value for {} (context: {})'.format(actual_key, context))
+
+    @unittest.skipUnless(getSystemConfigAgent() != '',
+                         'Requires environment default/override files to be configured with an agent')
+    def test_agent_enforced(self):
+        test_name = 'test_agent_enforced'
+        config = getSystemConfig()
+        agent = config['GEOPM_AGENT']
+        with open(config['GEOPM_POLICY'], 'r') as pol_file:
+            policy = json.load(pol_file)
+        self.assert_geopm_uses_agent_policy(expected_agent=agent, expected_policy=policy, context=test_name)
 
 
 if __name__ == '__main__':
