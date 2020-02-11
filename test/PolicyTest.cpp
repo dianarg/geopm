@@ -59,9 +59,9 @@ PoliciesAreSame(const Policy &p1, const Policy &p2)
 {
     if (p1 != p2) {
         std::ostringstream msg;
-        msg << "{" << p1.policy_names() << "}: {" << p1.to_string(",")
+        msg << "{" << p1.policy_names() << "}: {" << p1.to_vector()
             << "} is not equivalent to {" << p2.policy_names() << "}: {"
-            << p2.to_string(",") << "}";
+            << p2.to_vector() << "}";
         return ::testing::AssertionFailure() << msg.str();
     }
     return ::testing::AssertionSuccess();
@@ -72,9 +72,9 @@ PoliciesAreNotSame(const Policy &p1, const Policy &p2)
 {
     if (p1 == p2) {
         std::ostringstream msg;
-        msg << "{" << p1.policy_names() << "}: {" << p1.to_string(",")
+        msg << "{" << p1.policy_names() << "}: {" << p1.to_vector()
             << "} is equivalent to {" << p2.policy_names() << "}: {"
-            << p2.to_string(",") << "}";
+            << p2.to_vector() << "}";
         return ::testing::AssertionFailure() << msg.str();
     }
     return ::testing::AssertionSuccess();
@@ -82,7 +82,7 @@ PoliciesAreNotSame(const Policy &p1, const Policy &p2)
 
 TEST(PolicyTest, construct)
 {
-    Policy pol1{{}, {}};
+    Policy pol1{{}, std::vector<double>{}};
     EXPECT_EQ(0u, pol1.size());
 
     std::vector<std::string> names{"one", "two"};
@@ -91,9 +91,9 @@ TEST(PolicyTest, construct)
     EXPECT_EQ(2u, pol2.size());
     EXPECT_EQ(5.5, pol2[1]);
     EXPECT_EQ(5.5, pol2["two"]);
-    Policy pol2a {{"a", "b"}, {4.4, 5.5}};
+    Policy pol2a {{"a", "b"}, values};
     EXPECT_TRUE(PoliciesAreNotSame(pol2, pol2a));
-    Policy pol2b {{"one", "two"}, {4.4, 5.5}};
+    Policy pol2b {{"one", "two"}, values};
     EXPECT_TRUE(PoliciesAreSame(pol2, pol2b));
 
     Policy pol3 {pol2};
@@ -109,19 +109,22 @@ TEST(PolicyTest, construct)
     EXPECT_TRUE(PoliciesAreNotSame(pol1, pol4));
 
     // more names than values is allowed
-    Policy pol5 {{"a", "c"}, {7.7}};
+    std::vector<double> v1 {7.7};
+    Policy pol5 {{"a", "c"}, v1};
     EXPECT_EQ(1u, pol5.size());
     EXPECT_EQ(std::vector<std::string>({"a", "c"}), pol5.policy_names());
 
     // not enough policy names
-    GEOPM_EXPECT_THROW_MESSAGE(Policy({"one", "two"}, {5, 6, 7}),
+    std::vector<double> v2 {5, 6, 7};
+    GEOPM_EXPECT_THROW_MESSAGE(Policy({"one", "two"}, v2),
                                GEOPM_ERROR_INVALID,
                                "incorrect number of policy names");
 }
 
 TEST(PolicyTest, access_values)
 {
-    Policy pol{{"uno", "dos", "tres", "cuatro", "seis", "siete"}, {1.5, 2.0}};
+    std::vector<double> values {1.5, 2.0};
+    Policy pol{{"uno", "dos", "tres", "cuatro", "seis", "siete"}, values};
     EXPECT_EQ(1.5, pol[0]);
     EXPECT_EQ(1.5, pol["uno"]);
     EXPECT_EQ(2.0, pol[1]);
@@ -168,81 +171,73 @@ TEST(PolicyTest, to_vector)
     Policy p1 {{"a", "b", "c"}, v1};
     EXPECT_EQ(v1, p1.to_vector());
     std::vector<double> v2;
-    Policy p2 {{}, {}};
+    Policy p2 {{}, std::vector<double>{}};
     EXPECT_EQ(v2, p2.to_vector());
 }
 
 TEST(PolicyTest, equality)
 {
-    EXPECT_TRUE(PoliciesAreSame({{"A", "B"}, {4, 5}},
-                                {{"A", "B"}, {4, 5}}));
+    std::vector<double> v1 {4, 5};
+    EXPECT_TRUE(PoliciesAreSame({{"A", "B"}, v1},
+                                {{"A", "B"}, v1}));
 
+    std::vector<double> empty {};
     // trailing NaNs are considered implicit if missing
-    EXPECT_TRUE(PoliciesAreSame({{"a", "b", "c"}, {6, 5}},
-                                {{"a", "b", "c"}, {6, 5, NAN}}));
-    EXPECT_TRUE(PoliciesAreSame({{"o", "p"}, {}},
-                                {{"o", "p"}, {NAN, NAN}}));
-    EXPECT_TRUE(PoliciesAreSame({{"b", "c", "d"}, {8.8, NAN, NAN}},
-                                {{"b", "c", "d"}, {8.8, NAN}}));
-    EXPECT_TRUE(PoliciesAreSame({{"b", "c", "d"}, {8.8, NAN}},
-                                {{"b", "c", "d"}, {8.8, NAN, NAN}}));
+    EXPECT_TRUE(PoliciesAreSame({{"a", "b", "c"}, std::vector<double>{6, 5}},
+                                {{"a", "b", "c"}, std::vector<double>{6, 5, NAN}}));
+    EXPECT_TRUE(PoliciesAreSame({{"o", "p"}, empty},
+                                {{"o", "p"}, std::vector<double>{NAN, NAN}}));
+    EXPECT_TRUE(PoliciesAreSame({{"b", "c", "d"}, std::vector<double>{8.8, NAN, NAN}},
+                                {{"b", "c", "d"}, std::vector<double>{8.8, NAN}}));
+    EXPECT_TRUE(PoliciesAreSame({{"b", "c", "d"}, std::vector<double>{8.8, NAN}},
+                                {{"b", "c", "d"}, std::vector<double>{8.8, NAN, NAN}}));
 
     // policy name lists must match
-    EXPECT_TRUE(PoliciesAreNotSame({{"d", "e", "f"}, {}},
-                                   {{"d", "f", "e"}, {}}));
-    EXPECT_TRUE(PoliciesAreNotSame({{"i", "j"}, {}},
-                                   {{"i", "j", "k"}, {}}));
-    EXPECT_TRUE(PoliciesAreNotSame({{"i", "j", "k"}, {}},
-                                   {{"i", "j"}, {}}));
+    EXPECT_TRUE(PoliciesAreNotSame({{"d", "e", "f"}, empty},
+                                   {{"d", "f", "e"}, empty}));
+    EXPECT_TRUE(PoliciesAreNotSame({{"i", "j"}, empty},
+                                   {{"i", "j", "k"}, empty}));
+    EXPECT_TRUE(PoliciesAreNotSame({{"i", "j", "k"}, empty},
+                                   {{"i", "j"}, empty}));
 
     // all values must match
-    EXPECT_TRUE(PoliciesAreNotSame({{"r", "s", "t"}, {5, 4, 3}},
-                                   {{"r", "s", "t"}, {NAN, 4, 3}}));
-    EXPECT_TRUE(PoliciesAreNotSame({{"J", "K", "L"}, {8, 9, NAN}},
-                                   {{"J", "K", "L"}, {8, 9, 7}}));
-    EXPECT_TRUE(PoliciesAreNotSame({{"D", "E"}, {2, 7}},
-                                   {{"D", "E"}, {2}}));
-}
-
-TEST(PolicyTest, to_string)
-{
-    EXPECT_EQ("6.6", Policy({"A"}, {6.6}).to_string(", "));
-    EXPECT_EQ("4,5,6", Policy({"A", "B", "C"}, {4, 5, 6}).to_string(","));
-    EXPECT_EQ("NAN, NAN, 0", Policy({"A", "B", "C"}, {NAN, NAN, 0.0}).to_string(", "));
-    EXPECT_EQ("8.5|7.7|6.6", Policy({"A", "B", "C"}, {8.5, 7.7, 6.6}).to_string("|"));
+    EXPECT_TRUE(PoliciesAreNotSame({{"r", "s", "t"}, std::vector<double>{5, 4, 3}},
+                                   {{"r", "s", "t"}, std::vector<double>{NAN, 4, 3}}));
+    EXPECT_TRUE(PoliciesAreNotSame({{"J", "K", "L"}, std::vector<double>{8, 9, NAN}},
+                                   {{"J", "K", "L"}, std::vector<double>{8, 9, 7}}));
+    EXPECT_TRUE(PoliciesAreNotSame({{"D", "E"}, std::vector<double>{2, 7}},
+                                   {{"D", "E"}, std::vector<double>{2}}));
 }
 
 TEST(PolicyTest, to_json_string)
 {
     std::string json1 = "{}";
-    EXPECT_EQ(json1, Policy({{}, {}}).to_json());
+    EXPECT_EQ(json1, Policy({{}, std::vector<double>{}}).to_json());
 
     std::string json2 = "{\"val\": 5.5}";
-    EXPECT_EQ(json2, Policy({"val"}, {5.5}).to_json());
+    EXPECT_EQ(json2, Policy({"val"}, std::vector<double>{5.5}).to_json());
 
     std::string json3 = "{\"banana\": 44.44, \"apple\": \"NAN\", "
                         "\"coconut\": 0, \"durian\": 8.76}";
     EXPECT_EQ(json3, Policy({"banana", "apple", "coconut", "durian"},
-                            {44.44, NAN, 0, 8.76}).to_json());
+                            std::vector<double>{44.44, NAN, 0, 8.76}).to_json());
 
     // errors:
-    GEOPM_EXPECT_THROW_MESSAGE(Policy({"one", "two"}, {1, 2, 3}).to_json(),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy({"one", "two"}, std::vector<double>{1, 2, 3}).to_json(),
                                GEOPM_ERROR_INVALID, "number of policy names");
 }
 
 TEST(PolicyTest, fill_missing_with_nans)
 {
-    Policy p1 {{"un", "deux", "troi", "quatre", "cinq"}, {4.4, NAN, 7.7}};
+    std::vector<std::string> names {"un", "deux", "troi", "quatre", "cinq"};
+    Policy p1 {names, std::vector<double>{4.4, NAN, 7.7}};
     EXPECT_EQ(3u, p1.size());
 
     // same size is not an error
-    p1.pad_nan_to(3);
-    EXPECT_EQ(3u, p1.size());
-    GEOPM_EXPECT_THROW_MESSAGE(p1.at("cinq"), GEOPM_ERROR_RUNTIME,
-                               "no value for policy with name");
+    EXPECT_EQ(3u, p1.to_vector(3u).size());
 
     Policy before = p1;
-    p1.pad_nan_to(5);
+    p1 = Policy(names, p1.to_vector(5u));
     EXPECT_EQ(5u, p1.size());
     EXPECT_TRUE(PoliciesAreSame(before, p1));
     EXPECT_EQ(4.4, p1.at("un"));
@@ -252,79 +247,54 @@ TEST(PolicyTest, fill_missing_with_nans)
     EXPECT_TRUE(std::isnan(p1.at(4)));
 
     // disallow shrinking
-    GEOPM_EXPECT_THROW_MESSAGE(p1.pad_nan_to(3),
+    GEOPM_EXPECT_THROW_MESSAGE(p1.to_vector(3u),
                                GEOPM_ERROR_INVALID,
                                "size of policy cannot be reduced");
 
     // cannot pad beyond number of policy names
-    GEOPM_EXPECT_THROW_MESSAGE(p1.pad_nan_to(20), GEOPM_ERROR_INVALID,
+    GEOPM_EXPECT_THROW_MESSAGE(p1.to_vector(20), GEOPM_ERROR_INVALID,
                                "cannot pad more than maximum policy size");
-}
-
-TEST(PolicyTest, from_string)
-{
-    std::vector<std::string> names1 = {};
-    Policy p1 = Policy::from_string(names1, "");
-    EXPECT_TRUE(PoliciesAreSame({{}, {}}, p1));
-
-    std::vector<std::string> names2 = {"a", "b"};
-    Policy p2 = Policy::from_string(names2, "");
-    EXPECT_TRUE(PoliciesAreSame({names2, {}}, p2));
-
-    std::vector<std::string> names3 = {"x", "y", "z"};
-    Policy p3 = Policy::from_string(names3, "7.7,4.5");
-    EXPECT_TRUE(PoliciesAreSame({names3, {7.7, 4.5}}, p3));
-
-    std::vector<std::string> names4 = {"f", "g", "h"};
-    Policy p4 = Policy::from_string(names4, "3,NaN,nan");
-    EXPECT_TRUE(PoliciesAreSame({names4, {3, NAN, NAN}}, p4));
-
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_string(names4, "4,bad"),
-                               GEOPM_ERROR_INVALID, "invalid value for double");
-
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_string(names1, "7,8"),
-                               GEOPM_ERROR_INVALID, "incorrect number of policy names");
 }
 
 TEST(PolicyTest, from_json_string)
 {
     std::vector<std::string> names1 = {};
-    Policy p1 = Policy::from_json(names1, "{}");
-    EXPECT_TRUE(PoliciesAreSame({names1, {}}, p1));
+    Policy p1(names1, "{}");
+    EXPECT_TRUE(PoliciesAreSame({names1, std::vector<double>{}}, p1));
 
     std::vector<std::string> names2 = {"a", "b"};
-    Policy p2 = Policy::from_json(names2, "{}");
-    EXPECT_TRUE(PoliciesAreSame({names2, {}}, p2));
+    Policy p2(names2, "{}");
+    EXPECT_TRUE(PoliciesAreSame({names2, std::vector<double>{}}, p2));
 
     std::vector<std::string> names3 = {"x", "y", "z"};
-    Policy p3 = Policy::from_json(names3, "{\"x\": 7.7, \"y\": 4.5}");
-    EXPECT_TRUE(PoliciesAreSame({names3, {7.7, 4.5}}, p3));
+    Policy p3(names3, "{\"x\": 7.7, \"y\": 4.5}");
+    EXPECT_TRUE(PoliciesAreSame({names3, std::vector<double>{7.7, 4.5}}, p3));
 
     std::vector<std::string> names4 = {"f", "g", "h"};
-    Policy p4 = Policy::from_json(names4, "{\"g\": \"NAN\", \"f\": 3.4, \"h\": 6e9 }");
-    EXPECT_TRUE(PoliciesAreSame({names4, {3.4, NAN, 6e9}}, p4));
+    Policy p4(names4, "{\"g\": \"NAN\", \"f\": 3.4, \"h\": 6e9 }");
+    EXPECT_TRUE(PoliciesAreSame({names4, std::vector<double>{3.4, NAN, 6e9}}, p4));
 
     // bad json errors
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names1, ""),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy(names1, ""),
                                GEOPM_ERROR_INVALID, "malformed json");
 
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names1, "{{ }"),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy(names1, "{{ }"),
                                GEOPM_ERROR_INVALID, "malformed json");
 
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names1, "{\"a\": 6, }"),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy(names1, "{\"a\": 6, }"),
                                GEOPM_ERROR_INVALID, "malformed json");
 
     // invalid policy names
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": 1, \"c\": 2}"),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy(names2, "{\"a\": 1, \"c\": 2}"),
                                GEOPM_ERROR_INVALID, "invalid policy name");
 
     // invalid value
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": \"invalid\"}"),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy(names2, "{\"a\": \"invalid\"}"),
                                GEOPM_ERROR_INVALID, "invalid value for policy");
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": {} }"),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy(names2, "{\"a\": {} }"),
                                GEOPM_ERROR_INVALID, "invalid value for policy");
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": true }"),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy(names2, "{\"a\": true }"),
                                GEOPM_ERROR_INVALID, "invalid value for policy");
-    GEOPM_EXPECT_THROW_MESSAGE(Policy::from_json(names2, "{\"a\": null }"),
+    GEOPM_EXPECT_THROW_MESSAGE(Policy(names2, "{\"a\": null }"),
                                GEOPM_ERROR_INVALID, "invalid value for policy");
 }
