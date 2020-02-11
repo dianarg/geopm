@@ -47,6 +47,16 @@ namespace geopm
         public:
             Policy(const std::vector<std::string> &names,
                    const std::vector<double> &values);
+
+            /// @brief Create a new Policy object from a JSON-formatted
+            ///        string containing the values mapping to each policy
+            ///        name and the vector of all names for the target agent.
+            ///        Any missing non-trailing values will be filled in
+            ///        with NAN, but trailing values will be left empty.
+            ///        The string representing "NAN" is not case-sensitive.
+            Policy(const std::vector<std::string> &names,
+                   const std::string &json);
+
             virtual ~Policy() = default;
 
             /// @brief Returns the number of values in the policy.
@@ -82,37 +92,14 @@ namespace geopm
             bool operator==(const Policy &other) const;
             bool operator!=(const Policy &other) const;
 
-            /// @brief Format the Policy vector as a character-delimited
-            ///        list.
-            std::string to_string(const std::string &delimiter) const;
-
             /// @brief Format the Policy values as a JSON string.
             std::string to_json(void) const;
 
-            /// @brief Convert the policy values to a std::vector
-            std::vector<double> to_vector(void) const;
-
-            /// @brief Fill in NAN for missing values up until Policy
+            /// @brief Convert the policy values to a std::vector.
+            ///        Fill in NAN for missing values up until Policy
             ///        reaches the given size.  The new size must be
             ///        greater than or equal to the current size.
-            void pad_nan_to(size_t size);
-
-            /// @brief Create a new Policy object from a string of
-            ///        comma-separated values and a vector of policy
-            ///        names for the target agent.  The string representing
-            ///        "NAN" is not case-sensitive.
-            static Policy from_string(const std::vector<std::string> &names,
-                                      const std::string &values);
-
-            /// @brief Create a new Policy object from a JSON-formatted
-            ///        string containing the values mapping to each policy
-            ///        name and the vector of all names for the target agent.
-            ///        Any missing non-trailing values will be filled in
-            ///        with NAN, but trailing values will be left empty.
-            ///        The string representing "NAN" is not case-sensitive.
-            static Policy from_json(const std::vector<std::string> &names,
-                                    const std::string &json);
-
+            std::vector<double> to_vector(size_t size) const;
         private:
             void check_index(size_t index) const;
             void check_name(const std::string &name) const;
@@ -121,7 +108,5 @@ namespace geopm
             std::map<std::string, double> m_values;
     };
 }
-
-std::ostream& operator<<(std::ostream &os, const geopm::Policy &policy);
 
 #endif

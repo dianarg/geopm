@@ -60,6 +60,43 @@ namespace geopm
         }
     }
 
+    Policy::Policy(const std::vector<std::string> &names, const std::string &json)
+    {
+        std::map<std::string, double> vals;
+        std::string err;
+        Json root = Json::parse(json, err);
+        if (!err.empty() || !root.is_object()) {
+            throw Exception("Policy::" + std::string(__func__) + "(): detected a malformed json string: " + err,
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        for (const auto &obj : root.object_items()) {
+            if (std::find(names.begin(), names.end(), obj.first) == names.end()) {
+                throw Exception("Policy::" + std::string(__func__) + "(): invalid policy name: " + obj.first,
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+            if (obj.second.type() == Json::NUMBER) {
+                vals.emplace(obj.first, obj.second.number_value());
+            }
+            else if (obj.second.type() == Json::STRING) {
+                std::string tmp_val = obj.second.string_value();
+                std::transform(tmp_val.begin(), tmp_val.end(), tmp_val.begin(), [] (char c) { return std::tolower(c); });
+                if (tmp_val == "nan") {
+                    vals.emplace(obj.first, NAN);
+                }
+                else {
+                    throw Exception("Policy::" + std::string(__func__) + "(): invalid value for policy " + obj.first,
+                                    GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                }
+            }
+            else {
+                throw Exception("Policy::" + std::string(__func__) + "(): invalid value for policy " + obj.first,
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
+        m_names = names;
+        m_values = vals;
+    }
+
     size_t Policy::size(void) const
     {
         return m_values.size();
@@ -200,23 +237,6 @@ namespace geopm
         return !(*this == other);
     }
 
-    std::string Policy::to_string(const std::string &delimiter) const
-    {
-        std::ostringstream temp;
-        for (size_t ii = 0; ii < m_values.size(); ++ii) {
-            if (ii != 0) {
-                temp << delimiter;
-            }
-            if (std::isnan(m_values.at(m_names.at(ii)))) {
-                temp << "NAN";
-            }
-            else {
-                temp << geopm::string_format_double(m_values.at(m_names.at(ii)));
-            }
-        }
-        return temp.str();
-    }
-
     std::string Policy::to_json(void) const
     {
         std::ostringstream output_str;
@@ -238,106 +258,30 @@ namespace geopm
         return output_str.str();
     }
 
-    std::vector<double> Policy::to_vector(void) const
-    {
-        std::vector<double> result(m_values.size());
-        for (size_t ii = 0; ii < m_values.size(); ++ii) {
-#ifdef GEOPM_DEBUG
-        if (ii >= m_names.size() || m_values.find(m_names.at(ii)) == m_values.end()) {
-            throw Exception("Policy::to_vector(): Unexpected gaps in policy data structures.",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__;
-        }
-#endif
-            result[ii] = m_values.at(m_names.at(ii));
-        }
-        return result;
-    }
-
-    void Policy::pad_nan_to(size_t size)
+    std::vector<double> Policy::to_vector(size_t size) const
     {
         if (size < m_values.size()) {
-            throw Exception("Policy::pad_to_nan(): size of policy cannot be reduced.",
+            throw Exception("Policy::to_vector(): size of policy cannot be reduced.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         if (size > m_names.size()) {
-            throw Exception("Policy::pad_to_nan(): cannot pad more than maximum policy size",
+            throw Exception("Policy::to_vector(): cannot pad more than maximum policy size",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-        for (size_t ii = m_values.size(); ii < size; ++ii) {
-            m_values[m_names.at(ii)] = NAN;
+        std::vector<double> result(m_values.size());
+        size_t ii = 0;
+        for (; ii < m_values.size(); ++ii) {
+#ifdef GEOPM_DEBUG
+            if (ii >= m_names.size() || m_values.find(m_names.at(ii)) == m_values.end()) {
+                throw Exception("Policy::to_vector(): Unexpected gaps in policy data structures.",
+                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+            }
+#endif
+            result[ii] = m_values.at(m_names.at(ii));
         }
+        for (; ii < size; ++ii) {
+            result[ii] = NAN;
+        }
+        return result;
     }
-
-    Policy Policy::from_string(const std::vector<std::string> &names, const std::string &values)
-    {
-        std::vector<double> vals;
-        auto pieces = geopm::string_split(values, ",");
-        for (std::string pp : pieces) {
-            try {
-                vals.push_back(std::stod(pp));
-            }
-            catch (std::invalid_argument &) {
-                throw Exception("Policy::from_string(): invalid value for double: " + pp,
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-            }
-        }
-        return Policy(names, vals);
-    }
-
-    Policy Policy::from_json(const std::vector<std::string> &names, const std::string &json)
-    {
-        std::map<std::string, double> vals;
-        std::string err;
-        Json root = Json::parse(json, err);
-        if (!err.empty() || !root.is_object()) {
-            throw Exception("Policy::" + std::string(__func__) + "(): detected a malformed json string: " + err,
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        for (const auto &obj : root.object_items()) {
-            if (std::find(names.begin(), names.end(), obj.first) == names.end()) {
-                throw Exception("Policy::" + std::string(__func__) + "(): invalid policy name: " + obj.first,
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-            }
-            if (obj.second.type() == Json::NUMBER) {
-                vals.emplace(obj.first, obj.second.number_value());
-            }
-            else if (obj.second.type() == Json::STRING) {
-                std::string tmp_val = obj.second.string_value();
-                std::transform(tmp_val.begin(), tmp_val.end(), tmp_val.begin(), [] (char c) { return std::tolower(c); });
-                if (tmp_val == "nan") {
-                    vals.emplace(obj.first, NAN);
-                }
-                else {
-                    throw Exception("Policy::" + std::string(__func__) + "(): invalid value for policy " + obj.first,
-                                    GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-                }
-            }
-            else {
-                throw Exception("Policy::" + std::string(__func__) + "(): invalid value for policy " + obj.first,
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-            }
-        }
-        // build the values vector from the end to skip missing values
-        std::vector<double> tmp;
-        bool fill = false;
-        for (auto nit = names.rbegin(); nit != names.rend(); ++nit) {
-            auto vit = vals.find(*nit);
-            if (vit != vals.end()) {
-                tmp.emplace_back(vit->second);
-                fill = true;
-            }
-            else if (fill) {
-                tmp.emplace_back(NAN);
-            }
-        }
-        std::reverse(tmp.begin(), tmp.end());
-
-        return Policy(names, tmp);
-    }
-}
-
-std::ostream& operator<<(std::ostream &os, const geopm::Policy &policy)
-{
-    os << policy.to_string(", ");
-    return os;
 }

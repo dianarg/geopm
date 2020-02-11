@@ -53,9 +53,8 @@ namespace geopm
     {
         if (m_policy_names.size() > 0 && m_policy.size() == 0) {
             std::string json_str = read_file(m_policy_path);
-            Policy pol = Policy::from_json(m_policy_names, json_str);
-            pol.pad_nan_to(m_policy_names.size());
-            m_policy = pol.to_vector();
+            Policy pol(m_policy_names, json_str);
+            m_policy = pol.to_vector(m_policy_names.size());
         }
         return m_policy;
     }
