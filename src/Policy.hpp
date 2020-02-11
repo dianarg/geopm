@@ -47,6 +47,15 @@ namespace geopm
         public:
             Policy(const std::vector<std::string> &names,
                    const std::vector<double> &values);
+            Policy(const std::vector<std::string> &names,
+                   const std::map<std::string, double> &values);
+
+            // Policy(const Policy &other);
+            // Policy(Policy &&other);
+            // //Policy& operator=(const Policy &other);
+            // Policy& operator=(Policy other);
+            virtual ~Policy() = default;
+
 
             /// @brief Create a new Policy object from a JSON-formatted
             ///        string containing the values mapping to each policy
@@ -57,10 +66,10 @@ namespace geopm
             Policy(const std::vector<std::string> &names,
                    const std::string &json);
 
-            virtual ~Policy() = default;
-
             /// @brief Returns the number of values in the policy.
             size_t size(void) const;
+
+            /// @todo: max size
 
             /// @brief Returns the vector of policy names.
             std::vector<std::string> policy_names(void) const;
@@ -100,6 +109,13 @@ namespace geopm
             ///        reaches the given size.  The new size must be
             ///        greater than or equal to the current size.
             std::vector<double> to_vector(size_t size) const;
+
+            /// @brief Convert the policy values to a std::vector.
+            ///        The size is the number of assigned named values
+            ///        with NAN filled in for gaps from the front of
+            ///        the vector.
+            std::vector<double> to_vector(void) const;
+
         private:
             void check_index(size_t index) const;
             void check_name(const std::string &name) const;
