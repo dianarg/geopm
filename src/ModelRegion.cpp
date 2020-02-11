@@ -45,6 +45,7 @@
 #include "StreamModelRegion.hpp"
 #include "SpinModelRegion.hpp"
 #include "IgnoreModelRegion.hpp"
+#include "BarrierModelRegion.hpp"
 
 namespace geopm
 {
@@ -95,6 +96,9 @@ namespace geopm
         }
         else if (name_check(name, "barrier")) {
             return geopm::make_unique<BarrierModelRegion>(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
+        }
+        else if (name_check(name, "barrier")) {
+            result = geopm::make_unique<BarrierModelRegion>(big_o, verbosity, do_imbalance, do_progress, do_unmarked);
         }
         else {
             throw Exception("model_region_factory: unknown name: " + name,
