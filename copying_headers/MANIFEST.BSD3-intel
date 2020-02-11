@@ -78,6 +78,8 @@ src/All2allModelRegion.cpp
 src/All2allModelRegion.hpp
 src/ApplicationIO.cpp
 src/ApplicationIO.hpp
+src/BarrierModelRegion.cpp
+src/BarrierModelRegion.hpp
 src/CircularBuffer.hpp
 src/CNLIOGroup.cpp
 src/CNLIOGroup.hpp
@@ -202,6 +204,8 @@ src/ProfileThread.cpp
 src/ProfileThread.hpp
 src/ProfileTracer.cpp
 src/ProfileTracer.hpp
+src/ReduceModelRegion.cpp
+src/ReduceModelRegion.hpp
 src/RegionAggregator.cpp
 src/RegionAggregator.hpp
 src/RegionAggregatorImp.hpp

@@ -30,39 +30,27 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "config.h"
-#include "BarrierModelRegion.hpp"
+#ifndef REDUCEMODELREGION_HPP_INCLUDE
+#define REDUCEMODELREGION_HPP_INCLUDE
 
-#include <iostream>
-#include <mpi.h>
-
-#include "Exception.hpp"
+#include "ModelRegion.hpp"
 
 namespace geopm
 {
-    BarrierModelRegion::BarrierModelRegion(double big_o_in,
-                                           int verbosity,
-                                           bool do_imbalance,
-                                           bool do_progress,
-                                           bool do_unmarked)
-        : ModelRegion(verbosity)
+    class ReduceModelRegion : public ModelRegion
     {
-
-    }
-
-    void BarrierModelRegion::big_o(double big_o)
-    {
-
-    }
-
-    void BarrierModelRegion::run(void)
-    {
-        if (m_verbosity != 0) {
-            std::cout << "Executing barrier\n";
-        }
-        int err = MPI_Barrier(MPI_COMM_WORLD);
-        if (err) {
-            throw Exception("MPI_Barrier", err, __FILE__, __LINE__);
-        }
-    }
+        public:
+            ReduceModelRegion(double big_o_in,
+                              int verbosity,
+                              bool do_imbalance,
+                              bool do_progress,
+                              bool do_unmarked);
+            virtual ~ReduceModelRegion() = default;
+            void big_o(double big_o);
+            void run(void);
+        private:
+            int m_num_elem;
+    };
 }
+
+#endif
