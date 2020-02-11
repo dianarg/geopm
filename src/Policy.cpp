@@ -43,7 +43,7 @@
 #include "Helper.hpp"
 
 using json11::Json;
-
+#include <iostream>
 namespace geopm
 {
     Policy::Policy(const std::vector<std::string> &names,
@@ -59,6 +59,39 @@ namespace geopm
             m_values[m_names.at(ii)] = values[ii];
         }
     }
+
+    Policy::Policy(const std::vector<std::string> &names,
+                   const std::map<std::string, double> &values)
+        : m_names(names)
+        , m_values(values)
+    {
+
+    }
+
+    /*
+    Policy::Policy(const Policy& other)
+        : m_names(other.m_names)
+        , m_values(other.m_values)
+    {
+        std::cout << "copy ctor" << std::endl;
+    }
+
+    Policy::Policy(Policy &&other)
+        : m_names(std::move(other.m_names))
+        , m_values(std::move(other.m_values))
+    {
+        std::cout << "move ctor" << std::endl;
+    }
+
+    Policy& Policy::operator=(Policy other)
+    {
+        std::cout << "copy and swap" << std::endl;
+        m_names = other.m_names;
+        m_values = other.m_values;
+        return *this;
+    }
+
+    */
 
     Policy::Policy(const std::vector<std::string> &names, const std::string &json)
     {
@@ -241,6 +274,7 @@ namespace geopm
     {
         std::ostringstream output_str;
         output_str << "{";
+        /// @todo: allow gaps from map instead of using names
         for (size_t idx = 0; idx < m_names.size() && m_values.find(m_names.at(idx)) != m_values.end(); ++idx) {
             if (idx > 0) {
                 output_str << ", ";
@@ -271,6 +305,7 @@ namespace geopm
         std::vector<double> result(m_values.size());
         size_t ii = 0;
         for (; ii < m_values.size(); ++ii) {
+            /// @todo: not an error
 #ifdef GEOPM_DEBUG
             if (ii >= m_names.size() || m_values.find(m_names.at(ii)) == m_values.end()) {
                 throw Exception("Policy::to_vector(): Unexpected gaps in policy data structures.",
@@ -282,6 +317,22 @@ namespace geopm
         for (; ii < size; ++ii) {
             result[ii] = NAN;
         }
+        return result;
+    }
+
+    std::vector<double> Policy::to_vector(void) const
+    {
+        std::vector<double> result;
+        // skip names from the end with no value
+        //auto rit = m_names.rbegin();
+        //while(m_values.find(*rit) == m_values.rend()) {
+        //    ++rit;
+        //}
+        // fill in values or NAN
+
+
+        // final result is reversed
+        //std::reverse(result.begin(), result.end());
         return result;
     }
 }

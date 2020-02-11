@@ -237,7 +237,9 @@ TEST(PolicyTest, fill_missing_with_nans)
     EXPECT_EQ(3u, p1.to_vector(3u).size());
 
     Policy before = p1;
-    p1 = Policy(names, p1.to_vector(5u));
+    auto temp2 = p1.to_vector(5u);
+    Policy temp = Policy(names, temp2);//p1.to_vector(5u));
+    p1 = temp; //Policy(names, p1.to_vector(5u));
     EXPECT_EQ(5u, p1.size());
     EXPECT_TRUE(PoliciesAreSame(before, p1));
     EXPECT_EQ(4.4, p1.at("un"));
@@ -254,6 +256,18 @@ TEST(PolicyTest, fill_missing_with_nans)
     // cannot pad beyond number of policy names
     GEOPM_EXPECT_THROW_MESSAGE(p1.to_vector(20), GEOPM_ERROR_INVALID,
                                "cannot pad more than maximum policy size");
+
+    // fill without size
+    Policy p2 {names, std::map<std::string, double>{{"deux", 2.2}, {"quatre", 4.3}}};
+    EXPECT_EQ(2u, p2.size());
+    EXPECT_EQ(2.2, p2.at("deux"));
+    EXPECT_EQ(4.3, p2.at("quatre"));
+    EXPECT_THROW(p2.at("troi"), geopm::Exception);
+    auto result = p2.to_vector();
+    EXPECT_EQ(4u, result.size());
+    std::vector<double> expected {NAN, 2.2, NAN, 4.3};
+    EXPECT_EQ(expected, result);
+
 }
 
 TEST(PolicyTest, from_json_string)
