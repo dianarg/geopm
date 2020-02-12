@@ -60,8 +60,9 @@ namespace geopm
         return result;
     }
 
-
-    std::unique_ptr<ModelRegion> ModelRegion::model_region(const std::string &name, double big_o, int verbosity)
+    std::unique_ptr<ModelRegion> ModelRegion::model_region(const std::string &name,
+                                                           double big_o,
+                                                           int verbosity)
     {
         bool do_imbalance = (name.find("-imbalance") != std::string::npos);
         bool do_progress = (name.find("-progress") != std::string::npos);

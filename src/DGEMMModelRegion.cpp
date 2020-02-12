@@ -65,7 +65,11 @@ void dgemm(const char *transa, const char *transb, const int *M,
 
 namespace geopm
 {
-    DGEMMModelRegion::DGEMMModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
+    DGEMMModelRegion::DGEMMModelRegion(double big_o_in,
+                                       int verbosity,
+                                       bool do_imbalance,
+                                       bool do_progress,
+                                       bool do_unmarked)
         : ModelRegion(verbosity)
         , m_matrix_a(NULL)
         , m_matrix_b(NULL)

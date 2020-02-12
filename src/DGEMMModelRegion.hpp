@@ -40,7 +40,11 @@ namespace geopm
     class DGEMMModelRegion : public ModelRegion
     {
         public:
-            DGEMMModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked);
+            DGEMMModelRegion(double big_o_in,
+                             int verbosity,
+                             bool do_imbalance,
+                             bool do_progress,
+                             bool do_unmarked);
             virtual ~DGEMMModelRegion();
             void big_o(double big_o);
             void run(void);

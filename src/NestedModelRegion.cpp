@@ -42,7 +42,11 @@
 
 namespace geopm
 {
-    NestedModelRegion::NestedModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
+    NestedModelRegion::NestedModelRegion(double big_o_in,
+                                         int verbosity,
+                                         bool do_imbalance,
+                                         bool do_progress,
+                                         bool do_unmarked)
         : ModelRegion(verbosity)
         , m_spin_region(big_o_in, verbosity, do_imbalance, do_progress, do_unmarked)
         , m_all2all_region(big_o_in, verbosity, do_imbalance, do_progress, do_unmarked)

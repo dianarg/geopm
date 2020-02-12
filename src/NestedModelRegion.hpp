@@ -42,7 +42,11 @@ namespace geopm
     class NestedModelRegion : public ModelRegion
     {
         public:
-            NestedModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked);
+            NestedModelRegion(double big_o_in,
+                              int verbosity,
+                              bool do_imbalance,
+                              bool do_progress,
+                              bool do_unmarked);
             virtual ~NestedModelRegion();
             void big_o(double big_o);
             void run(void);

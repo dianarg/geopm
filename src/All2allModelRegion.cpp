@@ -43,7 +43,11 @@
 
 namespace geopm
 {
-    All2allModelRegion::All2allModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
+    All2allModelRegion::All2allModelRegion(double big_o_in,
+                                           int verbosity,
+                                           bool do_imbalance,
+                                           bool do_progress,
+                                           bool do_unmarked)
         : ModelRegion(verbosity)
         , m_send_buffer(NULL)
         , m_recv_buffer(NULL)

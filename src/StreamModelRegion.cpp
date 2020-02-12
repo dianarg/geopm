@@ -40,7 +40,11 @@
 
 namespace geopm
 {
-    StreamModelRegion::StreamModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked)
+    StreamModelRegion::StreamModelRegion(double big_o_in,
+                                         int verbosity,
+                                         bool do_imbalance,
+                                         bool do_progress,
+                                         bool do_unmarked)
         : ModelRegion(verbosity)
         , m_array_a(NULL)
         , m_array_b(NULL)

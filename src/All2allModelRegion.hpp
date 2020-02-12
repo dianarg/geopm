@@ -41,7 +41,11 @@ namespace geopm
     {
         friend class NestedModelRegion;
         public:
-            All2allModelRegion(double big_o_in, int verbosity, bool do_imbalance, bool do_progress, bool do_unmarked);
+            All2allModelRegion(double big_o_in,
+                               int verbosity,
+                               bool do_imbalance,
+                               bool do_progress,
+                               bool do_unmarked);
             virtual ~All2allModelRegion();
             void big_o(double big_o);
             void run(void);

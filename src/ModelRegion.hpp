@@ -42,7 +42,9 @@ namespace geopm
     class ModelRegion
     {
         public:
-            static std::unique_ptr<ModelRegion> model_region(const std::string &name, double big_o, int verbosity);
+            static std::unique_ptr<ModelRegion> model_region(const std::string &name,
+                                                             double big_o,
+                                                             int verbosity);
             ModelRegion(int verbosity);
             virtual ~ModelRegion();
             std::string name(void);
