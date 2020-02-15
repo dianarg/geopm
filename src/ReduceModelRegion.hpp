@@ -33,6 +33,8 @@
 #ifndef REDUCEMODELREGION_HPP_INCLUDE
 #define REDUCEMODELREGION_HPP_INCLUDE
 
+#include <vector>
+
 #include "ModelRegion.hpp"
 
 namespace geopm
@@ -45,7 +47,7 @@ namespace geopm
                               bool do_imbalance,
                               bool do_progress,
                               bool do_unmarked);
-            virtual ~ReduceModelRegion() = default;
+            virtual ~ReduceModelRegion();
             void big_o(double big_o);
             void run(void);
         private:

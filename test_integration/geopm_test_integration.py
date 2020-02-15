@@ -808,7 +808,7 @@ class TestIntegration(unittest.TestCase):
         # Require that the balancer moves the maximum dgemm runtime at
         # least 1/4 the distance to the mean dgemm runtime under the
         # governor.
-        margin_factor =  0.25
+        margin_factor = 0.25
         app_conf = geopmpy.io.BenchConf(name + '_app.config')
         self._tmp_files.append(app_conf.get_path())
         app_conf.append_region('dgemm-imbalance', 8.0)
@@ -882,7 +882,6 @@ class TestIntegration(unittest.TestCase):
                 avg_power_limit = sum(power_limits) / len(power_limits)
                 self.assertTrue(avg_power_limit <= power_budget)
 
-            min_runtime = float('nan')
             max_runtime = float('nan')
             node_names = self._output.get_node_names()
             runtime_list = []
@@ -1211,7 +1210,6 @@ class TestIntegration(unittest.TestCase):
                     msg = region_name + " frequency should be minimum frequency as specified by policy"
                     self.assertEqual(region['requested-online-frequency'], min_freq, msg=msg)  # freq should reduce
 
-
     @util.skip_unless_run_long_tests()
     @util.skip_unless_cpufreq()
     @util.skip_unless_batch()
@@ -1221,9 +1219,7 @@ class TestIntegration(unittest.TestCase):
         """
         name = 'test_energy_efficient_sticker'
         min_freq = geopm_test_launcher.geopmread("CPUINFO::FREQ_MIN board 0")
-        max_freq = geopm_test_launcher.geopmread("CPUINFO::FREQ_MAX board 0")
         sticker_freq = geopm_test_launcher.geopmread("CPUINFO::FREQ_STICKER board 0")
-        freq_step = geopm_test_launcher.geopmread("CPUINFO::FREQ_STEP board 0")
         self._agent = "energy_efficient"
         num_node = 1
         num_rank = 4
@@ -1258,7 +1254,6 @@ class TestIntegration(unittest.TestCase):
             if rr == '_sticker':
                 self._options = {'frequency_min': sticker_freq,
                                  'frequency_max': sticker_freq}
-                freq = sticker_freq
             else:
                 self._options = {'frequency_min': min_freq,
                                  'frequency_max': sticker_freq}

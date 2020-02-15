@@ -33,9 +33,9 @@
 #include "config.h"
 #include "ReduceModelRegion.hpp"
 
-#include <iostream>
-#include <vector>
 #include <mpi.h>
+
+#include <iostream>
 
 #include "Exception.hpp"
 
@@ -49,6 +49,11 @@ namespace geopm
         : ModelRegion(verbosity)
     {
         big_o(big_o_in);
+    }
+
+    ReduceModelRegion::~ReduceModelRegion()
+    {
+
     }
 
     void ReduceModelRegion::big_o(double big_o)

@@ -45,7 +45,6 @@
 #include "StreamModelRegion.hpp"
 #include "SpinModelRegion.hpp"
 #include "IgnoreModelRegion.hpp"
-#include "BarrierModelRegion.hpp"
 #include "ReduceModelRegion.hpp"
 
 namespace geopm

@@ -195,9 +195,9 @@ namespace geopm
             if (GEOPM_REGION_HASH_UNMARKED == hash) {
                 m_target_freq[ctl_idx] = m_freq_governor->get_frequency_max();
             }
-            else if (GEOPM_REGION_HINT_NETWORK == hint) {
-                m_target_freq[ctl_idx] = m_freq_governor->get_frequency_min();
-            }
+            // else if (GEOPM_REGION_HINT_NETWORK == hint) {
+            //     m_target_freq[ctl_idx] = m_freq_governor->get_frequency_min();
+            // }
             else {
                 auto region_it = m_region_map[ctl_idx].find(hash);
                 if (region_it != m_region_map[ctl_idx].end()) {
@@ -228,8 +228,8 @@ namespace geopm
             // update current region (entry)
             if (m_last_region_info[ctl_idx].hash != current_region_info.hash ||
                 m_last_region_info[ctl_idx].count != current_region_info.count) {
-                if (current_region_info.hash != GEOPM_REGION_HASH_UNMARKED &&
-                    current_region_info.hint != GEOPM_REGION_HINT_NETWORK) {
+                if (current_region_info.hash != GEOPM_REGION_HASH_UNMARKED/* &&
+                                                                             current_region_info.hint != GEOPM_REGION_HINT_NETWORK*/) {
                     /// set the freq for the current region (entry)
                     auto current_region_it = m_region_map[ctl_idx].find(current_region_info.hash);
                     if (current_region_it == m_region_map[ctl_idx].end()) {
@@ -241,8 +241,8 @@ namespace geopm
                 }
                 /// update previous region (exit)
                 struct m_region_info_s last_region_info = m_last_region_info[ctl_idx];
-                if (last_region_info.hash != GEOPM_REGION_HASH_UNMARKED &&
-                    last_region_info.hint != GEOPM_REGION_HINT_NETWORK) {
+                if (last_region_info.hash != GEOPM_REGION_HASH_UNMARKED/* &&
+                                                                          last_region_info.hint != GEOPM_REGION_HINT_NETWORK*/) {
                     auto last_region_it = m_region_map[ctl_idx].find(last_region_info.hash);
                     if (last_region_it == m_region_map[ctl_idx].end()) {
                         throw Exception("EnergyEfficientAgent::" + std::string(__func__) +
