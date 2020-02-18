@@ -61,20 +61,27 @@ int main(int argc, char **argv)
         }
     }
 
-    int repeat = 10;
-    double scaling_big_o = 0.001;
-    double net_spin_big_o = 0.001;
-    for (int mix_idx = 1; mix_idx <= 100; ++mix_idx) {
-        printf("scaling-%.2f-network_spin-%.2f", scaling_big_o, net_spin_big_o);
-        std::unique_ptr<geopm::ModelRegion> scaling_model(geopm::ModelRegion::model_region("scaling", scaling_big_o * mix_idx, is_verbose));
-        geopm::Profile &prof = geopm::Profile::default_profile();
-        uint64_t network_spin_rid = prof.region("network_spin", GEOPM_REGION_HINT_NETWORK);
-        std::unique_ptr<geopm::ModelRegion> net_spin_model(geopm::ModelRegion::model_region("spin", net_spin_big_o * mix_idx, is_verbose));
-        for (int rep_idx = 0; rep_idx != repeat; ++rep_idx) {
+    std::vector<double> big_o {0.001, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128};
+    std::vector<int> repeat {12800, 6400, 3200, 1600, 800, 400, 200, 100};
+    size_t num_trial = big_o.size();
+    geopm::Profile &prof = geopm::Profile::default_profile();
+
+    for (size_t trial_idx = 0; trial_idx != num_trial; ++trial_idx) {
+        std::string scaling_name = "scaling_" + std::to_string(trial_idx);
+        std::string spin_name = "network_spin_" + std::to_string(trial_idx);
+        std::unique_ptr<geopm::ModelRegion> scaling_model(
+            geopm::ModelRegion::model_region("scaling", big_o[trial_idx], is_verbose));
+        std::unique_ptr<geopm::ModelRegion> spin_model(
+            geopm::ModelRegion::model_region("spin", big_o[trial_idx], is_verbose));
+        uint64_t scaling_rid = prof.region(scaling_name, GEOPM_REGION_HINT_UNKNOWN);
+        uint64_t spin_rid = prof.region(spin_name, GEOPM_REGION_HINT_NETWORK);
+        for (int rep_idx = 0; rep_idx != repeat[trial_idx]; ++rep_idx) {
+            prof.enter(scaling_rid);
             scaling_model->run();
-            prof.enter(network_spin_rid);
-            net_spin_model->run();
-            prof.exit(network_spin_rid);
+            prof.exit(scaling_rid);
+            prof.enter(spin_rid);
+            spin_model->run();
+            prof.exit(spin_rid);
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
