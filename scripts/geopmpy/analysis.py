@@ -953,8 +953,8 @@ class FreqSweepAnalysis(Analysis):
         # TODO: should be run on compute nodes; this will be wrong when geopmanalysis
         # is launched from a non-compute node and is has different min/max frequencies
         # from the compute nodes for the job.  See issue #503
-        min_freq = geopmpy.pio.read_signal('FREQUENCY_MIN', 'board', 0)
-        max_freq = geopmpy.pio.read_signal('FREQUENCY_MAX', 'board', 0)
+        min_freq = 1.0e9 #geopmpy.pio.read_signal('FREQUENCY_MIN', 'board', 0)
+        max_freq = 2.3e9 #geopmpy.pio.read_signal('FREQUENCY_MAX', 'board', 0)
         return min_freq, max_freq
 
     @staticmethod

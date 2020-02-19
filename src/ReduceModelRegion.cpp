@@ -70,6 +70,12 @@ namespace geopm
         if (m_verbosity != 0) {
             std::cout << "Executing reduce\n";
         }
+
+        err = MPI_Barrier(MPI_COMM_WORLD);
+        if (err) {
+            throw Exception("MPI_Barrier", err, __FILE__, __LINE__);
+        }
+
         err = MPI_Allreduce(m_send_buffer.data(), m_recv_buffer.data(),
                             m_num_elem, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
         if (err) {
