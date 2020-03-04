@@ -160,7 +160,7 @@ class ShortRegionPerfMarginAnalysis:
         # clean up long floats
         perf_margins = ['{:.3f}'.format(yy) for yy in perf_margins]
         # update xtick labels to be scientific notation
-        big_os = ['$2^{{{}}}$'.format(int(math.log2(xx*10000))) for xx in big_os]
+        big_os = [int(xx * 10000) for xx in big_os]
         x_label = 'big-o (100us = $10^{{-4}}$s)'
 
         cmap, norm, freqs, z_thresh = self.frequency_colormap()
@@ -220,7 +220,7 @@ class ShortRegionPerfMarginAnalysis:
         # clean up long floats
         perf_margins = ['{:.3f}'.format(yy) for yy in perf_margins]
         # update xtick labels to be scientific notation
-        big_os = ['$2^{{{}}}$'.format(int(math.log2(xx*10000))) for xx in big_os]
+        big_os = [int(xx * 10000) for xx in big_os]
         x_label = 'big-o (100us = $10^{{-4}}$s)'
 
         cmap, norm, percents, z_thresh = self.energy_savings_colormap()
@@ -242,7 +242,7 @@ class ShortRegionPerfMarginAnalysis:
         # clean up long floats
         perf_margins = ['{:.3f}'.format(yy) for yy in perf_margins]
         # update xtick labels to be scientific notation
-        big_os = ['$2^{{{}}}$'.format(int(math.log2(xx*10000))) for xx in big_os]
+        big_os = [int(xx * 10000) for xx in big_os]
         x_label = 'big-o (100us = $10^{{-4}}$s)'
 
         cmap, norm, percents, z_thresh = self.runtime_degradation_colormap()
@@ -274,7 +274,7 @@ class ShortRegionPerfMarginAnalysis:
         cbar.ax.set_ylabel(zbar_label, rotation=-90, va='bottom')
 
         ax.set_xlabel(x_label)
-        ax.set_xticklabels(x_range)
+        ax.set_xticklabels(x_range, rotation=90)
         ax.set_xticks(np.arange(len(x_range)))
 
         ax.set_ylabel(y_label)
