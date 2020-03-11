@@ -43,6 +43,13 @@ bin_PROGRAMS = geopmadmin \
                geopmread \
                geopmwrite \
                #end
+
+if ENABLE_BETA
+    bin_PROGRAMS += geopmcd \
+                    # end
+endif
+
+
 pkglib_LTLIBRARIES =
 nodist_include_HEADERS =
 
@@ -428,6 +435,7 @@ geopmread_LDADD = libgeopmpolicy.la
 geopmwrite_LDADD = libgeopmpolicy.la
 geopmagent_LDADD = libgeopmpolicy.la
 geopmadmin_LDADD = libgeopmpolicy.la
+geopmcd_LDADD = libgeopmpolicy.la
 if ENABLE_MPI
     geopmctl_LDADD = libgeopm.la $(MPI_CLIBS)
     geopmbench_LDADD = libgeopm.la $(MATH_LIB) $(MPI_CLIBS)
@@ -624,6 +632,7 @@ geopmread_SOURCES = src/geopmread_main.cpp
 geopmwrite_SOURCES = src/geopmwrite_main.cpp
 geopmagent_SOURCES = src/geopmagent_main.cpp
 geopmadmin_SOURCES = src/geopmadmin_main.cpp
+geopmcd_SOURCES = src/geopmcd_main.cpp
 
 if ENABLE_MPI
     # All source files that are compiled into libgeopmpolicy are also

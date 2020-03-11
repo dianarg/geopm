@@ -78,6 +78,13 @@ namespace geopm
             auto policy = m_policystore->get_best(agent, profile_name);
             m_endpoint->write_policy(policy);
         }
+        // TODO: where to put this?  want daemon to wait until job is
+        // done before attempting to handle another connection.  maybe
+        // it's fine here; entire function blocks so daemon should run
+        // this in a thread.
+        // TODO: different timeout from attach step
+        m_endpoint->wait_for_agent_detach(10);
+        // TODO: clean up old endpoint; need reset.  otherwise policy can leak between jobs.
     }
 
     void DaemonImp::stop_wait_loop(void)
