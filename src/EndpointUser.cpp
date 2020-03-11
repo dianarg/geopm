@@ -115,7 +115,7 @@ namespace geopm
         for (const auto &host : hosts) {
             outfile << host << "\n";
         }
-        data->hostlist_path[GEOPM_ENDPOINT_HOSTLIST_PATH_MAX -1] = '\0';
+        data->hostlist_path[GEOPM_ENDPOINT_HOSTLIST_PATH_MAX - 1] = '\0';
         strncpy(data->hostlist_path, m_hostlist_path.c_str(), GEOPM_ENDPOINT_HOSTLIST_PATH_MAX - 1);
     }
 

@@ -52,6 +52,8 @@ namespace geopm
             /// @brief Unlink the shared memory regions belonging to
             ///        the Endpoint.
             virtual void close(void) = 0;
+            /// @brief Clear all data in the endpoint and reset to default.
+            virtual void clear(void) = 0;
             /// @brief Write a set of policy values for the Agent.
             /// @param [in] policy The policy values.  The order is
             ///        specified by the Agent.

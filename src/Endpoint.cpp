@@ -68,21 +68,19 @@ namespace geopm
     }
 
     EndpointImp::EndpointImp(const std::string &data_path)
-        : EndpointImp(data_path, nullptr, nullptr, 0, 0)
+        : EndpointImp(data_path, nullptr, nullptr)
     {
 
     }
 
     EndpointImp::EndpointImp(const std::string &path,
                              std::unique_ptr<SharedMemory> policy_shmem,
-                             std::unique_ptr<SharedMemory> sample_shmem,
-                             size_t num_policy,
-                             size_t num_sample)
+                             std::unique_ptr<SharedMemory> sample_shmem)
         : m_path(path)
         , m_policy_shmem(std::move(policy_shmem))
         , m_sample_shmem(std::move(sample_shmem))
-        , m_num_policy(num_policy)
-        , m_num_sample(num_sample)
+        , m_num_policy(0)
+        , m_num_sample(0)
         , m_is_open(false)
         , m_continue_loop(true)
     {
@@ -104,13 +102,7 @@ namespace geopm
             size_t shmem_size = sizeof(struct geopm_endpoint_sample_shmem_s);
             m_sample_shmem = SharedMemory::make_unique(m_path + shm_sample_postfix(), shmem_size);
         }
-        auto lock_p = m_policy_shmem->get_scoped_lock();
-        struct geopm_endpoint_policy_shmem_s *data_p = (struct geopm_endpoint_policy_shmem_s*)m_policy_shmem->pointer();
-        *data_p = {};
-
-        auto lock_s = m_sample_shmem->get_scoped_lock();
-        struct geopm_endpoint_sample_shmem_s *data_s = (struct geopm_endpoint_sample_shmem_s*)m_sample_shmem->pointer();
-        *data_s = {};
+        clear();
         m_is_open = true;
     }
 
@@ -127,12 +119,34 @@ namespace geopm
         m_is_open = false;
     }
 
+    void EndpointImp::clear(void)
+    {
+        auto lock_p = m_policy_shmem->get_scoped_lock();
+        struct geopm_endpoint_policy_shmem_s *data_p = (struct geopm_endpoint_policy_shmem_s*)m_policy_shmem->pointer();
+        *data_p = {};
+
+        auto lock_s = m_sample_shmem->get_scoped_lock();
+        struct geopm_endpoint_sample_shmem_s *data_s = (struct geopm_endpoint_sample_shmem_s*)m_sample_shmem->pointer();
+        // todo: copied code; need helper
+        char hostlist_path[GEOPM_ENDPOINT_HOSTLIST_PATH_MAX];
+        std::copy(data_s->hostlist_path, data_s->hostlist_path + GEOPM_ENDPOINT_HOSTLIST_PATH_MAX, hostlist_path);
+        unlink(hostlist_path);
+        *data_s = {};
+
+        m_num_policy = 0;
+        m_num_sample = 0;
+    }
+
     void EndpointImp::write_policy(const std::vector<double> &policy)
     {
         if (!m_is_open) {
             throw Exception("EndpointImp::" + std::string(__func__) + "(): cannot use shmem before calling open()",
                             GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
+        // read agent to reset expected buffer size
+        // TODO: get rid of ugly side effect and just have a function for num policy
+        // this might help remove the factory dependence in the test too?
+        get_agent();
         if (policy.size() != m_num_policy) {
             throw Exception("EndpointImp::" + std::string(__func__) + "(): size of policy does not match expected.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
@@ -150,6 +164,8 @@ namespace geopm
             throw Exception("EndpointImp::" + std::string(__func__) + "(): cannot use shmem before calling open()",
                             GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
+        // read agent to resize buffers
+        get_agent();
         if (sample.size() != m_num_sample) {
             throw Exception("EndpointImp::" + std::string(__func__) + "(): output sample vector is incorrect size.",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);

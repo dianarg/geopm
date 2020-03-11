@@ -44,6 +44,8 @@ class MockEndpoint : public geopm::Endpoint
                      void(void));
         MOCK_METHOD0(close,
                      void(void));
+        MOCK_METHOD0(clear,
+                     void(void));
         MOCK_METHOD1(write_policy,
                      void(const std::vector<double> &policy));
         MOCK_METHOD1(read_sample,

@@ -97,13 +97,12 @@ namespace geopm
             EndpointImp(const std::string &data_path);
             EndpointImp(const std::string &data_path,
                         std::unique_ptr<SharedMemory> policy_shmem,
-                        std::unique_ptr<SharedMemory> sample_shmem,
-                        size_t num_policy,
-                        size_t num_sample);
+                        std::unique_ptr<SharedMemory> sample_shmem);
             virtual ~EndpointImp();
 
             void open(void) override;
             void close(void) override;
+            void clear(void) override;
             void write_policy(const std::vector<double> &policy) override;
             double read_sample(std::vector<double> &sample) override;
             std::string get_agent(void) override;

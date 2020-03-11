@@ -60,12 +60,6 @@ class EndpointUserTest : public ::testing::Test
         std::unique_ptr<MockSharedMemoryUser> m_sample_shmem_user;
 };
 
-class EndpointUserTestIntegration : public ::testing::Test
-{
-    protected:
-        void TearDown();
-        const std::string m_shm_path = "/EndpointUserTestIntegration_data_" + std::to_string(geteuid());
-};
 
 void EndpointUserTest::SetUp()
 {
@@ -81,12 +75,6 @@ void EndpointUserTest::SetUp()
 void EndpointUserTest::TearDown()
 {
     unlink(m_hostlist_file.c_str());
-}
-
-void EndpointUserTestIntegration::TearDown()
-{
-    unlink(("/dev/shm/" + m_shm_path + "-policy").c_str());
-    unlink(("/dev/shm/" + m_shm_path + "-sample").c_str());
 }
 
 TEST_F(EndpointUserTest, attach)
@@ -170,39 +158,4 @@ TEST_F(EndpointUserTest, profile_name_too_long)
                                             m_hostlist_file,
                                             hosts),
         GEOPM_ERROR_INVALID, "Profile name is too long");
-}
-
-TEST_F(EndpointUserTestIntegration, parse_shm)
-{
-    std::string full_path("/dev/shm" + m_shm_path);
-
-    size_t shmem_size = sizeof(struct geopm_endpoint_policy_shmem_s);
-    SharedMemoryImp smp(m_shm_path + "-policy", shmem_size);
-    struct geopm_endpoint_policy_shmem_s *data = (struct geopm_endpoint_policy_shmem_s *) smp.pointer();
-    SharedMemoryImp sms(m_shm_path + "-sample", sizeof(struct geopm_endpoint_sample_shmem_s));
-
-    double tmp[] = { 1.1, 2.2, 3.3 };
-    int num_policy = sizeof(tmp) / sizeof(tmp[0]);
-    geopm_time_s now;
-    geopm_time(&now);
-    data->count = num_policy;
-    // Build the data
-    memcpy(data->values, tmp, sizeof(tmp));
-    geopm_time(&data->timestamp);
-
-    EndpointUserImp gp(m_shm_path, nullptr, nullptr, "myagent", 0, "myprofile", "", {});
-
-    std::vector<double> result(num_policy);
-    double age = gp.read_policy(result);
-    EXPECT_LT(0.0, age);
-    EXPECT_LT(age, 0.01);
-    std::vector<double> expected {tmp, tmp + num_policy};
-    EXPECT_EQ(expected, result);
-
-    tmp[0] = 1.5;
-    memcpy(data->values, tmp, sizeof(tmp));
-
-    gp.read_policy(result);
-    expected = {tmp, tmp + num_policy};
-    EXPECT_EQ(expected, result);
 }
