@@ -127,7 +127,6 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/EndpointTest.wait_detach_timeout_0 \
               test/gtest_links/EndpointTest.wait_stops_when_agent_attaches \
               test/gtest_links/EndpointTest.wait_stops_when_agent_detaches \
-              test/gtest_links/EndpointTestIntegration.write_shm \
               test/gtest_links/EndpointTestIntegration.write_read_policy \
               test/gtest_links/EndpointTestIntegration.write_read_sample \
               test/gtest_links/EndpointPolicyTracerTest.construct_update_destruct \
@@ -137,7 +136,6 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/EndpointUserTest.parse_shm_policy \
               test/gtest_links/EndpointUserTest.profile_name_too_long \
               test/gtest_links/EndpointUserTest.write_shm_sample \
-              test/gtest_links/EndpointUserTestIntegration.parse_shm \
               test/gtest_links/EnergyEfficientAgentTest.aggregate_sample \
               test/gtest_links/EnergyEfficientAgentTest.do_write_batch \
               test/gtest_links/EnergyEfficientAgentTest.enforce_policy \
@@ -417,6 +415,7 @@ test_geopm_test_SOURCES = test/AdminTest.cpp \
                           test/CSVTest.cpp \
                           test/DebugIOGroupTest.cpp \
                           test/EndpointTest.cpp \
+                          test/EndpointTestIntegration.cpp \
                           test/EndpointPolicyTracerTest.cpp \
                           test/EndpointUserTest.cpp \
                           test/EnergyEfficientAgentTest.cpp \

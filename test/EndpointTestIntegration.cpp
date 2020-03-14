@@ -36,9 +36,6 @@
 #include "Endpoint.hpp"
 #include "EndpointUser.hpp"
 
-
-// TODO: these can probably be combined into one test class
-
 class EndpointTestIntegration : public ::testing::Test
 {
     protected:
@@ -46,58 +43,19 @@ class EndpointTestIntegration : public ::testing::Test
         const std::string m_shm_path = "/EndpointTestIntegration_data_" + std::to_string(geteuid());
 };
 
-class EndpointUserTestIntegration : public ::testing::Test
-{
-    protected:
-        void TearDown();
-        const std::string m_shm_path = "/EndpointUserTestIntegration_data_" + std::to_string(geteuid());
-};
-
-
 void EndpointTestIntegration::TearDown()
 {
     unlink(("/dev/shm/" + m_shm_path + "-policy").c_str());
     unlink(("/dev/shm/" + m_shm_path + "-sample").c_str());
 }
 
-void EndpointUserTestIntegration::TearDown()
-{
-    unlink(("/dev/shm/" + m_shm_path + "-policy").c_str());
-    unlink(("/dev/shm/" + m_shm_path + "-sample").c_str());
-}
-
-TEST_F(EndpointTestIntegration, write_shm)
-{
-    std::vector<double> values = {777, 12.3456, 2.1e9, 5.5};
-    EndpointImp end(m_shm_path, nullptr, nullptr);
-    end.open();
-    SharedMemoryUserImp p_smp(m_shm_path + "-policy", 1);
-    struct geopm_endpoint_policy_shmem_s *p_data = (struct geopm_endpoint_policy_shmem_s *) p_smp.pointer();
-    SharedMemoryUserImp s_smp(m_shm_path + "-sample", 1);
-    struct geopm_endpoint_sample_shmem_s *s_data = (struct geopm_endpoint_sample_shmem_s *) s_smp.pointer();
-    std::string agent = "energy_efficient";
-    strncpy(s_data->agent, agent.c_str(), agent.size());
-
-    end.write_policy(values);
-
-    ASSERT_LT(0u, p_data->count);
-    std::vector<double> result(p_data->values, p_data->values + p_data->count);
-    EXPECT_EQ(values, result);
-
-    values[0] = 888;
-
-    end.write_policy(values);
-    ASSERT_LT(0u, p_data->count);
-    std::vector<double> result2(p_data->values, p_data->values + p_data->count);
-    EXPECT_EQ(values, result2);
-    end.close();
-}
-
 TEST_F(EndpointTestIntegration, write_read_policy)
 {
     std::vector<double> values = {777, 12.3456, 2.1e9, 5.5};
-    EndpointImp end(m_shm_path, nullptr, nullptr);
+    //EndpointImp end(m_shm_path, nullptr, nullptr);
+    auto end = Endpoint::make_unique(m_shm_path);
     end.open();
+    auto user = EndpointUser::make_unique(m_shm_path, "energy_efficient", {});
     EndpointUserImp user(m_shm_path, nullptr, nullptr, "energy_efficient", 0, "", "", {});
 
     end.write_policy(values);
@@ -130,8 +88,9 @@ TEST_F(EndpointTestIntegration, write_read_sample)
     std::string hostlist_path = "EndpointTestIntegration_hostlist";
     EndpointImp end(m_shm_path, nullptr, nullptr);
     end.open();
-    EndpointUserImp user(m_shm_path, nullptr, nullptr, "power_balancer",
-                         values.size(), "myprofile", hostlist_path, hosts);
+    //    EndpointUserImp user(m_shm_path, nullptr, nullptr, "power_balancer",
+    //                     values.size(), "myprofile", hostlist_path, hosts);
+    auto user = EndpointUser::make_unique(m_shm_path, "power_balancer", "myprofile", hosts);
     EXPECT_EQ("power_balancer", end.get_agent());
     EXPECT_EQ("myprofile", end.get_profile_name());
     EXPECT_EQ(hosts, end.get_hostnames());
@@ -155,39 +114,4 @@ TEST_F(EndpointTestIntegration, write_read_sample)
 
     end.close();
     unlink(hostlist_path.c_str());
-}
-
-TEST_F(EndpointUserTestIntegration, parse_shm)
-{
-    std::string full_path("/dev/shm" + m_shm_path);
-
-    size_t shmem_size = sizeof(struct geopm_endpoint_policy_shmem_s);
-    SharedMemoryImp smp(m_shm_path + "-policy", shmem_size);
-    struct geopm_endpoint_policy_shmem_s *data = (struct geopm_endpoint_policy_shmem_s *) smp.pointer();
-    SharedMemoryImp sms(m_shm_path + "-sample", sizeof(struct geopm_endpoint_sample_shmem_s));
-
-    double tmp[] = { 1.1, 2.2, 3.3 };
-    int num_policy = sizeof(tmp) / sizeof(tmp[0]);
-    geopm_time_s now;
-    geopm_time(&now);
-    data->count = num_policy;
-    // Build the data
-    memcpy(data->values, tmp, sizeof(tmp));
-    geopm_time(&data->timestamp);
-
-    EndpointUserImp gp(m_shm_path, nullptr, nullptr, "myagent", 0, "myprofile", "", {});
-
-    std::vector<double> result(num_policy);
-    double age = gp.read_policy(result);
-    EXPECT_LT(0.0, age);
-    EXPECT_LT(age, 0.01);
-    std::vector<double> expected {tmp, tmp + num_policy};
-    EXPECT_EQ(expected, result);
-
-    tmp[0] = 1.5;
-    memcpy(data->values, tmp, sizeof(tmp));
-
-    gp.read_policy(result);
-    expected = {tmp, tmp + num_policy};
-    EXPECT_EQ(expected, result);
 }
