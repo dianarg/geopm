@@ -331,6 +331,7 @@ EXTRA_DIST = $(TUTORIAL_DIST) \
              scripts/outlier/README.md \
              scripts/outlier/outlier_detection.py \
              scripts/outlier/theta_nodelist_broken.txt \
+             src/Policy.hpp \
              travis_ci.sh \
              test_hw/Makefile \
              test_hw/geopm_time.h \
