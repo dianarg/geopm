@@ -1,0 +1,206 @@
+geopm::Daemon(3) -- geopm daemon helper methods
+===============================================
+
+[//]: # (Copyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation)
+[//]: # ()
+[//]: # (Redistribution and use in source and binary forms, with or without)
+[//]: # (modification, are permitted provided that the following conditions)
+[//]: # (are met:)
+[//]: # ()
+[//]: # (    * Redistributions of source code must retain the above copyright)
+[//]: # (      notice, this list of conditions and the following disclaimer.)
+[//]: # ()
+[//]: # (    * Redistributions in binary form must reproduce the above copyright)
+[//]: # (      notice, this list of conditions and the following disclaimer in)
+[//]: # (      the documentation and/or other materials provided with the)
+[//]: # (      distribution.)
+[//]: # ()
+[//]: # (    * Neither the name of Intel Corporation nor the names of its)
+[//]: # (      contributors may be used to endorse or promote products derived)
+[//]: # (      from this software without specific prior written permission.)
+[//]: # ()
+[//]: # (THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS)
+[//]: # ("AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT)
+[//]: # (LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR)
+[//]: # (A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT)
+[//]: # (OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,)
+[//]: # (SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT)
+[//]: # (LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,)
+[//]: # (DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY)
+[//]: # (THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT)
+[//]: # ((INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE)
+[//]: # (OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.)
+
+## NAMESPACES
+
+The `Profile` class is a member of the `namespace geopm`, but the full
+name, `geopm::Profile`, has been abbreviated in this manual.
+Similarly, the `std::` namespace specifier has been omitted from the
+interface definitions for the following standard types: `std::string`
+and `std::shared_ptr`, to enable better rendering of this manual.
+
+Note that the `Profile` class is an abstract base class.  There is one
+concrete implementation, `ProfileImp`.
+
+## SYNOPSIS
+
+**\#include [<geopm/Profile.hpp>](https://github.com/geopm/geopm/blob/dev/src/Profile.hpp)**
+
+`Link with -lgeopm`
+
+            uint64_t region(const std::string region_name, long hint) override;
+            void enter(uint64_t region_id) override;
+            void exit(uint64_t region_id) override;
+            void progress(uint64_t region_id, double fraction) override;
+            void epoch(void) override;
+            void shutdown(void) override;
+            std::shared_ptr<ProfileThreadTable> tprof_table(void) override;
+
+
+  * `void update_endpoint_from_policystore(`:
+    `double` _timeout_`);`
+
+  * `void stop_wait_loop(`:
+     `void);`
+
+  * `void reset_wait_loop(`:
+     `void);`
+
+  * `unique_ptr<Profile> make_unique(`:
+    `const std::string &`_endpoint_name_`,` <br>
+    `const std::string &`_db_path_`);`
+
+## DESCRIPTION
+The `Profile` class is the underlying C++ implementation for the
+**geopm_prof_c(3)** C interface.  Please refer to the
+**geopm_prof_c(3)** man page for a general description of the
+purpose, goals, and use cases for this interface.
+
+## SINGLETON ACCESSOR
+
+  * `default_profile()`:
+    There should be only one `Profile` object on a node, and the only
+    way to access this object is through this function.  The function
+    returns a reference to the single `Profile` object that gives
+    access to all of the CLASS METHODS described below.  See `EXAMPLE`
+    section below.
+
+
+## CLASS METHODS
+
+  * `region`():
+            virtual uint64_t region(const std::string region_name, long hint) = 0;
+
+            Register a region of code with a _region_name_ and _hint_
+            to be profiled and return the id of the region, which can
+            then be passed to `enter()` and `exit()`.  Subsequent
+            calls with the same arguments will not register a new
+            region but will return the same id.  Refer to the
+            description of `geopm_prof_region()` in
+            **geopm_prof_c(3)** for more details.
+
+///
+            /// The statistics gathered for each region are aggregated
+            /// in the final report, and the power policy will be
+            /// determined distinctly for each region.  The
+            /// registration of a region is idempotent, and the first
+            /// call will have more overhead than subsequent
+            /// attempts to re-register the same region.
+            ///
+            /// @param [in] region_name Unique name that identifies
+            ///        the region being profiled.  This name will be
+            ///        printed next to the region statistics in the
+            ///        report.
+            ///
+            /// @param [in] hint Value from the
+            ///        #geopm_hint_e structure which is used to
+            ///        derive a starting policy before the application
+            ///        has been profiled.
+            ///
+            /// @return Returns the region_id which is a unique
+            ///         identifier derived from the region_name.  This
+            ///         value is passed to Profile::enter(),
+            ///         Profile::exit(), Profile::progress and
+            ///         Profile::sample() to associate these calls with
+            ///         the registered region.
+
+            /// @brief Mark a region entry point.
+            ///
+            /// Called to denote the beginning of region of code that
+            /// was assigned the region_id when it was registered.
+            /// Nesting of regions is not supported: calls to this
+            /// method from within a region previously entered but not
+            /// yet exited are silently ignored.
+            ///
+            /// @param [in] region_id The identifier returned by
+            ///        Profile::region() when the region was
+            ///        registered.
+            virtual void enter(uint64_t region_id) = 0;
+            /// @brief Mark a region exit point.
+            ///
+            /// Called to denote the end of a region of code that was
+            /// assigned the region_id when it was registered.
+            /// Nesting of regions is not supported: calls to this
+            /// method that are not exiting from the oldest unclosed
+            /// entry point with the same region_id are silently
+            /// ignored.
+            ///
+            /// @param [in] region_id The identifier returned by
+            ///        Profile::region() when the region was
+            ///        registered.
+            virtual void exit(uint64_t region_id) = 0;
+            /// @brief Signal fractional progress through a region.
+            ///
+            /// Signals the fractional amount of work completed within
+            /// the phase.  This normalized progress reporting is used
+            /// to identify processes that are closer or further away
+            /// from completion, and resources can be shifted to those
+            /// processes which are further behind.  Calls to this
+            /// method from within a nested region are ignored.
+            ///
+            /// @param [in] region_id The identifier returned by
+            ///        Profile::region() when the region was
+            ///        registered.
+            ///
+            /// @param [in] fraction The fractional progress
+            ///        normalized to be between 0.0 and 1.0 (zero on
+            ///        entry one on completion).
+            virtual void progress(uint64_t region_id, double fraction) = 0;
+            /// @brief Signal pass through outer loop.
+            ///
+            /// Called once for each pass through the outer most
+            /// computational loop executed by the application.  This
+            /// function call should occur exactly once in the
+            /// application source at the beginning of the loop that
+            /// encapsulates the primary computational region of the
+            /// application.
+            virtual void epoch(void) = 0;
+            virtual void shutdown(void) = 0;
+            virtual std::shared_ptr<ProfileThreadTable> tprof_table(void) = 0;
+
+
+  * `update_endpoint_from_policystore`():
+    looks up a policy in the Profile's PolicyStore given the attached
+    Controller's agent and profile name, and writes it back into the
+    policy side of the Profile's Endpoint.  If no policy is found, an
+    error is returned.  If the Controller fails to attach within the
+    _timeout_, or detaches while this function is running, no policy
+    is written.
+
+  * `stop_wait_loop`():
+    exits early from any ongoing wait loops in the Profile, for example
+    in a call to `update_endpoint_from_policystore()`.
+
+  * `reset_wait_loop`():
+    resets the Profile's endpoint to prepare for a future wait loop.
+
+## ERRORS
+All functions described on this man page throw **geopm::Exception(3)**
+on error.
+
+## COPYRIGHT
+Copyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation. All rights reserved.
+
+## SEE ALSO
+**geopm(7)**,
+**geopm_prof_c(3)**
