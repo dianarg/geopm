@@ -547,6 +547,8 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/ProfileThread.hpp \
                             src/ProfileTracer.cpp \
                             src/ProfileTracer.hpp \
+                            src/RawMSRSignal.cpp \
+                            src/RawMSRSignal.hpp \
                             src/RegionAggregator.cpp \
                             src/RegionAggregator.hpp \
                             src/RegionAggregatorImp.hpp \
@@ -564,6 +566,7 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/SharedMemoryScopedLock.cpp \
                             src/SharedMemoryScopedLock.hpp \
                             src/SharedMemoryUser.hpp \
+                            src/Signal.hpp \
                             src/TimeIOGroup.cpp \
                             src/TimeIOGroup.hpp \
                             src/Tracer.cpp \
