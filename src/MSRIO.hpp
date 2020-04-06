@@ -88,6 +88,14 @@ namespace geopm
                                       const std::vector<int> &write_cpu_idx,
                                       const std::vector<uint64_t> &write_offset,
                                       const std::vector<uint64_t> &write_mask) = 0;
+            /// @brief Extend the set of MSRs for batch read with a single offset.
+            /// @param [in] cpu_idx logical Linux PU index to read from when
+            ///         read_batch() method is called.
+            /// @param [in] offset MSR offset to be read when
+            ///        read_batch() is called.
+            /// @return The mapped memory for use by signals.
+            virtual uint64_t *add_read(int cpu_idx, uint64_t offset) = 0;
+
             /// @brief Batch read a set of MSRs configured by a
             ///        previous call to the batch_config() method.
             /// @param [out] raw_value The raw encoded MSR values to

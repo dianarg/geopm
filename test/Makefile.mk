@@ -219,6 +219,7 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/MSRIOGroupTest.supported_cpuid \
               test/gtest_links/MSRIOGroupTest.whitelist \
               test/gtest_links/MSRIOGroupTest.write_control \
+              test/gtest_links/MSRIOTest.add_read \
               test/gtest_links/MSRIOTest.read_aligned \
               test/gtest_links/MSRIOTest.read_batch \
               test/gtest_links/MSRIOTest.read_unaligned \
