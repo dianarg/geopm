@@ -38,6 +38,21 @@
 #include "Exception.hpp"
 #include "Helper.hpp"
 
+
+#ifdef GEOPM_DEBUG
+/// Used to check for errors that should never occur unless there is a
+/// mistake in internal logic.  These checks will be removed in
+/// release builds.
+#define GEOPM_DEBUG_ASSERT(condition, fail_message)                             \
+    if (!(condition)) {                                                         \
+        throw Exception(std::string(__func__) + ": " + fail_message,            \
+                        GEOPM_ERROR_LOGIC, __FILE__, __LINE__);                 \
+    }
+#else
+#define GEOPM_DEBUG_ASSERT(condition, fail_message)
+#endif
+
+
 namespace geopm
 {
     RawMSRSignal::RawMSRSignal(std::shared_ptr<MSRIO> msrio,
@@ -50,13 +65,7 @@ namespace geopm
         , m_domain_type(domain_type)
         , m_data(nullptr)
     {
-#ifdef GEOPM_DEBUG
-        if (!m_msrio) {
-            throw Exception("RawMSRSignal::" + std::string(__func__) + ": " +
-                            "no valid MSRIO object.",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
+        GEOPM_DEBUG_ASSERT(m_msrio != nullptr, "no valid MSRIO object.");
     }
 
     int RawMSRSignal::domain(void) const
@@ -77,46 +86,25 @@ namespace geopm
 
     void RawMSRSignal::setup_batch(void)
     {
-#ifdef GEOPM_DEBUG
-        if (!m_msrio) {
-            throw Exception("RawMSRSignal::" + std::string(__func__) + ": " +
-                            "no valid MSRIO object.",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
+        GEOPM_DEBUG_ASSERT(m_msrio != nullptr, "no valid MSRIO object.");
+
         m_data = m_msrio->add_read(m_cpu, m_offset);
 
-#ifdef GEOPM_DEBUG
-        if (!m_data) {
-            throw Exception("RawMSRSignal::" + std::string(__func__) + ": " +
-                            "no memory mapped for signal value.",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
+        GEOPM_DEBUG_ASSERT(m_data, "no memory mapped for signal value.");
     }
 
     double RawMSRSignal::sample(void)
     {
-#ifdef GEOPM_DEBUG
-        if (!m_data) {
-            throw Exception("RawMSRSignal::" + std::string(__func__) + ": " +
-                            "no memory mapped for signal value.",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
+        GEOPM_DEBUG_ASSERT(m_data != nullptr, "no memory mapped for signal value.");
+
         // convert to double
         return geopm_field_to_signal(*m_data);
     }
 
     double RawMSRSignal::read(void)
     {
-#ifdef GEOPM_DEBUG
-        if (!m_msrio) {
-            throw Exception("RawMSRSignal::" + std::string(__func__) + ": " +
-                            "no valid MSRIO object.",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
+        GEOPM_DEBUG_ASSERT(m_msrio != nullptr, "no valid MSRIO object.");
+
         // convert to double
         return geopm_field_to_signal(m_msrio->read_msr(m_cpu, m_offset));
     }
