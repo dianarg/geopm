@@ -174,6 +174,22 @@ namespace geopm
         m_write_batch.ops = m_write_batch_op.data();
     }
 
+    uint64_t *MSRIOImp::add_read(int cpu_idx, uint64_t offset)
+    {
+        m_msr_batch_op_s rd {
+            .cpu = cpu_idx,
+            .isrdmsr = 1,
+            .err = 0,
+            .msr = offset,
+            .msrdata = 0,
+            .wmask = 0
+        };
+        m_read_batch_op.push_back(rd);
+        m_read_batch.numops = m_read_batch_op.size();
+        m_read_batch.ops = m_read_batch_op.data();
+        return &m_read_batch.ops[m_read_batch.numops - 1].msrdata;
+    }
+
     void MSRIOImp::msr_ioctl(bool is_read)
     {
         struct m_msr_batch_array_s *batch_ptr = is_read ? &m_read_batch : &m_write_batch;
