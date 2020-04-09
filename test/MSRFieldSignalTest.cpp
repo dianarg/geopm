@@ -30,72 +30,212 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config.h"
+
 #include <memory>
 
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
 #include "MSRFieldSignal.hpp"
-#include "MockMSRIO.hpp"
-
+#include "MSR.hpp"
+#include "Helper.hpp"
+#include "geopm_hash.h"
+#include "MockSignal.hpp"
+#include "geopm_test.hpp"
 
 using geopm::MSRFieldSignal;
+using geopm::MSR;
+using geopm::string_format_float;
 using testing::Return;
 
-TEST(MSRFieldSignalTest, read_scalar)
+class MSRFieldSignalTest : public ::testing::Test
 {
-    std::shared_ptr<MockMSRIO> m_msrio = std::make_shared<MockMSRIO>();
-    int cpu = 10;
-    uint64_t offset = 0xABC;
-    int start = 16;
-    int end = 24;
-    MSRFieldSignal sig {m_msrio, cpu, offset, 3};
-    uint64_t raw = 0xF04403321;
-    EXPECT_CALL(*m_msrio, read_msr(cpu, offset))
-        .WillOnce(Return(raw));
-    double expected = raw & 0x00FF0000;  // bits 24:16
-    double result = sig.read();
+    protected:
+        void SetUp();
+
+        std::shared_ptr<MockSignal> m_raw;
+        int m_start;
+        int m_end;
+        uint64_t m_mask;
+};
+
+void MSRFieldSignalTest::SetUp()
+{
+    m_raw = std::make_shared<MockSignal>();
+    m_start = 16;
+    m_end = 23;
+}
+
+TEST_F(MSRFieldSignalTest, read_scale)
+{
+    double scalar = 1.5;
+    auto sig = geopm::make_unique<MSRFieldSignal>(m_raw, m_start, m_end,
+                                                  MSR::M_FUNCTION_SCALE, scalar,
+                                                  0, string_format_float);
+    uint64_t raw_val = 0xF1458321;
+    EXPECT_CALL(*m_raw, read())
+        .WillOnce(Return(geopm_field_to_signal(raw_val)));
+    double expected = 0x45 * scalar;
+    double result = sig->read();
     EXPECT_EQ(expected, result);
 }
 
-TEST(MSRFieldSignalTest, read_batch)
+TEST_F(MSRFieldSignalTest, read_batch_scale)
 {
-    // std::shared_ptr<MockMSRIO> m_msrio = std::make_shared<MockMSRIO>();
-    // int cpu = 10;
-    // uint64_t offset = 0xABC;
-    // MSRFieldSignal sig {m_msrio, cpu, offset, 2};
-    // uint64_t mapped_mem = 0;
-    // EXPECT_CALL(*m_msrio, add_read(cpu, offset))
-    //     .WillOnce(Return(&mapped_mem));
-    // sig.setup_batch();
+    double scalar = 2.7;
+    auto sig = geopm::make_unique<MSRFieldSignal>(m_raw, m_start, m_end,
+                                                  MSR::M_FUNCTION_SCALE, scalar,
+                                                  0, string_format_float);
+    uint64_t raw_val = 0xF1678321;
+    EXPECT_CALL(*m_raw, setup_batch());
+    sig->setup_batch();
 
-    // // mock read_batch by updating raw memory
-    // uint64_t expected = 0x456;
-    // mapped_mem = expected;
-
-    // double result = sig.sample();
-    // EXPECT_EQ(expected, geopm_signal_to_field(result));
+    EXPECT_CALL(*m_raw, sample())
+        .WillOnce(Return(geopm_field_to_signal(raw_val)));
+    double expected = 0x67 * scalar;
+    double result = sig->sample();
+    EXPECT_EQ(expected, result);
 }
 
-TEST(MSRFieldSignalTest, const_methods)
+TEST_F(MSRFieldSignalTest, read_log_half)
 {
-    // std::shared_ptr<MockMSRIO> m_msrio = std::make_shared<MockMSRIO>();
-    // int cpu = 10;
-    // uint64_t offset = 0xABC;
-    // int domain = 5;
-    // std::string units = "";  // Raw MSRs have no units
-    // MSRFieldSignal sig {m_msrio, cpu, offset, domain};
-    // EXPECT_EQ(domain, sig.domain());
-    // EXPECT_EQ(units, sig.units());
-    // auto func = sig.format_function();
-    // EXPECT_TRUE(is_format_raw64(func));  // All raw MSRs are printed as 64-bit hex
+    // double scalar = 1.5;
+    // auto sig = geopm::make_unique<MSRFieldSignal>(m_raw, m_start, m_end, scalar);
+    // uint64_t raw_val = 0xF1458321;
+    // EXPECT_CALL(*m_raw, read())
+    //     .WillOnce(Return(geopm_field_to_signal(raw_val)));
+    // double expected = 0x45 * scalar;
+    // double result = sig->read();
+    // EXPECT_EQ(expected, result);
 }
 
-TEST(MSRFieldSignalTest, errors)
+TEST_F(MSRFieldSignalTest, read_batch_log_half)
 {
+
+}
+
+TEST_F(MSRFieldSignalTest, read_7_bit_float)
+{
+
+}
+
+TEST_F(MSRFieldSignalTest, read_batch_7_bit_float)
+{
+
+}
+
+TEST_F(MSRFieldSignalTest, read_batch_overflow)
+{
+    /// @todo: partially copied from MSRTest
+    /// note: should only supported in batch read.
+    /// what to do for read_signal()
+    /// when the counter can overflow?
+
+    auto sig = geopm::make_unique<MSRFieldSignal>(m_raw, 0, 3,
+                                                  MSR::M_FUNCTION_OVERFLOW, 1.0,
+                                                  0, string_format_float);
+    EXPECT_CALL(*m_raw, setup_batch());
+    sig->setup_batch();
+    double result = NAN, expected = NAN;
+    // no overflow
+    expected = 5.0;
+    EXPECT_CALL(*m_raw, sample())
+        .WillOnce(Return(geopm_field_to_signal(0x0005)));
+    result = sig->sample();
+    EXPECT_DOUBLE_EQ(expected, result);
+    // one overflow
+    expected = 20.0;  // 4 + 16
+    EXPECT_CALL(*m_raw, read())
+        .WillOnce(Return(geopm_field_to_signal(0x0004)));
+    result = sig->read();
+    EXPECT_DOUBLE_EQ(expected, result);
+    // still one overflow
+    expected = 26.0;  // 10 + 16
+    EXPECT_CALL(*m_raw, read())
+        .WillOnce(Return(geopm_field_to_signal(0x000A)));
+    result = sig->read();
+    EXPECT_DOUBLE_EQ(expected, result);
+    // multiple overflow
+    expected = 33.0;  // 1 + 16 + 16
+    EXPECT_CALL(*m_raw, read())
+        .WillOnce(Return(geopm_field_to_signal(0x0001)));
+    result = sig->read();
+    EXPECT_DOUBLE_EQ(expected, result);
+
+    // Test with real counter values
+    // auto signal2 = std::pair<std::string, struct MSR::m_encode_s>
+    //                   ("sig42", (struct MSR::m_encode_s) {
+    //                       .begin_bit = 0,
+    //                       .end_bit   = 47,
+    //                       .domain    = GEOPM_DOMAIN_CPU,
+    //                       .function  = MSR::M_FUNCTION_OVERFLOW,
+    //                       .units     = MSR::M_UNITS_NONE,
+    //                       .scalar    = 1.0});
+    // std::unique_ptr<MSR> msr2 = MSR::make_unique("msr42", 0, {signal2}, {});
+
+    // last_field = 0;
+    // num_overflow = 0;
+
+    // uint64_t input_value = 0xFFFFFF27AAE8;
+    // of_value = msr2->signal(0, input_value, last_field, num_overflow);
+    // EXPECT_DOUBLE_EQ((double)input_value, of_value);
+
+    // // Setup funky rollover
+    // //last_value = input_value;
+    // input_value = 0xFFFF000DD5D0;
+    // uint64_t expected_value = input_value + pow(2, 48); // i.e. 0x1FFFF000DD5D0
+
+    // of_value = msr2->signal(0, input_value, last_field, num_overflow);
+    // EXPECT_DOUBLE_EQ((double)expected_value, of_value)
+    //                  << "\nActual is : 0x" << std::hex << (uint64_t)of_value << std::endl
+    //                  << "Expected is : 0x" << std::hex << expected_value << std::endl;
+
+
+}
+
+TEST_F(MSRFieldSignalTest, const_methods)
+{
+    auto sig = geopm::make_unique<MSRFieldSignal>(m_raw, m_start, m_end,
+                                                  MSR::M_FUNCTION_SCALE, 1.0,
+                                                  0, string_format_float);
+    int domain = 5;
+    EXPECT_CALL(*m_raw, domain()).WillOnce(Return(domain));
+    EXPECT_EQ(domain, sig->domain());
+
+    EXPECT_EQ("none", sig->units());
+
+    auto func = sig->format_function();
+    EXPECT_TRUE(is_format_float(func));
+}
+
+TEST_F(MSRFieldSignalTest, errors)
+{
+    // logic errors in contructor because this class is internal to MSRIOGroup.
+    // @todo: consider whether Signal should be public to help writers of IOGroups
 #ifdef GEOPM_DEBUG
-    // cannot construct with null MSRIO
-    GEOPM_EXPECT_THROW_MESSAGE(MSRFieldSignal(0, nullptr, 0, 0),
-                               GEOPM_ERROR_LOGIC, "no valid MSRIO");
+    // cannot construct with null underlying signal
+    GEOPM_EXPECT_THROW_MESSAGE(MSRFieldSignal(nullptr, 0, 0,
+                                              MSR::M_FUNCTION_SCALE, 1.0,
+                                              0, string_format_float),
+                               GEOPM_ERROR_LOGIC, "no valid raw Signal");
+
+    // invalid number of bits
+    GEOPM_EXPECT_THROW_MESSAGE(MSRFieldSignal(m_raw, 0, 63,
+                                              MSR::M_FUNCTION_SCALE, 1.0,
+                                              0, string_format_float),
+                               GEOPM_ERROR_LOGIC, "64-bit fields are not supported");
+    GEOPM_EXPECT_THROW_MESSAGE(MSRFieldSignal(m_raw, 4, 0,
+                                              MSR::M_FUNCTION_SCALE, 1.0,
+                                              0, string_format_float),
+                               GEOPM_ERROR_LOGIC, "begin bit must be <= end bit");
+
+    // invalid function
+    GEOPM_EXPECT_THROW_MESSAGE(MSRFieldSignal(m_raw, 0, 0,
+                                              99, 1.0,
+                                              0, string_format_float),
+                               GEOPM_ERROR_LOGIC, "invalid encoding function");
+
+    // invalid units
 #endif
 }
