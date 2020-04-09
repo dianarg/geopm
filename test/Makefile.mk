@@ -426,6 +426,7 @@ test_geopm_test_SOURCES = test/AdminTest.cpp \
                           test/CpuinfoIOGroupTest.cpp \
                           test/CSVTest.cpp \
                           test/DebugIOGroupTest.cpp \
+                          test/DerivativeSignalTest.cpp \
                           test/DifferenceSignalTest.cpp \
                           test/EndpointTest.cpp \
                           test/EndpointPolicyTracerTest.cpp \
