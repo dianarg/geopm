@@ -115,6 +115,10 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/DebugIOGroupTest.read_signal \
               test/gtest_links/DebugIOGroupTest.register_signal_error \
               test/gtest_links/DebugIOGroupTest.sample \
+              test/gtest_links/DifferenceSignalTest.const_methods \
+              test/gtest_links/DifferenceSignalTest.errors \
+              test/gtest_links/DifferenceSignalTest.read \
+              test/gtest_links/DifferenceSignalTest.read_batch \
               test/gtest_links/EndpointTest.attach_wait_loop_timeout_throws \
               test/gtest_links/EndpointTest.detach_wait_loop_timeout_throws \
               test/gtest_links/EndpointTest.get_hostnames \
@@ -421,6 +425,7 @@ test_geopm_test_SOURCES = test/AdminTest.cpp \
                           test/CpuinfoIOGroupTest.cpp \
                           test/CSVTest.cpp \
                           test/DebugIOGroupTest.cpp \
+                          test/DifferenceSignalTest.cpp \
                           test/EndpointTest.cpp \
                           test/EndpointPolicyTracerTest.cpp \
                           test/EndpointUserTest.cpp \
