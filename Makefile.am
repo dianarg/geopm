@@ -521,6 +521,8 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/MSRSignalImp.hpp \
                             src/MonitorAgent.cpp \
                             src/MonitorAgent.hpp \
+                            src/MPIFrequency.cpp \
+                            src/MPIFrequency.hpp \
                             src/OptionParser.cpp \
                             src/OptionParser.hpp \
                             src/PlatformIO.cpp \

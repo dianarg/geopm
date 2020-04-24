@@ -259,6 +259,7 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/ModelApplicationTest.parse_config_errors \
               test/gtest_links/MonitorAgentTest.policy_names \
               test/gtest_links/MonitorAgentTest.sample_names \
+              test/gtest_links/MPIFrequencyTest.something \
               test/gtest_links/OptionParserTest.get_invalid \
               test/gtest_links/OptionParserTest.parse_errors \
               test/gtest_links/OptionParserTest.add_option_errors \
@@ -497,6 +498,7 @@ test_geopm_test_SOURCES = test/AdminTest.cpp \
                           test/MockTreeCommLevel.hpp \
                           test/ModelApplicationTest.cpp \
                           test/MonitorAgentTest.cpp \
+                          test/MPIFrequencyTest.cpp \
                           test/OptionParserTest.cpp \
                           test/PlatformIOTest.cpp \
                           test/PlatformTopoTest.cpp \
