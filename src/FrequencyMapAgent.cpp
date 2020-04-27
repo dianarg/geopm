@@ -55,54 +55,23 @@ using json11::Json;
 
 namespace geopm
 {
-    static std::map<uint64_t, double> parse_env_map(void)
-    {
-        std::map<uint64_t, double> frequency_map;
-        std::string env_map_str = environment().frequency_map();
-        if (env_map_str.length()) {
-            std::cerr << "Warning: <geopm> Use of the GEOPM_FREQUENCY_MAP "
-                         "environment variable is deprecated. Frequency maps "
-                         "will only be set via "
-                      << FrequencyMapAgent::plugin_name()
-                      << " agent policies in the future.\n";
-            std::string err;
-            Json root = Json::parse(env_map_str, err);
-            if (!err.empty() || !root.is_object()) {
-                throw Exception("FrequencyMapAgent::" + std::string(__func__) + "(): detected a malformed json config file: " + err,
-                                GEOPM_ERROR_FILE_PARSE, __FILE__, __LINE__);
-            }
-            for (const auto &obj : root.object_items()) {
-                if (obj.second.type() != Json::NUMBER) {
-                    throw Exception("FrequencyMapAgent::" + std::string(__func__) +
-                                    ": Region best-fit frequency must be a number",
-                                    GEOPM_ERROR_FILE_PARSE, __FILE__, __LINE__);
-                }
-                uint64_t hash = geopm_crc32_str(obj.first.c_str());
-                frequency_map[hash] = obj.second.number_value();
-            }
-        }
-        return frequency_map;
-    }
-
     FrequencyMapAgent::FrequencyMapAgent()
-        : FrequencyMapAgent(platform_io(), platform_topo(), FrequencyGovernor::make_shared(), parse_env_map())
+        : FrequencyMapAgent(platform_io(), platform_topo(),
+                            FrequencyGovernor::make_shared())
     {
 
     }
 
     FrequencyMapAgent::FrequencyMapAgent(PlatformIO &plat_io, const PlatformTopo &topo,
-                                         std::shared_ptr<FrequencyGovernor> gov, std::map<uint64_t, double> frequency_map)
+                                         std::shared_ptr<FrequencyGovernor> gov)
         : M_PRECISION(16)
         , M_WAIT_SEC(0.002)
         , m_platform_io(plat_io)
         , m_platform_topo(topo)
         , m_freq_governor(gov)
-        , m_hash_freq_map(frequency_map)
         , m_last_wait(GEOPM_TIME_REF)
-        , m_level(-1)
         , m_num_children(0)
         , m_is_policy_updated(false)
-        , m_is_initialized_with_map(!frequency_map.empty())
     {
 
     }
@@ -119,8 +88,7 @@ namespace geopm
 
     void FrequencyMapAgent::init(int level, const std::vector<int> &fan_in, bool is_level_root)
     {
-        m_level = level;
-        if (m_level == 0) {
+        if (level == 0) {
             m_num_children = 0;
             init_platform_io();
         }
@@ -131,14 +99,15 @@ namespace geopm
 
     void FrequencyMapAgent::validate_policy(std::vector<double> &policy) const
     {
-#ifdef GEOPM_DEBUG
-        if (!is_valid_policy_size(policy)) {
-            throw Exception("FrequencyMapAgent::" + std::string(__func__) + "(): policy vector not correctly sized.",
-                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-        }
-#endif
-        m_freq_governor->validate_policy(policy[M_POLICY_FREQ_MIN],
-                                         policy[M_POLICY_FREQ_MAX]);
+        GEOPM_DEBUG_ASSERT(policy.size() == M_NUM_POLICY,
+                           "FrequencyMapAgent::" + std::string(__func__) +
+                           "(): policy vector not correctly sized.");
+        double system_min = m_pio.read_signal("FREQUENCY_MIN", GEOPM_DOMAIN_BOARD, 0);
+        double system_max = m_pio.read_signal("FREQUENCY_MAX", GEOPM_DOMAIN_BOARD, 0);
+        // FIXME
+
+        m_freq_governor->validate_policy(policy[M_POLICY_FREQ_DEFAULT,
+                                         policy[M_POLICY_FREQ_DEFAULT]);
 
         // Validate all (hash, frequency) pairs
         std::set<double> policy_regions;
@@ -248,33 +217,12 @@ namespace geopm
         std::vector<double> target_freq;
         for (size_t ctl_idx = 0; ctl_idx < (size_t) m_num_freq_ctl_domain; ++ctl_idx) {
             const uint64_t curr_hash = m_last_region[ctl_idx].hash;
-            const uint64_t curr_hint = m_last_region[ctl_idx].hint;
             auto it = m_hash_freq_map.find(curr_hash);
             if (it != m_hash_freq_map.end()) {
                 freq = it->second;
             }
             else {
-                switch(curr_hint) {
-                    // Hints for low CPU frequency
-                    case GEOPM_REGION_HINT_MEMORY:
-                    case GEOPM_REGION_HINT_NETWORK:
-                    case GEOPM_REGION_HINT_IO:
-                        freq = freq_min;
-                        break;
-
-                    // Hints for maximum CPU frequency
-                    case GEOPM_REGION_HINT_COMPUTE:
-                    case GEOPM_REGION_HINT_SERIAL:
-                    case GEOPM_REGION_HINT_PARALLEL:
-                        freq = freq_max;
-                        break;
-                    // Hint Inconclusive
-                    //case GEOPM_REGION_HINT_UNKNOWN:
-                    //case GEOPM_REGION_HINT_IGNORE:
-                    default:
-                        freq = freq_max;
-                        break;
-                }
+                freq = m_default_freq;
             }
             m_hash_freq_map[m_last_region[ctl_idx].hash] = freq;
             target_freq.push_back(freq);
@@ -292,7 +240,6 @@ namespace geopm
     {
         for (size_t ctl_idx = 0; ctl_idx < (size_t) m_num_freq_ctl_domain; ++ctl_idx) {
             m_last_region[ctl_idx].hash = m_platform_io.sample(m_signal_idx[M_SIGNAL_REGION_HASH][ctl_idx]);
-            m_last_region[ctl_idx].hint = m_platform_io.sample(m_signal_idx[M_SIGNAL_REGION_HINT][ctl_idx]);
         }
     }
 
@@ -348,7 +295,6 @@ namespace geopm
     {
         std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > result;
         for (const auto &region : m_hash_freq_map) {
-            /// @todo re-implement with m_region_map and m_hash_freq_map keys as pair (hash + hint)
             result[region.first].push_back(std::make_pair("frequency-map", std::to_string(region.second)));
         }
         return result;
@@ -396,22 +342,5 @@ namespace geopm
                                                                           ctl_idx));
             }
         }
-    }
-
-    bool FrequencyMapAgent::is_valid_policy_size(const std::vector<double> &policy) const
-    {
-        bool ret = true;
-        if (m_is_initialized_with_map) {
-            if (policy.size() != M_POLICY_FIRST_HASH) {
-                ret = false;
-            }
-        }
-        else {
-            if (policy.size() > M_NUM_POLICY ||
-                policy.size() < M_POLICY_FIRST_HASH || policy.size() % 2) {
-                ret = false;
-            }
-        }
-        return ret;
     }
 }
