@@ -182,4 +182,9 @@ namespace geopm
         }
         return value;
     }
+
+    std::function<double(const std::vector<double> &)> Agg::name_to_function(const std::string &name)
+    {
+        return sum;
+    }
 }

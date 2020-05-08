@@ -53,6 +53,7 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/AgentFactoryTest.static_info_energy_efficient \
               test/gtest_links/AgentFactoryTest.static_info_frequency_map \
               test/gtest_links/AggTest.agg_function \
+              test/gtest_links/AggTest.function_strings \
               test/gtest_links/ApplicationIOTest.passthrough \
               test/gtest_links/CircularBufferTest.buffer_capacity \
               test/gtest_links/CircularBufferTest.buffer_size \

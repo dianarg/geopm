@@ -36,6 +36,7 @@
 #include "geopm.h"
 #include "geopm_internal.h"
 #include "geopm_hash.h"
+#include "geopm_test.hpp"
 
 using geopm::Agg;
 
@@ -84,4 +85,17 @@ TEST(AggTest, agg_function)
 
     EXPECT_EQ(5,
               Agg::region_hint({5, 5, 5}));
+}
+
+TEST(AggTest, function_strings)
+{
+    EXPECT_TRUE(is_agg_sum(Agg::name_to_function("sum")));
+    EXPECT_TRUE(is_agg_sum(Agg::name_to_function("average")));
+    EXPECT_TRUE(is_agg_sum(Agg::name_to_function("median")));
+    EXPECT_TRUE(is_agg_sum(Agg::name_to_function("logical_and")));
+    EXPECT_TRUE(is_agg_sum(Agg::name_to_function("logical_or")));
+    EXPECT_TRUE(is_agg_sum(Agg::name_to_function("region_hash")));
+        EXPECT_TRUE(is_agg_sum(Agg::name_to_function("sum")));
+    GEOPM_EXPECT_THROW_MESSAGE(Agg::name_to_function("invalid"), GEOPM_ERROR_INVALID,
+                               "unknown aggregation function");
 }
