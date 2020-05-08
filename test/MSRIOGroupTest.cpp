@@ -1208,6 +1208,16 @@ TEST_F(MSRIOGroupTest, parse_json_msrs_error_fields)
     GEOPM_EXPECT_THROW_MESSAGE(m_msrio_group->parse_json_msrs_signal(Json(input).dump()),
                                GEOPM_ERROR_INVALID,
                                "\"writeable\" must be a bool in \"MSR_ONE:FIELD_RO\"");
+
+    fields = complete;
+    fields["aggregation"] = 0;
+    reset_input();
+    GEOPM_EXPECT_THROW_MESSAGE(MSRIOGroup::parse_json_msrs(Json(input).dump()),
+                               GEOPM_ERROR_INVALID,
+                               "\"aggregation\" must be a valid aggregation function string in \"MSR_ONE:FIELD_RO\"");
+    GEOPM_EXPECT_THROW_MESSAGE(m_msrio_group->parse_json_msrs_signal(Json(input).dump()),
+                               GEOPM_ERROR_INVALID,
+                               "\"aggregation\" must be a valid aggregation function string in \"MSR_ONE:FIELD_RO\"");
 }
 
 TEST_F(MSRIOGroupTest, parse_json_msrs)
@@ -1261,7 +1271,8 @@ TEST_F(MSRIOGroupTest, parse_json_msrs_signal)
                        "function": "scale",
                        "units": "hertz",
                        "scalar": 2,
-                       "writeable": false
+                       "writeable": false,
+                       "aggregation": "average"
                    }
                }
            },
@@ -1284,4 +1295,5 @@ TEST_F(MSRIOGroupTest, parse_json_msrs_signal)
     for (const auto &name : expected) {
         EXPECT_TRUE(signals.find(name) != signals.end()) << "Expected signal " << name << " not found in IOGroup.";
     }
+    EXPECT_TRUE(is_agg_average(m_msrio_group->agg_function("MSR::MSR_ONE:FIELD_RO")));
 }

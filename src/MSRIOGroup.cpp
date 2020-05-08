@@ -1103,19 +1103,22 @@ namespace geopm
         std::string message;
     };
 
-    void check_expected_key_values(const Json &root, std::map<std::string, json_checker> &key_check_map,
+    void check_expected_key_values(const Json &root,
+                                   const std::map<std::string, json_checker> &required_key_map,
+                                   const std::map<std::string, json_checker> &optional_key_map,
                                    const std::string &loc_message)
     {
         auto items = root.object_items();
         // check for extra keys
         for (const auto &obj : items) {
-            if (key_check_map.find(obj.first) == key_check_map.end()) {
+            if (required_key_map.find(obj.first) == required_key_map.end() &&
+                optional_key_map.find(obj.first) == optional_key_map.end()) {
                 throw Exception("MSRIOGroup::" + std::string(__func__) + "(): unexpected key \"" + obj.first + "\" found " + loc_message,
                                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
         }
         // check for required keys
-        for (const auto &key_check : key_check_map) {
+        for (const auto &key_check : required_key_map) {
             std::string key = key_check.first;
             json_checker key_param = key_check.second;
             if (items.find(key) == items.end()) {
@@ -1126,6 +1129,18 @@ namespace geopm
             if (obj.type() != key_param.json_type || !key_param.is_valid(obj)) {
                 throw Exception("MSRIOGroup::" + std::string(__func__) + "(): \"" + key + "\" " + key_param.message + " " + loc_message,
                                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
+        // check optional keys
+        for (const auto &key_check : optional_key_map) {
+            std::string key = key_check.first;
+            json_checker key_param = key_check.second;
+            if (items.find(key) != items.end()) {
+                Json obj = root[key];
+                if (obj.type() != key_param.json_type || !key_param.is_valid(obj)) {
+                    throw Exception("MSRIOGroup::" + std::string(__func__) + "(): \"" + key + "\" " + key_param.message + " " + loc_message,
+                                    GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                }
             }
         }
     }
@@ -1162,7 +1177,7 @@ namespace geopm
         std::map<std::string, json_checker> top_level_keys = {
             {"msrs", {Json::OBJECT, null_func, "must be an object"}}
         };
-        check_expected_key_values(root, top_level_keys, "at top level");
+        check_expected_key_values(root, top_level_keys, {}, "at top level");
 
         /// Parse MSRs list
         auto msr_obj = root["msrs"].object_items();
@@ -1179,7 +1194,7 @@ namespace geopm
                 {"domain", {Json::STRING, is_valid_domain, "must be a valid domain string"}},
                 {"fields", {Json::OBJECT, null_func, "must be an object"}}
             };
-            check_expected_key_values(msr_root, msr_keys, "in msr \"" + msr_name + "\"");
+            check_expected_key_values(msr_root, msr_keys, {}, "in msr \"" + msr_name + "\"");
 
             auto msr_data = msr.second.object_items();
 
@@ -1235,7 +1250,10 @@ namespace geopm
                     {"scalar", {Json::NUMBER, null_func, "must be a number"}},
                     {"writeable", {Json::BOOL, null_func, "must be a bool"}}
                 };
-                check_expected_key_values(field_root, field_checker, "in \"" + msr_name + ":" + field_name + "\"");
+                std::map<std::string, json_checker> optional_field_checker {
+                    {"aggregation", {Json::STRING, null_func, "must be a valid aggregation function string"}}
+                };
+                check_expected_key_values(field_root, field_checker, optional_field_checker, "in \"" + msr_name + ":" + field_name + "\"");
 
                 // field is valid, add to list
                 auto field_data = field.second.object_items();
@@ -1295,7 +1313,7 @@ namespace geopm
         std::map<std::string, json_checker> top_level_keys = {
             {"msrs", {Json::OBJECT, null_func, "must be an object"}}
         };
-        check_expected_key_values(root, top_level_keys, "at top level");
+        check_expected_key_values(root, top_level_keys, {}, "at top level");
 
         /// Parse MSRs list
         auto msr_obj = root["msrs"].object_items();
@@ -1312,7 +1330,7 @@ namespace geopm
                 {"domain", {Json::STRING, is_valid_domain, "must be a valid domain string"}},
                 {"fields", {Json::OBJECT, null_func, "must be an object"}}
             };
-            check_expected_key_values(msr_root, msr_keys, "in msr \"" + msr_name + "\"");
+            check_expected_key_values(msr_root, msr_keys, {}, "in msr \"" + msr_name + "\"");
 
             std::vector<std::pair<std::string, struct MSR::m_encode_s> > signals;
             std::vector<std::pair<std::string, struct MSR::m_encode_s> > controls;
@@ -1337,7 +1355,10 @@ namespace geopm
                     {"scalar", {Json::NUMBER, null_func, "must be a number"}},
                     {"writeable", {Json::BOOL, null_func, "must be a bool"}}
                 };
-                check_expected_key_values(field_root, field_checker, "in \"" + msr_name + ":" + field_name + "\"");
+                std::map<std::string, json_checker> optional_field_checker {
+                    {"aggregation", {Json::STRING, null_func, "must be a valid aggregation function string"}}
+                };
+                check_expected_key_values(field_root, field_checker, optional_field_checker, "in \"" + msr_name + ":" + field_name + "\"");
 
                 // field is valid, add to list
                 auto field_data = field.second.object_items();
