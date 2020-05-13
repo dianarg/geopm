@@ -41,23 +41,21 @@ with user specified signals.
 
 def main(argv):
     if len(argv) == 1:
-        sys.stderr.write('Usage: {} SIGNAL_0 [SIGNAL_1 ...]\n'.format(argv[0])
+        sys.stderr.write('Usage: {} SIGNAL_0 [SIGNAL_1 ...]\n'.format(argv[0]))
         return
 
     signal_names = ['TIME']
     signal_names.extend(argv[1:])
-    signal_idx = []
-    for sn in signal_names:
-        signal_idx.append(geopmpy.pio.push_signal(sn, 'board', 0))
+    signal_idx = [geopmpy.pio.push_signal(sn, 'board', 0)
+                  for sn in signal_names]
     header = '{}\n'.format('|'.join(signal_names))
     sys.stdout.write(header)
     sample_period = 1.0
     num_sample = 600
     for sample_idx in range(num_sample):
         geopmpy.pio.read_batch()
-        line = []
-        for si in signal_idx:
-            line.append(str(geopmpy.pio.sample(si)))
+        line = [str(geopmpy.pio.sample(si))
+                for si in signal_idx]
         line = '{}\n'.format('|'.join(line))
         sys.stdout.write(line)
         time.sleep(sample_period)
