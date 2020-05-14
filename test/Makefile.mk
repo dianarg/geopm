@@ -509,6 +509,7 @@ test_geopm_test_SOURCES = test/AdminTest.cpp \
                           test/PowerGovernorTest.cpp \
                           test/ProfileTableTest.cpp \
                           test/ProfileTest.cpp \
+                          test/ProfileThreadTableTest.cpp \
                           test/ProfileTracerTest.cpp \
                           test/RawMSRSignalTest.cpp \
                           test/RegionAggregatorTest.cpp \

@@ -74,6 +74,7 @@ namespace geopm
         //m_is_enabled = is_enabled;
     }
 
+    // called by geopm_tprof_init
     void ProfileThreadTableImp::init(const uint32_t num_work_unit)
     {
         if (!m_is_enabled) {
@@ -83,6 +84,7 @@ namespace geopm
         m_buffer[cpu_idx() * m_stride + 1] = num_work_unit;
     }
 
+    // called by geopm_tprof_init_loop, chunk_size != 0
     void ProfileThreadTableImp::init(int num_thread, int thread_idx, size_t num_iter, size_t chunk_size)
     {
         if (!m_is_enabled) {
@@ -107,6 +109,7 @@ namespace geopm
         init(num_work_unit[thread_idx]);
     }
 
+    // called by geopm_tprof_init_loop, chunk_size == 0
     void ProfileThreadTableImp::init(int num_thread, int thread_idx, size_t num_iter)
     {
         if (!m_is_enabled) {
@@ -114,6 +117,8 @@ namespace geopm
         }
         std::vector<uint32_t> num_work_unit(num_thread);
         std::fill(num_work_unit.begin(), num_work_unit.end(), num_iter / num_thread);
+
+        /// @todo: what is this for
         for (int thread_idx = 0; thread_idx < (int)(num_iter % num_thread); ++thread_idx) {
             ++num_work_unit[thread_idx];
         }
