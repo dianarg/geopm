@@ -43,7 +43,7 @@ namespace geopm
     {
         public:
             ProfileThreadTable() = default;
-            ProfileThreadTable(const ProfileThreadTable &other) = default;
+            //ProfileThreadTable(const ProfileThreadTable &other) = default;
             virtual ~ProfileThreadTable() = default;
             virtual void enable(bool is_enabled) = 0;
             virtual void init(int num_thread, int thread_idx, size_t num_iter) = 0;
@@ -61,7 +61,7 @@ namespace geopm
         public:
             ProfileThreadTableImp(size_t buffer_size, void *buffer);
             ProfileThreadTableImp(const PlatformTopo &topo, size_t buffer_size, void *buffer);
-            ProfileThreadTableImp(const ProfileThreadTableImp &other);
+            ProfileThreadTableImp(const ProfileThreadTableImp &other) = delete;
             virtual ~ProfileThreadTableImp() = default;
             void enable(bool is_enabled) override;
             void init(int num_thread, int thread_idx, size_t num_iter) override;

@@ -55,20 +55,12 @@ namespace geopm
         : m_buffer((uint32_t *)buffer)
         , m_num_cpu(topo.num_domain(GEOPM_DOMAIN_CPU))
         , m_stride(64 / sizeof(uint32_t))
+        , m_is_enabled(true)
     {
         if (buffer_size < 64 * m_num_cpu) {
             throw Exception("ProfileThreadTableImp: provided buffer too small",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-    }
-
-    ProfileThreadTableImp::ProfileThreadTableImp(const ProfileThreadTableImp &other)
-        : m_buffer(other.m_buffer)
-        , m_num_cpu(other.m_num_cpu)
-        , m_stride(other.m_stride)
-        , m_is_enabled(true)
-    {
-
     }
 
     int ProfileThreadTableImp::num_cpu(void)

@@ -48,7 +48,7 @@
 #ifdef GEOPM_HAS_XMMINTRIN
 #include <xmmintrin.h>
 #endif
-
+#include <iostream>
 namespace geopm
 {
     constexpr size_t ApplicationIOImp::M_SHMEM_REGION_SIZE;

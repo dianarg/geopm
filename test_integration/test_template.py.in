@@ -125,7 +125,7 @@ class TestIntegration_@test_name@(unittest.TestCase):
             launcher.set_num_node(num_node)
             launcher.set_num_rank(num_rank)
             # Run the test application
-            launcher.run(test_name)
+            launcher.run('test_' + test_name)
 
     @classmethod
     def tearDownClass(cls):

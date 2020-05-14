@@ -119,7 +119,7 @@ class TestIntegration_thread_progress(unittest.TestCase):
             launcher.set_num_node(num_node)
             launcher.set_num_rank(num_rank)
             # Run the test application
-            launcher.run(test_name)
+            launcher.run('test_' + test_name)
 
     @classmethod
     def tearDownClass(cls):
@@ -144,10 +144,10 @@ class TestIntegration_thread_progress(unittest.TestCase):
         """Test that the report can be loaded
 
         """
-        #report = geopmpy.io.RawReport(self._report_path)
         output = geopmpy.io.AppOutput(self._report_path, self._trace_path + '*')
         for nn in output.get_node_names():
             trace = output.get_trace_data(node_name=nn)
+            # todo get separate df for rows in unmarked region and named region
             progress = trace['REGION_THREAD_PROGRESS']
             sys.stdout.write('{}\n'.format(progress[:10]))
             sys.stdout.write('{}\n'.format(progress[-10:]))
