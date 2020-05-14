@@ -30,30 +30,42 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef APPLICATIONSAMPLER_HPP_INCLUDE
-#define APPLICATIONSAMPLER_HPP_INCLUDE
+#include "config.h"
 
-#include <memory>
+#include "ApplicationSampler.hpp"
+#include "ProfileSampler.hpp"
+#include "EpochRuntimeRegulator.hpp"
 
 namespace geopm
 {
-    class ProfileSampler;
-    class EpochRuntimeRegulator;
-
-    class ApplicationSampler
+    ApplicationSampler &ApplicationSampler::application_sampler(void)
     {
-        public:
-            static ApplicationSampler &application_sampler(void);
-            void set_sampler(std::shared_ptr<ProfileSampler> sampler);
-            std::shared_ptr<ProfileSampler> get_sampler(void);
-            void set_regulator(std::shared_ptr<EpochRuntimeRegulator> regulator);
-            std::shared_ptr<EpochRuntimeRegulator> get_regulator(void);
-        private:
-            ApplicationSampler() = default;
-            virtual ~ApplicationSampler() = default;
-            std::shared_ptr<ProfileSampler> m_sampler;
-            std::shared_ptr<EpochRuntimeRegulator> m_regulator;
-    };
+        static ApplicationSampler instance;
+        return instance;
+    }
+
+
+    void ApplicationSampler::set_sampler(std::shared_ptr<ProfileSampler> sampler)
+    {
+        m_sampler = sampler;
+    }
+
+
+    std::shared_ptr<ProfileSampler> ApplicationSampler::get_sampler(void)
+    {
+        return m_sampler;
+    }
+
+
+    void ApplicationSampler::set_regulator(std::shared_ptr<EpochRuntimeRegulator> regulator)
+    {
+        m_regulator = regulator;
+    }
+
+
+    std::shared_ptr<EpochRuntimeRegulator> ApplicationSampler::get_regulator(void)
+    {
+        return m_regulator;
+    }
 }
 
-#endif
