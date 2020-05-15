@@ -43,7 +43,7 @@
 #include "Exception.hpp"
 
 #include "config.h"
-
+#include <iostream>
 namespace geopm
 {
     ProfileThreadTableImp::ProfileThreadTableImp(size_t buffer_size, void *buffer)
@@ -70,7 +70,8 @@ namespace geopm
 
     void ProfileThreadTableImp::enable(bool is_enabled)
     {
-        m_is_enabled = is_enabled;
+        //std::cout << "DRG enable " << is_enabled << std::endl;
+        //m_is_enabled = is_enabled;
     }
 
     void ProfileThreadTableImp::init(const uint32_t num_work_unit)
@@ -121,6 +122,8 @@ namespace geopm
 
     void ProfileThreadTableImp::post(void)
     {
+        //todo: check init has been called
+
         if (!m_is_enabled) {
             return;
         }
@@ -129,12 +132,18 @@ namespace geopm
 
     void ProfileThreadTableImp::dump(std::vector<double> &progress)
     {
+        /// todo: check size
         double numer;
         uint32_t denom;
         for (uint32_t cpu = 0; cpu < m_num_cpu; ++cpu) {
-            numer = (double)m_buffer[cpu * m_stride];
-            denom = m_buffer[cpu * m_stride + 1];
-            progress[cpu] = denom ? numer / denom : -1.0;
+            if (!m_is_enabled) {
+                progress[cpu] = -1;
+            }
+            else {
+                numer = (double)m_buffer[cpu * m_stride];
+                denom = m_buffer[cpu * m_stride + 1];
+                progress[cpu] = denom ? numer / denom : -1.0;
+            }
         }
     }
 

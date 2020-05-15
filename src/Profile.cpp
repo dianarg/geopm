@@ -417,16 +417,13 @@ namespace geopm
              geopm_region_id_is_mpi(region_id))) {
             ++m_num_enter;
         }
-        if (m_num_enter > 1) {
-            m_tprof_table->enable(false);
-        }
-        else if (m_num_enter == 1) {
-            m_tprof_table->enable(true);
-        }
-
-#ifdef GEOPM_OVERHEAD
-        m_overhead_time += geopm_time_since(&overhead_entry);
-#endif
+        // if (m_num_enter > 1) {
+        //     m_tprof_table->enable(false);
+        // }
+        // else if (m_num_enter == 1) {
+        //     m_tprof_table->enable(true);
+        // }
+        m_tprof_table->enable(true);
 
     }
 
@@ -447,12 +444,14 @@ namespace geopm
              geopm_region_id_is_mpi(region_id))) {
             --m_num_enter;
         }
-        if (m_num_enter == 1) {
-            m_tprof_table->enable(true);
-        }
-        else {
-            m_tprof_table->enable(false);
-        }
+        // if (m_num_enter == 1) {
+        //     m_tprof_table->enable(true);
+        // }
+        // else {
+        //     m_tprof_table->enable(false);
+        // }
+        ///@todo: deal with nested region
+        m_tprof_table->enable(false);
 
         // if we are leaving the outer most nesting of our current region
         if (!m_num_enter) {

@@ -108,7 +108,7 @@ class TestIntegration_thread_progress(unittest.TestCase):
             app_conf = AppConf()
             # Configure the agent
             agent_conf = geopmpy.io.AgentConf(cls._agent_conf_path, 'monitor')
-            trace_signals = "REGION_THREAD_PROGRESS"
+            trace_signals = "REGION_THREAD_PROGRESS@cpu"
             # Create the test launcher with the above configuration
             launcher = geopm_test_launcher.TestLauncher(app_conf,
                                                         agent_conf,
@@ -140,20 +140,40 @@ class TestIntegration_thread_progress(unittest.TestCase):
             TestIntegration_thread_progress._keep_files = True
 
     # @unittest.expectedFailure  # TODO Remove when feature is fixed
-    def test_load_report(self):
-        """Test that the report can be loaded
-
-        """
+    def test_progress_increases(self):
         output = geopmpy.io.AppOutput(self._report_path, self._trace_path + '*')
         for nn in output.get_node_names():
             trace = output.get_trace_data(node_name=nn)
             # todo get separate df for rows in unmarked region and named region
-            progress = trace['REGION_THREAD_PROGRESS']
+            progress = trace['REGION_THREAD_PROGRESS@cpu{}'.format(cpu_idx)]
             sys.stdout.write('{}\n'.format(progress[:10]))
             sys.stdout.write('{}\n'.format(progress[-10:]))
             first = progress[0]
             last = progress[-1]
             self.assertNotEqual(first, last, "thread progress should change over time")
+
+    def test_progress_unmarked(self):
+        '''
+        Thread progress should always be -1 in unmarked.
+        '''
+        output = geopmpy.io.AppOutput(self._report_path, self._trace_path + '*')
+        region_data = output.get_report_data(region='unmarked-region')
+        region_hash = region_data['id'][0]
+        print(region_hash)
+        # todo: how to get num cpu?
+        # todo: just loop through all column names, check if starts with REGION_THREAD_PROGRESS
+        num_cpu = 4
+        for nn in output.get_node_names():
+            trace = output.get_trace_data(node_name=nn)
+            tt = trace.set_index(['REGION_HASH'], append=True)  # add region_hash column to multiindex
+            tt_reg = tt.groupby(level=['REGION_HASH'])
+            unmarked_rows = tt_reg.get_group(region_hash)
+            for cpu_idx in range(num_cpu):
+                progress = unmarked_rows['REGION_THREAD_PROGRESS-cpu-{}'.format(cpu_idx)]
+                sys.stdout.write('{}\n'.format(progress[:10]))
+                sys.stdout.write('{}\n'.format(progress[-10:]))
+
+                self.assertEqual(-1, progress.mean())
 
 
 if __name__ == '__main__':

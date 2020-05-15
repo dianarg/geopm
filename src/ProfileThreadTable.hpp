@@ -43,7 +43,6 @@ namespace geopm
     {
         public:
             ProfileThreadTable() = default;
-            //ProfileThreadTable(const ProfileThreadTable &other) = default;
             virtual ~ProfileThreadTable() = default;
             virtual void enable(bool is_enabled) = 0;
             virtual void init(int num_thread, int thread_idx, size_t num_iter) = 0;
