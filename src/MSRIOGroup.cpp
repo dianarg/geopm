@@ -92,7 +92,6 @@ namespace geopm
         , m_time_batch(std::make_shared<double>(NAN))
         , m_platform_topo(topo)
         , m_num_cpu(num_cpu)
-        , m_is_active(false)
         , m_is_read(false)
         , m_msrio(std::move(msrio))
         , m_cpuid(cpuid)
@@ -346,10 +345,6 @@ namespace geopm
 
     int MSRIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
-        if (m_is_active) {
-            throw Exception("MSRIOGroup::push_signal(): cannot push a signal after read_batch() or adjust() has been called.",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
         if (!m_is_fixed_enabled) {
             enable_fixed_counters();
         }
@@ -393,10 +388,6 @@ namespace geopm
 
     int MSRIOGroup::push_control(const std::string &control_name, int domain_type, int domain_idx)
     {
-        if (m_is_active) {
-            throw Exception("MSRIOGroup::push_control(): cannot push a control after read_batch() or adjust() has been called.",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
         check_control(control_name);
 
         auto nccm_it = m_name_cpu_control_map.find(control_name);
@@ -471,9 +462,6 @@ namespace geopm
 
     void MSRIOGroup::read_batch(void)
     {
-        if (!m_is_active) {
-            activate();
-        }
         m_msrio->read_batch();
 
         // update timesignal value
@@ -484,15 +472,12 @@ namespace geopm
 
     void MSRIOGroup::write_batch(void)
     {
-        if (!m_is_active) {
-            activate();
-        }
         if (m_active_control.size()) {
             if (std::any_of(m_is_adjusted.begin(), m_is_adjusted.end(), [](bool it) {return !it;})) {
                 throw Exception("MSRIOGroup::write_batch() called before all controls were adjusted",
                                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
-            m_msrio->write_batch(m_write_field);
+            m_msrio->write_batch();
         }
     }
 
@@ -515,9 +500,6 @@ namespace geopm
         if (control_idx < 0 || (unsigned)control_idx >= m_active_control.size()) {
             throw Exception("MSRIOGroup::adjust(): control_idx out of range",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        if (!m_is_active) {
-            activate();
         }
         for (auto &control : m_active_control[control_idx]) {
             control->adjust(setting);
@@ -710,23 +692,6 @@ namespace geopm
         }
 
         return ((family << 8) + model);
-    }
-
-    void MSRIOGroup::activate(void)
-    {
-        m_msrio->config_batch({}, {},
-                              m_write_cpu_idx, m_write_offset, m_write_mask);
-        m_write_field.resize(m_write_cpu_idx.size());
-        size_t msr_idx = 0;
-        for (auto &control : m_active_control) {
-            for (auto &msr_ctl : control) {
-                uint64_t *field_ptr = &(m_write_field[msr_idx]);
-                uint64_t *mask_ptr = &(m_write_mask[msr_idx]);
-                msr_ctl->map_field(field_ptr, mask_ptr);
-                ++msr_idx;
-            }
-        }
-        m_is_active = true;
     }
 
     void MSRIOGroup::register_signal_alias(const std::string &signal_name, const std::string &msr_name_field)

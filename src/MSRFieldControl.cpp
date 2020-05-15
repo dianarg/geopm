@@ -84,15 +84,39 @@ namespace geopm
         uint64_t field = 0;
         switch (m_function) {
             case MSR::M_FUNCTION_SCALE:
-                value = value / m_scalar;
-                field = (uint64_t)value << m_shift;
-                field = field & m_mask;
+                value = value * m_inverse;
+                break;
+            case MSR::M_FUNCTION_7_BIT_FLOAT:
+                // F = S * 2 ^ Y * (1.0 + Z / 4.0)
+                // Y in bits [0:5) and Z in bits [5:7)
+                if (value > 0) {
+                    value *= m_inverse;
+                    float_y = (uint64_t)std::log2(value);
+                    float_z = (uint64_t)(4.0 * (value / (1 << float_y) - 1.0));
+                    if ((float_y && (float_y >> 5) != 0) ||
+                        (float_z && (float_z >> 2) != 0)) {
+                        throw Exception("MSR::encode(): integer overflow in M_FUNCTION_7_BIT_FLOAT datatype encoding",
+                                        EOVERFLOW, __FILE__, __LINE__);
+                    }
+                    value_inferred = (1 << float_y) * (1.0 + (float_z / 4.0));
+                    if ((value - value_inferred) > (value  * 0.25)) {
+                        throw Exception("MSR::encode(): inferred value from encoded value is inaccurate",
+                                        GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+                    }
+                    result = float_y | (float_z << 5);
+                }
+                else {
+                    throw Exception("MSR::encode(): input value <= 0 for M_FUNCTION_7_BIT_FLOAT",
+                                    GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                }
                 break;
 
             default:
                 GEOPM_DEBUG_ASSERT(false, "unsupported encode function");
                 break;
         }
+        field = (uint64_t)value << m_shift;
+        field = field & m_mask;
         return field;
     }
 

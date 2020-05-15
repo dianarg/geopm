@@ -180,11 +180,8 @@ namespace geopm
             void check_control(const std::string &control_name);
             static std::string msr_whitelist(const std::vector<std::unique_ptr<MSR> > &msr_arr);
 
-            /// @brief Configure memory for all pushed signals and controls.
-            void activate(void);
             const PlatformTopo &m_platform_topo;
             int m_num_cpu;
-            bool m_is_active;
             bool m_is_read;
             std::shared_ptr<MSRIO> m_msrio;
             int m_cpuid;
@@ -196,10 +193,6 @@ namespace geopm
             // Pushed controls only
             std::vector<std::vector<std::shared_ptr<MSRControl> > > m_active_control;
             // Vectors are over MSRs for all active controls
-            std::vector<uint64_t> m_write_field;
-            std::vector<int> m_write_cpu_idx;
-            std::vector<uint64_t> m_write_offset;
-            std::vector<uint64_t> m_write_mask;
             const std::string m_name_prefix;
             std::vector<std::map<uint64_t, m_restore_s> > m_per_cpu_restore;
             bool m_is_fixed_enabled;
