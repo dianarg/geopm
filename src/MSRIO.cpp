@@ -422,7 +422,6 @@ namespace geopm
             throw Exception("MSRIOImp::write_batch(): input vector smaller than configured number of ops",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
-#ifdef GEOPM_MSRSAFE_IOCTL_WRITE
         if (m_is_batch_enabled) {
             uint32_t batch_idx = 0;
             for (auto raw_it = raw_value.begin();
@@ -430,10 +429,9 @@ namespace geopm
                  ++raw_it, ++batch_idx) {
                 m_write_batch.ops[batch_idx].msrdata = *raw_it;
             }
-            msr_ioctl(false);
+            msr_ioctl(m_write_batch);
         }
         else
-#endif
         {
             uint32_t batch_idx = 0;
             for (auto raw_it = raw_value.begin();

@@ -134,16 +134,6 @@ fi
 [enable_procfs="1"]
 )
 
-AC_ARG_ENABLE([msrsafe-ioctl-write],
-  [AS_HELP_STRING([--enable-msrsafe-ioctl-write], [Enable GEOPM to use msr-safe driver to use batch write ioctl facility which is broken as of msr-safe version 1.2.0])],
-[if test "x$enable_msrsafe_ioctl_write" = "xno" ; then
-  enable_msrsafe_ioctl_write="0"
-else
-  enable_msrsafe_ioctl_write="1"
-fi
-],
-[enable_msrsafe_ioctl_write="0"]
-)
 
 AC_ARG_ENABLE([cnl-iogroup],
   [AS_HELP_STRING([--enable-cnl-iogroup], [Enable the CNL IOGroup])],
@@ -182,10 +172,6 @@ if test "x$enable_procfs" = "x1" ; then
 fi
 AC_SUBST([enable_procfs])
 
-if test "x$enable_msrsafe_ioctl_write" = "x1" ; then
-  AC_DEFINE([GEOPM_MSRSAFE_IOCTL_WRITE], [ ], [Enables use of msr-safe ioctl feature for writing (broken as of msr-safe version 1.2.0)])
-fi
-AC_SUBST([enable_msrsafe_ioctl_write])
 
 AC_ARG_WITH([sqlite3], [AS_HELP_STRING([--with-sqlite3=PATH],
             [specify directory for installed sqlite3 package.])])
