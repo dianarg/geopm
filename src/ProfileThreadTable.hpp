@@ -44,13 +44,17 @@ namespace geopm
         public:
             ProfileThreadTable() = default;
             virtual ~ProfileThreadTable() = default;
+            /// @todo: this is not per thread? what does it mean?  per-rank?
             virtual void enable(bool is_enabled) = 0;
-            virtual void init(int num_thread, int thread_idx, size_t num_iter) = 0;
-            virtual void init(int num_thread, int thread_idx, size_t num_iter, size_t chunk_size) = 0;
-            virtual void init(uint32_t num_work_unit) = 0;
-            virtual void post(void) = 0;
+            /// @todo: what is the difference between thread_idx and cpu_idx
+            virtual void init(int cpu_idx, int num_thread, int thread_idx, size_t num_iter) = 0;
+            virtual void init(int cpu_idx, int num_thread, int thread_idx, size_t num_iter, size_t chunk_size) = 0;
+            virtual void init(int cpu_idx, uint32_t num_work_unit) = 0;
+            virtual void reset(void) = 0;
+            virtual void post(int cpu_idx) = 0;
             virtual void dump(std::vector<double> &progress) = 0;
             virtual int num_cpu(void) = 0;
+            static int cpu_idx(void);
     };
 
     class PlatformTopo;
@@ -58,23 +62,24 @@ namespace geopm
     class ProfileThreadTableImp : public ProfileThreadTable
     {
         public:
-            ProfileThreadTableImp(size_t buffer_size, void *buffer);
+            ProfileThreadTableImp(size_t buffer_size, void *buffer/*, std::shared_ptr<THingyforCPUIdx>*/);
             ProfileThreadTableImp(const PlatformTopo &topo, size_t buffer_size, void *buffer);
             ProfileThreadTableImp(const ProfileThreadTableImp &other) = delete;
             virtual ~ProfileThreadTableImp() = default;
             void enable(bool is_enabled) override;
-            void init(int num_thread, int thread_idx, size_t num_iter) override;
-            void init(int num_thread, int thread_idx, size_t num_iter, size_t chunk_size) override;
-            void init(uint32_t num_work_unit) override;
-            void post(void) override;
+            void init(int cpu_idx, int num_thread, int thread_idx, size_t num_iter) override;
+            void init(int cpu_idx, int num_thread, int thread_idx, size_t num_iter, size_t chunk_size) override;
+            void init(int cpu_idx, uint32_t num_work_unit) override;
+            void reset(void) override;
+            void post(int cpu_idx) override;
             void dump(std::vector<double> &progress) override;
             int num_cpu(void) override;
         private:
-            static int cpu_idx(void);
             uint32_t *m_buffer;
             uint32_t m_num_cpu;
             size_t m_stride;
             bool m_is_enabled;
+            bool m_is_initialized;
     };
 }
 

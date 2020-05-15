@@ -45,6 +45,7 @@ class ProfileThreadTableTest : public ::testing::Test
 
 TEST_F(ProfileThreadTableTest, something)
 {
+
     int m_num_cpu = 4;
     MockPlatformTopo m_topo;
     EXPECT_CALL(m_topo, num_domain(GEOPM_DOMAIN_CPU)).WillOnce(Return(m_num_cpu));
@@ -56,16 +57,37 @@ TEST_F(ProfileThreadTableTest, something)
     EXPECT_EQ(m_num_cpu, table.num_cpu());
 
     // before init
+    // todo: -1 or 0?
+    // regions dont matter for entry, but cleanup on region exit
     table.dump(progress);
     EXPECT_EQ(-1, progress[0]);
+    EXPECT_EQ(-1, progress[1]);
 
-    table.init(4);
+    for (int ii = 0; ii < m_num_cpu; ++ii) {
+        table.init(ii, 4);
+    }
     table.enable(true);
+
+    // std::vector<int> post_cpu_idx {0, 1, 0, 2, 1};
+    // size_t curr_post = 0;
+    // EXPECT_CALL(cpu_idx_thing, cpu_idx()).Times(35)
+    //     .WillRepeatedly(DoAll(Return(post_cpu_idx[curr_post]),
+    //                           Invoke([]() { ++curr_post; })));
+    // alternatively, one post and dump call per iteration of a loop
 
     table.dump(progress);
     EXPECT_EQ(0, progress[0]);
-    table.post();
+    EXPECT_EQ(0, progress[1]);
+    table.post(0);
+    table.dump(progress);
     EXPECT_EQ(0.25, progress[0]);
+    EXPECT_EQ(0, progress[1]);
+    table.post(1);
+    table.post(0);
+    table.dump(progress);
+    EXPECT_EQ(0.5, progress[0]);
+    EXPECT_EQ(0.25, progress[1]);
+
 }
 
 // todo: init numiter

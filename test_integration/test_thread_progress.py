@@ -162,6 +162,8 @@ class TestIntegration_thread_progress(unittest.TestCase):
         print(region_hash)
         # todo: how to get num cpu?
         # todo: just loop through all column names, check if starts with REGION_THREAD_PROGRESS
+
+        # TODO: need region_hash @ cpu for this to work
         num_cpu = 4
         for nn in output.get_node_names():
             trace = output.get_trace_data(node_name=nn)

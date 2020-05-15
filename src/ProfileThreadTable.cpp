@@ -56,6 +56,7 @@ namespace geopm
         , m_num_cpu(topo.num_domain(GEOPM_DOMAIN_CPU))
         , m_stride(64 / sizeof(uint32_t))
         , m_is_enabled(true)
+        , m_is_initialized(false)
     {
         if (buffer_size < 64 * m_num_cpu) {
             throw Exception("ProfileThreadTableImp: provided buffer too small",
@@ -72,27 +73,66 @@ namespace geopm
     {
         //std::cout << "DRG enable " << is_enabled << std::endl;
         //m_is_enabled = is_enabled;
+
+        // make sure Profile enable(true) when in outermost marked region, false otherwise
+
+
+        /////////////////
+        // app 1
+        //
+        // enter_omp()
+        // init()
+        // post() ..
+        // exit_omp()
+
+        //////////////
+        // app 2
+        //
+        // enter_region(myname)
+        // enter_omp()
+        // init()
+        // post()
+        // exit_omp()
+        // exit_region(myname)
+
+        //////////////
+        // app 3
+        //
+        // enter_region(myname)  -->enabled
+        // enter_omp()   ---> still enabled
+        // init()         /// progress:0
+        // post()        /// progress:0.25
+        // post()        /// progress:0.50
+        // exit_omp()  --> disable, reset
+        // enter_omp() --> runtime error
+        // init()     //// progress:0
+        // post()    /// progress:0.75
+        // exit_omp()
+        // exit_region(myname)
+
     }
 
     // called by geopm_tprof_init
-    void ProfileThreadTableImp::init(const uint32_t num_work_unit)
+    void ProfileThreadTableImp::init(int cpu_idx, const uint32_t num_work_unit)
     {
         if (!m_is_enabled) {
             return;
         }
-        m_buffer[cpu_idx() * m_stride] = 0;
-        m_buffer[cpu_idx() * m_stride + 1] = num_work_unit;
+        m_buffer[cpu_idx * m_stride] = 0;
+        m_buffer[cpu_idx * m_stride + 1] = num_work_unit;
+        m_is_initialized = true;
     }
 
     // called by geopm_tprof_init_loop, chunk_size != 0
-    void ProfileThreadTableImp::init(int num_thread, int thread_idx, size_t num_iter, size_t chunk_size)
+    void ProfileThreadTableImp::init(int cpu_idx, int num_thread, int thread_idx, size_t num_iter, size_t chunk_size)
     {
         if (!m_is_enabled) {
             return;
         }
+        // independently calculate the chunk size for each thread; threads have
+        // already started and can't share this information.
         std::vector<uint32_t> num_work_unit(num_thread);
         std::fill(num_work_unit.begin(), num_work_unit.end(), 0);
-
         size_t num_chunk = num_iter / chunk_size;
         size_t unchunked = num_iter % chunk_size;
         size_t min_unit = chunk_size * (num_chunk / num_thread);
@@ -106,33 +146,37 @@ namespace geopm
                 num_work_unit[thread_idx] += unchunked;
             }
         }
-        init(num_work_unit[thread_idx]);
+        init(cpu_idx, num_work_unit[thread_idx]);
     }
 
     // called by geopm_tprof_init_loop, chunk_size == 0
-    void ProfileThreadTableImp::init(int num_thread, int thread_idx, size_t num_iter)
+    void ProfileThreadTableImp::init(int cpu_idx, int num_thread, int thread_idx, size_t num_iter)
     {
         if (!m_is_enabled) {
             return;
         }
         std::vector<uint32_t> num_work_unit(num_thread);
         std::fill(num_work_unit.begin(), num_work_unit.end(), num_iter / num_thread);
-
-        /// @todo: what is this for
+        // distribute remainder of num_iter / num_thread
         for (int thread_idx = 0; thread_idx < (int)(num_iter % num_thread); ++thread_idx) {
             ++num_work_unit[thread_idx];
         }
-        init(num_work_unit[thread_idx]);
+        init(cpu_idx, num_work_unit[thread_idx]);
     }
 
-    void ProfileThreadTableImp::post(void)
+    void ProfileThreadTableImp::reset(void)
+    {
+        m_is_initialized = false;
+    }
+
+    void ProfileThreadTableImp::post(int cpu_idx)
     {
         //todo: check init has been called
 
         if (!m_is_enabled) {
             return;
         }
-        ++m_buffer[cpu_idx() * m_stride];
+        ++m_buffer[cpu_idx * m_stride];
     }
 
     void ProfileThreadTableImp::dump(std::vector<double> &progress)
@@ -141,7 +185,8 @@ namespace geopm
         double numer;
         uint32_t denom;
         for (uint32_t cpu = 0; cpu < m_num_cpu; ++cpu) {
-            if (!m_is_enabled) {
+            // todo: need test
+            if (!m_is_initialized) {
                 progress[cpu] = -1;
             }
             else {
@@ -152,15 +197,18 @@ namespace geopm
         }
     }
 
-    int ProfileThreadTableImp::cpu_idx(void)
+    int ProfileThreadTable::cpu_idx(void)
     {
         static thread_local int result = -1;
         if (result == -1) {
             result = geopm_sched_get_cpu();
+            // todo: could use GEOPM_DEBUG_ASSERT, if appropriate
+#ifdef GEOPM_DEBUG
             if (result >= geopm_sched_num_cpu()) {
                 throw Exception("ProfileThreadTableImp::cpu_idx(): Number of online CPUs is less than or equal to the value returned by sched_getcpu()",
                                 GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
             }
+#endif
         }
         return result;
     }

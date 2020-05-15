@@ -172,7 +172,8 @@ extern "C"
         int err = 0;
         if (g_pmpi_prof_enabled) {
             try {
-                geopm::Profile::default_profile().tprof_table()->init(num_work_unit);
+                int cpu_idx = geopm::ProfileThreadTable::cpu_idx();
+                geopm::Profile::default_profile().tprof_table()->init(cpu_idx, num_work_unit);
             }
             catch (...) {
                 err = geopm::exception_handler(std::current_exception());
@@ -186,12 +187,13 @@ extern "C"
         int err = 0;
         if (g_pmpi_prof_enabled) {
             try {
+                int cpu_idx = geopm::ProfileThreadTable::cpu_idx();
                 std::shared_ptr<geopm::ProfileThreadTable> table_ptr = geopm::Profile::default_profile().tprof_table();
                 if (chunk_size) {
-                    table_ptr->init(num_thread, thread_idx, num_iter, chunk_size);
+                    table_ptr->init(cpu_idx, num_thread, thread_idx, num_iter, chunk_size);
                 }
                 else {
-                    table_ptr->init(num_thread, thread_idx, num_iter);
+                    table_ptr->init(cpu_idx, num_thread, thread_idx, num_iter);
                 }
             }
             catch (...) {
@@ -206,7 +208,8 @@ extern "C"
         int err = 0;
         if (g_pmpi_prof_enabled) {
             try {
-                geopm::Profile::default_profile().tprof_table()->post();
+                int cpu_idx = geopm::ProfileThreadTable::cpu_idx();
+                geopm::Profile::default_profile().tprof_table()->post(cpu_idx);
             }
             catch (...) {
                 err = geopm::exception_handler(std::current_exception());

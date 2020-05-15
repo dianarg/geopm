@@ -452,6 +452,9 @@ namespace geopm
         // }
         ///@todo: deal with nested region
         m_tprof_table->enable(false);
+        if (m_num_enter == 0) {
+            m_tprof_table->reset();
+        }
 
         // if we are leaving the outer most nesting of our current region
         if (!m_num_enter) {

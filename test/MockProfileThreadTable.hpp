@@ -42,14 +42,16 @@ class MockProfileThreadTable : public geopm::ProfileThreadTable
     public:
         MOCK_METHOD1(enable,
                      void (bool is_enabled));
-        MOCK_METHOD3(init,
-                     void (int num_thread, int thread_idx, size_t num_iter));
         MOCK_METHOD4(init,
-                     void (int num_thread, int thread_idx, size_t num_iter, size_t chunk_size));
-        MOCK_METHOD1(init,
-                     void (uint32_t num_work_unit));
-        MOCK_METHOD0(post,
+                     void (int cpu_idx, int num_thread, int thread_idx, size_t num_iter));
+        MOCK_METHOD5(init,
+                     void (int cpu_idx, int num_thread, int thread_idx, size_t num_iter, size_t chunk_size));
+        MOCK_METHOD2(init,
+                     void (int cpu_idx, uint32_t num_work_unit));
+        MOCK_METHOD0(reset,
                      void (void));
+        MOCK_METHOD1(post,
+                     void (int cpu_idx));
         MOCK_METHOD1(dump,
                      void (std::vector<double> &progress));
         MOCK_METHOD0(num_cpu,
