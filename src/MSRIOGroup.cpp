@@ -88,7 +88,7 @@ namespace geopm
     }
 
     MSRIOGroup::MSRIOGroup(const PlatformTopo &topo, std::shared_ptr<MSRIO> msrio, int cpuid, int num_cpu)
-        : m_time_zero(std::make_shared<geopm_time_s>())
+        : m_time_zero(std::make_shared<geopm_time_s>(time_zero()))
         , m_time_batch(std::make_shared<double>(NAN))
         , m_platform_topo(topo)
         , m_num_cpu(num_cpu)
@@ -100,8 +100,6 @@ namespace geopm
         , m_per_cpu_restore(m_num_cpu)
         , m_is_fixed_enabled(false)
     {
-        geopm_time(m_time_zero.get());
-
         m_msr_arr = init_msr_arr(m_cpuid);
         init_msrs_signal(m_cpuid);
 

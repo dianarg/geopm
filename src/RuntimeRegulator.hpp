@@ -99,6 +99,7 @@ namespace geopm
             };
             int m_num_rank;
             std::vector<struct m_log_s> m_rank_log;
+            struct geopm_time_s m_time_zero;
     };
 }
 
