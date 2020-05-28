@@ -552,6 +552,8 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/ProfileTracer.hpp \
                             src/RawMSRSignal.cpp \
                             src/RawMSRSignal.hpp \
+                            src/RecordProcessEpoch.cpp \
+                            src/RecordProcessEpoch.hpp \
                             src/RegionAggregator.cpp \
                             src/RegionAggregator.hpp \
                             src/RegionAggregatorImp.hpp \

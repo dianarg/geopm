@@ -358,6 +358,9 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/RawMSRSignalTest.read \
               test/gtest_links/RawMSRSignalTest.read_batch \
               test/gtest_links/RawMSRSignalTest.setup_batch \
+              test/gtest_links/RecordProcessEpochTest.epoch_count \
+              test/gtest_links/RecordProcessEpochTest.epoch_runtime \
+              test/gtest_links/RecordProcessEpochTest.hint_time \
               test/gtest_links/RegionAggregatorTest.epoch_total \
               test/gtest_links/RegionAggregatorTest.sample_total \
               test/gtest_links/ReporterTest.generate \
@@ -526,6 +529,7 @@ test_geopm_test_SOURCES = test/AdminTest.cpp \
                           test/ProfileTest.cpp \
                           test/ProfileTracerTest.cpp \
                           test/RawMSRSignalTest.cpp \
+                          test/RecordProcessEpochTest.cpp \
                           test/RegionAggregatorTest.cpp \
                           test/ReporterTest.cpp \
                           test/RuntimeRegulatorTest.cpp \
