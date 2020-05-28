@@ -956,7 +956,11 @@ class SrunLauncher(Launcher):
         result = []
         if self.is_geopm_enabled:
             # Disable other affinity mechanisms
-            self.environ_ext['KMP_AFFINITY'] = 'disabled'
+            if not is_geopmctl and self.config.get_ctl() == 'application':
+                self.environ_ext['KMP_AFFINITY'] = 'verbose,granularity=thread,compact,1,0'
+            else:
+                self.environ_ext['KMP_AFFINITY'] = 'disabled'
+
             self.environ_ext['MV2_ENABLE_AFFINITY'] = '0'
             self.environ_ext['KMP_WARNINGS'] = 'FALSE'
 
