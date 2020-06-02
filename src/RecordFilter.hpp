@@ -45,6 +45,7 @@ namespace geopm
     class RecordFilter
     {
         public:
+            static std::unique_ptr<RecordFilter> make_unique(const std::string &name);
             /// @brief Default constructor for pure virtual interface.
             RecordFilter() = default;
             /// @brief Default destructor for pure virtual interface.

@@ -184,8 +184,6 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/EnvironmentTest.default_endpoint_user_policy_override_endpoint \
               test/gtest_links/EnvironmentTest.user_policy_and_endpoint \
               test/gtest_links/EnvironmentTest.user_disable_ompt \
-              test/gtest_links/EpochRecordFilterTest.filter_in \
-              test/gtest_links/EpochRecordFilterTest.filter_out \
               test/gtest_links/EpochRuntimeRegulatorTest.all_ranks_enter_exit \
               test/gtest_links/EpochRuntimeRegulatorTest.epoch_runtime \
               test/gtest_links/EpochRuntimeRegulatorTest.invalid_ranks \
@@ -478,7 +476,6 @@ test_geopm_test_SOURCES = test/AdminTest.cpp \
                           test/EnergyEfficientAgentTest.cpp \
                           test/EnergyEfficientRegionTest.cpp \
                           test/EnvironmentTest.cpp \
-                          test/EpochRecordFilterTest.cpp \
                           test/EpochRuntimeRegulatorTest.cpp \
                           test/ExceptionTest.cpp \
                           test/FilePolicyTest.cpp \

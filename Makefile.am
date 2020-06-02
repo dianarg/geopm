@@ -486,8 +486,6 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/EnergyEfficientRegion.hpp \
                             src/Environment.cpp \
                             src/Environment.hpp \
-                            src/EpochRecordFilter.cpp \
-                            src/EpochRecordFilter.hpp \
                             src/EpochRuntimeRegulator.cpp \
                             src/EpochRuntimeRegulator.hpp \
                             src/Exception.cpp \
@@ -560,6 +558,7 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/ProxyEpochRecordFilter.hpp \
                             src/RawMSRSignal.cpp \
                             src/RawMSRSignal.hpp \
+                            src/RecordFilter.cpp \
                             src/RecordFilter.hpp \
                             src/RegionAggregator.cpp \
                             src/RegionAggregator.hpp \

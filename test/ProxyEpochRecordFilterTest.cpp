@@ -50,16 +50,17 @@ class ProxyEpochRecordFilterTest : public ::testing::Test
 void ProxyEpochRecordFilterTest::SetUp()
 {
     m_in_events = {
-        ApplicationSampler::M_EVENT_HINT
-    };
-    m_out_events = {
-        ApplicationSampler::M_EVENT_EPOCH_COUNT,
+        ApplicationSampler::M_EVENT_HINT,
+        ApplicationSampler::M_EVENT_REGION_ENTRY,
         ApplicationSampler::M_EVENT_REGION_EXIT,
         ApplicationSampler::M_EVENT_PROFILE,
         ApplicationSampler::M_EVENT_REPORT,
         ApplicationSampler::M_EVENT_CLAIM_CPU,
         ApplicationSampler::M_EVENT_RELEASE_CPU,
         ApplicationSampler::M_EVENT_NAME_KEY,
+    };
+    m_out_events = {
+        ApplicationSampler::M_EVENT_EPOCH_COUNT,
     };
 }
 
@@ -73,11 +74,15 @@ TEST_F(ProxyEpochRecordFilterTest, simple_conversion)
     geopm::ProxyEpochRecordFilter perf(hash, 1, 0);
     for (uint64_t count = 1; count <= 10; ++count) {
         std::vector<ApplicationSampler::m_record_s> result = perf.filter(record);
-        ASSERT_EQ(1ULL, result.size());
+        ASSERT_EQ(2ULL, result.size());
         EXPECT_EQ(0.0, result[0].time);
         EXPECT_EQ(0, result[0].process);
-        EXPECT_EQ(ApplicationSampler::M_EVENT_EPOCH_COUNT, result[0].event);
-        EXPECT_EQ(count, result[0].signal);
+        EXPECT_EQ(ApplicationSampler::M_EVENT_REGION_ENTRY, result[0].event);
+        EXPECT_EQ(hash, result[0].signal);
+        EXPECT_EQ(0.0, result[1].time);
+        EXPECT_EQ(0, result[1].process);
+        EXPECT_EQ(ApplicationSampler::M_EVENT_EPOCH_COUNT, result[1].event);
+        EXPECT_EQ(count, result[1].signal);
     }
 }
 
@@ -91,13 +96,21 @@ TEST_F(ProxyEpochRecordFilterTest, skip_one)
     geopm::ProxyEpochRecordFilter perf(hash, 2, 0);
     for (uint64_t count = 1; count <= 10; ++count) {
         std::vector<ApplicationSampler::m_record_s> result = perf.filter(record);
+        ASSERT_EQ(2ULL, result.size());
+        EXPECT_EQ(0.0, result[0].time);
+        EXPECT_EQ(0, result[0].process);
+        EXPECT_EQ(ApplicationSampler::M_EVENT_REGION_ENTRY, result[0].event);
+        EXPECT_EQ(hash, result[0].signal);
+        EXPECT_EQ(0.0, result[1].time);
+        EXPECT_EQ(0, result[1].process);
+        EXPECT_EQ(ApplicationSampler::M_EVENT_EPOCH_COUNT, result[1].event);
+        EXPECT_EQ(count, result[1].signal);
+        result = perf.filter(record);
         ASSERT_EQ(1ULL, result.size());
         EXPECT_EQ(0.0, result[0].time);
         EXPECT_EQ(0, result[0].process);
-        EXPECT_EQ(ApplicationSampler::M_EVENT_EPOCH_COUNT, result[0].event);
-        EXPECT_EQ(count, result[0].signal);
-        result = perf.filter(record);
-        EXPECT_EQ(0ULL, result.size());
+        EXPECT_EQ(ApplicationSampler::M_EVENT_REGION_ENTRY, result[0].event);
+        EXPECT_EQ(hash, result[0].signal);
     }
 }
 
@@ -111,18 +124,34 @@ TEST_F(ProxyEpochRecordFilterTest, skip_two_off_one)
                                            hash};
     geopm::ProxyEpochRecordFilter perf(hash, 3, 1);
     std::vector<ApplicationSampler::m_record_s> result = perf.filter(record);
-    EXPECT_EQ(0ULL, result.size());
+    ASSERT_EQ(1ULL, result.size());
+    EXPECT_EQ(0.0, result[0].time);
+    EXPECT_EQ(0, result[0].process);
+    EXPECT_EQ(ApplicationSampler::M_EVENT_REGION_ENTRY, result[0].event);
+    EXPECT_EQ(hash, result[0].signal);
     for (uint64_t count = 1; count <= 10; ++count) {
+        result = perf.filter(record);
+        ASSERT_EQ(2ULL, result.size());
+        EXPECT_EQ(0.0, result[0].time);
+        EXPECT_EQ(0, result[0].process);
+        EXPECT_EQ(ApplicationSampler::M_EVENT_REGION_ENTRY, result[0].event);
+        EXPECT_EQ(hash, result[0].signal);
+        EXPECT_EQ(0.0, result[1].time);
+        EXPECT_EQ(0, result[1].process);
+        EXPECT_EQ(ApplicationSampler::M_EVENT_EPOCH_COUNT, result[1].event);
+        EXPECT_EQ(count, result[1].signal);
         result = perf.filter(record);
         ASSERT_EQ(1ULL, result.size());
         EXPECT_EQ(0.0, result[0].time);
         EXPECT_EQ(0, result[0].process);
-        EXPECT_EQ(ApplicationSampler::M_EVENT_EPOCH_COUNT, result[0].event);
-        EXPECT_EQ(count, result[0].signal);
+        EXPECT_EQ(ApplicationSampler::M_EVENT_REGION_ENTRY, result[0].event);
+        EXPECT_EQ(hash, result[0].signal);
         result = perf.filter(record);
-        EXPECT_EQ(0ULL, result.size());
-        result = perf.filter(record);
-        EXPECT_EQ(0ULL, result.size());
+        ASSERT_EQ(1ULL, result.size());
+        EXPECT_EQ(0.0, result[0].time);
+        EXPECT_EQ(0, result[0].process);
+        EXPECT_EQ(ApplicationSampler::M_EVENT_REGION_ENTRY, result[0].event);
+        EXPECT_EQ(hash, result[0].signal);
     }
 }
 
@@ -165,8 +194,4 @@ TEST_F(ProxyEpochRecordFilterTest, filter_out)
         result = perf.filter(record);
         EXPECT_EQ(0ULL, result.size());
     }
-    record.event = ApplicationSampler::M_EVENT_REGION_ENTRY;
-    record.signal = 0xBULL;
-    result = perf.filter(record);
-    EXPECT_EQ(0ULL, result.size());
 }
