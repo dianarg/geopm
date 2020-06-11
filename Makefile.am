@@ -500,6 +500,8 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/FrequencyMapAgent.hpp \
                             src/Helper.cpp \
                             src/Helper.hpp \
+                            src/HintAggregator.cpp \
+                            src/HintAggregator.hpp \
                             src/IOGroup.cpp \
                             src/IOGroup.hpp \
                             src/Imbalancer.cpp \
