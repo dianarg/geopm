@@ -138,6 +138,9 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/DomainControlTest.setup_batch \
               test/gtest_links/DomainControlTest.write \
               test/gtest_links/DomainControlTest.write_batch \
+              test/gtest_links/EditDistEpochRecordFilterTest.one_region_repeated \
+              test/gtest_links/EditDistEpochRecordFilterTest.filter_in \
+              test/gtest_links/EditDistEpochRecordFilterTest.filter_out \
               test/gtest_links/EndpointTest.attach_wait_loop_timeout_throws \
               test/gtest_links/EndpointTest.detach_wait_loop_timeout_throws \
               test/gtest_links/EndpointTest.get_hostnames \
@@ -500,6 +503,7 @@ test_geopm_test_SOURCES = test/AdminTest.cpp \
                           test/DerivativeSignalTest.cpp \
                           test/DifferenceSignalTest.cpp \
                           test/DomainControlTest.cpp \
+                          test/EditDistEpochRecordFilterTest.cpp \
                           test/EndpointTest.cpp \
                           test/EndpointPolicyTracerTest.cpp \
                           test/EndpointUserTest.cpp \
