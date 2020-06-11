@@ -278,6 +278,8 @@ GTEST_TESTS = test/gtest_links/AcceleratorTopoTest.default_config \
               test/gtest_links/HelperTest.string_ends_with \
               test/gtest_links/HelperTest.string_join \
               test/gtest_links/HelperTest.string_split \
+              test/gtest_links/HintAggregatorTest.errors \
+              test/gtest_links/HintAggregatorTest.total_runtime \
               test/gtest_links/IOGroupTest.control_names_are_valid \
               test/gtest_links/IOGroupTest.controls_have_descriptions \
               test/gtest_links/IOGroupTest.signal_names_are_valid \
@@ -603,6 +605,7 @@ test_geopm_test_SOURCES = test/AcceleratorTopoTest.cpp \
                           test/FrequencyGovernorTest.cpp \
                           test/FrequencyMapAgentTest.cpp \
                           test/HelperTest.cpp \
+                          test/HintAggregatorTest.cpp \
                           test/IOGroupTest.cpp \
                           test/MSRIOGroupTest.cpp \
                           test/MSRIOTest.cpp \
