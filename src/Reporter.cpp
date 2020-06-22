@@ -116,6 +116,40 @@ namespace geopm
 
     }
 
+    struct signal_info
+    {
+        std::string name;
+        int domain_type;
+        int domain_idx;
+    };
+
+    // TODO: shared code with trace extensions env_signals() and env_domains()
+    static std::vector<signal_info> parse_env_signals(const PlatformTopo &topo,
+                                                      const std::string &env_signals)
+    {
+        std::vector<signal_info> result;
+        for (const std::string &env_sig : string_split(env_signals, ",")) {
+            std::vector<std::string> signal_name_domain = string_split(env_sig, "@");
+            if (signal_name_domain.size() == 2) {
+                std::string signal_name = signal_name_domain[0];
+                int domain_type = PlatformTopo::domain_name_to_type(signal_name_domain[1]);
+                for (int domain_idx = 0; domain_idx < topo.num_domain(domain_type); ++domain_idx) {
+                    result.push_back({signal_name, domain_type, domain_idx});
+                }
+            }
+            else if (signal_name_domain.size() == 1) {
+                std::string signal_name = signal_name_domain[0];
+                result.push_back({signal_name, GEOPM_DOMAIN_BOARD, 0});
+            }
+            else {
+                throw Exception("ReporterImp::parse_env_signals(): Environment report extension contains signals with multiple \"@\" characters.",
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
+
+        return result;
+    }
+
     void ReporterImp::init(void)
     {
         m_region_bulk_runtime_idx = m_region_agg->push_signal_total("TIME", GEOPM_DOMAIN_BOARD, 0);
@@ -123,30 +157,22 @@ namespace geopm
         m_energy_dram_idx = m_region_agg->push_signal_total("ENERGY_DRAM", GEOPM_DOMAIN_BOARD, 0);
         m_clk_core_idx = m_region_agg->push_signal_total("CYCLES_THREAD", GEOPM_DOMAIN_BOARD, 0);
         m_clk_ref_idx = m_region_agg->push_signal_total("CYCLES_REFERENCE", GEOPM_DOMAIN_BOARD, 0);
+
         m_app_time_signal_idx = m_platform_io.push_signal("TIME", GEOPM_DOMAIN_BOARD, 0);
         m_app_energy_pkg_idx = m_platform_io.push_signal("ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0);
         m_app_energy_dram_idx = m_platform_io.push_signal("ENERGY_DRAM", GEOPM_DOMAIN_BOARD, 0);
 
-        for (const std::string &signal_name : string_split(m_env_signals, ",")) {
-            std::vector<std::string> signal_name_domain = string_split(signal_name, "@");
-            if (signal_name_domain.size() == 2) {
-                int domain_type = m_platform_topo.domain_name_to_type(signal_name_domain[1]);
-                for (int domain_idx = 0; domain_idx < m_platform_topo.num_domain(domain_type); ++domain_idx) {
-                    m_env_signal_name_idx.emplace_back(
-                        signal_name + '-' + std::to_string(domain_idx),
-                        m_region_agg->push_signal_total(signal_name_domain[0], domain_type, domain_idx));
-                }
+        std::vector<signal_info> region_extensions = parse_env_signals(m_platform_topo, m_env_signals);
+        for (const auto &sig : region_extensions) {
+            int agg_idx = m_region_agg->push_signal_total(sig.name, sig.domain_type, sig.domain_idx);
+            std::string key_name = sig.name;
+            if (sig.domain_type != GEOPM_DOMAIN_BOARD) {
+                key_name += "@" + PlatformTopo::domain_type_to_name(sig.domain_type);
+                key_name += "-" + std::to_string(sig.domain_idx);
             }
-            else if (signal_name_domain.size() == 1) {
-                m_env_signal_name_idx.emplace_back(
-                    signal_name,
-                    m_region_agg->push_signal_total(signal_name, GEOPM_DOMAIN_BOARD, 0));
-            }
-            else {
-                throw Exception("ReporterImp::init(): Environment report extension contains signals with multiple \"@\" characters.",
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-            }
+            m_env_signal_name_idx.emplace_back(key_name, agg_idx);
         }
+
         if (!m_rank) {
             // check if report file can be created
             if (!m_report_name.empty()) {
