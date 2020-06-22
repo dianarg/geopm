@@ -128,6 +128,7 @@ namespace geopm
                           const TreeComm &tree_comm) override;
         private:
             std::string get_max_memory(void);
+            void format_region(void);
 
             std::string m_start_time;
             std::string m_report_name;

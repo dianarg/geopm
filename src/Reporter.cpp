@@ -198,6 +198,11 @@ namespace geopm
         m_region_agg->read_batch();
     }
 
+    void ReporterImp::format_region()
+    {
+
+    }
+
     void ReporterImp::generate(const std::string &agent_name,
                                const std::vector<std::pair<std::string, std::string> > &agent_report_header,
                                const std::vector<std::pair<std::string, std::string> > &agent_host_report,
