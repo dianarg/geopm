@@ -386,6 +386,7 @@ namespace geopm
                              *m_application_io,
                              m_comm,
                              *m_tree_comm);
+
         m_tracer->flush();
     }
 

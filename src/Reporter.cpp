@@ -116,6 +116,40 @@ namespace geopm
 
     }
 
+    struct signal_info
+    {
+        std::string name;
+        int domain_type;
+        int domain_idx;
+    };
+
+    // TODO: shared code with trace extensions env_signals() and env_domains()
+    static std::vector<signal_info> parse_env_signals(const PlatformTopo &topo,
+                                                      const std::string &env_signals)
+    {
+        std::vector<signal_info> result;
+        for (const std::string &env_sig : string_split(env_signals, ",")) {
+            std::vector<std::string> signal_name_domain = string_split(env_sig, "@");
+            if (signal_name_domain.size() == 2) {
+                std::string signal_name = signal_name_domain[0];
+                int domain_type = PlatformTopo::domain_name_to_type(signal_name_domain[1]);
+                for (int domain_idx = 0; domain_idx < topo.num_domain(domain_type); ++domain_idx) {
+                    result.push_back({signal_name, domain_type, domain_idx});
+                }
+            }
+            else if (signal_name_domain.size() == 1) {
+                std::string signal_name = signal_name_domain[0];
+                result.push_back({signal_name, GEOPM_DOMAIN_BOARD, 0});
+            }
+            else {
+                throw Exception("ReporterImp::parse_env_signals(): Environment report extension contains signals with multiple \"@\" characters.",
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
+
+        return result;
+    }
+
     void ReporterImp::init(void)
     {
         m_region_bulk_runtime_idx = m_region_agg->push_signal_total("TIME", GEOPM_DOMAIN_BOARD, 0);
@@ -123,30 +157,22 @@ namespace geopm
         m_energy_dram_idx = m_region_agg->push_signal_total("ENERGY_DRAM", GEOPM_DOMAIN_BOARD, 0);
         m_clk_core_idx = m_region_agg->push_signal_total("CYCLES_THREAD", GEOPM_DOMAIN_BOARD, 0);
         m_clk_ref_idx = m_region_agg->push_signal_total("CYCLES_REFERENCE", GEOPM_DOMAIN_BOARD, 0);
+
         m_app_time_signal_idx = m_platform_io.push_signal("TIME", GEOPM_DOMAIN_BOARD, 0);
         m_app_energy_pkg_idx = m_platform_io.push_signal("ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0);
         m_app_energy_dram_idx = m_platform_io.push_signal("ENERGY_DRAM", GEOPM_DOMAIN_BOARD, 0);
 
-        for (const std::string &signal_name : string_split(m_env_signals, ",")) {
-            std::vector<std::string> signal_name_domain = string_split(signal_name, "@");
-            if (signal_name_domain.size() == 2) {
-                int domain_type = m_platform_topo.domain_name_to_type(signal_name_domain[1]);
-                for (int domain_idx = 0; domain_idx < m_platform_topo.num_domain(domain_type); ++domain_idx) {
-                    m_env_signal_name_idx.emplace_back(
-                        signal_name + '-' + std::to_string(domain_idx),
-                        m_region_agg->push_signal_total(signal_name_domain[0], domain_type, domain_idx));
-                }
+        std::vector<signal_info> region_extensions = parse_env_signals(m_platform_topo, m_env_signals);
+        for (const auto &sig : region_extensions) {
+            int agg_idx = m_region_agg->push_signal_total(sig.name, sig.domain_type, sig.domain_idx);
+            std::string key_name = sig.name;
+            if (sig.domain_type != GEOPM_DOMAIN_BOARD) {
+                key_name += "@" + PlatformTopo::domain_type_to_name(sig.domain_type);
+                key_name += "-" + std::to_string(sig.domain_idx);
             }
-            else if (signal_name_domain.size() == 1) {
-                m_env_signal_name_idx.emplace_back(
-                    signal_name,
-                    m_region_agg->push_signal_total(signal_name, GEOPM_DOMAIN_BOARD, 0));
-            }
-            else {
-                throw Exception("ReporterImp::init(): Environment report extension contains signals with multiple \"@\" characters.",
-                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-            }
+            m_env_signal_name_idx.emplace_back(key_name, agg_idx);
         }
+
         if (!m_rank) {
             // check if report file can be created
             if (!m_report_name.empty()) {
@@ -172,60 +198,43 @@ namespace geopm
         m_region_agg->read_batch();
     }
 
-    void ReporterImp::generate(const std::string &agent_name,
-                               const std::vector<std::pair<std::string, std::string> > &agent_report_header,
-                               const std::vector<std::pair<std::string, std::string> > &agent_host_report,
-                               const std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > &agent_region_report,
-                               const ApplicationIO &application_io,
-                               std::shared_ptr<Comm> comm,
-                               const TreeComm &tree_comm)
+    void ReporterImp::format_header(std::ostream &report,
+                                    const std::string &profile_name,
+                                    const std::string &agent_name,
+                                    const std::vector<std::pair<std::string, std::string> > &agent_report_header) const
     {
-        std::string report_name(application_io.report_name());
-        if (report_name.size() == 0) {
-            return;
+        report << "##### geopm " << geopm_version() << " #####" << std::endl;
+        report << "Start Time: " << m_start_time << std::endl;
+        report << "Profile: " << profile_name << std::endl;
+        report << "Agent: " << agent_name << std::endl;
+        std::string policy_str = "{}";
+        if (m_do_endpoint) {
+            policy_str = "DYNAMIC";
         }
-
-        int rank = comm->rank();
-        std::ofstream master_report;
-        if (!rank) {
-            master_report.open(report_name);
-            if (!master_report.good()) {
-                throw Exception("Failed to open report file", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        else if (m_policy_path.size() > 0) {
+            try {
+                policy_str = read_file(m_policy_path);
             }
-            // make header
-            master_report << "##### geopm " << geopm_version() << " #####" << std::endl;
-            master_report << "Start Time: " << m_start_time << std::endl;
-            master_report << "Profile: " << application_io.profile_name() << std::endl;
-            master_report << "Agent: " << agent_name << std::endl;
-            std::string policy_str = "{}";
-            if (m_do_endpoint) {
-                policy_str = "DYNAMIC";
-            }
-            else if (m_policy_path.size() > 0) {
-                try {
-                    policy_str = read_file(m_policy_path);
-                }
-                catch(...) {
-                    policy_str = m_policy_path;
-                }
-            }
-            master_report << "Policy: " << policy_str << std::endl;
-            for (const auto &kv : agent_report_header) {
-                master_report << kv.first << ": " << kv.second << std::endl;
+            catch(...) {
+                policy_str = m_policy_path;
             }
         }
-        // per-host report
-        std::ostringstream report;
-        report << "\nHost: " << hostname() << std::endl;
-        for (const auto &kv : agent_host_report) {
+        report << "Policy: " << policy_str << std::endl;
+        for (const auto &kv : agent_report_header) {
             report << kv.first << ": " << kv.second << std::endl;
         }
+    }
+
+    void ReporterImp::format_all_regions(std::ostream &report,
+                                         const ApplicationIO &application_io,
+                                         const std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > &agent_region_report) const
+    {
         // vector of region data, in descending order by runtime
         struct region_info {
-                std::string name;
-                uint64_t hash;
-                double per_rank_avg_runtime;
-                int count;
+            std::string name;
+            uint64_t hash;
+            double per_rank_avg_runtime;
+            int count;
         };
         std::vector<region_info> region_ordered;
         auto region_name_set = application_io.region_name_set();
@@ -252,64 +261,95 @@ namespace geopm
                                   GEOPM_REGION_HASH_UNMARKED,
                                   application_io.total_region_runtime(GEOPM_REGION_HASH_UNMARKED),
                                   0});
-        // Total epoch runtime for report includes MPI time and
-        // ignore time, but they are removed from the runtime returned
-        // by the API.  This behavior is to support the EPOCH_RUNTIME
-        // signal used by the balancer, but will be changed in the future.
-        region_ordered.push_back({"epoch",
-                                  GEOPM_REGION_HASH_EPOCH,
-                                  application_io.total_epoch_runtime(),
-                                  application_io.total_epoch_count()});
-
         for (const auto &region : region_ordered) {
-            if (GEOPM_REGION_HASH_EPOCH != region.hash) {
 #ifdef GEOPM_DEBUG
-                if (GEOPM_REGION_HASH_INVALID == region.hash) {
-                    throw Exception("ReporterImp::generate(): Invalid hash value detected.",
-                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
-                }
+            if (GEOPM_REGION_HASH_INVALID == region.hash) {
+                throw Exception("ReporterImp::generate(): Invalid hash value detected.",
+                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+            }
 #endif
-                report << "Region " << region.name << " (0x" << std::hex
-                       << std::setfill('0') << std::setw(16)
-                       << region.hash << std::dec << "):"
-                       << std::setfill('\0') << std::setw(0)
-                       << std::endl;
+            std::vector<std::pair<std::string, std::string> > agent_region_ext;
+            if (agent_region_report.find(region.hash) != agent_region_report.end()) {
+                agent_region_ext = agent_region_report.at(region.hash);
             }
-            else {
-                report << "Epoch Totals:"
-                       << std::endl;
-            }
-            double sync_rt = m_region_agg->sample_total(m_region_bulk_runtime_idx, region.hash);
-            double package_energy = m_region_agg->sample_total(m_energy_pkg_idx, region.hash);
-            double power = sync_rt == 0 ? 0 : package_energy / sync_rt;
-            report << "    runtime (sec): " << region.per_rank_avg_runtime << std::endl;
-            report << "    sync-runtime (sec): " << sync_rt << std::endl;
-            report << "    package-energy (joules): " << package_energy << std::endl;
-            report << "    dram-energy (joules): " << m_region_agg->sample_total(m_energy_dram_idx, region.hash) << std::endl;
-            report << "    power (watts): " << power << std::endl;
-            double numer = m_region_agg->sample_total(m_clk_core_idx, region.hash);
-            double denom = m_region_agg->sample_total(m_clk_ref_idx, region.hash);
-            double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
-            report << "    frequency (%): " << freq << std::endl;
-            report << "    frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0) << std::endl;
-            double network_time = (region.hash == GEOPM_REGION_HASH_EPOCH) ?
-                                   application_io.total_epoch_runtime_network() :
-                                   application_io.total_region_runtime_mpi(region.hash);
-            report << "    network-time (sec): " << network_time << std::endl;
-            report << "    count: " << region.count << std::endl;
-            for (const auto &env_it : m_env_signal_name_idx) {
-                report << "    " << env_it.first << ": " << m_region_agg->sample_total(env_it.second, region.hash) << std::endl;
-            }
-            const auto &it = agent_region_report.find(region.hash);
-            if (it != agent_region_report.end()) {
-                for (const auto &kv : agent_region_report.at(region.hash)) {
-                    report << "    " << kv.first << ": " << kv.second << std::endl;
-                }
-            }
+            format_region(report, application_io, region.name, region.hash,
+                          region.per_rank_avg_runtime, region.count,
+                          agent_region_ext);
         }
-        // extra runtimes for epoch region
-        report << "    epoch-runtime-ignore (sec): " << application_io.total_epoch_runtime_ignore() << std::endl;
+    }
 
+    void ReporterImp::format_region(std::ostream &report,
+                                    const ApplicationIO &application_io,
+                                    const std::string &region_name,
+                                    uint64_t region_hash,
+                                    double avg_runtime,
+                                    int count,
+                                    const std::vector<std::pair<std::string, std::string> > &agent_region_report) const
+    {
+        report << "Region " << region_name << " (0x" << std::hex
+               << std::setfill('0') << std::setw(16)
+               << region_hash << std::dec << "):"
+               << std::setfill('\0') << std::setw(0)
+               << std::endl;
+        double sync_rt = m_region_agg->sample_total(m_region_bulk_runtime_idx, region_hash);
+        double package_energy = m_region_agg->sample_total(m_energy_pkg_idx, region_hash);
+        double power = sync_rt == 0 ? 0 : package_energy / sync_rt;
+        report << "    runtime (sec): " << avg_runtime << std::endl;
+        report << "    sync-runtime (sec): " << sync_rt << std::endl;
+        report << "    package-energy (joules): " << package_energy << std::endl;
+        report << "    dram-energy (joules): " << m_region_agg->sample_total(m_energy_dram_idx, region_hash) << std::endl;
+        report << "    power (watts): " << power << std::endl;
+        double numer = m_region_agg->sample_total(m_clk_core_idx, region_hash);
+        double denom = m_region_agg->sample_total(m_clk_ref_idx, region_hash);
+        double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
+        report << "    frequency (%): " << freq << std::endl;
+        report << "    frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0) << std::endl;
+        double network_time = application_io.total_region_runtime_mpi(region_hash);
+        report << "    network-time (sec): " << network_time << std::endl;
+        report << "    count: " << count << std::endl;
+        for (const auto &env_it : m_env_signal_name_idx) {
+            report << "    " << env_it.first << ": " << m_region_agg->sample_total(env_it.second, region_hash) << std::endl;
+        }
+        for (const auto &kv : agent_region_report) {
+            report << "    " << kv.first << ": " << kv.second << std::endl;
+        }
+    }
+
+    void ReporterImp::format_epoch(std::ostream &report,
+                                   const ApplicationIO &application_io,
+                                   const std::vector<std::pair<std::string, std::string> > &agent_region_report) const
+    {
+        report << "Epoch Totals:" << std::endl;
+        double sync_rt = m_region_agg->sample_total(m_region_bulk_runtime_idx, GEOPM_REGION_HASH_EPOCH);
+        double package_energy = m_region_agg->sample_total(m_energy_pkg_idx, GEOPM_REGION_HASH_EPOCH);
+        double power = sync_rt == 0 ? 0 : package_energy / sync_rt;
+        report << "    runtime (sec): " << application_io.total_epoch_runtime() << std::endl;
+        report << "    sync-runtime (sec): " << sync_rt << std::endl;
+        report << "    package-energy (joules): " << package_energy << std::endl;
+        report << "    dram-energy (joules): " << m_region_agg->sample_total(m_energy_dram_idx, GEOPM_REGION_HASH_EPOCH) << std::endl;
+        report << "    power (watts): " << power << std::endl;
+        double numer = m_region_agg->sample_total(m_clk_core_idx, GEOPM_REGION_HASH_EPOCH);
+        double denom = m_region_agg->sample_total(m_clk_ref_idx, GEOPM_REGION_HASH_EPOCH);
+        double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
+        report << "    frequency (%): " << freq << std::endl;
+        report << "    frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0) << std::endl;
+        double network_time = application_io.total_epoch_runtime_network();
+        report << "    network-time (sec): " << network_time << std::endl;
+        int count = application_io.total_epoch_count();
+        report << "    count: " << count << std::endl;
+        for (const auto &env_it : m_env_signal_name_idx) {
+            report << "    " << env_it.first << ": " << m_region_agg->sample_total(env_it.second, GEOPM_REGION_HASH_EPOCH) << std::endl;
+        }
+        for (const auto &kv : agent_region_report) {
+            report << "    " << kv.first << ": " << kv.second << std::endl;
+        }
+        report << "    epoch-runtime-ignore (sec): " << application_io.total_epoch_runtime_ignore() << std::endl;
+    }
+
+    void ReporterImp::format_app_totals(std::ostream &report,
+                                        const ApplicationIO &application_io,
+                                        const TreeComm &tree_comm) const
+    {
         double total_runtime = m_platform_io.sample(m_app_time_signal_idx) - m_start_time_signal;
         double app_energy_pkg = m_platform_io.sample(m_app_energy_pkg_idx) - m_start_energy_pkg;
         double avg_power = total_runtime == 0 ? 0 : app_energy_pkg / total_runtime;
@@ -325,6 +365,49 @@ namespace geopm
         std::string max_memory = get_max_memory();
         report << "    geopmctl memory HWM: " << max_memory << std::endl;
         report << "    geopmctl network BW (B/sec): " << tree_comm.overhead_send() / total_runtime << std::endl;
+    }
+
+    void ReporterImp::generate(const std::string &agent_name,
+                               const std::vector<std::pair<std::string, std::string> > &agent_report_header,
+                               const std::vector<std::pair<std::string, std::string> > &agent_host_report,
+                               const std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > &agent_region_report,
+                               const ApplicationIO &application_io,
+                               std::shared_ptr<Comm> comm,
+                               const TreeComm &tree_comm)
+    {
+        std::string report_name(application_io.report_name());
+        if (report_name.size() == 0) {
+            return;
+        }
+
+        /// todo: move rank check and aggregation out into controller
+        int rank = comm->rank();
+        std::ofstream master_report;
+
+        if (!rank) {
+            master_report.open(report_name);
+            if (!master_report.good()) {
+                throw Exception("Failed to open report file", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+            format_header(master_report, application_io.profile_name(), agent_name,
+                          agent_report_header);
+        }
+        // per-host report
+        std::ostringstream report;
+        report << "\nHost: " << hostname() << std::endl;
+        for (const auto &kv : agent_host_report) {
+            report << kv.first << ": " << kv.second << std::endl;
+        }
+
+        format_all_regions(report, application_io, agent_region_report);
+
+        std::vector<std::pair<std::string, std::string> > agent_epoch_ext;
+        if (agent_region_report.find(GEOPM_REGION_HASH_EPOCH) != agent_region_report.end()) {
+            agent_epoch_ext = agent_region_report.at(GEOPM_REGION_HASH_EPOCH);
+        }
+        format_epoch(report, application_io, agent_epoch_ext);
+
+        format_app_totals(report, application_io, tree_comm);
 
         // aggregate reports from every node
         report.seekp(0, std::ios::end);
@@ -401,7 +484,7 @@ namespace geopm
             }
         }
         if (!max_memory.size()) {
-            throw Exception("Controller::generate_report(): Unable to get memory overhead from /proc",
+            throw Exception("Reporter::get_max_memory(): Unable to get memory overhead from /proc",
                             GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
         return max_memory;

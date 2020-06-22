@@ -126,8 +126,31 @@ namespace geopm
                           const ApplicationIO &application_io,
                           std::shared_ptr<Comm> comm,
                           const TreeComm &tree_comm) override;
+
+            void format_header(std::ostream &report,
+                               const std::string &profile_name,
+                               const std::string &agent_name,
+                               const std::vector<std::pair<std::string, std::string> > &agent_report_header) const;
+            void format_all_regions(std::ostream &report,
+                                    const ApplicationIO &application_io,
+                                    const std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > &agent_region_report) const;
+            void format_region(std::ostream &report,
+                               const ApplicationIO &application_io,
+                               const std::string &region_name,
+                               uint64_t region_hash,
+                               double avg_runtime,
+                               int count,
+                               const std::vector<std::pair<std::string, std::string> > &agent_region_report) const;
+            void format_epoch(std::ostream &report,
+                              const ApplicationIO &application_io,
+                              const std::vector<std::pair<std::string, std::string> > &agent_region_report) const;
+            void format_app_totals(std::ostream &report,
+                                   const ApplicationIO &application_io,
+                                   const TreeComm &tree_comm) const;
+
+
         private:
-            std::string get_max_memory(void);
+            static std::string get_max_memory(void);
 
             std::string m_start_time;
             std::string m_report_name;
@@ -150,6 +173,7 @@ namespace geopm
             double m_start_energy_pkg;
             double m_start_energy_dram;
             double m_start_time_signal;
+
     };
 }
 

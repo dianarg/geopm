@@ -101,6 +101,7 @@ class ReporterTest : public testing::Test
         std::unique_ptr<Reporter> m_reporter;
         std::string m_start_time = "Tue Nov  6 08:00:00 2018";
         std::string m_profile_name = "my profile";
+        std::string m_agent_name = "my_agent";
         std::set<std::string> m_region_set = {"all2all", "model-init"};
         std::map<uint64_t, double> m_region_runtime = {
             {geopm_crc32_str("all2all"), 33.33},
@@ -284,7 +285,6 @@ TEST_F(ReporterTest, generate)
         {"four", "4"} };
 
     // Check for labels at start of line but ignore numbers
-    // Note that region lines start with tab
     std::string expected = "#####\n"
         "Start Time: " + m_start_time + "\n"
         "Profile: " + m_profile_name + "\n"
@@ -362,9 +362,10 @@ TEST_F(ReporterTest, generate)
     std::istringstream exp_stream(expected);
 
     m_reporter->update();
-    m_reporter->generate("my_agent", agent_header, agent_node_report, m_region_agent_detail,
+    m_reporter->generate(m_agent_name, agent_header, agent_node_report, m_region_agent_detail,
                          m_application_io,
                          m_comm, m_tree_comm);
+
     std::ifstream report(m_report_name);
     check_report(exp_stream, report);
 }
