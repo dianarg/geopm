@@ -119,8 +119,8 @@ class TestIntegration_epoch_inference(unittest.TestCase):
         cls._config_names = ['no_epoch', 'spin_epoch', 'barrier_epoch', 'spin_stride_epoch']
 
         if not cls._skip_launch:
-            num_node = 1
-            num_rank = 1
+            num_node = 2
+            num_rank = 4
             time_limit = 6000
             app_conf = AppConf()
             agent_conf = geopmpy.io.AgentConf(cls._agent_conf_path,
@@ -169,7 +169,6 @@ class TestIntegration_epoch_inference(unittest.TestCase):
             for node in node_list:
                 trace = output.get_trace_data(node_name=node)
                 last_row = trace.iloc[-1]
-                sys.stdout.write("{}: epoch_count={}\n".format(run_config, last_row["EPOCH_COUNT"]))
                 epoch_count = last_row["EPOCH_COUNT"]
                 if run_config == 'no_epoch':
                     self.assertEqual(0, epoch_count)
