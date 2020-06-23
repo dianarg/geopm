@@ -52,7 +52,9 @@
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
 #include "RegionAggregatorImp.hpp"
+#include "HintAggregator.hpp"
 #include "ApplicationIO.hpp"
+#include "ApplicationSampler.hpp"
 #include "Comm.hpp"
 #include "TreeComm.hpp"
 #include "Exception.hpp"
@@ -196,6 +198,28 @@ namespace geopm
         }
 
         m_region_agg->read_batch();
+
+        auto record_batch = m_app.get_records();
+        for (const auto &record : record_batch) {
+            int process = record.process;
+            if (record.event == ApplicationSampler::M_EVENT_EPOCH_COUNT) {
+                double time = record.time;
+                auto agg = m_epoch_totals.emplace(process, HintAggregator());
+                if (agg.second) {
+                    // no need to stop and start epoch; just start once
+                    agg.first->second.start(time);
+                    m_first_epoch_time[process] = time;
+                }
+            }
+            else if (record.event == ApplicationSampler::M_EVENT_HINT) {
+                auto agg = m_epoch_totals.find(process);
+                if (agg != m_epoch_totals.end()) {
+                    double time = record.time;
+                    uint64_t hint = record.signal;
+                    agg->second.change_hint(hint, time);
+                }
+            }
+        }
     }
 
     void ReporterImp::format_header(std::ostream &report,
@@ -345,6 +369,9 @@ namespace geopm
         for (const auto &kv : agent_host_report) {
             report << kv.first << ": " << kv.second << std::endl;
         }
+
+
+
         // vector of region data, in descending order by runtime
         struct region_info {
                 std::string name;
@@ -377,6 +404,39 @@ namespace geopm
                                   GEOPM_REGION_HASH_UNMARKED,
                                   application_io.total_region_runtime(GEOPM_REGION_HASH_UNMARKED),
                                   0});
+
+
+#ifdef GEOPM_DEBUG
+        if (m_first_epoch_time.size() != m_epoch_totals()) {
+            throw Exception("Reporter::generate(): mismatch in epoch totals maps.",
+                            GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+        }
+#endif
+        int num_procs = m_first_epoch_time.size();
+        double total_epoch_count = m_platform_io.sample(m_epoch_count_idx);
+        double total_epoch_runtime = 0.0;
+        double current_time = m_platform_io.read_signal("TIME", GEOPM_DOMAIN_BOARD, 0);
+        for (const auto &kv : m_first_epoch_time) {
+            total_epoch_runtime += current_time - kv.second;
+        }
+        double total_epoch_runtime_network = 0;
+        double total_epoch_runtime_ignore = 0;
+        for (const auto & kv : m_epoch_totals) {
+            auto hint_agg = kv.second;
+            std::cout << "proc=" << kv.first
+                      << " network=" << hint_agg.get_total_runtime(GEOPM_REGION_HINT_NETWORK)
+                      << " ignore=" << hint_agg.get_total_runtime(GEOPM_REGION_HINT_IGNORE)
+                      << std::endl;
+            total_epoch_runtime_network += hint_agg.get_total_runtime(GEOPM_REGION_HINT_NETWORK);
+            total_epoch_runtime_ignore += hint_agg.get_total_runtime(GEOPM_REGION_HINT_IGNORE);
+        }
+        if (num_procs > 0) {
+            total_epoch_runtime /= num_procs;
+            total_epoch_runtime_network /= num_procs;
+            total_epoch_runtime_ignore /= num_procs;
+        }
+
+
         for (const auto &region : region_ordered) {
 #ifdef GEOPM_DEBUG
             if (GEOPM_REGION_HASH_INVALID == region.hash) {
@@ -384,11 +444,11 @@ namespace geopm
                                 GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
             }
 #endif
-            // @todo: handle .at() for missing hash below
             format_region(report, application_io, region.name, region.hash,
                           region.per_rank_avg_runtime, region.count,
                           agent_region_report.at(region.hash));
         }
+        std::vector<std::pair<std::string, std::string> > agent_epoch_ext;
         format_epoch(report, application_io, agent_region_report.at(GEOPM_REGION_HASH_EPOCH));
 
         format_app_totals(report, application_io, tree_comm);
