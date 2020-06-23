@@ -141,7 +141,7 @@ namespace geopm
                                const std::vector<std::pair<std::string, std::string> > &agent_region_report) const;
             void format_epoch(std::ostream &report,
                               const ApplicationIO &application_io,
-                               const std::vector<std::pair<std::string, std::string> > &agent_region_report) const;
+                              const std::vector<std::pair<std::string, std::string> > &agent_region_report) const;
             void format_app_totals(std::ostream &report,
                                    const ApplicationIO &application_io,
                                    const TreeComm &tree_comm) const;
