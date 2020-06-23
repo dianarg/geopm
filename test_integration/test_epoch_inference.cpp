@@ -75,7 +75,6 @@ int main(int argc, char **argv)
         spin->run();
         all2all->run();
     }
-    sleep(1);
 
     // Shutdown MPI
     MPI_Finalize();
