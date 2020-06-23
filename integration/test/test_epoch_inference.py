@@ -268,6 +268,51 @@ class TestIntegration_epoch_inference(unittest.TestCase):
                 else:
                     self.fail("invalid run config: {}".format(run_config))
 
+    def test_report_epoch_runtime(self):
+        """
+        Test that the epoch runtime is based on inferred epochs.
+        """
+        for run_config in self._config_names:
+            report_path = 'test_{}_{}.report'.format(self._test_name, run_config)
+            report = geopmpy.io.RawReport(report_path)
+            node_list = report.host_names()
+            for node in node_list:
+                epoch_data = report.raw_epoch(node)
+                total_count = epoch_data['count']
+                total_runtime = epoch_data['runtime (sec)']
+                network_runtime = epoch_data['network-time (sec)']
+                ignore_runtime = epoch_data['epoch-runtime-ignore (sec)']
+                ignore_region = report.raw_region(node, 'ignore')['runtime (sec)']
+                network_region = report.raw_region(node, 'all2all')['runtime (sec)']
+                network_region_network = report.raw_region(node, 'all2all')['network-time (sec)']
+                spin_region = report.raw_region(node, 'spin')['runtime (sec)']
+                if run_config == 'no_epoch':
+                    self.assertEqual(0, total_count, run_config)
+                    self.assertEqual(0.0, total_runtime, run_config)
+                    self.assertEqual(0.0, network_runtime, run_config)
+                    self.assertEqual(0.0, ignore_runtime, run_config)
+                elif run_config in ('spin_epoch'):
+                    self.assertEqual(20, total_count, run_config)
+                    # runtime starts from first spin
+                    self.assertLess(ignore_region + network_region + spin_region,
+                                    total_runtime, run_config)
+                    util.assertNear(self, network_region_network, network_runtime, msg=run_config)
+                    util.assertNear(self, ignore_region, ignore_runtime, msg=run_config)
+                elif run_config in ('barrier_epoch'):
+                    self.assertEqual(10, total_count, run_config)
+                    self.assertLess(ignore_region + network_region + spin_region,
+                                    total_runtime, run_config)
+                    util.assertNear(self, network_region_network, network_runtime, msg=run_config)
+                    util.assertNear(self, ignore_region, ignore_runtime, msg=run_config)
+                elif run_config in ('spin_stride_epoch'):
+                    self.assertEqual(10, total_count, run_config)
+                    self.assertLess(ignore_region + network_region + spin_region,
+                                    total_runtime, run_config)
+                    util.assertNear(self, network_region_network, network_runtime, msg=run_config)
+                    util.assertNear(self, ignore_region, ignore_runtime, msg=run_config)
+                else:
+                    self.fail("invalid run config: {}".format(run_config))
+
 
 if __name__ == '__main__':
     # Call do_launch to clear non-pyunit command line option
