@@ -81,12 +81,12 @@ namespace geopm
 
     }
 
-/*
-    EditDistEpochRecordFilter::EditDistEpochRecordFilter(const std::string &filter_name)
-    {
+    /*
+        EditDistEpochRecordFilter::EditDistEpochRecordFilter(const std::string &filter_name)
+        {
 
-    }
-*/
+        }
+    */
 
     std::vector<record_s> EditDistEpochRecordFilter::filter(const record_s &record)
     {
@@ -122,39 +122,42 @@ namespace geopm
                 // last period detected as valid.
                 m_last_period = -1;
                 m_period_stable = 0;
-            } else if(m_edpd->get_period() == m_last_period) {
+            }
+            else if(m_edpd->get_period() == m_last_period) {
                 // Now we have a repeating pattern...
                 m_period_stable += 1;
-            } else {
+            }
+            else {
                 // No repeating pattern but we wtore the current period for future possibility.
                 m_last_period = m_edpd->get_period();
                 m_period_stable = 0;
             }
 
             if( ( m_edpd->get_period() <= MIN_STABLE_PERIOD && (m_period_stable == STABLE_PERIOD_HYSTERESIS * MIN_STABLE_PERIOD) ) ||
-                ( m_edpd->get_period() > MIN_STABLE_PERIOD && (m_period_stable == STABLE_PERIOD_HYSTERESIS * m_edpd->get_period()) ) )
-            {
+                ( m_edpd->get_period() > MIN_STABLE_PERIOD && (m_period_stable == STABLE_PERIOD_HYSTERESIS * m_edpd->get_period()) ) ) {
                 // To understand this criteria read MIN_STABLE_PERIOD and STABLE_PERIOD_HYSTERESIS documentation.
 
                 m_state = PERIOD_DETECTED;
                 m_last_epoch = m_record_count;
-                 // Reset for next use
+                // Reset for next use
                 m_period_stable = 0;
 
                 return true;
             }
-        } else {
+        }
+        else {
             // STATE: PERIOD_DETECTED
 
             if(m_edpd->get_period() == m_last_period) {
                 m_period_unstable = 0;
-            } else {
+            }
+            else {
                 m_period_unstable += 1;
             }
 
             if(m_period_unstable == (int)(UNSTABLE_PERIOD_HYSTERESIS *  m_edpd->get_period())) {
                 m_state = WAITING;
-                 // Reset for next use
+                // Reset for next use
                 m_period_unstable = 0;
                 return false;
             }
@@ -183,7 +186,7 @@ namespace geopm
     int EditDistEpochRecordFilter::parse_name(const std::string &name)
     {
         throw Exception("EditDistEpochRecordFilter::parse_name(): Not implemented",
-                         GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
+                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
         return 0;
     }
 }

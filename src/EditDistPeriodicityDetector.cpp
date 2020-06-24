@@ -47,16 +47,16 @@ using namespace std;
 namespace geopm
 {
     EditDistPeriodicityDetector::EditDistPeriodicityDetector(unsigned int history_buffer_size)
-    : m_history_buffer(history_buffer_size)
+        : m_history_buffer(history_buffer_size)
     {
     }
 
     void EditDistPeriodicityDetector::update(const record_s &record)
     {
         if(record.event == EVENT_REGION_ENTRY) {
-             m_history_buffer.insert(record.signal);
-             calc_period();
-         }
+            m_history_buffer.insert(record.signal);
+            calc_period();
+        }
     }
 
     void EditDistPeriodicityDetector::calc_period()
@@ -100,7 +100,8 @@ namespace geopm
             //     A B A B A B ...
             // find_gcd will find the smallest repeating pattern in it: A B
             m_period = find_gcd(bestm);
-        } else {
+        }
+        else {
             m_score = -1;
             m_period = -1;
         }
@@ -145,7 +146,8 @@ namespace geopm
         for(int div = 1; div < (int)(recs.size()/2)+1; div++) {
             if(recs.size() % div != 0) {
                 continue;
-            } else {
+            }
+            else {
                 int start=0;
                 bool perfect_match = true;
                 for(int group = 1; group < (int)(recs.size()/div); group++) {
