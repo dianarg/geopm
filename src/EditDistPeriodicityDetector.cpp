@@ -45,6 +45,8 @@ namespace geopm
 {
     EditDistPeriodicityDetector::EditDistPeriodicityDetector(int history_buffer_size)
         : m_history_buffer(history_buffer_size)
+        , m_period(-1)
+        , m_score(-1)
     {
 
     }
@@ -61,14 +63,12 @@ namespace geopm
     {
         int buffer_size = m_history_buffer.size();
         if (buffer_size < 2) {
-            m_score = -1;
-            m_period = -1;
             return;
         }
 
         size_t dim_i = m_history_buffer.size();
         size_t dim_j = dim_i + 1;
-        size_t dim_m = dim_j;
+        size_t dim_m = dim_i + 1;
         int DD[dim_i][dim_j][dim_m];
         for (int mm = 0; mm < buffer_size + 1; ++mm) {
             for (int ii = 0; ii < buffer_size; ++ii) {
@@ -89,21 +89,26 @@ namespace geopm
                 }
             }
         }
-        int mm = 1 + (buffer_size + 1) / 2;
-        int *DD_begin = &(DD[mm - 1][buffer_size - mm + 1][mm]);
-        int *DD_end = &(DD[mm - 1][buffer_size - mm + 1][buffer_size]);
-        int *best_ptr = std::min_element(DD_begin, DD_end);
-        int best_mm = best_ptr - DD_begin;
-        m_score = *best_ptr;
+
+        int mm = 1 + (buffer_size / 2.0 + 0.5);
+        int bestm = mm;
+        int bestval = DD[mm - 1][buffer_size - mm + 1][mm];
+        ++mm;
+        for(; mm != buffer_size + 1; ++mm) {
+            int val = DD[mm - 1][buffer_size - mm + 1][mm];
+            if(val < bestval) {
+                bestval = val;
+                bestm = mm;
+            }
+        }
+        m_score = bestval;
         // Originally this was:
-        //      m_period = n - best_m + 1;
-        // However since the algorithm find the best_m with the
-        // lowest index it will return a string with a repeating
-        // pattern in it. For example:
+        //      m_period = n - bestm + 1;
+        // However since the algorithm find the bestm with the lowest index it will
+        // return a string with a repeating pattern in it. For example:
         //     A B A B A B ...
-        // find_min_match will find the smallest repeating pattern in
-        // it: A B
-        m_period = find_min_match(best_mm);
+        // find_gcd will find the smallest repeating pattern in it: A B
+        m_period = find_min_match(bestm);
     }
 
     int EditDistPeriodicityDetector::get_period() const
@@ -114,11 +119,6 @@ namespace geopm
     int EditDistPeriodicityDetector::get_score() const
     {
         return m_score;
-    }
-
-    void EditDistPeriodicityDetector::reset()
-    {
-        m_history_buffer.clear();
     }
 
     uint64_t EditDistPeriodicityDetector::get_history_value(int index) const

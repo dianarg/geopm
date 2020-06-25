@@ -41,6 +41,7 @@
 namespace geopm
 {
     struct record_s;
+
     class EditDistPeriodicityDetector
     {
         public:
@@ -49,14 +50,14 @@ namespace geopm
             void update(const record_s &record);
             int get_period() const;
             int get_score() const;
-            void reset();
         private:
             void calc_period();
+            uint64_t get_history_value(int index) const;
+            int find_min_match(int index) const;
+
             CircularBuffer<uint64_t> m_history_buffer;
             int m_period;
             int m_score;
-            uint64_t get_history_value(int index) const;
-            int find_min_match(int index) const;
     };
 }
 
