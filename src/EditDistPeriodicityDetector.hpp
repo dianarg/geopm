@@ -34,7 +34,7 @@
 #define EDITDISTPERIODICITYDETECTOR_HPP_INCLUDE
 
 #include <cstdint>
-#include<vector>
+#include <vector>
 
 #include "CircularBuffer.hpp"
 
@@ -44,21 +44,19 @@ namespace geopm
     class EditDistPeriodicityDetector
     {
         public:
-            EditDistPeriodicityDetector(unsigned int history_buffer_size);
+            EditDistPeriodicityDetector(int history_buffer_size);
             virtual ~EditDistPeriodicityDetector() = default;
-            virtual void update(const record_s &record);
-            virtual void calc_period();
-            virtual int get_period() const;
-            virtual int get_score() const;
-            virtual void reset();
-
+            void update(const record_s &record);
+            int get_period() const;
+            int get_score() const;
+            void reset();
         private:
+            void calc_period();
             CircularBuffer<uint64_t> m_history_buffer;
             int m_period;
             int m_score;
-            uint64_t get_history_value(unsigned int index) const;
-            std::vector<uint64_t> get_history_slice(unsigned int start) const;
-            int find_gcd(unsigned int index) const;
+            uint64_t get_history_value(int index) const;
+            int find_min_match(int index) const;
     };
 }
 

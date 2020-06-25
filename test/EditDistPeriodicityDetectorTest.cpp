@@ -133,7 +133,6 @@ TEST_F(EditDistPeriodicityDetectorTest, pattern_add1)
 /// Pattern 7: (ABCD)x6 (EF) (ABCD)x9
 TEST_F(EditDistPeriodicityDetectorTest, pattern_add2)
 {
-    int warmup = 1;
     int period = 4;
     int history_size = 100;
 
@@ -144,7 +143,6 @@ TEST_F(EditDistPeriodicityDetectorTest, pattern_add2)
 /// Pattern 8: (ABCD)x6 (ABC) (ABCD)x12
 TEST_F(EditDistPeriodicityDetectorTest, pattern_subtract1)
 {
-    int warmup = 1;
     int period = 4;
     int history_size = 100;
 
@@ -207,7 +205,7 @@ void check_vals(std::vector<record_s> recs, std::vector<std::vector<int> > expec
 {
     geopm::EditDistPeriodicityDetector edpd(history_size);
 
-    for(int i=0; i < expected.size(); i++) {
+    for(size_t i = 0; i < expected.size(); i++) {
         edpd.update(recs[i]);
         int period = edpd.get_period();
         int score = edpd.get_score();
