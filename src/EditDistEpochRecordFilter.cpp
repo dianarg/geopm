@@ -81,13 +81,6 @@ namespace geopm
 
     }
 
-    /*
-        EditDistEpochRecordFilter::EditDistEpochRecordFilter(const std::string &filter_name)
-        {
-
-        }
-    */
-
     std::vector<record_s> EditDistEpochRecordFilter::filter(const record_s &record)
     {
         std::vector<record_s> result;
