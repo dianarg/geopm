@@ -40,7 +40,7 @@
 // In order to switch state to PERIOD_DETECTED from WAITING
 // we require that the period is stable for a certain number of records:
 //       period_length x STABLE_PERIOD_HYSTERESIS
-#define STABLE_PERIOD_HYSTERESIS 1
+//#define m_stable_period_hysteresis 1
 // The stable period hysteresis may be adaquate for normal size periods
 // but may allow very small period lengths to pass through at the beginning.
 // For example:
@@ -49,34 +49,48 @@
 // Will detect the marked 'B' as an epoch with a period of 1.
 // For that reason stable period requirement for any period < MIN_STABLE_PERIOD
 // will be rounded up to:
-//    MIN_STABLE_PERIOD x STABLE_PERIOD_HYSTERESIS
-#define MIN_STABLE_PERIOD 4
+//    m_min_stable_period x m_stable_period_hysteresis
+//#define m_min_stable_period 4
 // This defines the criteria for changing state from PERIOD_DETECTED to
 // WAITING. If the period is not the detected period (stored in _last_period)
-// for _last_period x UNSTABLE_PERIOD_HYSTERESIS records we will go back to
+// for _last_period x m_unstable_period_hysteresis records we will go back to
 // WAITING state.
 // Having a hysteresis allows for rare erraneous insertions or missing records
 // in a period.
-#define UNSTABLE_PERIOD_HYSTERESIS 1.5
+//#define m_unstable_period_hysteresis 1.5
 
 
 namespace geopm
 {
-    EditDistEpochRecordFilter::EditDistEpochRecordFilter(int history_buffer_size)
-        : EditDistEpochRecordFilter(std::make_shared<EditDistPeriodicityDetector>(history_buffer_size))
+
+    EditDistEpochRecordFilter::EditDistEpochRecordFilter(double stable_period_hysteresis,
+                                                         int min_stable_period,
+                                                         double unstable_period_hysteresis,
+                                                         int history_buffer_size)
+        : EditDistEpochRecordFilter(stable_period_hysteresis,
+                                    min_stable_period,
+                                    unstable_period_hysteresis,
+                                    std::make_shared<EditDistPeriodicityDetector>(history_buffer_size))
     {
 
     }
 
-    EditDistEpochRecordFilter::EditDistEpochRecordFilter(std::shared_ptr<EditDistPeriodicityDetector> edpd)
-        : m_edpd(edpd)
+
+    EditDistEpochRecordFilter::EditDistEpochRecordFilter(double stable_period_hysteresis,
+                                                         int min_stable_period,
+                                                         double unstable_period_hysteresis,
+                                                         std::shared_ptr<EditDistPeriodicityDetector> edpd)
+        : m_stable_period_hysteresis(stable_period_hysteresis)
+        , m_min_stable_period(min_stable_period)
+        , m_unstable_period_hysteresis(unstable_period_hysteresis)
+        , m_edpd(edpd)
         , m_last_period(-1)
         , m_period_stable(0)
         , m_period_unstable(0)
+        , m_is_period_detected(false)
         , m_last_epoch(-1)
         , m_epoch_count(0)
         , m_record_count(0)
-        , m_state(WAITING)
     {
 
     }
@@ -90,7 +104,7 @@ namespace geopm
             if (record.event == EVENT_REGION_ENTRY) {
                 m_edpd->update(record);
                 m_record_count++;
-                if (epoch_detector()) {
+                if (epoch_detected()) {
                     m_epoch_count++;
                     record_s epoch_event = record;
                     epoch_event.event = EVENT_EPOCH_COUNT;
@@ -103,12 +117,10 @@ namespace geopm
     }
 
 
-    bool EditDistEpochRecordFilter::epoch_detector()
+    bool EditDistEpochRecordFilter::epoch_detected()
     {
-        if(m_state == WAITING) {
-            // STATE: WAITING
-
-            if(m_edpd->get_score() >= m_edpd->get_period()) {
+        if (!m_is_period_detected) {
+            if (m_edpd->get_score() >= m_edpd->get_period()) {
                 // If the score is the same as the period or greater the detected period is really low quality.
                 // For example: A B C D ... will give period = 1 with score = 1.
                 // In that case, we reset the period detection, i.e., we don;t even treat the
@@ -116,21 +128,21 @@ namespace geopm
                 m_last_period = -1;
                 m_period_stable = 0;
             }
-            else if(m_edpd->get_period() == m_last_period) {
+            else if (m_edpd->get_period() == m_last_period) {
                 // Now we have a repeating pattern...
                 m_period_stable += 1;
             }
             else {
-                // No repeating pattern but we wtore the current period for future possibility.
+                // No repeating pattern but we store the current period for future possibility.
                 m_last_period = m_edpd->get_period();
                 m_period_stable = 0;
             }
 
-            if( ( m_edpd->get_period() <= MIN_STABLE_PERIOD && (m_period_stable == STABLE_PERIOD_HYSTERESIS * MIN_STABLE_PERIOD) ) ||
-                ( m_edpd->get_period() > MIN_STABLE_PERIOD && (m_period_stable == STABLE_PERIOD_HYSTERESIS * m_edpd->get_period()) ) ) {
-                // To understand this criteria read MIN_STABLE_PERIOD and STABLE_PERIOD_HYSTERESIS documentation.
+            if ( ( m_edpd->get_period() <= m_min_stable_period && (m_period_stable == m_stable_period_hysteresis * m_min_stable_period) ) ||
+                 ( m_edpd->get_period() > m_min_stable_period && (m_period_stable == m_stable_period_hysteresis * m_edpd->get_period()) ) ) {
+                // To understand this criteria read m_min_stable_period and m_stable_period_hysteresis documentation.
 
-                m_state = PERIOD_DETECTED;
+                m_is_period_detected = true;
                 m_last_epoch = m_record_count;
                 // Reset for next use
                 m_period_stable = 0;
@@ -139,17 +151,17 @@ namespace geopm
             }
         }
         else {
-            // STATE: PERIOD_DETECTED
+            // PERIOD_DETECTED
 
-            if(m_edpd->get_period() == m_last_period) {
+            if (m_edpd->get_period() == m_last_period) {
                 m_period_unstable = 0;
             }
             else {
                 m_period_unstable += 1;
             }
 
-            if(m_period_unstable == (int)(UNSTABLE_PERIOD_HYSTERESIS *  m_edpd->get_period())) {
-                m_state = WAITING;
+            if (m_period_unstable == (int)(m_unstable_period_hysteresis *  m_edpd->get_period())) {
+                m_is_period_detected = false;
                 // Reset for next use
                 m_period_unstable = 0;
                 return false;
@@ -166,20 +178,11 @@ namespace geopm
             // An idea to be evaluated: What is get_period returns an array of string lengths with different scores
             // Definitely skip length=1 but can move on to another length with a slightly higher score.
 
-            if(m_edpd->get_period() >= m_last_period && (m_record_count - m_last_epoch) >= m_edpd->get_period()) {
+            if (m_edpd->get_period() >= m_last_period && (m_record_count - m_last_epoch) >= m_edpd->get_period()) {
                 m_last_epoch = m_record_count;
                 return true;
             }
         }
-
         return false;
-    }
-
-
-    int EditDistEpochRecordFilter::parse_name(const std::string &name)
-    {
-        throw Exception("EditDistEpochRecordFilter::parse_name(): Not implemented",
-                        GEOPM_ERROR_NOT_IMPLEMENTED, __FILE__, __LINE__);
-        return 0;
     }
 }

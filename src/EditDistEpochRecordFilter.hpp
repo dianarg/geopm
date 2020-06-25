@@ -39,27 +39,34 @@ namespace geopm
 {
     struct record_s;
     class EditDistPeriodicityDetector;
+
     class EditDistEpochRecordFilter : public RecordFilter
     {
         public:
-            EditDistEpochRecordFilter(int history_buffer_size);
-            EditDistEpochRecordFilter(std::shared_ptr<EditDistPeriodicityDetector> edpd);
-            /// Example filter name: edit_dist,16
-            EditDistEpochRecordFilter(const std::string &filter_name);
+            EditDistEpochRecordFilter(double stable_period_hysteresis,
+                                      int min_stable_period,
+                                      double unstable_period_hysteresis,
+                                      int history_buffer_size);
+            EditDistEpochRecordFilter(double stable_period_hysteresis,
+                                      int min_stable_period,
+                                      double unstable_period_hysteresis,
+                                      std::shared_ptr<EditDistPeriodicityDetector> edpd);
             virtual ~EditDistEpochRecordFilter() = default;
-            std::vector<record_s> filter(const record_s &record);
-            static int parse_name(const std::string &name);
+            std::vector<record_s> filter(const record_s &record) override;
         private:
-            bool epoch_detector();
+            bool epoch_detected();
+
+            const double m_stable_period_hysteresis;
+            const int m_min_stable_period;
+            const double m_unstable_period_hysteresis;
             std::shared_ptr<EditDistPeriodicityDetector> m_edpd;
             int m_last_period;
             int m_period_stable;
             int m_period_unstable;
+            bool m_is_period_detected;
             int m_last_epoch;
             int m_epoch_count;
             int m_record_count;
-            enum EDIT_DIST_REC_FILTER_STATE { WAITING, PERIOD_DETECTED};
-            EDIT_DIST_REC_FILTER_STATE m_state;
     };
 }
 
