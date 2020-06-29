@@ -222,7 +222,7 @@ namespace geopm
         double result = NAN;
         switch (signal_type) {
             case M_SIGNAL_EPOCH_COUNT:
-                result = m_epoch_map.at(process_id)->epoch_count();
+                result = m_epoch_map.at(process_id)->epoch_count() - 1;
                 break;
             case M_SIGNAL_EPOCH_RUNTIME:
                 result = m_epoch_map.at(process_id)->last_epoch_runtime();
