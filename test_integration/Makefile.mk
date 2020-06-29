@@ -65,3 +65,4 @@ include test_integration/test_timed_scaling_region.mk
 include test_integration/test_tutorial_base.mk
 include test_integration/test_frequency_hint_usage.mk
 include test_integration/test_epoch_inference.mk
+include test_integration/test_power_sweep.mk

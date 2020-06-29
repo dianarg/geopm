@@ -1438,7 +1438,7 @@ class RawReportCollection(object):
     Used to group together a collection of related RawReports.
     '''
 
-    def __init__(self, report_paths, dir_name=',', verbose=True, do_cache=True):
+    def __init__(self, report_paths, dir_name='.', verbose=True, do_cache=True):
         self._reports_df = pandas.DataFrame()
         self._app_reports_df = pandas.DataFrame()
         self._epoch_reports_df = pandas.DataFrame()
