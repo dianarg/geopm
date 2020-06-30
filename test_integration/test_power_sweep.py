@@ -91,6 +91,9 @@ class TestIntegration_power_sweep(unittest.TestCase):
         """
         sys.stdout.write('(' + os.path.basename(__file__).split('.')[0] +
                          '.' + cls.__name__ + ') ...')
+
+
+
         test_name = 'power_sweep'
         cls._prefix = 'test_{}_'.format(test_name)
         cls._skip_launch = not util.do_launch()
@@ -99,6 +102,9 @@ class TestIntegration_power_sweep(unittest.TestCase):
         cls._agent_conf_path = 'test_' + test_name + '-agent-config.json'
         # Clear out exception record for python 2 support
         geopmpy.error.exc_clear()
+
+        cls._target_report_dir = '/home/drguttma/output/last_dgemm'
+        return
         if not cls._skip_launch:
             # Set the job size parameters
             num_node = 1
@@ -156,7 +162,11 @@ class TestIntegration_power_sweep(unittest.TestCase):
         #output = geopmpy.io.AppOutput(self._prefix+'*.report', None, dir_name=self._output_dir, verbose=True)
         #output.extract_index_from_profile(inplace=True)
 
-        cc = geopmpy.io.RawReportCollection(self._prefix+'*.report')
+        report_glob = self._prefix+'*.report'
+        if cls._target_report_dir:
+            report_glob = cls._target_report_dir + '/' + report_glob
+
+        cc = geopmpy.io.RawReportCollection(report_glob)
         df = cc.get_epoch_df()
         sys.stdout.write('{}\n'.format(df))
         return
@@ -175,6 +185,54 @@ class TestIntegration_power_sweep(unittest.TestCase):
         rs += summary.to_string()
         sys.stdout.write(rs + '\n')
         report = geopmpy.io.RawReport(self._report_path)
+
+    def test_achieved_freq_histogram(self):
+        pass
+
+    def test_runtime_energy_plot(self):
+        def generate_runtime_energy_plot(df, name, output_dir='.'):
+            """
+            Creates a plot comparing the runtime and energy of a region on two axes.
+            """
+            f, ax = plt.subplots()
+
+            ax.plot(df.index, df['energy_pkg'], color='DarkBlue', label='Energy', marker='o', linestyle='-')
+            ax.set_xlabel('Power (W)')
+            ax.set_ylabel('Energy (J)')
+
+            ax2 = ax.twinx()
+            ax2.plot(df.index, df['runtime'], color='Red', label='Runtime', marker='s', linestyle='-')
+            ax2.set_ylabel('Runtime (s)')
+
+            lines, labels = ax.get_legend_handles_labels()
+            lines2, labels2 = ax2.get_legend_handles_labels()
+
+            plt.legend(lines + lines2, labels + labels2, shadow=True, fancybox=True, loc='best')
+            plt.title('{}'.format(name))
+            f.tight_layout()
+            plt.savefig(os.path.join(output_dir, '{}_runtime_energy.{}'.format(name.replace(' ', '_'), 'png')))
+            plt.close()
+
+        report_glob = '*power_governor*.report'
+        cc = geopmpy.io.RawReportCollection(report_glob)
+        report_df = cc.get_epoch_df()
+        print(report_df)
+        return
+
+        regions = report_df.index.get_level_values('region').unique().tolist()
+        process_output = {region: self._runtime_energy_sweep(parse_output, region)
+                for region in regions}
+        for region, df in process_output.items():
+            geopmpy.plotter.generate_runtime_energy_plot(df, region, self._output_dir)
+
+
+        #report_glob = str(power_cap) + '*.report'
+        #cc = geopmpy.io.RawReportCollection(report_glob)
+
+        for power_cap in (280):
+            df = cc.get_epoch_df()
+            generate_runtime_energy_plot(df, 'Runtime/Energy vs. Power')
+
 
 if __name__ == '__main__':
     # Call do_launch to clear non-pyunit command line option

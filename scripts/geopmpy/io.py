@@ -1484,8 +1484,8 @@ class RawReportCollection(object):
             try:
                 # load dataframes from cache
                 self._reports_df = pandas.read_hdf(report_h5_name, 'report')
+                self._epoch_reports_df = pandas.read_hdf(report_h5_name, 'epoch_report')
                 self._app_reports_df = pandas.read_hdf(report_h5_name, 'app_report')
-                self._epoch_report_df = pandas.read_hdf(report_h5_name, 'epoch_report')
                 if verbose:
                     sys.stdout.write('Loaded report data from {}.\n'.format(report_h5_name))
             except IOError:
@@ -1497,9 +1497,9 @@ class RawReportCollection(object):
                 try:
                     if verbose:
                         sys.stdout.write('Generating HDF5 files... ')
-                    self._reports_df.to_hdf(report_h5_name, 'report', format='table')
-                    self._app_reports_df.to_hdf(report_h5_name, 'app_report', format='table', append=True)
-                    self._epoch_reports_df.to_hdf(report_h5_name, 'epoch_report', format='table', append=True)
+                    self._reports_df.to_hdf(report_h5_name, 'report')
+                    self._epoch_reports_df.to_hdf(report_h5_name, 'epoch_report', append=True)
+                    self._app_reports_df.to_hdf(report_h5_name, 'app_report', append=True)
                 except ImportError as error:
                     sys.stderr.write('Warning: <geopm> geopmpy.io: Unable to write HDF5 file: {}\n'.format(str(error)))
 
