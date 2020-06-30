@@ -47,7 +47,6 @@ import geopmpy.io
 import geopmpy.error
 
 
-
 def load_files():
     #self._output_dir = '.'
     #output = geopmpy.io.AppOutput(self._prefix+'*.report', None, dir_name=self._output_dir, verbose=True)
@@ -55,12 +54,13 @@ def load_files():
     target_report_dir = '/home/drguttma/output/last_dgemm'
 
     prefix = '*power_governor'
-    report_glob = prefix + '*.report'
+    report_glob = prefix + '*200*.report'
     if target_report_dir:
         report_glob = target_report_dir + '/' + report_glob
 
     cc = geopmpy.io.RawReportCollection(report_glob)
     return cc
+
 
 def test_summary():
     df = load_files()
@@ -170,45 +170,101 @@ def generate_histogram(data, profile_name, min_drop, max_drop, label, bin_size,
     plt.close()
 
 
-def test_achieved_freq_histogram():
-    cc = load_files()
-    report_df = cc.get_epoch_df()
-    report_df['frequency'] = report_df['frequency (Hz)']
-
-    #profiles = [int(pc.split('_')[-1]) for pc in report_df.index.get_level_values('name')]
-    profiles = report_df['POWER_PACKAGE_LIMIT_TOTAL'].unique()
+def test_achieved_freq_histogram_package():
 
     # TODO:
     min_freq = 1.0e9
     max_freq = 2.2e9
     step_freq = 100e6
-    #sticker_freq = 2.1e9
-    #min_power = min(profiles)
-    #max_power = max(profiles)
+    sticker_freq = 2.1e9
 
+    cc = load_files()
+    report_df = cc.get_epoch_df()
+
+    #report_df['frequency'] = report_df['frequency (Hz)']
+    report_df['power_limit'] = report_df['POWER_PACKAGE_LIMIT_TOTAL']
+
+    temp_df = report_df.copy()
+    report_df['frequency'] = report_df['CYCLES_THREAD@package-0'] / report_df['CYCLES_REFERENCE@package-0']
+    temp_df['frequency'] = temp_df['CYCLES_THREAD@package-1'] / temp_df['CYCLES_REFERENCE@package-1']
+    report_df['freq_package'] = 0
+    temp_df['freq_package'] = 1
+    report_df.set_index(['power_limit', 'host', 'freq_package'], inplace=True)
+    temp_df.set_index(['power_limit', 'host', 'freq_package'], inplace=True)
+    report_df.append(temp_df, inplace=True)
+
+    #profiles = [int(pc.split('_')[-1]) for pc in report_df.index.get_level_values('name')]
+    profiles = report_df['POWER_PACKAGE_LIMIT_TOTAL'].unique()
     power_caps = sorted(profiles)  # list(range(self._min_power, self._max_power+1, self._step_power))
     gov_freq_data = {}
     bal_freq_data = {}
 
-    # begin_node = min(report_df.index.get_level_values('node_name'))
-    # end_node = max(report_df.index.get_level_values('node_name'))
-    # if self._nodelist:
-    #     begin_node, end_node = self._nodelist
     for target_power in power_caps:
         #profile = self._name + "_" + str(target_power)
         #governor_data = parse_output.get_report_data(profile=profile, agent="power_governor", region='epoch')
         governor_data = report_df.loc[report_df["Agent"] == "power_governor"]
         governor_data = governor_data.loc[governor_data['POWER_PACKAGE_LIMIT_TOTAL'] == target_power]
-        gov_freq_data[target_power] = governor_data.groupby('host').mean()['frequency'].sort_values()
+        gov_freq_data[target_power] = governor_data.groupby(['host', 'freq_package']).mean()['frequency'].sort_values()
         #balancer_data = parse_output.get_report_data(profile=profile, agent="power_balancer", region='epoch')
         balancer_data = report_df.loc[report_df["Agent"] == "power_balancer"]
         # TODO: power cap filter
-        bal_freq_data[target_power] = balancer_data.groupby('host').mean()['frequency'].sort_values()
+        bal_freq_data[target_power] = balancer_data.groupby(['host', 'freq_package']).mean()['frequency'].sort_values()
         # convert percent to GHz frequency based on sticker
         gov_freq_data[target_power] /= 1e9
         bal_freq_data[target_power] /= 1e9
         gov_freq_data[target_power] = pandas.DataFrame(gov_freq_data[target_power])
         bal_freq_data[target_power] = pandas.DataFrame(bal_freq_data[target_power])
+
+    print(gov_freq_data)
+    process_output = gov_freq_data, bal_freq_data
+    all_gov_data, all_bal_data = process_output
+
+    min_drop = min_freq / 1e9
+    max_drop = (max_freq - step_freq) / 1e9
+    bin_size = step_freq / 1e9 / 2.0
+    name = 'DGEMM'
+    for target_power in power_caps:
+        gov_data = all_gov_data[target_power]
+        bal_data = all_bal_data[target_power]
+
+        profile_name = name + "@" + str(target_power) + "W Governor"
+        generate_histogram(gov_data, profile_name, min_drop, max_drop, 'frequency',
+                           bin_size, 3)
+        profile_name = name + "@" + str(target_power) + "W Balancer"
+        #generate_histogram(bal_data, profile_name, min_drop, max_drop, 'frequency',
+        #                   bin_size, 3)
+
+
+def test_achieved_freq_histogram_node():
+
+    # TODO:
+    min_freq = 1.0e9
+    max_freq = 2.2e9
+    step_freq = 100e6
+    sticker_freq = 2.1e9
+    #min_power = min(profiles)
+    #max_power = max(profiles)
+
+    cc = load_files()
+    report_df = cc.get_epoch_df()
+
+    # '''    CYCLES_REFERENCE
+    # CYCLES_THREAD
+    # ENERGY_PACKAGE
+    # TIME'''
+
+    report_df['power_limit'] = report_df['POWER_PACKAGE_LIMIT_TOTAL']
+
+    #balancer_data = parse_output.get_report_data(profile=profile, agent="power_balancer", region='epoch')
+    balancer_data = report_df.loc[report_df["Agent"] == "power_balancer"]
+    # TODO: power cap filter
+    bal_freq_data[target_power] = balancer_data.groupby('host').mean()['frequency'].sort_values()
+
+    # convert percent to GHz frequency based on sticker
+    gov_freq_data[target_power] /= 1e9
+    bal_freq_data[target_power] /= 1e9
+    gov_freq_data[target_power] = pandas.DataFrame(gov_freq_data[target_power])
+    bal_freq_data[target_power] = pandas.DataFrame(bal_freq_data[target_power])
 
     print(gov_freq_data)
     process_output = gov_freq_data, bal_freq_data
@@ -289,5 +345,5 @@ def test_runtime_energy_plot():
 
 if __name__ == '__main__':
     #test_summary()
-    test_runtime_energy_plot()
-    test_achieved_freq_histogram()
+    #test_runtime_energy_plot()
+    test_achieved_freq_histogram_package()
