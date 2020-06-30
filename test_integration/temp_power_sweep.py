@@ -54,7 +54,7 @@ def load_files():
     target_report_dir = '/home/drguttma/output/last_dgemm'
 
     prefix = '*power_governor'
-    report_glob = prefix + '*200*.report'
+    report_glob = prefix + '*.report'
     if target_report_dir:
         report_glob = target_report_dir + '/' + report_glob
 
@@ -191,48 +191,42 @@ def test_achieved_freq_histogram_package():
     temp_df['freq_package'] = 1
     report_df.set_index(['power_limit', 'host', 'freq_package'], inplace=True)
     temp_df.set_index(['power_limit', 'host', 'freq_package'], inplace=True)
-    report_df.append(temp_df, inplace=True)
+    report_df = report_df.append(temp_df)
 
-    #profiles = [int(pc.split('_')[-1]) for pc in report_df.index.get_level_values('name')]
+    # convert percent to GHz frequency based on sticker
+    report_df['frequency'] *= sticker_freq / 1e9
+
     profiles = report_df['POWER_PACKAGE_LIMIT_TOTAL'].unique()
     power_caps = sorted(profiles)  # list(range(self._min_power, self._max_power+1, self._step_power))
     gov_freq_data = {}
     bal_freq_data = {}
-
     for target_power in power_caps:
-        #profile = self._name + "_" + str(target_power)
-        #governor_data = parse_output.get_report_data(profile=profile, agent="power_governor", region='epoch')
         governor_data = report_df.loc[report_df["Agent"] == "power_governor"]
         governor_data = governor_data.loc[governor_data['POWER_PACKAGE_LIMIT_TOTAL'] == target_power]
         gov_freq_data[target_power] = governor_data.groupby(['host', 'freq_package']).mean()['frequency'].sort_values()
-        #balancer_data = parse_output.get_report_data(profile=profile, agent="power_balancer", region='epoch')
-        balancer_data = report_df.loc[report_df["Agent"] == "power_balancer"]
-        # TODO: power cap filter
-        bal_freq_data[target_power] = balancer_data.groupby(['host', 'freq_package']).mean()['frequency'].sort_values()
-        # convert percent to GHz frequency based on sticker
-        gov_freq_data[target_power] /= 1e9
-        bal_freq_data[target_power] /= 1e9
         gov_freq_data[target_power] = pandas.DataFrame(gov_freq_data[target_power])
-        bal_freq_data[target_power] = pandas.DataFrame(bal_freq_data[target_power])
 
+        balancer_data = report_df.loc[report_df["Agent"] == "power_balancer"]
+        balancer_data = balancer_data.loc[balancer_data['POWER_PACKAGE_LIMIT_TOTAL'] == target_power]
+        bal_freq_data[target_power] = governor_data.groupby(['host', 'freq_package']).mean()['frequency'].sort_values()
+        bal_freq_data[target_power] = pandas.DataFrame(gov_freq_data[target_power])
     print(gov_freq_data)
-    process_output = gov_freq_data, bal_freq_data
-    all_gov_data, all_bal_data = process_output
 
+    # plot histograms
     min_drop = min_freq / 1e9
     max_drop = (max_freq - step_freq) / 1e9
     bin_size = step_freq / 1e9 / 2.0
     name = 'DGEMM'
     for target_power in power_caps:
-        gov_data = all_gov_data[target_power]
-        bal_data = all_bal_data[target_power]
+        gov_data = gov_freq_data[target_power]
+        bal_data = bal_freq_data[target_power]
 
         profile_name = name + "@" + str(target_power) + "W Governor"
         generate_histogram(gov_data, profile_name, min_drop, max_drop, 'frequency',
                            bin_size, 3)
         profile_name = name + "@" + str(target_power) + "W Balancer"
-        #generate_histogram(bal_data, profile_name, min_drop, max_drop, 'frequency',
-        #                   bin_size, 3)
+        generate_histogram(bal_data, profile_name, min_drop, max_drop, 'frequency',
+                           bin_size, 3)
 
 
 def test_achieved_freq_histogram_node():
@@ -268,15 +262,15 @@ def test_achieved_freq_histogram_node():
 
     print(gov_freq_data)
     process_output = gov_freq_data, bal_freq_data
-    all_gov_data, all_bal_data = process_output
+    gov_freq_data, bal_freq_data = process_output
 
     min_drop = min_freq / 1e9
     max_drop = (max_freq - step_freq) / 1e9
     bin_size = step_freq / 1e9 / 2.0
     name = 'DGEMM'
     for target_power in power_caps:
-        gov_data = all_gov_data[target_power]
-        bal_data = all_bal_data[target_power]
+        gov_data = gov_freq_data[target_power]
+        bal_data = bal_freq_data[target_power]
 
         profile_name = name + "@" + str(target_power) + "W Governor"
         generate_histogram(gov_data, profile_name, min_drop, max_drop, 'frequency',
