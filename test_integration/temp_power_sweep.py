@@ -310,31 +310,13 @@ def test_runtime_energy_plot():
     print(report_df)
     print(cc.get_epoch_df())
 
+    # this should be some policy; could also be fixed frequency
     grouped = report_df.groupby('POWER_PACKAGE_LIMIT_TOTAL')
     result_df = pandas.DataFrame()
     #result_df['runtime'] = grouped['runtime (sec)'].mean()
     result_df['runtime'] = grouped['sync-runtime (sec)'].mean()
     result_df['energy'] = grouped['package-energy (joules)'].mean()
-    #result_df['power_limit'] = grouped['POWER_PACKAGE_LIMIT_TOTAL'].mean()
-
-    print(result_df)
-
-    # import code
-
-    # code.interact(local=dict(globals(), **locals()))
-
     generate_runtime_energy_plot(result_df, 'Runtime & Energy vs. Power')
-
-    # regions = report_df.index.get_level_values('region').unique().tolist()
-    # process_output = {region: self._runtime_energy_sweep(parse_output, region)
-    #         for region in regions}
-    # for region, df in process_output.items():
-    #     geopmpy.plotter.generate_runtime_energy_plot(df, region, self._output_dir)
-
-
-    #report_glob = str(power_cap) + '*.report'
-    #cc = geopmpy.io.RawReportCollection(report_glob)
-
 
 
 if __name__ == '__main__':
