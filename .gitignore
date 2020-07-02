@@ -28,8 +28,6 @@
 /dox-public/html/
 /dox-public/latex/
 .DS_Store
-/examples/fft/nas_ft
-/examples/fft/*.o
 /examples/geopm_ctl_single
 /examples/geopmhash
 /examples/geopm_platform_supported
@@ -61,6 +59,8 @@
 /googletest-release-1.8.1.tar.gz
 /gtest-all.o
 /install-sh
+/integration/apps/fft/*.o
+/integration/apps/fft/nas_ft
 /integration/test/geopm_test_integration
 /integration/test/geopm_test_integration.pyc
 /integration/test/*.config

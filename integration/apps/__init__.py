@@ -1,3 +1,4 @@
+#
 #  Copyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -28,9 +29,3 @@
 #  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
-
-EXTRA_DIST += integration/__init__.py \
-              # end
-
-include integration/apps/Makefile.mk
-include integration/test/Makefile.mk

@@ -29,31 +29,31 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-EXTRA_DIST += examples/fft/COPYING-NAS \
-              examples/fft/README \
-              examples/fft/make.def \
+EXTRA_DIST += integration/apps/fft/COPYING-NAS \
+              integration/apps/fft/README \
+              integration/apps/fft/make.def \
               # end
 
 if ENABLE_FORTRAN
 if ENABLE_MPI
 if ENABLE_OPENMP
-    noinst_PROGRAMS += examples/fft/nas_ft
-    examples_fft_nas_ft_SOURCES = examples/fft/ft.f90 \
-                                  examples/fft/global.fi \
-                                  examples/fft/mpinpb.fi \
-                                  examples/fft/npbparams.fi \
-                                  examples/fft/print_results.f \
-                                  examples/fft/randi8.f \
-                                  examples/fft/timers.f \
-                                  # end
+    noinst_PROGRAMS += integration/apps/fft/nas_ft
+    integration_apps_fft_nas_ft_SOURCES = integration/apps/fft/ft.f90 \
+                                          integration/apps/fft/global.fi \
+                                          integration/apps/fft/mpinpb.fi \
+                                          integration/apps/fft/npbparams.fi \
+                                          integration/apps/fft/print_results.f \
+                                          integration/apps/fft/randi8.f \
+                                          integration/apps/fft/timers.f \
+                                          # end
 
-    examples_fft_nas_ft_LDADD = libgeopm.la libgeopmfort.la $(MPI_FCLIBS) $(MPI_CXXLIBS)
-    examples_fft_nas_ft_LDFLAGS = $(AM_LDFLAGS) $(MPI_LDFLAGS) $(OPENMP_CFLAGS)
-    examples_fft_nas_ft_FCFLAGS = -fallow-argument-mismatch -fopenmp -msse4.2 $(MPI_FCFLAGS) $(OPENMP_CFLAGS) -O3
-    examples_fft_nas_ft_FFLAGS =  -fopenmp -msse4.2 $(MPI_FFLAGS) $(OPENMP_CFLAGS) -O3
+    integration_apps_fft_nas_ft_LDADD = libgeopm.la libgeopmfort.la $(MPI_FCLIBS) $(MPI_CXXLIBS)
+    integration_apps_fft_nas_ft_LDFLAGS = $(AM_LDFLAGS) $(MPI_LDFLAGS) $(OPENMP_CFLAGS)
+    integration_apps_fft_nas_ft_FCFLAGS = -fallow-argument-mismatch -fopenmp -msse4.2 $(MPI_FCFLAGS) $(OPENMP_CFLAGS) -O3
+    integration_apps_fft_nas_ft_FFLAGS =  -fopenmp -msse4.2 $(MPI_FFLAGS) $(OPENMP_CFLAGS) -O3
 if HAVE_IFORT
-    examples_fft_nas_ft_FCFLAGS += -fallow-argument-mismatch -xAVX -shared-intel -mcmodel=medium -fpic
-    examples_fft_nas_ft_FFLAGS += -xAVX -shared-intel -mcmodel=medium -fpic
+    integration_apps_fft_nas_ft_FCFLAGS += -fallow-argument-mismatch -xAVX -shared-intel -mcmodel=medium -fpic
+    integration_apps_fft_nas_ft_FFLAGS += -xAVX -shared-intel -mcmodel=medium -fpic
 endif
 endif
 endif
