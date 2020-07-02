@@ -34,6 +34,7 @@
 #define EDITDISTEPOCHRECORDFILTER_HPP_INCLUDE
 
 #include "RecordFilter.hpp"
+#include <set>
 
 namespace geopm
 {
@@ -99,6 +100,7 @@ namespace geopm
             int m_last_epoch;
             int m_epoch_count;
             int m_record_count;
+            const std::set<uint64_t> m_in_hash_set;
     };
 }
 

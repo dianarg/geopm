@@ -135,6 +135,26 @@ namespace geopm
         , m_last_epoch(-1)
         , m_epoch_count(0)
         , m_record_count(0)
+        // List of all MPI collective hash values
+        , m_in_hash_set{0x72e40017,
+                        0xf5d6f047,
+                        0x0d94e328,
+                        0xdba57a3d,
+                        0x8a07921e,
+                        0x574238a6,
+                        0x7b561f45,
+                        0xc5d73e1d,
+                        0x6dccc5a3,
+                        0x4f492f4f,
+                        0x8eab3a85,
+                        0x30904c61,
+                        0x032c93a3,
+                        0xe5dc73c9,
+                        0x8af3dd40,
+                        0x8b8d2ef1,
+                        0x4f441507,
+                        0xe3c8c559,
+                        0x30c9a652}
     {
 
     }
@@ -145,7 +165,9 @@ namespace geopm
         // EVENT_EPOCH_COUNT needs to be filtered but everything else passes through.
         if (record.event != EVENT_EPOCH_COUNT) {
             result.push_back(record);
-            if (record.event == EVENT_REGION_ENTRY) {
+            if (record.event == EVENT_REGION_ENTRY &&
+                m_in_hash_set.find(record.signal) !=
+                m_in_hash_set.end()) {
                 m_edpd->update(record);
                 m_record_count++;
                 if (epoch_detected()) {
