@@ -84,7 +84,6 @@ class TestIntegration_tutorial_base(unittest.TestCase):
             pass
         if do_build:
             build_script = os.path.join(cls._script_dir, 'test_tutorial_base.sh')
-            print(build_script)
             subprocess.check_call(build_script, shell=True)
 
         # Clear out exception record for python 2 support
