@@ -61,9 +61,9 @@
 /googletest-release-1.8.1.tar.gz
 /gtest-all.o
 /install-sh
+/integration/test/*.config
 /integration/test/geopm_test_integration
 /integration/test/geopm_test_integration.pyc
-/integration/test/*.config
 /integration/test/*.h5
 /integration/test/*.log
 /integration/test/*.report
@@ -75,6 +75,7 @@
 /integration/test/test_omp_outer_loop
 /integration/test/test_profile_policy
 /integration/test/test_scaling_region
+/integration/test/test_socket_imbalance
 /integration/test/test_timed_scaling_region
 /integration/test/test_tutorial_base
 /integration/test/*.trace*
