@@ -190,7 +190,7 @@ namespace geopm
             std::string description;
             std::string msr_name;
         };
-        std::vector<temp_data> temp_signals {
+        std::vector<temp_data> temp_signals = {
             {"TEMPERATURE_CORE", "Core temperature", "MSR::THERM_STATUS:DIGITAL_READOUT"},
             {"TEMPERATURE_PACKAGE", "Package temperature", "MSR::PACKAGE_THERM_STATUS:DIGITAL_READOUT"}
         };
@@ -246,7 +246,7 @@ namespace geopm
             std::string description;
             std::string msr_name;
         };
-        std::vector<power_data> power_signals {
+        std::vector<power_data> power_signals = {
             {"POWER_PACKAGE",
                     "Average package power over 40 ms or 8 control loop iterations",
                     "ENERGY_PACKAGE"},
