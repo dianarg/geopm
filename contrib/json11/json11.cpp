@@ -292,7 +292,7 @@ const Json & JsonObject::operator[] (const string &key) const {
 }
 const Json & JsonArray::operator[] (size_t i) const {
     if (i >= m_value.size()) return static_null();
-    else return m_value[i];
+    else return m_value.at(i);
 }
 
 /* * * * * * * * * * * * * * * * * * * *
