@@ -55,6 +55,7 @@ if util.do_launch():
     geopmpy.error.exc_clear()
 
 
+# TODO: dont need skip decorator if skipping launch
 @util.skip_unless_run_long_tests()
 @util.skip_unless_batch()
 class TestIntegration_power_balancer(unittest.TestCase):
@@ -68,10 +69,18 @@ class TestIntegration_power_balancer(unittest.TestCase):
             pass
 
         def get_exec_path(self):
+            """Path to benchmark filled in by template automatically.
+            """
             script_dir = os.path.dirname(os.path.realpath(__file__))
             return os.path.join(script_dir, '.libs', 'test_power_balancer')
 
         def get_exec_args(self):
+            """Returns a list of strings representing the command line arguments
+            to pass to the test-application for the next run.  This is
+            especially useful for tests that execute the test-application
+            multiple times.
+
+            """
             return []
 
     @classmethod
@@ -87,6 +96,9 @@ class TestIntegration_power_balancer(unittest.TestCase):
         cls._tmp_files = []
         cls._keep_files = (cls._skip_launch or
                            os.getenv('GEOPM_KEEP_FILES') is not None)
+
+        # TODO: command line option:
+        cls._verbose = False
 
         # Clear out exception record for python 2 support
         geopmpy.error.exc_clear()
@@ -197,13 +209,13 @@ class TestIntegration_power_balancer(unittest.TestCase):
         if agent == 'power_balancer':
             avg_power_limit = sum(power_limits) / len(power_limits)
             self.assertLessEqual(avg_power_limit, power_budget)
-
         node_names = output.get_node_names()
         runtime_list = []
         for node_name in node_names:
             epoch_data = output.get_report_data(node_name=node_name, region='dgemm')
             runtime_list.append(epoch_data['runtime'].values.item())
         return runtime_list
+
 
     def balancer_test_helper(self, app_name):
         # Require that the balancer moves the maximum dgemm runtime at
