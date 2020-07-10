@@ -65,7 +65,7 @@ int main(int argc, char **argv)
     int cpu_idx = geopm_sched_get_cpu();
     int package_idx = geopm::platform_topo().domain_idx(GEOPM_DOMAIN_PACKAGE, cpu_idx);
     double big_o_base = 5.0;
-    double big_o = big_o_base * (1.0 + package_idx * 0.25);
+    double big_o = big_o_base * (1.0 + package_idx * 0.50);
 
     MPI_Comm shared_comm;
     int err = geopm_comm_split_shared(MPI_COMM_WORLD, NULL, &shared_comm);
@@ -85,6 +85,7 @@ int main(int argc, char **argv)
     // Loop over 1000 iterations of executing the renamed region
     int num_step = 1000;
     for (int idx = 0; idx != num_step; ++idx) {
+        geopm_prof_epoch();
         model->run();
         MPI_Barrier(MPI_COMM_WORLD);
     }
