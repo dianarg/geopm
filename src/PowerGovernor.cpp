@@ -97,6 +97,14 @@ namespace geopm
 
     }
 
+    /// @todo needs to take intputs as a vector, enumerating the
+    /// packages
+    ///
+    /// @todo separate clamping into a different function.  do we need
+    /// this clamping, or should we simply throw with invalid input
+    ///
+    /// @todo alternately we can just not use the power governor with
+    /// the power balancer.
     void PowerGovernorImp::adjust_platform(double node_power_request, double &node_power_actual)
     {
 #ifdef GEOPM_DEBUG

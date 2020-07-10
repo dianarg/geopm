@@ -157,8 +157,7 @@ namespace geopm
 
             PowerBalancerAgent(PlatformIO &platform_io,
                                const PlatformTopo &platform_topo,
-                               std::unique_ptr<PowerGovernor> power_governor,
-                               std::unique_ptr<PowerBalancer> power_balancer);
+                               std::vector<std::shared_ptr<PowerBalancer> > power_balancer);
             PowerBalancerAgent();
             virtual ~PowerBalancerAgent();
             void init(int level, const std::vector<int> &fan_in, bool is_level_root) override;
@@ -190,19 +189,29 @@ namespace geopm
             class Step;
             class Role {
                 public:
+                    /// @todo Tree role classes must implement this
+                    /// method, leaf roles do not.
                     virtual bool descend(const std::vector<double> &in_policy,
                                          std::vector<std::vector<double> >&out_policy);
+                    /// @todo Tree role classes must implement this
+                    /// method, leaf roles do not.
                     virtual bool ascend(const std::vector<std::vector<double> > &in_sample,
                                         std::vector<double> &out_sample);
+                    /// @todo Leaf role classes must implement this
+                    /// method, tree roles do not.
                     virtual bool adjust_platform(const std::vector<double> &in_policy);
+                    /// @todo Leaf role classes must implement this
+                    /// method, tree roles do not.
                     virtual bool sample_platform(std::vector<double> &out_sample);
+                    /// @todo Leaf role classes must implement this
+                    /// method, tree roles do not.
                     virtual void trace_values(std::vector<double> &values);
                 protected:
                     int step(size_t step_count) const;
                     int step(void) const;
                     const Step& step_imp();
                     Role();
-                    virtual ~Role();
+                    virtual ~Role() = default;
                     const std::vector<std::shared_ptr<const Step> > M_STEP_IMP;
                     std::vector<double> m_policy;
                     int m_step_count;
@@ -212,8 +221,7 @@ namespace geopm
             PlatformIO &m_platform_io;
             const PlatformTopo &m_platform_topo;
             std::shared_ptr<Role> m_role;
-            std::unique_ptr<PowerGovernor> m_power_governor;   /// temporary ownership, std::move'd to Role on init
-            std::unique_ptr<PowerBalancer> m_power_balancer;   /// temporary ownership, std::move'd to Role on init
+            std::vector<std::shared_ptr<PowerBalancer> > m_power_balancer;
             struct geopm_time_s m_last_wait;
             const double M_WAIT_SEC;
             double m_power_tdp;
@@ -302,27 +310,33 @@ namespace geopm
                 public:
                     LeafRole(PlatformIO &platform_io,
                              const PlatformTopo &platform_topo,
-                             std::unique_ptr<PowerGovernor> power_governor,
-                             std::unique_ptr<PowerBalancer> power_balancer);
+                             std::vector<std::shared_ptr<PowerBalancer> > power_balancer);
                     virtual ~LeafRole();
                     bool adjust_platform(const std::vector<double> &in_policy) override;
                     bool sample_platform(std::vector<double> &out_sample) override;
                     void trace_values(std::vector<double> &values) override;
                 private:
                     void init_platform_io(void);
+                    void are_steps_complete(bool is_complete);
+                    bool are_steps_complete(void) const;
                     PlatformIO &m_platform_io;
                     const PlatformTopo &m_platform_topo;
-                    double m_power_max;
-                    std::vector<int> m_pio_idx;
-                    std::unique_ptr<PowerGovernor> m_power_governor;
-                    std::unique_ptr<PowerBalancer> m_power_balancer;
-                    int m_last_epoch_count;
-                    double m_runtime;
-                    double m_actual_limit;
-                    double m_power_slack;
-                    double m_power_headroom;
+                    /// Number of power control domains
+                    int m_num_domain;
+                    std::vector<std::vector<int> > m_pio_idx;
+                    std::vector<std::shared_ptr<PowerBalancer> > m_power_balancer;
                     const double M_STABILITY_FACTOR;
-                    bool m_is_out_of_bounds;
+                    struct m_package_s {
+                        int last_epoch_count;
+                        double runtime;
+                        double actual_limit;
+                        double power_slack;
+                        double power_headroom;
+                        bool is_out_of_bounds;
+                        bool is_step_complete;
+                    };
+                    std::vector<m_package_s> m_package;
+
             };
     };
 }
