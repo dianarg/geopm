@@ -1316,7 +1316,7 @@ class OMPIExecLauncher(Launcher):
 class IMPIExecLauncher(Launcher):
     """
     Launcher derived object for use with the Intel(R) MPI Library job launch
-    application mpiexec.hydra.
+    application mpirun.
     """
     _is_once = True
 
@@ -1342,9 +1342,9 @@ class IMPIExecLauncher(Launcher):
 
     def launcher_command(self):
         """
-        Returns 'mpiexec.hydra', the name of the Intel MPI Library job launch application.
+        Returns 'mpirun', the name of the Intel MPI Library job launch application.
         """
-        return 'mpiexec.hydra'
+        return 'mpirun'
 
     def parse_launcher_argv(self):
         """
