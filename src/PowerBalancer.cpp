@@ -116,8 +116,11 @@ namespace geopm
         return (geopm_time_since(&m_power_limit_change_time) > M_CONTROL_LATENCY);
     }
 
+    /// @todo measured_runtime 
     bool PowerBalancerImp::is_runtime_stable(double measured_runtime)
     {
+        /// @todo Why is m_runtime_vec used as a temporary holder
+        /// until there are enough values to fill the circular buffer?
         bool result = false;
         bool is_stable = is_limit_stable() && !std::isnan(measured_runtime);
         if (is_stable && m_runtime_buffer->size() == 0) {

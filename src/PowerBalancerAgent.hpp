@@ -190,12 +190,22 @@ namespace geopm
             class Step;
             class Role {
                 public:
+                    /// @todo Tree role classes must implement this
+                    /// method, leaf roles do not.
                     virtual bool descend(const std::vector<double> &in_policy,
                                          std::vector<std::vector<double> >&out_policy);
+                    /// @todo Tree role classes must implement this
+                    /// method, leaf roles do not.
                     virtual bool ascend(const std::vector<std::vector<double> > &in_sample,
                                         std::vector<double> &out_sample);
+                    /// @todo Leaf role classes must implement this
+                    /// method, tree roles do not.
                     virtual bool adjust_platform(const std::vector<double> &in_policy);
+                    /// @todo Leaf role classes must implement this
+                    /// method, tree roles do not.
                     virtual bool sample_platform(std::vector<double> &out_sample);
+                    /// @todo Leaf role classes must implement this
+                    /// method, tree roles do not.
                     virtual void trace_values(std::vector<double> &values);
                 protected:
                     int step(size_t step_count) const;
@@ -314,8 +324,7 @@ namespace geopm
                     const PlatformTopo &m_platform_topo;
                     double m_power_max;
                     std::vector<int> m_pio_idx;
-                    std::unique_ptr<PowerGovernor> m_power_governor;
-                    std::unique_ptr<PowerBalancer> m_power_balancer;
+                    std::vector<std::shared_ptr<PowerBalancer> > m_power_balancer;
                     int m_last_epoch_count;
                     double m_runtime;
                     double m_actual_limit;
