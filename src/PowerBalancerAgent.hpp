@@ -157,7 +157,6 @@ namespace geopm
 
             PowerBalancerAgent(PlatformIO &platform_io,
                                const PlatformTopo &platform_topo,
-                               std::unique_ptr<PowerGovernor> power_governor,
                                std::unique_ptr<PowerBalancer> power_balancer);
             PowerBalancerAgent();
             virtual ~PowerBalancerAgent();
@@ -190,6 +189,8 @@ namespace geopm
             class Step;
             class Role {
                 public:
+                    Role();
+                    virtual ~Role() = default;
                     /// @todo Tree role classes must implement this
                     /// method, leaf roles do not.
                     virtual bool descend(const std::vector<double> &in_policy,
@@ -222,8 +223,7 @@ namespace geopm
             PlatformIO &m_platform_io;
             const PlatformTopo &m_platform_topo;
             std::shared_ptr<Role> m_role;
-            std::unique_ptr<PowerGovernor> m_power_governor;   /// temporary ownership, std::move'd to Role on init
-            std::unique_ptr<PowerBalancer> m_power_balancer;   /// temporary ownership, std::move'd to Role on init
+            std::shared_ptr<PowerBalancer> m_power_balancer;
             struct geopm_time_s m_last_wait;
             const double M_WAIT_SEC;
             double m_power_tdp;
@@ -312,8 +312,7 @@ namespace geopm
                 public:
                     LeafRole(PlatformIO &platform_io,
                              const PlatformTopo &platform_topo,
-                             std::unique_ptr<PowerGovernor> power_governor,
-                             std::unique_ptr<PowerBalancer> power_balancer);
+                             std::vector<std::shared_ptr<PowerBalancer> > power_balancer);
                     virtual ~LeafRole();
                     bool adjust_platform(const std::vector<double> &in_policy) override;
                     bool sample_platform(std::vector<double> &out_sample) override;
@@ -322,8 +321,9 @@ namespace geopm
                     void init_platform_io(void);
                     PlatformIO &m_platform_io;
                     const PlatformTopo &m_platform_topo;
+                    int m_num_domain;
                     double m_power_max;
-                    std::vector<int> m_pio_idx;
+                    std::vector<std::vector<int> > m_pio_idx;
                     std::vector<std::shared_ptr<PowerBalancer> > m_power_balancer;
                     int m_last_epoch_count;
                     double m_runtime;
