@@ -47,7 +47,8 @@ namespace geopm
     {
         public:
             /// @brief Construct a testable PowerBalancerImp object.
-            PowerBalancerImp(double ctl_latency, double trial_delta, int num_sample, double measure_duration);
+            PowerBalancerImp(double ctl_latency, double trial_delta,
+                             int num_sample, double measure_duration);
             /// @brief Construct a PowerBalancerImp object.
             PowerBalancerImp(double ctl_latency);
             /// @brief Destroy a PowerBalancerImp object.

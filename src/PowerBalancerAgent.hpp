@@ -189,8 +189,6 @@ namespace geopm
             class Step;
             class Role {
                 public:
-                    Role();
-                    virtual ~Role() = default;
                     /// @todo Tree role classes must implement this
                     /// method, leaf roles do not.
                     virtual bool descend(const std::vector<double> &in_policy,
@@ -213,7 +211,7 @@ namespace geopm
                     int step(void) const;
                     const Step& step_imp();
                     Role();
-                    virtual ~Role();
+                    virtual ~Role() = default;
                     const std::vector<std::shared_ptr<const Step> > M_STEP_IMP;
                     std::vector<double> m_policy;
                     int m_step_count;
@@ -321,17 +319,14 @@ namespace geopm
                     void init_platform_io(void);
                     PlatformIO &m_platform_io;
                     const PlatformTopo &m_platform_topo;
+                    /// Number of power control domains
                     int m_num_domain;
+                    /// Per package power limit imposed
                     double m_power_max;
                     std::vector<std::vector<int> > m_pio_idx;
                     std::vector<std::shared_ptr<PowerBalancer> > m_power_balancer;
-                    int m_last_epoch_count;
-                    double m_runtime;
-                    double m_actual_limit;
-                    double m_power_slack;
-                    double m_power_headroom;
-                    const double M_STABILITY_FACTOR;
-                    bool m_is_out_of_bounds;
+                    std::vector<int> m_last_epoch_count;
+                    /// @todo all of the members below here are really per package
             };
     };
 }

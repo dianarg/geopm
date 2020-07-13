@@ -37,7 +37,6 @@
 #include <algorithm>
 #include <iostream>
 
-#include "PowerGovernor.hpp"
 #include "PowerBalancer.hpp"
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
@@ -128,7 +127,6 @@ namespace geopm
     }
 
     /// @todo There must be one power_balancer class per socket
-    /// @todo Get rid of power_governor
     PowerBalancerAgent::LeafRole::LeafRole(PlatformIO &platform_io,
                                            const PlatformTopo &platform_topo,
                                            std::vector<std::shared_ptr<PowerBalancer> > power_balancer)
@@ -139,7 +137,7 @@ namespace geopm
         , m_power_max(m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0))
         , m_pio_idx(m_num_domain, std::vector<int>(M_PLAT_NUM_SIGNAL, -1))
         , m_power_balancer(power_balancer)
-        , m_last_epoch_count(0)
+        , m_last_epoch_count(m_num_domain, 0)
         , m_runtime(0.0)
         , m_actual_limit(NAN)
         , m_power_slack(0.0)
@@ -149,7 +147,7 @@ namespace geopm
     {
         if (m_power_balancer.empty()) {
             double time_window = m_platform_io.read_signal("POWER_PACKAGE_TIME_WINDOW",
-                                                           GEOPM_DOMAIN_BOARD, 0));
+                                                           GEOPM_DOMAIN_BOARD, 0);
             double ctl_latency = M_STABILITY_FACTOR * time_window;
             for (int pkg_idx = 0; pkg_idx != m_num_domain; ++pkg_idx) {
                 m_power_balancer.push_back(PowerBalancer::make_unique(ctl_latency));
@@ -187,11 +185,8 @@ namespace geopm
             // New power cap from resource manager, reset algorithm.
             m_step_count = M_STEP_SEND_DOWN_LIMIT;
             double pkg_limit = in_policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] / m_num_domain;
-            for (int pkg_idx = 0; pkg_idx != m_num_domain; ++pkg_idx) {
-                m_power_balancer[pkg_idx]->power_cap(pkg_limit);
-                if (m_power_max < pkg_limit) {
-                    m_power_max = pkg_limit;
-                }
+            for (auto &balancer : m_power_balancer) {
+                balancer->power_cap(pkg_limit);
             }
             m_is_step_complete = true;
         }
@@ -208,9 +203,9 @@ namespace geopm
         }
 
         bool result = false;
-        for (pkg_idx = 0; pkg_idx != m_num_domain; ++pkg_idx) {
+        for (auto &balancer : m_power_balancer) {
             // Request the power limit from the balancer
-            double request_limit = m_power_balancer[pkg_idx]->power_limit();
+            double request_limit = balancer->power_limit();
             if (!std::isnan(request_limit) && request_limit != 0.0) {
                 /// @todo Adjust package power limit controls with platform_io
             }
@@ -219,7 +214,7 @@ namespace geopm
                 m_is_out_of_bounds = true;
             }
             if (result) {
-                m_power_balancer->power_limit_adjusted(m_actual_limit);
+                balancer->power_limit_adjusted(m_actual_limit);
             }
         }
         return result;
@@ -234,7 +229,6 @@ namespace geopm
         }
 #endif
         step_imp().sample_platform(*this);
-        m_power_governor->sample_platform();
         out_sample[M_SAMPLE_STEP_COUNT] = m_step_count;
         out_sample[M_SAMPLE_MAX_EPOCH_RUNTIME] = m_runtime;
         out_sample[M_SAMPLE_SUM_POWER_SLACK] = m_power_slack;
@@ -252,12 +246,14 @@ namespace geopm
 #endif
         values[M_TRACE_SAMPLE_POLICY_POWER_PACKAGE_LIMIT_TOTAL] =
             m_policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL];
-        values[M_TRACE_SAMPLE_POLICY_STEP_COUNT] = m_policy[M_POLICY_STEP_COUNT];
-        values[M_TRACE_SAMPLE_POLICY_MAX_EPOCH_RUNTIME] = m_policy[M_POLICY_MAX_EPOCH_RUNTIME];
-        values[M_TRACE_SAMPLE_POLICY_POWER_SLACK] = m_policy[M_POLICY_POWER_SLACK];
-        values[M_TRACE_SAMPLE_EPOCH_RUNTIME] = m_power_balancer->runtime_sample();
-        values[M_TRACE_SAMPLE_POWER_LIMIT] = m_power_balancer->power_limit();
-        values[M_TRACE_SAMPLE_ENFORCED_POWER_LIMIT] = m_actual_limit;
+        values[M_TRACE_SAMPLE_POLICY_STEP_COUNT] =
+            m_policy[M_POLICY_STEP_COUNT];
+        values[M_TRACE_SAMPLE_POLICY_MAX_EPOCH_RUNTIME] =
+            m_policy[M_POLICY_MAX_EPOCH_RUNTIME];
+        values[M_TRACE_SAMPLE_POLICY_POWER_SLACK] =
+            m_policy[M_POLICY_POWER_SLACK];
+        values[M_TRACE_SAMPLE_ENFORCED_POWER_LIMIT] =
+            m_actual_limit;
     }
 
     PowerBalancerAgent::TreeRole::TreeRole(int level, const std::vector<int> &fan_in)
@@ -429,8 +425,11 @@ namespace geopm
 
     void PowerBalancerAgent::SendDownLimitStep::enter_step(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const
     {
-        /// @todo divide slack by number of sockets and add it to each balancer
-        role.m_power_balancer->power_cap(role.m_power_balancer->power_limit() + in_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK]);
+        double slack_power = in_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK] /
+                             role.m_num_domain;
+        for (auto &balancer : role.m_power_balancer) {
+            balancer->power_cap(balancer->power_limit() + slack_power);
+        }
         role.m_is_step_complete = true;
     }
 
@@ -454,29 +453,20 @@ namespace geopm
         const int NETWORK = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_NETWORK;
         const int IGNORE = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE;
 
-        int min_epoch_count = role.m_platform_io.sample(role.m_pio_idx[0][COUNT]);
-        for (int pkg_idx = 1; pkg_idx < m_num_domain; ++pkg_idx) {
+        role.m_runtime = 0;
+        for (int pkg_idx = 0; pkg_idx < role.m_num_domain; ++pkg_idx) {
             int epoch_count = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][COUNT]);
-            if (epoch_count < min_epoch_count) {
-                min_epoch_count = epoch_count;
-            }
-        }
-        // If all of the ranks have observed a new epoch then update
-        // the power_balancer.
-        if (min_epoch_count != role.m_last_epoch_count &&
-            !role.m_is_step_complete) {
-            /// We wish to measure runtime that is a function of node
-            /// local optimizations only, and therefore uncorrelated
-            /// between compute nodes.
-            role.m_is_step_complete = true;
-            role.m_runtime = 0;
-            for (int pkg_idx = 0; pkg_idx != m_num_domain; ++pkg_idx) {
+            if (epoch_count != role.m_last_epoch_count[pkg_idx] &&
+                !role.m_is_step_complete) {
+                /// We wish to measure runtime that is a function of node
+                /// local optimizations only, and therefore uncorrelated
+                /// between compute nodes.
                 double total = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][TOTAL]);
-                double network = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][NETWORK])
-                double ignore = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][IGNORE])
+                double network = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][NETWORK]);
+                double ignore = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][IGNORE]);
                 double balanced_epoch_runtime =  total - network - ignore;
 
-                auto balancer = role.m_power_balancer[pkg_idx];
+                auto &balancer = role.m_power_balancer[pkg_idx];
                 bool is_step_complete = balancer->is_runtime_stable(balanced_epoch_runtime);
                 balancer->calculate_runtime_sample();
                 double runtime = balancer->runtime_sample();
@@ -499,14 +489,22 @@ namespace geopm
 
     void PowerBalancerAgent::ReduceLimitStep::enter_step(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const
     {
-        /// @todo loop over all balancers
-        role.m_power_balancer->target_runtime(in_policy[PowerBalancerAgent::M_POLICY_MAX_EPOCH_RUNTIME]);
+        double target = in_policy[PowerBalancerAgent::M_POLICY_MAX_EPOCH_RUNTIME];
+        for (auto balancer : role.m_power_balancer) {
+            balancer->target_runtime(target);
+        }
     }
 
     void PowerBalancerAgent::ReduceLimitStep::sample_platform(PowerBalancerAgent::LeafRole &role) const
     {
-        /// @todo loop over sockts to get epoch count
-        int epoch_count = role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_COUNT]);
+        const int COUNT = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_COUNT;
+        const int TOTAL = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME;
+        const int NETWORK = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_NETWORK;
+        const int IGNORE = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE;
+
+        for (int pkg_idx = 0; pkg_idx != role.m_num_domain; ++pkg_idx) {
+            int epoch_count = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][COUNT]);
+
         // If all of the ranks have observed a new epoch then update
         // the power_balancer.
         if (epoch_count != role.m_last_epoch_count &&
@@ -528,19 +526,17 @@ namespace geopm
     }
 
     PowerBalancerAgent::PowerBalancerAgent()
-        : PowerBalancerAgent(platform_io(), platform_topo(), nullptr, nullptr)
+        : PowerBalancerAgent(platform_io(), platform_topo(), {})
     {
 
     }
 
     PowerBalancerAgent::PowerBalancerAgent(PlatformIO &platform_io,
                                            const PlatformTopo &platform_topo,
-                                           std::unique_ptr<PowerGovernor> power_governor,
-                                           std::unique_ptr<PowerBalancer> power_balancer)
+                                           std::vector<std::shared_ptr<PowerBalancer> > power_balancer)
         : m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
         , m_role(nullptr)
-        , m_power_governor(std::move(power_governor))
         , m_power_balancer(std::move(power_balancer))
         , m_last_wait(time_zero())
         , M_WAIT_SEC(0.005)
@@ -557,14 +553,11 @@ namespace geopm
 
     void PowerBalancerAgent::init(int level, const std::vector<int> &fan_in, bool is_root)
     {
-        if (fan_in.size() == 0ull) {
-            std::cerr << "<geopm> Warning: "
-                      << "PowerBalancerAgent::" << std::string(__func__)
-                      << "(): single node job detected, use power_governor." << std::endl;
-        }
         bool is_tree_root = (level == (int)fan_in.size());
         if (level == 0) {
-            m_role = std::make_shared<LeafRole>(m_platform_io, m_platform_topo, std::move(m_power_governor), std::move(m_power_balancer));
+            m_role = std::make_shared<LeafRole>(m_platform_io,
+                                                m_platform_topo,
+                                                m_power_balancer);
         }
         else if (is_tree_root) {
             int num_pkg = m_platform_topo.num_domain(m_platform_io.control_domain_type("POWER_PACKAGE_LIMIT"));
@@ -654,8 +647,6 @@ namespace geopm
                 "POLICY_STEP_COUNT",        // M_TRACE_SAMPLE_POLICY_STEP_COUNT
                 "POLICY_MAX_EPOCH_RUNTIME", // M_TRACE_SAMPLE_POLICY_MAX_EPOCH_RUNTIME
                 "POLICY_POWER_SLACK",       // M_TRACE_SAMPLE_POLICY_POWER_SLACK
-                "EPOCH_RUNTIME",            // M_TRACE_SAMPLE_EPOCH_RUNTIME
-                "POWER_LIMIT",              // M_TRACE_SAMPLE_POWER_LIMIT
                 "ENFORCED_POWER_LIMIT",     // M_TRACE_SAMPLE_ENFORCED_POWER_LIMIT
                };
     }
@@ -666,8 +657,6 @@ namespace geopm
                 format_step_count,            // M_TRACE_SAMPLE_POLICY_STEP_COUNT
                 string_format_double,         // M_TRACE_SAMPLE_POLICY_MAX_EPOCH_RUNTIME
                 string_format_double,         // M_TRACE_SAMPLE_POLICY_POWER_SLACK
-                string_format_double,         // M_TRACE_SAMPLE_EPOCH_RUNTIME
-                string_format_double,         // M_TRACE_SAMPLE_POWER_LIMIT
                 string_format_double,         // M_TRACE_SAMPLE_ENFORCED_POWER_LIMIT
                };
     }
