@@ -232,6 +232,7 @@ namespace geopm
             bool m_do_write_batch;
             const double M_MIN_PKG_POWER_SETTING;
             const double M_MAX_PKG_POWER_SETTING;
+            const double M_TIME_WINDOW;
 
             class RootRole;
             class LeafRole;
@@ -315,7 +316,8 @@ namespace geopm
                     LeafRole(PlatformIO &platform_io,
                              const PlatformTopo &platform_topo,
                              std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
-                             double min_power);
+                             double min_power,
+                             double time_window);
                     virtual ~LeafRole();
                     bool adjust_platform(const std::vector<double> &in_policy) override;
                     bool sample_platform(std::vector<double> &out_sample) override;

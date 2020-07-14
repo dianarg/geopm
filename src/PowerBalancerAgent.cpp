@@ -129,7 +129,8 @@ namespace geopm
     PowerBalancerAgent::LeafRole::LeafRole(PlatformIO &platform_io,
                                            const PlatformTopo &platform_topo,
                                            std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
-                                           double min_power)
+                                           double min_power,
+                                           double time_window)
         : Role()
         , m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
@@ -141,8 +142,6 @@ namespace geopm
         , M_MIN_PKG_POWER_SETTING(min_power)
     {
         if (m_power_balancer.empty()) {
-            double time_window = m_platform_io.read_signal("POWER_PACKAGE_TIME_WINDOW",
-                                                           GEOPM_DOMAIN_BOARD, 0);
             double ctl_latency = M_STABILITY_FACTOR * time_window;
             for (int pkg_idx = 0; pkg_idx != m_num_domain; ++pkg_idx) {
                 m_power_balancer.push_back(PowerBalancer::make_unique(ctl_latency));
@@ -586,6 +585,7 @@ namespace geopm
         , m_do_write_batch(false)
         , M_MIN_PKG_POWER_SETTING(min_power)
         , M_MAX_PKG_POWER_SETTING(max_power)
+        , M_TIME_WINDOW(0.015)
     {
         geopm_time(&m_last_wait);
         m_power_tdp = m_platform_io.read_signal("POWER_PACKAGE_TDP", GEOPM_DOMAIN_BOARD, 0);
@@ -600,7 +600,8 @@ namespace geopm
             m_role = std::make_shared<LeafRole>(m_platform_io,
                                                 m_platform_topo,
                                                 m_power_balancer,
-                                                M_MIN_PKG_POWER_SETTING);
+                                                M_MIN_PKG_POWER_SETTING,
+                                                M_TIME_WINDOW);
         }
         else if (is_tree_root) {
             m_role = std::make_shared<RootRole>(level,
@@ -611,6 +612,8 @@ namespace geopm
         else {
             m_role = std::make_shared<TreeRole>(level, fan_in);
         }
+        m_platform_io.write_control("POWER_PACKAGE_TIME_WINDOW",
+                                    GEOPM_DOMAIN_BOARD, 0, M_TIME_WINDOW);
     }
 
     void PowerBalancerAgent::split_policy(const std::vector<double> &in_policy,
