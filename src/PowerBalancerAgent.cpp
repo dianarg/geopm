@@ -126,10 +126,10 @@ namespace geopm
         return *M_STEP_IMP[step()];
     }
 
-    /// @todo There must be one power_balancer class per socket
     PowerBalancerAgent::LeafRole::LeafRole(PlatformIO &platform_io,
                                            const PlatformTopo &platform_topo,
-                                           std::vector<std::shared_ptr<PowerBalancer> > power_balancer)
+                                           std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
+                                           double min_power)
         : Role()
         , m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
@@ -137,7 +137,8 @@ namespace geopm
         , m_pio_idx(m_num_domain, std::vector<int>(M_PLAT_NUM_SIGNAL, -1))
         , m_power_balancer(power_balancer)
         , M_STABILITY_FACTOR(3.0)
-        , m_package(m_num_domain, m_package_s {0, 0.0, NAN, 0.0, 0.0, false, false})
+        , m_package(m_num_domain, m_package_s {0, 0.0, NAN, 0.0, 0.0, false, false, -1})
+        , M_MIN_PKG_POWER_SETTING(min_power)
     {
         if (m_power_balancer.empty()) {
             double time_window = m_platform_io.read_signal("POWER_PACKAGE_TIME_WINDOW",
@@ -170,6 +171,9 @@ namespace geopm
             m_pio_idx[pkg_idx][M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE] =
                 m_platform_io.push_signal("EPOCH_RUNTIME_IGNORE",
                                           GEOPM_DOMAIN_PACKAGE, pkg_idx);
+            m_package[pkg_idx].pio_power_idx =
+                m_platform_io.push_control("POWER_PACKAGE_LIMIT",
+                                           GEOPM_DOMAIN_PACKAGE, pkg_idx);
         }
     }
 
@@ -215,17 +219,20 @@ namespace geopm
         bool result = false;
         for (int pkg_idx = 0; pkg_idx != m_num_domain; ++pkg_idx) {
             auto &balancer = m_power_balancer[pkg_idx];
+            auto &package = m_package[pkg_idx];
             // Request the power limit from the balancer
             double request_limit = balancer->power_limit();
             if (!std::isnan(request_limit) && request_limit != 0.0) {
-                /// @todo Adjust package power limit controls with platform_io
-            }
-
-            if (request_limit < m_package[pkg_idx].actual_limit) {
-                m_package[pkg_idx].is_out_of_bounds = true;
-            }
-            if (result) {
-                balancer->power_limit_adjusted(m_package[pkg_idx].actual_limit);
+                if (request_limit < M_MIN_PKG_POWER_SETTING) {
+                    package.is_out_of_bounds = true;
+                    request_limit = M_MIN_PKG_POWER_SETTING;
+                }
+                if (request_limit != package.actual_limit) {
+                    m_platform_io.adjust(package.pio_power_idx, request_limit);
+                    balancer->power_limit_adjusted(request_limit);
+                    package.actual_limit = request_limit;
+                    result = true;
+                }
             }
         }
         return result;
@@ -553,14 +560,20 @@ namespace geopm
     }
 
     PowerBalancerAgent::PowerBalancerAgent()
-        : PowerBalancerAgent(platform_io(), platform_topo(), {})
+        : PowerBalancerAgent(platform_io(),
+                             platform_topo(),
+                             {},
+                             platform_io().read_signal("POWER_PACKAGE_MIN", GEOPM_DOMAIN_PACKAGE, 0),
+                             platform_io().read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0))
     {
 
     }
 
     PowerBalancerAgent::PowerBalancerAgent(PlatformIO &platform_io,
                                            const PlatformTopo &platform_topo,
-                                           std::vector<std::shared_ptr<PowerBalancer> > power_balancer)
+                                           std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
+                                           double min_power,
+                                           double max_power)
         : m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
         , m_role(nullptr)
@@ -571,6 +584,8 @@ namespace geopm
         , m_do_send_sample(false)
         , m_do_send_policy(false)
         , m_do_write_batch(false)
+        , M_MIN_PKG_POWER_SETTING(min_power)
+        , M_MAX_PKG_POWER_SETTING(max_power)
     {
         geopm_time(&m_last_wait);
         m_power_tdp = m_platform_io.read_signal("POWER_PACKAGE_TDP", GEOPM_DOMAIN_BOARD, 0);
@@ -584,12 +599,14 @@ namespace geopm
         if (level == 0) {
             m_role = std::make_shared<LeafRole>(m_platform_io,
                                                 m_platform_topo,
-                                                m_power_balancer);
+                                                m_power_balancer,
+                                                M_MIN_PKG_POWER_SETTING);
         }
         else if (is_tree_root) {
-            double min_power = m_platform_io.read_signal("POWER_PACKAGE_MIN", GEOPM_DOMAIN_PACKAGE, 0);
-            double max_power = m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0);
-            m_role = std::make_shared<RootRole>(level, fan_in, min_power, max_power);
+            m_role = std::make_shared<RootRole>(level,
+                                                fan_in,
+                                                M_MIN_PKG_POWER_SETTING,
+                                                M_MAX_PKG_POWER_SETTING);
         }
         else {
             m_role = std::make_shared<TreeRole>(level, fan_in);
@@ -772,13 +789,11 @@ namespace geopm
         // Clamp to min or max; note that 0.0 is a valid power limit
         // when the step is not SEND_DOWN_LIMIT
         if (policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] != 0) {
-            double min_power_setting(m_platform_io.read_signal("POWER_PACKAGE_MIN", GEOPM_DOMAIN_BOARD, 0));
-            double max_power_setting(m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_BOARD, 0));
-            if (policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] < min_power_setting) {
-                policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] = min_power_setting;
+            if (policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] < M_MIN_PKG_POWER_SETTING) {
+                policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] = M_MIN_PKG_POWER_SETTING;
             }
-            else if (policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] > max_power_setting) {
-                policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] = max_power_setting;
+            else if (policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] > M_MAX_PKG_POWER_SETTING) {
+                policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] = M_MAX_PKG_POWER_SETTING;
             }
         }
 

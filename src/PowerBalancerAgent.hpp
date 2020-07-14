@@ -157,7 +157,9 @@ namespace geopm
 
             PowerBalancerAgent(PlatformIO &platform_io,
                                const PlatformTopo &platform_topo,
-                               std::vector<std::shared_ptr<PowerBalancer> > power_balancer);
+                               std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
+                               double min_power,
+                               double max_power);
             PowerBalancerAgent();
             virtual ~PowerBalancerAgent();
             void init(int level, const std::vector<int> &fan_in, bool is_level_root) override;
@@ -228,6 +230,8 @@ namespace geopm
             bool m_do_send_sample;
             bool m_do_send_policy;
             bool m_do_write_batch;
+            const double M_MIN_PKG_POWER_SETTING;
+            const double M_MAX_PKG_POWER_SETTING;
 
             class RootRole;
             class LeafRole;
@@ -310,7 +314,8 @@ namespace geopm
                 public:
                     LeafRole(PlatformIO &platform_io,
                              const PlatformTopo &platform_topo,
-                             std::vector<std::shared_ptr<PowerBalancer> > power_balancer);
+                             std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
+                             double min_power);
                     virtual ~LeafRole();
                     bool adjust_platform(const std::vector<double> &in_policy) override;
                     bool sample_platform(std::vector<double> &out_sample) override;
@@ -334,9 +339,10 @@ namespace geopm
                         double power_headroom;
                         bool is_out_of_bounds;
                         bool is_step_complete;
+                        int pio_power_idx;
                     };
                     std::vector<m_package_s> m_package;
-
+                    const double M_MIN_PKG_POWER_SETTING;
             };
     };
 }
