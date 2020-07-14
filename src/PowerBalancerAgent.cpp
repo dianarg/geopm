@@ -134,16 +134,10 @@ namespace geopm
         , m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
         , m_num_domain(m_platform_topo.num_domain(GEOPM_DOMAIN_PACKAGE))
-        , m_power_max(m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0))
         , m_pio_idx(m_num_domain, std::vector<int>(M_PLAT_NUM_SIGNAL, -1))
         , m_power_balancer(power_balancer)
-        , m_last_epoch_count(m_num_domain, 0)
-        , m_runtime(0.0)
-        , m_actual_limit(NAN)
-        , m_power_slack(0.0)
-        , m_power_headroom(0.0)
         , M_STABILITY_FACTOR(3.0)
-        , m_is_out_of_bounds(false)
+        , m_package(m_num_domain, m_package_s {0, 0.0, NAN, 0.0, 0.0, false})
     {
         if (m_power_balancer.empty()) {
             double time_window = m_platform_io.read_signal("POWER_PACKAGE_TIME_WINDOW",
@@ -203,18 +197,19 @@ namespace geopm
         }
 
         bool result = false;
-        for (auto &balancer : m_power_balancer) {
+        for (int pkg_idx = 0; pkg_idx != m_num_domain; ++pkg_idx) {
+            auto &balancer = m_power_balancer[pkg_idx];
             // Request the power limit from the balancer
             double request_limit = balancer->power_limit();
             if (!std::isnan(request_limit) && request_limit != 0.0) {
                 /// @todo Adjust package power limit controls with platform_io
             }
 
-            if (request_limit < m_actual_limit) {
-                m_is_out_of_bounds = true;
+            if (request_limit < m_package[pkg_idx].actual_limit) {
+                m_package[pkg_idx].is_out_of_bounds = true;
             }
             if (result) {
-                balancer->power_limit_adjusted(m_actual_limit);
+                balancer->power_limit_adjusted(m_package[pkg_idx].actual_limit);
             }
         }
         return result;
@@ -230,9 +225,18 @@ namespace geopm
 #endif
         step_imp().sample_platform(*this);
         out_sample[M_SAMPLE_STEP_COUNT] = m_step_count;
-        out_sample[M_SAMPLE_MAX_EPOCH_RUNTIME] = m_runtime;
-        out_sample[M_SAMPLE_SUM_POWER_SLACK] = m_power_slack;
-        out_sample[M_SAMPLE_MIN_POWER_HEADROOM] = m_power_headroom;
+        double runtime = 0.0;
+        double power_slack = 0.0;
+        double power_headroom = 0.0;
+        for (auto &pkg : m_package) {
+            runtime = runtime > pkg.runtime ?
+                      runtime : pkg.runtime;
+            power_slack += pkg.power_slack;
+            power_headroom += pkg.power_headroom;
+        }
+        out_sample[M_SAMPLE_MAX_EPOCH_RUNTIME] = runtime;
+        out_sample[M_SAMPLE_SUM_POWER_SLACK] = power_slack;
+        out_sample[M_SAMPLE_MIN_POWER_HEADROOM] = power_headroom;
         return m_is_step_complete;
     }
 
@@ -252,8 +256,12 @@ namespace geopm
             m_policy[M_POLICY_MAX_EPOCH_RUNTIME];
         values[M_TRACE_SAMPLE_POLICY_POWER_SLACK] =
             m_policy[M_POLICY_POWER_SLACK];
+        double actual_limit = 0.0;
+        for (auto &pkg : m_package) {
+            actual_limit += pkg.actual_limit;
+        }
         values[M_TRACE_SAMPLE_ENFORCED_POWER_LIMIT] =
-            m_actual_limit;
+            actual_limit;
     }
 
     PowerBalancerAgent::TreeRole::TreeRole(int level, const std::vector<int> &fan_in)
@@ -453,10 +461,11 @@ namespace geopm
         const int NETWORK = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_NETWORK;
         const int IGNORE = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE;
 
-        role.m_runtime = 0;
         for (int pkg_idx = 0; pkg_idx < role.m_num_domain; ++pkg_idx) {
+            auto &pkg = role.m_package[pkg_idx];
+            pkg.runtime = 0;
             int epoch_count = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][COUNT]);
-            if (epoch_count != role.m_last_epoch_count[pkg_idx] &&
+            if (epoch_count != pkg.last_epoch_count &&
                 !role.m_is_step_complete) {
                 /// We wish to measure runtime that is a function of node
                 /// local optimizations only, and therefore uncorrelated
@@ -467,11 +476,12 @@ namespace geopm
                 double balanced_epoch_runtime =  total - network - ignore;
 
                 auto &balancer = role.m_power_balancer[pkg_idx];
+                auto &pkg = role.m_package[pkg_idx];
                 bool is_step_complete = balancer->is_runtime_stable(balanced_epoch_runtime);
                 balancer->calculate_runtime_sample();
                 double runtime = balancer->runtime_sample();
-                if (role.m_runtime < runtime) {
-                    role.m_runtime = runtime;
+                if (pkg.runtime < runtime) {
+                    pkg.runtime = runtime;
                 }
                 if (role.m_is_step_complete && !is_step_complete) {
                     role.m_is_step_complete = is_step_complete;
@@ -504,24 +514,26 @@ namespace geopm
 
         for (int pkg_idx = 0; pkg_idx != role.m_num_domain; ++pkg_idx) {
             int epoch_count = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][COUNT]);
-
-        // If all of the ranks have observed a new epoch then update
-        // the power_balancer.
-        if (epoch_count != role.m_last_epoch_count &&
-            !role.m_is_step_complete) {
-
-            /// We wish to measure runtime that is a function of node local optimizations only, and therefore uncorrelated between compute nodes.
-            double balanced_epoch_runtime = role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME]) -
-                                            role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_NETWORK]) -
-                                            role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE]);
-            role.m_power_balancer->calculate_runtime_sample();
-            role.m_is_step_complete = role.m_is_out_of_bounds ||
-                                      role.m_power_balancer->is_target_met(balanced_epoch_runtime);
-            /// @todo sum socket slack power
-            role.m_power_slack = role.m_power_balancer->power_slack();
-            role.m_is_out_of_bounds = false;
-            role.m_power_headroom = role.m_power_max - role.m_power_balancer->power_limit();
-            role.m_last_epoch_count = epoch_count;
+            // If all of the ranks have observed a new epoch then update
+            // the power_balancer.
+            auto &package = role.m_package[pkg_idx]
+            auto &balancer = role.m_power_balancer[pkg_idx];
+            if (epoch_count != package.last_epoch_count &&
+                !package.is_step_complete) {
+                /// We wish to measure runtime that is a function of
+                /// node local optimizations only, and therefore
+                /// uncorrelated between compute nodes.
+                double total = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][TOTAL]);
+                double network = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][NETWORK]);
+                double ignore = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][IGNORE]);
+                double balanced_epoch_runtime =  total - network - ignore;
+                package.is_step_complete = package.is_out_of_bounds ||
+                                           balancer->is_target_met(balanced_epoch_runtime);
+                package.power_slack = role.m_power_balancer->power_slack();
+                package.is_out_of_bounds = false;
+                package.power_headroom = balancer->power_cap() - balancer->power_limit();
+                package.last_epoch_count = epoch_count;
+            }
         }
     }
 
@@ -560,9 +572,8 @@ namespace geopm
                                                 m_power_balancer);
         }
         else if (is_tree_root) {
-            int num_pkg = m_platform_topo.num_domain(m_platform_io.control_domain_type("POWER_PACKAGE_LIMIT"));
-            double min_power = num_pkg * m_platform_io.read_signal("POWER_PACKAGE_MIN", GEOPM_DOMAIN_PACKAGE, 0);
-            double max_power = num_pkg * m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0);
+            double min_power = m_platform_io.read_signal("POWER_PACKAGE_MIN", GEOPM_DOMAIN_PACKAGE, 0);
+            double max_power = m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0);
             m_role = std::make_shared<RootRole>(level, fan_in, min_power, max_power);
         }
         else {

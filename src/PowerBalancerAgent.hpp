@@ -321,12 +321,19 @@ namespace geopm
                     const PlatformTopo &m_platform_topo;
                     /// Number of power control domains
                     int m_num_domain;
-                    /// Per package power limit imposed
-                    double m_power_max;
                     std::vector<std::vector<int> > m_pio_idx;
                     std::vector<std::shared_ptr<PowerBalancer> > m_power_balancer;
-                    std::vector<int> m_last_epoch_count;
-                    /// @todo all of the members below here are really per package
+                    const double M_STABILITY_FACTOR;
+                    struct m_package_s {
+                        int last_epoch_count;
+                        double runtime;
+                        double actual_limit;
+                        double power_slack;
+                        double power_headroom;
+                        bool is_out_of_bounds;
+                    };
+                    std::vector<m_package_s> m_package;
+
             };
     };
 }
