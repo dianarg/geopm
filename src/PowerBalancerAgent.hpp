@@ -317,6 +317,8 @@ namespace geopm
                     void trace_values(std::vector<double> &values) override;
                 private:
                     void init_platform_io(void);
+                    void are_steps_complete(bool is_complete);
+                    bool are_steps_complete(void) const;
                     PlatformIO &m_platform_io;
                     const PlatformTopo &m_platform_topo;
                     /// Number of power control domains
@@ -331,6 +333,7 @@ namespace geopm
                         double power_slack;
                         double power_headroom;
                         bool is_out_of_bounds;
+                        bool is_step_complete;
                     };
                     std::vector<m_package_s> m_package;
 

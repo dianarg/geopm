@@ -137,7 +137,7 @@ namespace geopm
         , m_pio_idx(m_num_domain, std::vector<int>(M_PLAT_NUM_SIGNAL, -1))
         , m_power_balancer(power_balancer)
         , M_STABILITY_FACTOR(3.0)
-        , m_package(m_num_domain, m_package_s {0, 0.0, NAN, 0.0, 0.0, false})
+        , m_package(m_num_domain, m_package_s {0, 0.0, NAN, 0.0, 0.0, false, false})
     {
         if (m_power_balancer.empty()) {
             double time_window = m_platform_io.read_signal("POWER_PACKAGE_TIME_WINDOW",
@@ -148,6 +148,7 @@ namespace geopm
             }
         }
         init_platform_io();
+        are_steps_complete(true);
         m_is_step_complete = true;
     }
 
@@ -172,6 +173,21 @@ namespace geopm
         }
     }
 
+   void PowerBalancerAgent::LeafRole::are_steps_complete(bool is_complete)
+   {
+       for (auto &pkg : m_package) {
+           pkg.is_step_complete = is_complete;
+       }
+   }
+
+   bool PowerBalancerAgent::LeafRole::are_steps_complete(void) const
+   {
+       return std::all_of(m_package.cbegin(), m_package.cend(),
+           [](std::vector<m_package_s>::const_iterator pkg) {
+               return pkg->is_step_complete;
+           });
+   }
+
     bool PowerBalancerAgent::LeafRole::adjust_platform(const std::vector<double> &in_policy)
     {
         m_policy = in_policy;
@@ -182,12 +198,12 @@ namespace geopm
             for (auto &balancer : m_power_balancer) {
                 balancer->power_cap(pkg_limit);
             }
-            m_is_step_complete = true;
+            are_steps_complete(true);
         }
         else if (in_policy[M_POLICY_STEP_COUNT] != m_step_count) {
             // Advance a step
             ++m_step_count;
-            m_is_step_complete = false;
+            are_steps_complete(false);
             if (m_step_count != in_policy[M_POLICY_STEP_COUNT]) {
                 throw Exception("PowerBalancerAgent::adjust_platform(): The policy step is out of sync "
                                 "with the agent step or first policy received had a zero power cap.",
@@ -237,7 +253,7 @@ namespace geopm
         out_sample[M_SAMPLE_MAX_EPOCH_RUNTIME] = runtime;
         out_sample[M_SAMPLE_SUM_POWER_SLACK] = power_slack;
         out_sample[M_SAMPLE_MIN_POWER_HEADROOM] = power_headroom;
-        return m_is_step_complete;
+        return are_steps_complete();
     }
 
     void PowerBalancerAgent::LeafRole::trace_values(std::vector<double> &values)
@@ -516,7 +532,7 @@ namespace geopm
             int epoch_count = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][COUNT]);
             // If all of the ranks have observed a new epoch then update
             // the power_balancer.
-            auto &package = role.m_package[pkg_idx]
+            auto &package = role.m_package[pkg_idx];
             auto &balancer = role.m_power_balancer[pkg_idx];
             if (epoch_count != package.last_epoch_count &&
                 !package.is_step_complete) {
