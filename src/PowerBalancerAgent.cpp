@@ -459,7 +459,7 @@ namespace geopm
     void PowerBalancerAgent::SendDownLimitStep::enter_step(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const
     {
         double slack_power = in_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK];
-
+        // Find the package with the least headroom at the current power limit
         double min_headroom = 1e9; // Big number
         for (auto &balancer : role.m_power_balancer) {
             double headroom = role.M_MAX_PKG_POWER_SETTING -
@@ -467,8 +467,14 @@ namespace geopm
             min_headroom = min_headroom < headroom ?
                            min_headroom : headroom;
         }
-        double even_slack = min_headroom;
-        slack_power -= even_slack * role.m_num_domain;
+        double even_slack = slack_power / role.m_num_domain;
+        if (even_slack < min_headroom) {
+            slack_power = 0;
+        }
+        else {
+            even_slack = min_headroom;
+            slack_power -= even_slack * role.m_num_domain;
+        }
         double total_headroom = 0.0;
         for (auto &balancer : role.m_power_balancer) {
             double headroom = role.M_MAX_PKG_POWER_SETTING -
