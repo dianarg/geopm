@@ -252,13 +252,12 @@ namespace geopm
         out_sample[M_SAMPLE_STEP_COUNT] = m_step_count;
         double runtime = 0.0;
         double power_slack = 0.0;
-        double power_headroom = 1e9; // Very large value
+        double power_headroom = 0;
         for (auto &pkg : m_package) {
             runtime = runtime > pkg.runtime ?
                       runtime : pkg.runtime;
             power_slack += pkg.power_slack;
-            power_headroom = power_headroom < pkg.power_headroom ?
-                             power_headroom : pkg.power_headroom;
+            power_headroom += pkg.power_headroom;
         }
         out_sample[M_SAMPLE_MAX_EPOCH_RUNTIME] = runtime;
         out_sample[M_SAMPLE_SUM_POWER_SLACK] = power_slack;
@@ -459,10 +458,29 @@ namespace geopm
 
     void PowerBalancerAgent::SendDownLimitStep::enter_step(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const
     {
-        double slack_power = in_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK] /
-                             role.m_num_domain;
+        double slack_power = in_policy[PowerBalancerAgent::M_POLICY_POWER_SLACK];
+
+        double min_headroom = 1e9; // Big number
         for (auto &balancer : role.m_power_balancer) {
-            balancer->power_cap(balancer->power_limit() + slack_power);
+            double headroom = role.M_MAX_PKG_POWER_SETTING -
+                              balancer->power_limit();
+            min_headroom = min_headroom < headroom ?
+                           min_headroom : headroom;
+        }
+        double even_slack = min_headroom;
+        slack_power -= even_slack * role.m_num_domain;
+        double total_headroom = 0.0;
+        for (auto &balancer : role.m_power_balancer) {
+            double headroom = role.M_MAX_PKG_POWER_SETTING -
+                              (balancer->power_limit() + even_slack);
+            total_headroom += headroom;
+        }
+        for (auto &balancer : role.m_power_balancer) {
+            double headroom = role.M_MAX_PKG_POWER_SETTING -
+                              (balancer->power_limit() + even_slack);
+            double factor = headroom / total_headroom;
+            double cap = balancer->power_limit() + even_slack + factor * slack_power;
+            balancer->power_cap(cap);
         }
         role.are_steps_complete(true);
     }
@@ -489,7 +507,6 @@ namespace geopm
 
         for (int pkg_idx = 0; pkg_idx < role.m_num_domain; ++pkg_idx) {
             auto &pkg = role.m_package[pkg_idx];
-            pkg.runtime = 0;
             int epoch_count = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][COUNT]);
             if (epoch_count != pkg.last_epoch_count &&
                 !pkg.is_step_complete) {
@@ -504,10 +521,9 @@ namespace geopm
                 auto &balancer = role.m_power_balancer[pkg_idx];
                 auto &pkg = role.m_package[pkg_idx];
                 pkg.is_step_complete = balancer->is_runtime_stable(balanced_epoch_runtime);
-                balancer->calculate_runtime_sample();
-                double runtime = balancer->runtime_sample();
-                if (pkg.runtime < runtime) {
-                    pkg.runtime = runtime;
+                if (pkg.is_step_complete) {
+                    balancer->calculate_runtime_sample();
+                    pkg.runtime = balancer->runtime_sample();
                 }
             }
         }
@@ -551,8 +567,8 @@ namespace geopm
                 double network = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][NETWORK]);
                 double ignore = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][IGNORE]);
                 double balanced_epoch_runtime =  total - network - ignore;
-                package.is_step_complete = balancer->is_target_met(balanced_epoch_runtime) ||
-                                           package.is_out_of_bounds;
+                package.is_step_complete = package.is_out_of_bounds ||
+                                           balancer->is_target_met(balanced_epoch_runtime);
                 package.power_slack = balancer->power_slack();
                 package.is_out_of_bounds = false;
                 package.power_headroom = role.M_MAX_PKG_POWER_SETTING - balancer->power_limit();

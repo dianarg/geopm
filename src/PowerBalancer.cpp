@@ -93,7 +93,8 @@ namespace geopm
 
     void PowerBalancerImp::power_limit_adjusted(double actual_limit)
     {
-        // m_power_limit starts as the requested limit.  actual limit is what the governor returned.
+        // m_power_limit starts as the requested limit.  actual limit
+        // is the clipped value.
         if (actual_limit > m_power_limit) {
             // we hit the minimum, so stop lowering
             m_is_target_met = true;
