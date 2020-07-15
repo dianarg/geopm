@@ -116,7 +116,6 @@ namespace geopm
         return (geopm_time_since(&m_power_limit_change_time) > M_CONTROL_LATENCY);
     }
 
-    /// @todo measured_runtime 
     bool PowerBalancerImp::is_runtime_stable(double measured_runtime)
     {
         /// @todo Why is m_runtime_vec used as a temporary holder

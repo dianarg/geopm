@@ -126,8 +126,6 @@ namespace geopm
                 M_TRACE_SAMPLE_POLICY_STEP_COUNT,
                 M_TRACE_SAMPLE_POLICY_MAX_EPOCH_RUNTIME,
                 M_TRACE_SAMPLE_POLICY_POWER_SLACK,
-                M_TRACE_SAMPLE_EPOCH_RUNTIME,
-                M_TRACE_SAMPLE_POWER_LIMIT,
                 M_TRACE_SAMPLE_ENFORCED_POWER_LIMIT,
                 M_TRACE_NUM_SAMPLE,
             };
@@ -325,7 +323,7 @@ namespace geopm
                 private:
                     void init_platform_io(void);
                     void are_steps_complete(bool is_complete);
-                    bool are_steps_complete(void) const;
+                    bool are_steps_complete(void);
                     PlatformIO &m_platform_io;
                     const PlatformTopo &m_platform_topo;
                     /// Number of power control domains

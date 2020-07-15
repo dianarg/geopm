@@ -149,7 +149,6 @@ namespace geopm
         }
         init_platform_io();
         are_steps_complete(true);
-        m_is_step_complete = true;
     }
 
     PowerBalancerAgent::LeafRole::~LeafRole() = default;
@@ -178,17 +177,19 @@ namespace geopm
 
    void PowerBalancerAgent::LeafRole::are_steps_complete(bool is_complete)
    {
+       m_is_step_complete = is_complete;
        for (auto &pkg : m_package) {
            pkg.is_step_complete = is_complete;
        }
    }
 
-   bool PowerBalancerAgent::LeafRole::are_steps_complete(void) const
+   bool PowerBalancerAgent::LeafRole::are_steps_complete(void)
    {
-       return std::all_of(m_package.cbegin(), m_package.cend(),
+       m_is_step_complete = std::all_of(m_package.cbegin(), m_package.cend(),
            [](const m_package_s &pkg) {
                return pkg.is_step_complete;
            });
+       return m_is_step_complete;
    }
 
     bool PowerBalancerAgent::LeafRole::adjust_platform(const std::vector<double> &in_policy)
@@ -460,7 +461,7 @@ namespace geopm
         for (auto &balancer : role.m_power_balancer) {
             balancer->power_cap(balancer->power_limit() + slack_power);
         }
-        role.m_is_step_complete = true;
+        role.are_steps_complete(true);
     }
 
     void PowerBalancerAgent::SendDownLimitStep::sample_platform(PowerBalancerAgent::LeafRole &role) const
@@ -488,7 +489,7 @@ namespace geopm
             pkg.runtime = 0;
             int epoch_count = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][COUNT]);
             if (epoch_count != pkg.last_epoch_count &&
-                !role.m_is_step_complete) {
+                !pkg.is_step_complete) {
                 /// We wish to measure runtime that is a function of node
                 /// local optimizations only, and therefore uncorrelated
                 /// between compute nodes.
@@ -507,7 +508,7 @@ namespace geopm
                 }
             }
         }
-        role.m_is_step_complete = role.are_steps_complete();
+        role.are_steps_complete();
     }
 
     void PowerBalancerAgent::ReduceLimitStep::update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const
@@ -555,7 +556,7 @@ namespace geopm
                 package.last_epoch_count = epoch_count;
             }
         }
-        role.m_is_step_complete = role.are_steps_complete();
+        role.are_steps_complete();
     }
 
     PowerBalancerAgent::PowerBalancerAgent()
