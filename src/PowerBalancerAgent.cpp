@@ -551,8 +551,8 @@ namespace geopm
                 double network = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][NETWORK]);
                 double ignore = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][IGNORE]);
                 double balanced_epoch_runtime =  total - network - ignore;
-                package.is_step_complete = package.is_out_of_bounds ||
-                                           balancer->is_target_met(balanced_epoch_runtime);
+                package.is_step_complete = balancer->is_target_met(balanced_epoch_runtime) ||
+                                           package.is_out_of_bounds;
                 package.power_slack = balancer->power_slack();
                 package.is_out_of_bounds = false;
                 package.power_headroom = role.M_MAX_PKG_POWER_SETTING - balancer->power_limit();
