@@ -315,6 +315,7 @@ namespace geopm
                              const PlatformTopo &platform_topo,
                              std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
                              double min_power,
+                             double max_power,
                              double time_window);
                     virtual ~LeafRole();
                     bool adjust_platform(const std::vector<double> &in_policy) override;
@@ -343,6 +344,7 @@ namespace geopm
                     };
                     std::vector<m_package_s> m_package;
                     const double M_MIN_PKG_POWER_SETTING;
+                    const double M_MAX_PKG_POWER_SETTING;
             };
     };
 }

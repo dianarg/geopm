@@ -130,6 +130,7 @@ namespace geopm
                                            const PlatformTopo &platform_topo,
                                            std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
                                            double min_power,
+                                           double max_power,
                                            double time_window)
         : Role()
         , m_platform_io(platform_io)
@@ -140,6 +141,7 @@ namespace geopm
         , M_STABILITY_FACTOR(3.0)
         , m_package(m_num_domain, m_package_s {0, 0.0, NAN, 0.0, 0.0, false, false, -1})
         , M_MIN_PKG_POWER_SETTING(min_power)
+        , M_MAX_PKG_POWER_SETTING(max_power)
     {
         if (m_power_balancer.empty()) {
             double ctl_latency = M_STABILITY_FACTOR * time_window;
@@ -250,12 +252,13 @@ namespace geopm
         out_sample[M_SAMPLE_STEP_COUNT] = m_step_count;
         double runtime = 0.0;
         double power_slack = 0.0;
-        double power_headroom = 0.0;
+        double power_headroom = 1e9; // Very large value
         for (auto &pkg : m_package) {
             runtime = runtime > pkg.runtime ?
                       runtime : pkg.runtime;
             power_slack += pkg.power_slack;
-            power_headroom += pkg.power_headroom;
+            power_headroom = power_headroom < pkg.power_headroom ?
+                             power_headroom : pkg.power_headroom;
         }
         out_sample[M_SAMPLE_MAX_EPOCH_RUNTIME] = runtime;
         out_sample[M_SAMPLE_SUM_POWER_SLACK] = power_slack;
@@ -552,7 +555,7 @@ namespace geopm
                                            balancer->is_target_met(balanced_epoch_runtime);
                 package.power_slack = balancer->power_slack();
                 package.is_out_of_bounds = false;
-                package.power_headroom = balancer->power_cap() - balancer->power_limit();
+                package.power_headroom = role.M_MAX_PKG_POWER_SETTING - balancer->power_limit();
                 package.last_epoch_count = epoch_count;
             }
         }
@@ -602,6 +605,7 @@ namespace geopm
                                                 m_platform_topo,
                                                 m_power_balancer,
                                                 M_MIN_PKG_POWER_SETTING,
+                                                M_MAX_PKG_POWER_SETTING,
                                                 M_TIME_WINDOW);
         }
         else if (is_tree_root) {
