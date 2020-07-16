@@ -59,9 +59,7 @@ class PowerSweep:
         self._agent_type = agent_type
 
     def launch(self, num_node, num_rank, launcher_name, args):
-
         for power_cap in range(self._min_power, self._max_power+1, self._step_power):
-            # governor runs
             options = {'power_budget': power_cap}
             agent_conf = geopmpy.io.AgentConf(path=self._name + '_agent.config',
                                               agent=self._agent_type,
@@ -69,9 +67,9 @@ class PowerSweep:
             agent_conf.write()
 
             for iteration in range(self._iterations):
-                profile_name = self._name + '_' + str(power_cap)
-                report_path = os.path.join(self._output_dir, profile_name + '_{}_{}.report'.format(self._agent_type, iteration))
-                trace_path = os.path.join(self._output_dir, profile_name + '_{}_{}.trace'.format(self._agent_type, iteration))
+                profile_name = '{}_{}_{}'.format(self._name, power_cap, iteration)
+                report_path = os.path.join(self._output_dir, profile_name + '_{}.report'.format(self._agent_type))
+                trace_path = os.path.join(self._output_dir, profile_name + '_{}.trace'.format(self._agent_type))
                 try_launch(launcher_name=launcher_name, app_argv=args,
                            report_path=report_path, trace_path=trace_path,
                            profile_name=profile_name, agent_conf=agent_conf)
@@ -82,21 +80,44 @@ class PowerSweep:
         Uses the output dir and any custom naming convention to load the report
         produced by launch.
         """
-        report_glob = os.path.join(self._output_dir, self._name + search_pattern)
-        report_files = [os.path.basename(ff) for ff in glob.glob(report_glob)]
         reports = []
-        for report in report_files:
-            try:
-                power = int(report.split('_')[1])
-                reports.append(report)
-            except:
-                pass
+        # TODO: copied from above, not discovery
+        for power_cap in range(self._min_power, self._max_power+1, self._step_power):
+            for iteration in range(self._iterations):
+                profile_name = '{}_{}_{}'.format(self._name, power_cap, iteration)
+                report_path = os.path.join(self._output_dir, profile_name + '_{}.report'.format(self._agent_type))
+                reports.append(report_path)
         return reports
 
-    def summary_process(self, parse_output):
-        #parse_output.extract_index_from_profile(inplace=True)
-        print(parse_output)
+        # report_glob = os.path.join(self._output_dir, self._name + search_pattern)
+        # report_files = [os.path.basename(ff) for ff in glob.glob(report_glob)]
+        # reports = []
+        # for report in report_files:
+        #     try:
+        #         power = int(report.split('_')[1])
+        #         reports.append(report)
+        #     except:
+        #         pass
+        # return reports
 
+    def summary(self, parse_output):
+        #parse_output.extract_index_from_profile(inplace=True)
+        # rename some columns
+        parse_output['power_limit'] = parse_output['POWER_PACKAGE_LIMIT_TOTAL']
+        parse_output['runtime'] = parse_output['runtime (sec)']
+        parse_output['energy_pkg'] = parse_output['package-energy (joules)']
+        parse_output['iteration'] = parse_output.apply(lambda row: row['Profile'].split('_')[-1],
+                                                       axis=1)
+
+        # set up index for grouping
+        parse_output = parse_output.set_index(['Agent', 'host', 'power_limit'])
+        print('PARSE {}'.format(parse_output))
+        summary = pandas.DataFrame()
+        for col in ['count', 'runtime', 'energy_pkg']:
+            summary[col] = parse_output[col].groupby('power_limit').mean()
+        print(summary)
+
+        return
         # profile name has been changed to power cap
         df = parse_output.get_report_data(profile=(self._min_power, self._max_power),
                                           agent=self._agent_type,
@@ -105,9 +126,7 @@ class PowerSweep:
         for col in ['count', 'runtime', 'network_time', 'energy_pkg', 'energy_dram', 'frequency']:
             summary[col] = df[col].groupby(level='name').mean()
         summary.index.rename('power cap', inplace=True)
-        return summary
 
-    def summary(self, process_output):
         rs = 'Summary for {} with {} agent\n'.format(self._name, self._agent_type)
         rs += process_output.to_string()
         sys.stdout.write(rs + '\n')

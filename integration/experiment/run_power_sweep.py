@@ -88,7 +88,7 @@ if __name__ == '__main__':
     sweep = PowerSweep(profile_prefix='bench',
                        output_dir='.',
                        detailed=True,
-                       iterations=1,   # todo: move to launch?
+                       iterations=2,   # todo: move to launch?
                        min_power=min_power,
                        max_power=max_power,
                        step_power=step_power,
@@ -104,6 +104,7 @@ if __name__ == '__main__':
                      args=['-n1', '-N1', application])
 
     reports = sweep.find_report_files()
+    print(reports)
     output = geopmpy.io.RawReportCollection(reports)
 
-    sweep.summary(output.get_epoch_df)
+    sweep.summary(output.get_epoch_df())
