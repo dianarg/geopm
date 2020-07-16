@@ -512,10 +512,11 @@ namespace geopm
         const int IGNORE = PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE;
 
         for (int pkg_idx = 0; pkg_idx < role.m_num_domain; ++pkg_idx) {
-            auto &pkg = role.m_package[pkg_idx];
+            auto &package = role.m_package[pkg_idx];
             int epoch_count = role.m_platform_io.sample(role.m_pio_idx[pkg_idx][COUNT]);
-            if (epoch_count != pkg.last_epoch_count &&
-                !pkg.is_step_complete) {
+            if (epoch_count > 1 &&
+                epoch_count != package.last_epoch_count &&
+                !package.is_step_complete) {
                 /// We wish to measure runtime that is a function of node
                 /// local optimizations only, and therefore uncorrelated
                 /// between compute nodes.
@@ -525,13 +526,13 @@ namespace geopm
                 double balanced_epoch_runtime =  total - network - ignore;
 
                 auto &balancer = role.m_power_balancer[pkg_idx];
-                auto &pkg = role.m_package[pkg_idx];
-                pkg.is_step_complete = balancer->is_runtime_stable(balanced_epoch_runtime);
-                if (pkg.is_step_complete) {
+                package.is_step_complete = balancer->is_runtime_stable(balanced_epoch_runtime);
+                if (package.is_step_complete) {
                     balancer->calculate_runtime_sample();
-                    pkg.runtime = balancer->runtime_sample();
+                    package.runtime = balancer->runtime_sample();
                 }
             }
+            package.last_epoch_count = epoch_count;
         }
         role.are_steps_complete();
     }
@@ -564,7 +565,8 @@ namespace geopm
             // the power_balancer.
             auto &package = role.m_package[pkg_idx];
             auto &balancer = role.m_power_balancer[pkg_idx];
-            if (epoch_count != package.last_epoch_count &&
+            if (epoch_count > 1 &&
+                epoch_count != package.last_epoch_count &&
                 !package.is_step_complete) {
                 /// We wish to measure runtime that is a function of
                 /// node local optimizations only, and therefore
@@ -578,8 +580,8 @@ namespace geopm
                 package.power_slack = balancer->power_slack();
                 package.is_out_of_bounds = false;
                 package.power_headroom = role.M_MAX_PKG_POWER_SETTING - balancer->power_limit();
-                package.last_epoch_count = epoch_count;
             }
+            package.last_epoch_count = epoch_count;
         }
         role.are_steps_complete();
     }
