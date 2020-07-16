@@ -198,8 +198,8 @@ namespace geopm
             }
             else {
                 m_power_limit -= m_trial_delta;
+                m_runtime_buffer->clear();
             }
-            m_runtime_buffer->clear();
         }
         return m_is_target_met;
     }
