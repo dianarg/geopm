@@ -41,10 +41,10 @@
 #include <mutex>
 #include <Environment.hpp>
 #include <geopm_plugin.hpp>
-#include "config.h"
 #ifdef GEOPM_ENABLE_MPI
 #include "MPIComm.hpp"
 #endif
+#include "config.h"
 
 namespace geopm
 {
