@@ -188,6 +188,9 @@ namespace geopm
         protected:
             class Step;
             class Role {
+                friend class SendDownLimitStep;
+                friend class MeasureRuntimeStep;
+                friend class ReduceLimitStep;
                 public:
                     /// @todo Tree role classes must implement this
                     /// method, leaf roles do not.
@@ -210,12 +213,15 @@ namespace geopm
                     int step(size_t step_count) const;
                     int step(void) const;
                     const Step& step_imp();
-                    Role();
+                    Role(int num_node);
                     virtual ~Role() = default;
                     const std::vector<std::shared_ptr<const Step> > M_STEP_IMP;
+                public:
                     std::vector<double> m_policy;
+                protected:
                     int m_step_count;
-                    bool m_is_step_complete;
+                public:
+                    const int M_NUM_NODE;
             };
 
             PlatformIO &m_platform_io;
@@ -240,7 +246,7 @@ namespace geopm
                 public:
                     Step() = default;
                     virtual ~Step() = default;
-                    virtual void update_policy(RootRole &role, const std::vector<double> &sample) const = 0;
+                    virtual void update_policy(Role &role, const std::vector<double> &sample) const = 0;
                     virtual void enter_step(LeafRole &role, const std::vector<double> &in_policy) const = 0;
                     virtual void sample_platform(LeafRole &role) const = 0;
             };
@@ -249,7 +255,7 @@ namespace geopm
                 public:
                     SendDownLimitStep() = default;
                    ~SendDownLimitStep() = default;
-                   void update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const;
+                   void update_policy(PowerBalancerAgent::Role &role, const std::vector<double> &sample) const;
                    void enter_step(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const;
                    void sample_platform(PowerBalancerAgent::LeafRole &role) const;
             };
@@ -258,7 +264,7 @@ namespace geopm
                 public:
                     MeasureRuntimeStep() = default;
                     ~MeasureRuntimeStep() = default;
-                    void update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const;
+                    void update_policy(PowerBalancerAgent::Role &role, const std::vector<double> &sample) const;
                     void enter_step(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const;
                     void sample_platform(PowerBalancerAgent::LeafRole &role) const;
             };
@@ -267,7 +273,7 @@ namespace geopm
                 public:
                     ReduceLimitStep() = default;
                     ~ReduceLimitStep() = default;
-                    void update_policy(PowerBalancerAgent::RootRole &role, const std::vector<double> &sample) const;
+                    void update_policy(PowerBalancerAgent::Role &role, const std::vector<double> &sample) const;
                     void enter_step(PowerBalancerAgent::LeafRole &role, const std::vector<double> &in_policy) const;
                     void sample_platform(PowerBalancerAgent::LeafRole &role) const;
             };
@@ -286,6 +292,7 @@ namespace geopm
                 protected:
                     const std::vector<std::function<double(const std::vector<double>&)> > M_AGG_FUNC;
                     const int M_NUM_CHILDREN;
+                    bool m_is_step_complete;
             };
 
             class RootRole : public TreeRole {
@@ -300,7 +307,6 @@ namespace geopm
                     bool ascend(const std::vector<std::vector<double> > &in_sample,
                                 std::vector<double> &out_sample) override;
                 private:
-                    const int M_NUM_NODE;
                     double m_root_cap;
                     const double M_MIN_PKG_POWER_SETTING;
                     const double M_MAX_PKG_POWER_SETTING;
@@ -316,7 +322,9 @@ namespace geopm
                              std::vector<std::shared_ptr<PowerBalancer> > power_balancer,
                              double min_power,
                              double max_power,
-                             double time_window);
+                             double time_window,
+                             bool is_single_node,
+                             int num_node);
                     virtual ~LeafRole();
                     bool adjust_platform(const std::vector<double> &in_policy) override;
                     bool sample_platform(std::vector<double> &out_sample) override;
@@ -345,6 +353,8 @@ namespace geopm
                     std::vector<m_package_s> m_package;
                     const double M_MIN_PKG_POWER_SETTING;
                     const double M_MAX_PKG_POWER_SETTING;
+                    bool m_is_single_node;
+                    bool m_is_first_policy;
             };
     };
 }

@@ -119,12 +119,15 @@ namespace geopm
 
     bool PowerBalancerImp::is_runtime_stable(double measured_runtime)
     {
+        bool result = false;
+        if (!is_limit_stable() ||
+            std::isnan(measured_runtime)) {
+            return result;
+        }
         /// m_runtime_vec used as a temporary holder until enough time
         /// has passed to determine how many samples are required in
         /// the circular buffer.
-        bool result = false;
-        bool is_stable = is_limit_stable() && !std::isnan(measured_runtime);
-        if (is_stable && m_runtime_buffer->size() == 0) {
+        if (m_runtime_buffer->size() == 0) {
             m_runtime_vec.push_back(measured_runtime);
             if (Agg::sum(m_runtime_vec) > M_MIN_DURATION) {
                 m_num_sample = m_runtime_vec.size();
@@ -141,12 +144,13 @@ namespace geopm
                 m_runtime_vec.resize(0);
             }
         }
-        else if (is_stable) {
+        else {
             m_runtime_buffer->insert(measured_runtime);
             if (m_runtime_buffer->size() == m_runtime_buffer->capacity()) {
                 result = true;
             }
         }
+        calculate_runtime_sample();
         return result;
     }
 
