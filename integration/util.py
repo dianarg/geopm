@@ -41,25 +41,14 @@ import os
 import geopmpy.launcher
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from integration.test import geopm_test_launcher
 
 
-# TODO: change to use test launcher's geopmread
-# or a common allocation geopmread function
 def sys_power_avail():
-    # TODO: this would be nicer with PlatformIO python API
-    proc = subprocess.Popen(['geopmread', 'POWER_PACKAGE_MIN', 'board', '0'],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    proc.wait()
-    min_power = int(proc.stdout.readline().strip())
-    proc = subprocess.Popen(['geopmread', 'POWER_PACKAGE_TDP', 'board', '0'],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    proc.wait()
-    tdp_power = int(proc.stdout.readline().strip())
-    proc = subprocess.Popen(['geopmread', 'POWER_PACKAGE_MAX', 'board', '0'],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    proc.wait()
-    max_power = int(proc.stdout.readline().strip())
-
+    # TODO: might want a common compute node launcher outside of test
+    min_power = geopm_test_launcher.geopmread("POWER_PACKAGE_MIN board 0")
+    tdp_power = geopm_test_launcher.geopmread("POWER_PACKAGE_TDP board 0")
+    max_power = geopm_test_launcher.geopmread("POWER_PACKAGE_MAX board 0")
     return min_power, tdp_power, max_power
 
 
