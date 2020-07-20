@@ -400,24 +400,22 @@ TEST_F(PowerBalancerAgentTest, leaf_agent)
     int level = 0;
     int num_children = 1;
     int counter = 0;
-    std::vector<double> trace_vals(7, NAN);
-    std::vector<double> exp_trace_vals(7, NAN);
     const std::vector<std::string> trace_cols {
         "POLICY_POWER_PACKAGE_LIMIT_TOTAL",
         "POLICY_STEP_COUNT",
         "POLICY_MAX_EPOCH_RUNTIME",
         "POLICY_POWER_SLACK",
-        "EPOCH_RUNTIME",
-        "POWER_LIMIT",
         "ENFORCED_POWER_LIMIT"};
     const std::vector<std::function<std::string(double)> > trace_formats {
         geopm::string_format_double,
         PowerBalancerAgent::format_step_count,
         geopm::string_format_double,
         geopm::string_format_double,
-        geopm::string_format_double,
-        geopm::string_format_double,
         geopm::string_format_double};
+
+    std::vector<double> trace_vals(trace_cols.size(), NAN);
+    std::vector<double> exp_trace_vals(trace_cols.size(), NAN);
+
 
     std::vector<double> epoch_rt_mpi = {0.50, 0.75};
     std::vector<double> epoch_rt_ignore = {0.25, 0.27};
@@ -460,20 +458,24 @@ TEST_F(PowerBalancerAgentTest, leaf_agent)
             .WillOnce(Return(epoch_rt_ignore[x]));
     }
 
-   double actual_limit = 299.0 / M_NUM_PKGS;
+   double actual_limit = 300.0 / M_NUM_PKGS;
 #if 0
     EXPECT_CALL(*m_power_gov, init_platform_io());
     EXPECT_CALL(*m_power_gov, sample_platform())
         .Times(4);
-     EXPECT_CALL(*m_power_gov, adjust_platform(300.0, _))
+    EXPECT_CALL(*m_power_gov, adjust_platform(300.0, _))
         .Times(4)
         .WillRepeatedly(SetArgReferee<1>(actual_limit));
     EXPECT_CALL(*m_power_gov, do_write_batch())
         .Times(4)
         .WillRepeatedly(Return(true));
 #endif
+
     for (auto &power_bal : m_power_bal) {
         EXPECT_CALL(*power_bal, power_limit_adjusted(actual_limit))
+            .Times(4);
+
+        EXPECT_CALL(m_platform_io, adjust(_, actual_limit))
             .Times(4);
 
         EXPECT_CALL(*power_bal, target_runtime(epoch_rt[0]));
@@ -488,13 +490,13 @@ TEST_F(PowerBalancerAgentTest, leaf_agent)
             .WillRepeatedly(Return(true));
         EXPECT_CALL(*power_bal, power_slack())
             .WillRepeatedly(Return(0.0));
-        EXPECT_CALL(*power_bal, power_cap(300.0))
+        EXPECT_CALL(*power_bal, power_cap(150.0))
             .Times(2);
         EXPECT_CALL(*power_bal, power_cap())
-            .WillRepeatedly(Return(300.0));
+            .WillRepeatedly(Return(150.0));
         EXPECT_CALL(*power_bal, power_limit())
-            .WillRepeatedly(Return(300.0));
-        EXPECT_CALL(*power_bal, power_slack());
+            .WillRepeatedly(Return(150.0));
+//        EXPECT_CALL(*power_bal, power_slack());
     }
 
     EXPECT_CALL(m_platform_topo, num_domain(_)).Times(AtLeast(1));
