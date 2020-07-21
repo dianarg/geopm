@@ -224,6 +224,7 @@ namespace geopm
         else {
             m_policy = in_policy;
         }
+        // first SEND_DOWN_LIMIT
         if (m_policy[M_POLICY_POWER_PACKAGE_LIMIT_TOTAL] != 0.0) {
             // New power cap from resource manager, reset algorithm.
             m_step_count = M_STEP_SEND_DOWN_LIMIT;
@@ -233,6 +234,7 @@ namespace geopm
             }
             are_steps_complete(true);
         }
+        // other steps
         else if (m_policy[M_POLICY_STEP_COUNT] != m_step_count) {
             // Advance a step
             ++m_step_count;
@@ -671,6 +673,11 @@ namespace geopm
     void PowerBalancerAgent::split_policy(const std::vector<double> &in_policy,
                                           std::vector<std::vector<double> > &out_policy)
     {
+        if (!m_role) {
+            throw Exception("PowerBalancerAgent::" + std::string(__func__) + ": " +
+                            "agent must be initialized with init()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
 #ifdef GEOPM_DEBUG
         if (in_policy.size() != M_NUM_POLICY) {
             throw Exception("PowerBalancerAgent::" + std::string(__func__) + "(): policy vectors are not correctly sized.",
@@ -688,6 +695,11 @@ namespace geopm
     void PowerBalancerAgent::aggregate_sample(const std::vector<std::vector<double> > &in_sample,
                                               std::vector<double> &out_sample)
     {
+        if (!m_role) {
+            throw Exception("PowerBalancerAgent::" + std::string(__func__) + ": " +
+                            "agent must be initialized with init()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
         m_do_send_sample = m_role->ascend(in_sample, out_sample);
     }
 
@@ -698,6 +710,11 @@ namespace geopm
 
     void PowerBalancerAgent::adjust_platform(const std::vector<double> &in_policy)
     {
+        if (!m_role) {
+            throw Exception("PowerBalancerAgent::" + std::string(__func__) + ": " +
+                            "agent must be initialized with init()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
 #ifdef GEOPM_DEBUG
         if (in_policy.size() != M_NUM_POLICY) {
             throw Exception("PowerBalancerAgent::" + std::string(__func__) + "(): policy vectors are not correctly sized.",
@@ -714,6 +731,11 @@ namespace geopm
 
     void PowerBalancerAgent::sample_platform(std::vector<double> &out_sample)
     {
+        if (!m_role) {
+            throw Exception("PowerBalancerAgent::" + std::string(__func__) + ": " +
+                            "agent must be initialized with init()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
         m_do_send_sample = m_role->sample_platform(out_sample);
     }
 
@@ -761,6 +783,11 @@ namespace geopm
 
     void PowerBalancerAgent::trace_values(std::vector<double> &values)
     {
+        if (!m_role) {
+            throw Exception("PowerBalancerAgent::" + std::string(__func__) + ": " +
+                            "agent must be initialized with init()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
         m_role->trace_values(values);
     }
 

@@ -340,6 +340,8 @@ GTEST_TESTS = test/gtest_links/AdminTest.agent_no_policy \
               test/gtest_links/PlatformTopoTest.singleton_construction \
               test/gtest_links/PlatformTopoTest.call_c_wrappers \
               test/gtest_links/PowerBalancerAgentTest.leaf_agent \
+              test/gtest_links/PowerBalancerAgentTest.errors \
+              test/gtest_links/PowerBalancerAgentTest.trace_format \
               test/gtest_links/PowerBalancerAgentTest.power_balancer_agent \
               test/gtest_links/PowerBalancerAgentTest.tree_agent \
               test/gtest_links/PowerBalancerAgentTest.tree_root_agent \
