@@ -1,3 +1,4 @@
+#
 #  Copyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -29,6 +30,24 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-include integration/apps/Makefile.mk
-include integration/experiment/Makefile.mk
-include integration/test/Makefile.mk
+'''
+Common command line arguments for experiments.
+'''
+
+
+def add_output_dir(parser):
+    parser.add_argument('-o', '--output-dir', dest='output_dir',
+                        action='store', default='.',
+                        help='location for reports and other output files')
+
+
+def add_nodes(parser):
+    parser.add_argument('--nodes', dest='nodes',
+                        default=1, type=int,
+                        help='number of nodes to use for launch')
+
+
+def add_show_details(parser):
+        parser.add_argument('--show-details', dest='show_details',
+                            action='store_true', default=False,
+                            help='print additional data analysis details')

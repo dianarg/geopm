@@ -92,10 +92,16 @@ class TestIntegration_power_balancer(unittest.TestCase):
         geopmpy.error.exc_clear()
 
         if not cls._skip_launch:
-            num_rank = 16
             loop_count = 500
             fam, mod = geopm_test_launcher.get_platform()
-            power_budget = 200
+            alloc_nodes = geopm_test_launcher.TestLauncher.get_alloc_nodes()
+            num_node = len(alloc_nodes)
+            if (len(alloc_nodes) != cls._num_node):
+               err_fmt = 'Warning: <test_power_balancer> Allocation size ({}) is different than expected ({})\n'
+               sys.stderr.write(err_fmt.format(num_node, cls._num_node))
+               cls._num_node = num_node
+            num_rank = 2 * cls._num_node
+            power_budget = 180
             if fam == 6 and mod == 87:
                 # budget for KNL
                 power_budget = 130
@@ -106,7 +112,7 @@ class TestIntegration_power_balancer(unittest.TestCase):
             cls._tmp_files.append(bal_agent_conf_path)
             path_dict = {'power_governor': gov_agent_conf_path, 'power_balancer': bal_agent_conf_path}
 
-            for app_name in ['geopmbench', 'socket_imbalance']:
+            for app_name in ['geopmbench', 'socket_imbalance', 'geopmbench-balanced']:
                 app_conf = None
                 if app_name == 'geopmbench':
                     app_conf = geopmpy.io.BenchConf(cls._test_name + '_app.config')
@@ -115,11 +121,15 @@ class TestIntegration_power_balancer(unittest.TestCase):
                     app_conf.append_region('all2all', 0.05)
                     app_conf.set_loop_count(loop_count)
                     # Update app config with imbalance
-                    alloc_nodes = geopm_test_launcher.TestLauncher.get_alloc_nodes()
                     for nn in range(len(alloc_nodes) // 2):
                         app_conf.append_imbalance(alloc_nodes[nn], 0.5)
                 elif app_name == 'socket_imbalance':
                     app_conf = cls.AppConf()
+                elif app_name == 'geopmbench-balanced':
+                    app_conf = geopmpy.io.BenchConf(cls._test_name + '-balanced_app.config')
+                    cls._tmp_files.append(app_conf.get_path())
+                    app_conf.append_region('dgemm', 8.0)
+                    app_conf.set_loop_count(loop_count)
                 else:
                     raise RuntimeError('No application config for app name {}'.format(app_name))
                 for agent in cls._agent_list:
@@ -134,7 +144,7 @@ class TestIntegration_power_balancer(unittest.TestCase):
                     launcher.set_num_node(cls._num_node)
                     launcher.set_num_rank(num_rank)
                     launcher.write_log(run_name, 'Power cap = {}W'.format(power_budget))
-                    launcher.run(run_name)
+                    launcher.run(run_name, add_geopm_args=['--geopm-trace-signals', 'MSR::PKG_POWER_LIMIT:PL1_POWER_LIMIT@package,EPOCH_RUNTIME@package,EPOCH_RUNTIME_NETWORK@package'])
                     time.sleep(60)
 
     @classmethod
@@ -191,7 +201,7 @@ class TestIntegration_power_balancer(unittest.TestCase):
 
             # Get final power limit set on the node
             if agent == 'power_balancer':
-                power_limits.append(epoch_dropped_data['POWER_LIMIT'][-1])
+                power_limits.append(epoch_dropped_data['ENFORCED_POWER_LIMIT'][-1])
 
         # Check average limit for job is not exceeded
         if agent == 'power_balancer':

@@ -29,6 +29,18 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-include integration/apps/Makefile.mk
-include integration/experiment/Makefile.mk
-include integration/test/Makefile.mk
+EXTRA_DIST += integration/experiment/__init__.py
+              integration/experiment/common_args.py
+              integration/experiment/power_sweep/README.md
+              integration/experiment/power_sweep/__init__.py
+              integration/experiment/power_sweep/balancer_comparison.py
+              integration/experiment/power_sweep/node_efficiency.py
+              integration/experiment/power_sweep/power_sweep.py
+              integration/experiment/power_sweep/power_sweep_summary.py
+              integration/experiment/power_sweep/run_power_sweep_dgemm.py
+              integration/experiment/power_sweep/plot_balancer_power_limit.py
+              integration/experiment/power_sweep/run_power_sweep_dgemm_tiny.py
+              integration/experiment/trace_analysis/README.md
+              integration/experiment/trace_analysis/__init__.py
+              integration/experiment/util.py
+              integration/experiment/machine.py
