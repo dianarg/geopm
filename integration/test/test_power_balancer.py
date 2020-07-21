@@ -112,7 +112,7 @@ class TestIntegration_power_balancer(unittest.TestCase):
             cls._tmp_files.append(bal_agent_conf_path)
             path_dict = {'power_governor': gov_agent_conf_path, 'power_balancer': bal_agent_conf_path}
 
-            for app_name in ['geopmbench', 'socket_imbalance']:
+            for app_name in ['geopmbench', 'socket_imbalance', 'geopmbench-balanced']:
                 app_conf = None
                 if app_name == 'geopmbench':
                     app_conf = geopmpy.io.BenchConf(cls._test_name + '_app.config')
@@ -124,6 +124,11 @@ class TestIntegration_power_balancer(unittest.TestCase):
                         app_conf.append_imbalance(alloc_nodes[nn], 0.5)
                 elif app_name == 'socket_imbalance':
                     app_conf = cls.AppConf()
+                elif app_name == 'geopmbench-balanced':
+                    app_conf = geopmpy.io.BenchConf(cls._test_name + '-balanced_app.config')
+                    cls._tmp_files.append(app_conf.get_path())
+                    app_conf.append_region('dgemm', 8.0)
+                    app_conf.set_loop_count(loop_count)
                 else:
                     raise RuntimeError('No application config for app name {}'.format(app_name))
                 for agent in cls._agent_list:
