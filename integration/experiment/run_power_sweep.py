@@ -39,11 +39,12 @@ import sys
 import os
 import math
 import pandas
+import glob
 
 import geopmpy.io
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from integration.experiment.power_sweep import PowerSweep
+from integration.experiment.power_sweep import launch_power_sweep
 from integration.util import sys_power_avail
 from integration.test.util import do_launch
 
@@ -61,20 +62,15 @@ def setup_power_bounds(min_power, max_power, step_power):
     return min_power, max_power
 
 
-def find_report_files(self, search_pattern='*report'):
+# TODO: utility function?  only needs the name
+def find_report_files(search_pattern='*report'):
     """
-    Uses the output dir and any custom naming convention to load the report
+    Uses the output dir and any custom name prefix to discover reports
     produced by launch.
     """
-    report_glob = os.path.join(self._output_dir, self._name + search_pattern)
-    report_files = [os.path.basename(ff) for ff in glob.glob(report_glob)]
-    reports = []
-    for report in report_files:
-        try:
-            power = int(report.split('_')[1])
-            reports.append(report)
-        except:
-            pass
+    # TODO: add output dir
+    reports = glob.glob(search_pattern)
+    reports = sorted(reports)
     return reports
 
 
@@ -101,28 +97,28 @@ if __name__ == '__main__':
     min_power = 180
     max_power = 200
     step_power = 10
+    name = 'bench'
 
-    sweep = PowerSweep(profile_prefix='bench',
-                       output_dir='.',
-                       detailed=True,
-                       iterations=2,   # todo: move to launch?
-                       min_power=min_power,
-                       max_power=max_power,
-                       step_power=step_power,
-                       agent_types=['power_governor', 'power_balancer'])
-
-    # TODO: handle num node and rank
+    # TODO: handle num node and rank correctly
 
     do_launch = do_launch()
     if do_launch:
-        # TODO: AppConf?  might want to move to common util
         application = "geopmbench"
-        sweep.launch(num_node=1,
-                     num_rank=1,
-                     launcher_name='srun',
-                     args=['-n1', '-N1', application])
+        launch_power_sweep(file_prefix=name,
+                           output_dir='.',
+                           detailed=True,
+                           iterations=2,
+                           min_power=min_power,
+                           max_power=max_power,
+                           step_power=step_power,
+                           agent_types=['power_governor', 'power_balancer'],
+                           num_node=1,
+                           num_rank=1,
+                           launcher_name='srun',
+                           args=['-n1', '-N1', application])
 
-    reports = sweep.find_report_files()
+    # TODO: must match output_dir, currently '.'
+    reports = find_report_files(name + '*report')
     print(reports)
     output = geopmpy.io.RawReportCollection(reports)
 

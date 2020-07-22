@@ -33,8 +33,6 @@
 
 import sys
 import os
-import pandas
-import glob
 import time
 
 import geopmpy.io
@@ -43,53 +41,33 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from integration.util import try_launch
 
 
-class PowerSweep:
+def launch_power_sweep(file_prefix, output_dir, detailed, iterations,
+                       min_power, max_power, step_power, agent_types,
+                       num_node, num_rank, launcher_name, args):
     """
     Runs the application under a range of socket power limits.  Used
     by other analysis types to run either the PowerGovernorAgent or
     the PowerBalancerAgent.
     """
-    def __init__(self, profile_prefix, output_dir, detailed, iterations,
-                 min_power, max_power, step_power, agent_types):
-        self._name = profile_prefix + "_power_sweep"
-        self._output_dir = output_dir
-        self._iterations = iterations
-        self._min_power = min_power
-        self._max_power = max_power
-        self._step_power = step_power
-        self._agent_types = agent_types
+    name = file_prefix + "_power_sweep"
+    for iteration in range(iterations):
+        for power_cap in range(min_power, max_power+1, step_power):
+            for agent in agent_types:
+                options = {'power_budget': power_cap}
+                # TODO: check for valid agent type; this should be reusable between all agent types
+                agent_conf = geopmpy.io.AgentConf(path=name + '_agent.config',
+                                                  agent=agent,
+                                                  options=options)
+                agent_conf.write()
 
-    # TODO: use common AppConf interface to hold the args
-    def launch(self, num_node, num_rank, launcher_name, args):
-        for iteration in range(self._iterations):
-            for power_cap in range(self._min_power, self._max_power+1, self._step_power):
-                for agent in self._agent_types:
-                    options = {'power_budget': power_cap}
-                    # TODO: check for valid agent type; this should be reusable between all agent types
-                    agent_conf = geopmpy.io.AgentConf(path=self._name + '_agent.config',
-                                                      agent=agent,
-                                                      options=options)
-                    agent_conf.write()
+                uid = '{}_{}_{}_{}'.format(name, agent, power_cap, iteration)
+                report_path = os.path.join(output_dir, '{}.report'.format(uid))
+                trace_path = os.path.join(output_dir, '{}.trace'.format(uid))
+                profile_name = 'iteration_{}'.format(iteration)
 
-                    uid = '{}_{}_{}_{}'.format(self._name, agent, power_cap, iteration)
-                    report_path = os.path.join(self._output_dir, '{}.report'.format(uid))
-                    trace_path = os.path.join(self._output_dir, '{}.trace'.format(uid))
-                    profile_name = 'iteration_{}'.format(iteration)
+                try_launch(launcher_name=launcher_name, app_argv=args,
+                           report_path=report_path, trace_path=trace_path,
+                           profile_name=profile_name, agent_conf=agent_conf)
 
-                    try_launch(launcher_name=launcher_name, app_argv=args,
-                               report_path=report_path, trace_path=trace_path,
-                               profile_name=profile_name, agent_conf=agent_conf)
-
-                    # rest to cool off between runs
-                    time.sleep(60)
-
-    # TODO: utility function?  only needs the name
-    def find_report_files(self, search_pattern='*report'):
-        """
-        Uses the output dir and any custom name prefix to discover reports
-        produced by launch.
-        """
-        # TODO: add output dir
-        reports = glob.glob(self._name + search_pattern)
-        reports = sorted(reports)
-        return reports
+                # rest to cool off between runs
+                time.sleep(60)
