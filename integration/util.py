@@ -43,6 +43,9 @@ import geopmpy.launcher
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from integration.test import geopm_test_launcher
 
+# TODO: should AgentConf stay in io.py?
+# is there a better organization than "util" pile of stuff?
+
 
 def sys_power_avail():
     # TODO: might want a common compute node launcher outside of test

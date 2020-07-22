@@ -38,6 +38,7 @@ Example power sweep experiment using geopmbench.
 import sys
 import os
 import math
+import pandas
 
 import geopmpy.io
 
@@ -45,6 +46,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from integration.experiment.power_sweep import PowerSweep
 from integration.util import sys_power_avail
 from integration.test.util import do_launch
+
 
 def setup_power_bounds(min_power, max_power, step_power):
     sys_min, sys_tdp, sys_max = sys_power_avail()
@@ -76,14 +78,29 @@ def find_report_files(self, search_pattern='*report'):
     return reports
 
 
+def summary(parse_output):
+    # rename some columns
+    parse_output['power_limit'] = parse_output['POWER_PACKAGE_LIMIT_TOTAL']
+    parse_output['runtime'] = parse_output['runtime (sec)']
+    parse_output['network_time'] = parse_output['network-time (sec)']
+    parse_output['energy_pkg'] = parse_output['package-energy (joules)']
+    parse_output['energy_dram'] = parse_output['dram-energy (joules)']
+    parse_output['frequency'] = parse_output['frequency (Hz)']
+    parse_output['iteration'] = parse_output.apply(lambda row: row['Profile'].split('_')[-1],
+                                                   axis=1)
+    # set up index for grouping
+    parse_output = parse_output.set_index(['Agent', 'host', 'power_limit'])
+    summary = pandas.DataFrame()
+    for col in ['count', 'runtime', 'network_time', 'energy_pkg', 'energy_dram', 'frequency']:
+        summary[col] = parse_output[col].groupby(['Agent', 'power_limit']).mean()
+    return summary
+
+
 if __name__ == '__main__':
     # TODO: can dynamically choose with setup_power_bounds(), command line options
     min_power = 180
     max_power = 200
     step_power = 10
-
-    # TODO: AppConf?  might want to move to common util
-    application = "geopmbench"
 
     sweep = PowerSweep(profile_prefix='bench',
                        output_dir='.',
@@ -92,12 +109,14 @@ if __name__ == '__main__':
                        min_power=min_power,
                        max_power=max_power,
                        step_power=step_power,
-                       agent_type='power_governor')
+                       agent_types=['power_governor', 'power_balancer'])
 
     # TODO: handle num node and rank
 
     do_launch = do_launch()
     if do_launch:
+        # TODO: AppConf?  might want to move to common util
+        application = "geopmbench"
         sweep.launch(num_node=1,
                      num_rank=1,
                      launcher_name='srun',
@@ -107,4 +126,6 @@ if __name__ == '__main__':
     print(reports)
     output = geopmpy.io.RawReportCollection(reports)
 
-    sweep.summary(output.get_epoch_df())
+    result = summary(output.get_epoch_df())
+
+    sys.stdout.write('{}\n'.format(result))

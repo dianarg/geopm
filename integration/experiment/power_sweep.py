@@ -35,6 +35,7 @@ import sys
 import os
 import pandas
 import glob
+import time
 
 import geopmpy.io
 
@@ -49,84 +50,46 @@ class PowerSweep:
     the PowerBalancerAgent.
     """
     def __init__(self, profile_prefix, output_dir, detailed, iterations,
-                 min_power, max_power, step_power, agent_type):
-        self._name = "power_sweep"
+                 min_power, max_power, step_power, agent_types):
+        self._name = profile_prefix + "_power_sweep"
         self._output_dir = output_dir
         self._iterations = iterations
         self._min_power = min_power
         self._max_power = max_power
         self._step_power = step_power
-        self._agent_type = agent_type
+        self._agent_types = agent_types
 
+    # TODO: use common AppConf interface to hold the args
     def launch(self, num_node, num_rank, launcher_name, args):
-        for power_cap in range(self._min_power, self._max_power+1, self._step_power):
-            options = {'power_budget': power_cap}
-            agent_conf = geopmpy.io.AgentConf(path=self._name + '_agent.config',
-                                              agent=self._agent_type,
-                                              options=options)
-            agent_conf.write()
+        for iteration in range(self._iterations):
+            for power_cap in range(self._min_power, self._max_power+1, self._step_power):
+                for agent in self._agent_types:
+                    options = {'power_budget': power_cap}
+                    # TODO: check for valid agent type; this should be reusable between all agent types
+                    agent_conf = geopmpy.io.AgentConf(path=self._name + '_agent.config',
+                                                      agent=agent,
+                                                      options=options)
+                    agent_conf.write()
 
-            for iteration in range(self._iterations):
-                profile_name = '{}_{}_{}'.format(self._name, power_cap, iteration)
-                report_path = os.path.join(self._output_dir, profile_name + '_{}.report'.format(self._agent_type))
-                trace_path = os.path.join(self._output_dir, profile_name + '_{}.trace'.format(self._agent_type))
-                try_launch(launcher_name=launcher_name, app_argv=args,
-                           report_path=report_path, trace_path=trace_path,
-                           profile_name=profile_name, agent_conf=agent_conf)
+                    uid = '{}_{}_{}_{}'.format(self._name, agent, power_cap, iteration)
+                    report_path = os.path.join(self._output_dir, '{}.report'.format(uid))
+                    trace_path = os.path.join(self._output_dir, '{}.trace'.format(uid))
+                    profile_name = 'iteration_{}'.format(iteration)
 
-    # TODO: given that this is a member, can't it use the min and max power?
+                    try_launch(launcher_name=launcher_name, app_argv=args,
+                               report_path=report_path, trace_path=trace_path,
+                               profile_name=profile_name, agent_conf=agent_conf)
+
+                    # rest to cool off between runs
+                    time.sleep(60)
+
+    # TODO: utility function?  only needs the name
     def find_report_files(self, search_pattern='*report'):
         """
-        Uses the output dir and any custom naming convention to load the report
+        Uses the output dir and any custom name prefix to discover reports
         produced by launch.
         """
-        reports = []
-        # TODO: copied from above, not discovery
-        for power_cap in range(self._min_power, self._max_power+1, self._step_power):
-            for iteration in range(self._iterations):
-                profile_name = '{}_{}_{}'.format(self._name, power_cap, iteration)
-                report_path = os.path.join(self._output_dir, profile_name + '_{}.report'.format(self._agent_type))
-                reports.append(report_path)
+        # TODO: add output dir
+        reports = glob.glob(self._name + search_pattern)
+        reports = sorted(reports)
         return reports
-
-        # report_glob = os.path.join(self._output_dir, self._name + search_pattern)
-        # report_files = [os.path.basename(ff) for ff in glob.glob(report_glob)]
-        # reports = []
-        # for report in report_files:
-        #     try:
-        #         power = int(report.split('_')[1])
-        #         reports.append(report)
-        #     except:
-        #         pass
-        # return reports
-
-    def summary(self, parse_output):
-        #parse_output.extract_index_from_profile(inplace=True)
-        # rename some columns
-        parse_output['power_limit'] = parse_output['POWER_PACKAGE_LIMIT_TOTAL']
-        parse_output['runtime'] = parse_output['runtime (sec)']
-        parse_output['energy_pkg'] = parse_output['package-energy (joules)']
-        parse_output['iteration'] = parse_output.apply(lambda row: row['Profile'].split('_')[-1],
-                                                       axis=1)
-
-        # set up index for grouping
-        parse_output = parse_output.set_index(['Agent', 'host', 'power_limit'])
-        print('PARSE {}'.format(parse_output))
-        summary = pandas.DataFrame()
-        for col in ['count', 'runtime', 'energy_pkg']:
-            summary[col] = parse_output[col].groupby('power_limit').mean()
-        print(summary)
-
-        return
-        # profile name has been changed to power cap
-        df = parse_output.get_report_data(profile=(self._min_power, self._max_power),
-                                          agent=self._agent_type,
-                                          region='epoch')
-        summary = pandas.DataFrame()
-        for col in ['count', 'runtime', 'network_time', 'energy_pkg', 'energy_dram', 'frequency']:
-            summary[col] = df[col].groupby(level='name').mean()
-        summary.index.rename('power cap', inplace=True)
-
-        rs = 'Summary for {} with {} agent\n'.format(self._name, self._agent_type)
-        rs += process_output.to_string()
-        sys.stdout.write(rs + '\n')
