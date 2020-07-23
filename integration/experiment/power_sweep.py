@@ -34,11 +34,12 @@
 import sys
 import os
 import time
+import json
 
 import geopmpy.io
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from integration.util import try_launch
+from integration.util import try_launch, sys_power_avail, sys_freq_avail
 
 
 def launch_power_sweep(file_prefix, output_dir, iterations,
@@ -50,6 +51,14 @@ def launch_power_sweep(file_prefix, output_dir, iterations,
     the PowerBalancerAgent.
     """
     name = file_prefix + "_power_sweep"
+
+    # create machine config
+    # TODO: util function
+    machine_info = {}
+    machine_info.update(sys_power_avail())
+    machine_info.update(sys_freq_avail())
+    with open(file_prefix + '.machine', 'w') as info_file:
+        json.dump(machine_info, info_file)
 
     # report extensions
     report_sig = ["CYCLES_THREAD@package", "CYCLES_REFERENCE@package",

@@ -154,17 +154,18 @@ def test_achieved_freq_histogram_package(run_info, app_name, report_df, detailed
     # min and max are used to create consistent x-axis limits
     # sticker frequency is used when converting the percent-of-sticker to
     # a value in hertz
-    min_freq, max_freq, sticker_freq, step_freq = None, None, None, None
     if os.path.exists(run_info):
         with open(run_info) as info:
             machine = json.load(info)
-            min_freq = machine['min_freq']
-            max_freq = machine['max_freq']
-            sticker_freq = machine['sticker_freq']
-            step_freq = machine['step_freq']
+            print('loaded file: ', machine)
     else:
         # TODO: error if --skip-launch is set; in that case we need machine config file
-        min_freq, max_freq, sticker_freq, step_freq = integration.util.sys_freq_avail()
+        machine = integration.util.sys_freq_avail()
+        print ('no eistis')
+    min_freq = machine['min_freq']
+    max_freq = machine['max_freq']
+    sticker_freq = machine['sticker_freq']
+    step_freq = machine['step_freq']
 
     report_df['power_limit'] = report_df['POWER_PACKAGE_LIMIT_TOTAL']
 
@@ -243,7 +244,8 @@ if __name__ == '__main__':
     reports = find_report_files(app_name + '*report')
     output = geopmpy.io.RawReportCollection(reports)
     detailed = integration.test.util.show_details()
-    machine_info = 'no_existe.machine'
+    # machine info must match file prefix given to launch above + .machine
+    machine_info = '{}.machine'.format(app_name)
     test_achieved_freq_histogram_package(machine_info,
                                          app_name,
                                          output.get_epoch_df(),

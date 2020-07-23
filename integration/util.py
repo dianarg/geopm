@@ -54,16 +54,26 @@ def sys_power_avail():
     min_power = geopm_test_launcher.geopmread("POWER_PACKAGE_MIN board 0")
     tdp_power = geopm_test_launcher.geopmread("POWER_PACKAGE_TDP board 0")
     max_power = geopm_test_launcher.geopmread("POWER_PACKAGE_MAX board 0")
-    return min_power, tdp_power, max_power
+    result = {
+        'min_power': min_power,
+        'tdp_power': tdp_power,
+        'max_power': max_power,
+    }
+    return result
 
 
-# TODO: return as dict?
 def sys_freq_avail():
     min_freq = geopm_test_launcher.geopmread('FREQUENCY_MIN board 0')
     max_freq = geopm_test_launcher.geopmread('FREQUENCY_MAX board 0')
     sticker_freq = geopm_test_launcher.geopmread('FREQUENCY_STICKER board 0')
     step_freq = geopm_test_launcher.geopmread('FREQUENCY_STEP board 0')
-    return min_freq, max_freq, sticker_freq, step_freq
+    result = {
+        'min_freq': min_freq,
+        'max_freq': max_freq,
+        'sticker_freq': sticker_freq,
+        'step_freq': step_freq,
+    }
+    return result
 
 
 def try_launch_old(launcher_name, app_argv, report_path, trace_path, profile_name, agent_conf):
