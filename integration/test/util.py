@@ -116,6 +116,11 @@ def do_launch():
     return not g_util.skip_launch()
 
 
+# TODO: not used by skip decorators; doesn't need to be here?
+def show_details():
+    return g_util.show_details()
+
+
 def skip_unless_do_launch():
     if not do_launch():
         return unittest.skip("Most tests in this suite require launch; do not set --skip-launch.")

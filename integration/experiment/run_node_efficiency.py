@@ -40,13 +40,15 @@ import os
 import pandas
 import glob
 import matplotlib.pyplot as plt
+import json
 
 import geopmpy.io
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from integration.experiment.power_sweep import launch_power_sweep
-from integration.util import sys_power_avail
-from integration.test.util import do_launch
+import integration.util
+import integration.test.util
+from integration.test import geopm_test_launcher
 
 
 # TODO: utility function?  only needs the name
@@ -73,41 +75,30 @@ class BenchAppConf(object):
         return []
 
 
-# TODO: move me
-def generate_histogram(data, profile_name, min_drop, max_drop, label, bin_size,
+def generate_histogram(data, app_name, min_drop, max_drop, label, bin_size,
                        xprecision):
     data = data[label]
     fontsize = 12
     fig_size = (8, 4)
     verbose = True
 
-    # TODO: fix this
-    if 'nekbone' in profile_name:
-        profile_name = profile_name.replace('nekbone', 'Nekbone')
-    elif 'dgemm' in profile_name:
-        profile_name = profile_name.replace('dgemm', 'DGEMM')
-    elif 'minife' in profile_name:
-        profile_name = profile_name.replace('minife', 'MiniFE')
-    elif 'amg' in profile_name:
-        profile_name = profile_name.replace('amg', 'AMG')
-
     if label.lower() == 'power':
         axis_units = 'W'
         title_units = 'W'
         range_factor = 1
-        title = '{}: Histogram of Power (No Capping)'.format(profile_name)
+        title = '{}: Histogram of Power (No Capping)'.format(app_name)
         bar_color = 'red'
     elif label.lower() == 'frequency':
         axis_units = 'GHz'
         title_units = 'MHz'
         range_factor = 1000
-        title = '{} Histogram of Achieved Frequency'.format(profile_name)
+        title = '{} Histogram of Achieved Frequency'.format(app_name)
         bar_color = 'blue'
     elif label.lower() == 'energy':
         axis_units = 'J'
         title_units = 'J'
         range_factor = 1
-        title = '{} Histogram of Energy'.format(profile_name)
+        title = '{} Histogram of Energy'.format(app_name)
         bar_color = 'cyan'
     else:
         raise RuntimeError("<geopmpy>: Unknown type for histogram: {}".format(label))
@@ -132,7 +123,7 @@ def generate_histogram(data, profile_name, min_drop, max_drop, label, bin_size,
                       round(mean, 3), title_units),
               fontsize=fontsize)
     plt.xlabel('{} ({})'.format(label.title(), axis_units), fontsize=fontsize)
-    plt.ylabel('Node Count', fontsize=fontsize)
+    plt.ylabel('Count', fontsize=fontsize)
     plt.xticks([b+bin_size/2.0 for b in bins],
                [' [{start:.{prec}f}, {end:.{prec}f})'.format(start=b, end=b+bin_size, prec=xprecision) for b in bins],
                rotation='vertical',
@@ -148,7 +139,7 @@ def generate_histogram(data, profile_name, min_drop, max_drop, label, bin_size,
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    filename = '{}_{}_histo'.format(profile_name.replace('@', '_').replace(' ', '_'), label)
+    filename = '{}_{}_histo'.format(app_name.replace('@', '_').replace(' ', '_'), label)
     # todo: could be a method
     for ext in ['png']:
         full_path = os.path.join(output_dir, '{}.{}'.format(filename, ext))
@@ -158,12 +149,22 @@ def generate_histogram(data, profile_name, min_drop, max_drop, label, bin_size,
     plt.close()
 
 
-def test_achieved_freq_histogram_package(report_df, detailed=False):
-    # TODO:
-    min_freq = 1.0e9
-    max_freq = 2.2e9
-    step_freq = 100e6
-    sticker_freq = 2.0e9
+def test_achieved_freq_histogram_package(run_info, app_name, report_df, detailed=False):
+    # TODO: load from config file
+    # min and max are used to create consistent x-axis limits
+    # sticker frequency is used when converting the percent-of-sticker to
+    # a value in hertz
+    min_freq, max_freq, sticker_freq, step_freq = None, None, None, None
+    if os.path.exists(run_info):
+        with open(run_info) as info:
+            machine = json.load(info)
+            min_freq = machine['min_freq']
+            max_freq = machine['max_freq']
+            sticker_freq = machine['sticker_freq']
+            step_freq = machine['step_freq']
+    else:
+        # TODO: error if --skip-launch is set; in that case we need machine config file
+        min_freq, max_freq, sticker_freq, step_freq = integration.util.sys_freq_avail()
 
     report_df['power_limit'] = report_df['POWER_PACKAGE_LIMIT_TOTAL']
 
@@ -175,7 +176,6 @@ def test_achieved_freq_histogram_package(report_df, detailed=False):
     report_df.set_index(['power_limit', 'host', 'freq_package'], inplace=True)
     temp_df.set_index(['power_limit', 'host', 'freq_package'], inplace=True)
     report_df = report_df.append(temp_df)
-
     # convert percent to GHz frequency based on sticker
     report_df['frequency'] *= sticker_freq / 1e9
 
@@ -188,29 +188,30 @@ def test_achieved_freq_histogram_package(report_df, detailed=False):
         governor_data = governor_data.loc[governor_data['POWER_PACKAGE_LIMIT_TOTAL'] == target_power]
         gov_freq_data[target_power] = governor_data.groupby(['host', 'freq_package']).mean()['frequency'].sort_values()
         gov_freq_data[target_power] = pandas.DataFrame(gov_freq_data[target_power])
-        print(gov_freq_data[target_power])
+        if detailed:
+            sys.stdout.write('Governor data @ {}W:\n{}\n'.format(target_power, gov_freq_data[target_power]))
 
         balancer_data = report_df.loc[report_df["Agent"] == "power_balancer"]
         balancer_data = balancer_data.loc[balancer_data['POWER_PACKAGE_LIMIT_TOTAL'] == target_power]
-        bal_freq_data[target_power] = governor_data.groupby(['host', 'freq_package']).mean()['frequency'].sort_values()
-        bal_freq_data[target_power] = pandas.DataFrame(gov_freq_data[target_power])
-    if detailed:
-        print(gov_freq_data, len(gov_freq_data))
+        bal_freq_data[target_power] = balancer_data.groupby(['host', 'freq_package']).mean()['frequency'].sort_values()
+        bal_freq_data[target_power] = pandas.DataFrame(bal_freq_data[target_power])
+        if detailed:
+            sys.stdout.write('Balancer data @ {}W:\n{}\n'.format(target_power, bal_freq_data[target_power]))
 
     # plot histograms
     min_drop = min_freq / 1e9
-    max_drop = (max_freq - step_freq) / 1e9
+    max_drop = (sticker_freq + step_freq) / 1e9
+    #max_drop = (max_freq - step_freq) / 1e9
     bin_size = step_freq / 1e9 / 2.0
-    name = 'APP'
     for target_power in power_caps:
         gov_data = gov_freq_data[target_power]
         bal_data = bal_freq_data[target_power]
 
-        profile_name = name + "@" + str(target_power) + "W Governor"
-        generate_histogram(gov_data, profile_name, min_drop, max_drop, 'frequency',
+        name = app_name + "@" + str(target_power) + "W Governor"
+        generate_histogram(gov_data, name, min_drop, max_drop, 'frequency',
                            bin_size, 3)
-        profile_name = name + "@" + str(target_power) + "W Balancer"
-        generate_histogram(bal_data, profile_name, min_drop, max_drop, 'frequency',
+        name = app_name + "@" + str(target_power) + "W Balancer"
+        generate_histogram(bal_data, name, min_drop, max_drop, 'frequency',
                            bin_size, 3)
 
 
@@ -219,17 +220,15 @@ if __name__ == '__main__':
     min_power = 180
     max_power = 190
     step_power = 10
-    name = 'bench'
+    app_name = 'bench'
     nodes = 2
     rank_per_node = 2
     iterations = 2
 
-
-    # TODO: need to add CYCLES_THREAD@package and other above
-    do_launch = do_launch()
+    do_launch = integration.test.util.do_launch()
     if do_launch:
         application = BenchAppConf()
-        launch_power_sweep(file_prefix=name,
+        launch_power_sweep(file_prefix=app_name,
                            output_dir='.',
                            iterations=iterations,
                            min_power=min_power,
@@ -241,9 +240,11 @@ if __name__ == '__main__':
                            app_conf=application)
 
     # TODO: must match output_dir, currently '.'
-    reports = find_report_files(name + '*report')
-    print(reports)
+    reports = find_report_files(app_name + '*report')
     output = geopmpy.io.RawReportCollection(reports)
-
-    test_achieved_freq_histogram_package(output.get_epoch_df(),
-                                         detailed=True)
+    detailed = integration.test.util.show_details()
+    machine_info = 'no_existe.machine'
+    test_achieved_freq_histogram_package(machine_info,
+                                         app_name,
+                                         output.get_epoch_df(),
+                                         detailed=detailed)

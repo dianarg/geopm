@@ -50,6 +50,16 @@ def launch_power_sweep(file_prefix, output_dir, iterations,
     the PowerBalancerAgent.
     """
     name = file_prefix + "_power_sweep"
+
+    # report extensions
+    report_sig = ["CYCLES_THREAD@package", "CYCLES_REFERENCE@package",
+                  "TIME@package", "ENERGY_PACKAGE@package"]
+    # trace extensions
+    trace_sig = ["MSR::PKG_POWER_LIMIT:PL1_POWER_LIMIT@package",
+                 "EPOCH_RUNTIME@package",
+                 "EPOCH_RUNTIME_NETWORK@package",
+                 "EPOCH_RUNTIME_IGNORE@package"]
+
     for iteration in range(iterations):
         for power_cap in range(min_power, max_power+1, step_power):
             for agent in agent_types:
@@ -69,7 +79,9 @@ def launch_power_sweep(file_prefix, output_dir, iterations,
                 # some are generic enough they could be, though
                 run_args = ['--geopm-report', report_path,
                             '--geopm-trace', trace_path,
-                            '--geopm-profile', profile_name]
+                            '--geopm-profile', profile_name,
+                            '--geopm-report-signals=' + ','.join(report_sig),
+                            '--geopm-trace-signals=' + ','.join(trace_sig)]
                 # any arguments after run_args are passed directly to launcher
                 try_launch(agent_conf, app_conf, run_args,
                            num_node=num_node, num_rank=num_rank)
