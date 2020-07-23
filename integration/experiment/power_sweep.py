@@ -41,9 +41,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from integration.util import try_launch
 
 
-def launch_power_sweep(file_prefix, output_dir, detailed, iterations,
+def launch_power_sweep(file_prefix, output_dir, iterations,
                        min_power, max_power, step_power, agent_types,
-                       num_node, num_rank, launcher_name, args):
+                       num_node, num_rank, app_conf):
     """
     Runs the application under a range of socket power limits.  Used
     by other analysis types to run either the PowerGovernorAgent or
@@ -65,9 +65,14 @@ def launch_power_sweep(file_prefix, output_dir, detailed, iterations,
                 trace_path = os.path.join(output_dir, '{}.trace'.format(uid))
                 profile_name = 'iteration_{}'.format(iteration)
 
-                try_launch(launcher_name=launcher_name, app_argv=args,
-                           report_path=report_path, trace_path=trace_path,
-                           profile_name=profile_name, agent_conf=agent_conf)
+                # TODO: these are not passed to launcher create()
+                # some are generic enough they could be, though
+                run_args = ['--geopm-report', report_path,
+                            '--geopm-trace', trace_path,
+                            '--geopm-profile', profile_name]
+                # any arguments after run_args are passed directly to launcher
+                try_launch(agent_conf, app_conf, run_args,
+                           num_node=num_node, num_rank=num_rank)
 
                 # rest to cool off between runs
                 time.sleep(60)

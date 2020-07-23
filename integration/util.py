@@ -37,6 +37,8 @@
 
 import sys
 import os
+import socket
+import subprocess
 
 import geopmpy.launcher
 
@@ -55,7 +57,8 @@ def sys_power_avail():
     return min_power, tdp_power, max_power
 
 
-def try_launch(launcher_name, app_argv, report_path, trace_path, profile_name, agent_conf):
+
+def try_launch_old(launcher_name, app_argv, report_path, trace_path, profile_name, agent_conf):
     if app_argv:
         argv = ['dummy', '--geopm-report', report_path,
                          '--geopm-trace', trace_path,
@@ -69,3 +72,62 @@ def try_launch(launcher_name, app_argv, report_path, trace_path, profile_name, a
         launcher.run()
     else:
         raise RuntimeError('<geopm> util.try_launch(): no application was specified.\n'.format(report_path))
+
+
+# TODO: copied from test launcher
+def detect_launcher():
+    """
+    Heuristic to determine the resource manager used on the system.
+    Returns name of resource manager or launcher, otherwise a
+    LookupError is raised.
+    """
+    # Try the environment
+    result = os.environ.get('GEOPM_LAUNCHER', None)
+    if not result:
+        # Check for known host names
+        slurm_hosts = ['mr-fusion', 'mcfly']
+        alps_hosts = ['theta']
+        hostname = socket.gethostname()
+        if any(hostname.startswith(word) for word in slurm_hosts):
+            result = 'srun'
+        elif any(hostname.startswith(word) for word in alps_hosts):
+            result = 'aprun'
+    if not result:
+        try:
+            exec_str = 'srun --version'
+            subprocess.check_call(exec_str, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, shell=True)
+            result = 'srun'
+        except subprocess.CalledProcessError:
+            pass
+    if not result:
+        try:
+            exec_str = 'aprun --version'
+            subprocess.check_call(exec_str, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE, shell=True)
+            result = 'aprun'
+        except subprocess.CalledProcessError:
+            pass
+    if not result:
+        raise LookupError('Unable to determine resource manager')
+    return result
+
+
+# TODO: better name, do_launch is taken
+def try_launch(agent_conf, app_conf, add_geopm_args, **launcher_args):
+    # TODO: why does launcher strip off first arg, rather than geopmlaunch main?
+    argv = ['dummy', detect_launcher()]
+
+    if agent_conf.get_agent() != 'monitor':
+        argv.append('--geopm-agent=' + agent_conf.get_agent())
+        argv.append('--geopm-policy=' + agent_conf.get_path())
+
+    argv.extend(add_geopm_args)
+
+    argv.extend(['--'])
+    # Use app config to get path and arguments
+    argv.append(app_conf.get_exec_path())
+    argv.extend(app_conf.get_exec_args())
+
+    launcher = geopmpy.launcher.Factory().create(argv, **launcher_args)
+    launcher.run()

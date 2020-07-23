@@ -92,30 +92,43 @@ def summary(parse_output):
     return summary
 
 
+# TODO move me; replace with geopmpy.io.BenchConf
+class BenchAppConf(object):
+    def write(self):
+        pass
+
+    def get_exec_path(self):
+        return 'geopmbench'
+
+    def get_exec_args(self):
+        return []
+
+
 if __name__ == '__main__':
     # TODO: can dynamically choose with setup_power_bounds(), command line options
     min_power = 180
-    max_power = 200
+    max_power = 190
     step_power = 10
     name = 'bench'
+    nodes = 2
+    rank_per_node = 2
+    iterations = 2
 
     # TODO: handle num node and rank correctly
 
     do_launch = do_launch()
     if do_launch:
-        application = "geopmbench"
+        application = BenchAppConf()
         launch_power_sweep(file_prefix=name,
                            output_dir='.',
-                           detailed=True,
-                           iterations=2,
+                           iterations=iterations,
                            min_power=min_power,
                            max_power=max_power,
                            step_power=step_power,
                            agent_types=['power_governor', 'power_balancer'],
-                           num_node=1,
-                           num_rank=1,
-                           launcher_name='srun',
-                           args=['-n1', '-N1', application])
+                           num_node=nodes,
+                           num_rank=nodes*rank_per_node,
+                           app_conf=application)
 
     # TODO: must match output_dir, currently '.'
     reports = find_report_files(name + '*report')
