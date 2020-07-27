@@ -987,7 +987,8 @@ class SrunLauncher(Launcher):
         result = []
         if self.is_geopm_enabled:
             # Disable other affinity mechanisms
-            self.environ_ext['KMP_AFFINITY'] = 'disabled'
+            if self.config.get_ctl() != 'application':
+                self.environ_ext['KMP_AFFINITY'] = 'disabled'
             self.environ_ext['MV2_ENABLE_AFFINITY'] = '0'
             self.environ_ext['KMP_WARNINGS'] = 'FALSE'
 
@@ -1118,7 +1119,8 @@ class SrunTOSSLauncher(SrunLauncher):
         result = []
         if self.is_geopm_enabled:
             # Disable other affinity mechanisms
-            self.environ_ext['KMP_AFFINITY'] = 'disabled'
+            if self.config.get_ctl() != 'application':
+                self.environ_ext['KMP_AFFINITY'] = 'disabled'
             self.environ_ext['MV2_ENABLE_AFFINITY'] = '0'
             self.environ_ext['KMP_WARNINGS'] = 'FALSE'
 
@@ -1383,7 +1385,8 @@ class IMPIExecLauncher(Launcher):
     def affinity_option(self, is_geopmctl):
         if self.is_geopm_enabled:
             # Disable other affinity mechanisms
-            self.environ_ext['KMP_AFFINITY'] = 'disabled'
+            if self.config.get_ctl() != 'application':
+                self.environ_ext['KMP_AFFINITY'] = 'disabled'
             self.environ_ext['MV2_ENABLE_AFFINITY'] = '0'
             self.environ_ext['KMP_WARNINGS'] = 'FALSE'
 
@@ -1525,7 +1528,8 @@ class AprunLauncher(Launcher):
         result = []
         if self.is_geopm_enabled:
             # Disable other affinity mechanisms
-            self.environ_ext['KMP_AFFINITY'] = 'disabled'
+            if self.config.get_ctl() != 'application':
+                self.environ_ext['KMP_AFFINITY'] = 'disabled'
             self.environ_ext['MV2_ENABLE_AFFINITY'] = '0'
             self.environ_ext['KMP_WARNINGS'] = 'FALSE'
 
