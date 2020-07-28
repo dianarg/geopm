@@ -35,6 +35,7 @@ import sys
 import os
 import time
 import pandas
+import math
 
 import geopmpy.io
 
@@ -51,7 +52,7 @@ def setup_power_bounds(min_power, max_power, step_power):
         min_power = int(step_power * math.ceil(float(min_power)/step_power))
         sys.stderr.write("Warning: <geopm> run_power_sweep: Invalid or unspecified min_power; using default minimum: {}.\n".format(min_power))
     if max_power is None or max_power > sys_power['max_power']:
-        max_power = sys_power['tdp_power']
+        max_power = int(sys_power['tdp_power'])
         sys.stderr.write("Warning: <geopm> run_power_sweep: Invalid or unspecified max_power; using system TDP: {}.\n".format(max_power))
     return min_power, max_power
 
