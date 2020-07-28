@@ -1,0 +1,33 @@
+## geopm/integration/README
+
+GEOPM INTEGRATION SCRIPTS
+-------------------------
+
+Welcome to GEOPM integration.
+
+For performance experiment scripts, see experiment/README
+
+For integration tests, see test/README
+
+For application-specific configurations, see apps/README
+
+
+---------------------------
+This directory contains scripts for running GEOPM for performance and
+integration testing.  Refer to the README files in each subdirectory
+for more information.
+
+The structure is organized as follows:
+
+- Any python scripts in this directory are utilities used by both
+  tests and experiments.
+
+- apps: scripts that encapsulate the required setup, run
+        configuration, and command line arguments for applications.
+
+- experiment: scripts to help run experiments and analyze the output
+              in a consistent way, regardless of the application
+
+- test: integration tests of the GEOPM runtime.  These tests may use
+        functions from the experiment scripts to assist in launch and
+        analyze, but they also perform assertions on the results.
