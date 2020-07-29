@@ -31,7 +31,11 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-"""POWER_BALANCER
+"""
+POWER_BALANCER
+
+Tests that the power balancer agent shifts power between nodes and sockets
+to reduce runtime under a power cap.
 
 """
 
@@ -46,33 +50,19 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from integration.test import geopm_context
 import geopmpy.io
 import geopmpy.error
+from integration.experiment import power_sweep, balancer_comparison
+from integration.apps import apps
 
 from integration.test import util
 if util.do_launch():
     # Note: this import may be moved outside of do_launch if needed to run
     # commands on compute nodes such as geopm_test_launcher.geopmread
     from integration.test import geopm_test_launcher
-    geopmpy.error.exc_clear()
 
 
 @util.skip_unless_run_long_tests()
 @util.skip_unless_batch()
 class TestIntegration_power_balancer(unittest.TestCase):
-
-    class AppConf(object):
-        """Class that is used by the test launcher in place of a
-        geopmpy.io.BenchConf when running the power_balancer benchmark.
-
-        """
-        def write(self):
-            pass
-
-        def get_exec_path(self):
-            script_dir = os.path.dirname(os.path.realpath(__file__))
-            return os.path.join(script_dir, '.libs', 'test_power_balancer')
-
-        def get_exec_args(self):
-            return []
 
     @classmethod
     def setUpClass(cls):
@@ -82,16 +72,10 @@ class TestIntegration_power_balancer(unittest.TestCase):
         cls._test_name = 'test_power_balancer'
         cls._num_node = 4
         cls._agent_list = ['power_governor', 'power_balancer']
-        cls._skip_launch = util.g_util.skip_launch()
-        cls._show_details = util.g_util.show_details()
+        cls._do_launch = util.do_launch()
         cls._tmp_files = []
-        cls._keep_files = (cls._skip_launch or
-                           os.getenv('GEOPM_KEEP_FILES') is not None)
 
-        # Clear out exception record for python 2 support
-        geopmpy.error.exc_clear()
-
-        if not cls._skip_launch:
+        if cls._do_launch:
             loop_count = 500
             fam, mod = geopm_test_launcher.get_platform()
             alloc_nodes = geopm_test_launcher.TestLauncher.get_alloc_nodes()
@@ -105,12 +89,6 @@ class TestIntegration_power_balancer(unittest.TestCase):
             if fam == 6 and mod == 87:
                 # budget for KNL
                 power_budget = 130
-            options = {'power_budget': power_budget}
-            gov_agent_conf_path = cls._test_name + '_gov_agent.config'
-            bal_agent_conf_path = cls._test_name + '_bal_agent.config'
-            cls._tmp_files.append(gov_agent_conf_path)
-            cls._tmp_files.append(bal_agent_conf_path)
-            path_dict = {'power_governor': gov_agent_conf_path, 'power_balancer': bal_agent_conf_path}
 
             for app_name in ['geopmbench', 'socket_imbalance', 'geopmbench-balanced']:
                 app_conf = None
@@ -123,7 +101,9 @@ class TestIntegration_power_balancer(unittest.TestCase):
                     for nn in range(len(alloc_nodes) // 2):
                         app_conf.append_imbalance(alloc_nodes[nn], 0.5)
                 elif app_name == 'socket_imbalance':
-                    app_conf = cls.AppConf()
+                    script_dir = os.path.dirname(os.path.realpath(__file__))
+                    exec_path = os.path.join(script_dir, '.libs', 'test_power_balancer')
+                    app_conf = apps.AppConf(exec_path)
                 elif app_name == 'geopmbench-balanced':
                     app_conf = geopmpy.io.BenchConf(cls._test_name + '-balanced_app.config')
                     cls._tmp_files.append(app_conf.get_path())
@@ -131,36 +111,25 @@ class TestIntegration_power_balancer(unittest.TestCase):
                     app_conf.set_loop_count(loop_count)
                 else:
                     raise RuntimeError('No application config for app name {}'.format(app_name))
-                for agent in cls._agent_list:
-                    agent_conf = geopmpy.io.AgentConf(path_dict[agent], agent, options)
-                    run_name = '{}_{}_{}'.format(cls._test_name, agent, app_name)
-                    report_path = '{}.report'.format(run_name)
-                    trace_path = '{}.trace'.format(run_name)
-                    cls._tmp_files.append(report_path)
-                    cls._tmp_files.append(trace_path)
-                    launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path,
-                                                                trace_path, time_limit=2700)
-                    launcher.set_num_node(cls._num_node)
-                    launcher.set_num_rank(num_rank)
-                    launcher.write_log(run_name, 'Power cap = {}W'.format(power_budget))
-                    launcher.run(run_name, add_geopm_args=['--geopm-trace-signals', 'MSR::PKG_POWER_LIMIT:PL1_POWER_LIMIT@package,EPOCH_RUNTIME@package,EPOCH_RUNTIME_NETWORK@package'])
-                    time.sleep(60)
 
-    @classmethod
-    def tearDownClass(cls):
-        """Clean up any files that may have been created during the test if we
-        are not handling an exception and the GEOPM_KEEP_FILES
-        environment variable is unset.
-
-        """
-        if not cls._keep_files:
-            for path in cls._tmp_files:
-                for tf in glob.glob(path + '.*'):
-                    os.unlink(tf)
-
-    def tearDown(self):
-        if sys.exc_info() != (None, None, None):
-            TestIntegration_power_balancer._keep_files = True
+                add_trace_signals = ['MSR::PKG_POWER_LIMIT:PL1_POWER_LIMIT@package',
+                                     'EPOCH_RUNTIME@package',
+                                     'EPOCH_RUNTIME_NETWORK@package']
+                # TODO: time_limit for launcher = 2700
+                # TODO: add trace signals
+                # TODO: need logging about power cap
+                #launcher.write_log(run_name, 'Power cap = {}W'.format(power_budget))
+                power_sweep.launch_power_sweep(file_prefix=cls._test_name + '_' + app_name,
+                                               machine_config=cls._test_name + '.machine',
+                                               output_dir='.',
+                                               iterations=1,
+                                               min_power=power_budget,
+                                               max_power=power_budget,
+                                               step_power=1,
+                                               agent_types=cls._agent_list,
+                                               num_node=cls._num_node,
+                                               num_rank=num_rank,
+                                               app_conf=app_conf)
 
     def get_power_data(self, app_name, agent, report_path, trace_path):
         output = geopmpy.io.AppOutput(report_path, trace_path + '*')
@@ -218,6 +187,16 @@ class TestIntegration_power_balancer(unittest.TestCase):
         # Require that the balancer moves the maximum dgemm runtime at
         # least 1/4 the distance to the mean dgemm runtime under the
         # governor.
+        output = geopmpy.io.RawReportCollection(self._test_name + '_' + app_name + '*report')
+        # TODO: this says epoch but code actually uses dgemm region because of the barrier
+        dgemm_data = output.get_df()
+        dgemm_data = dgemm_data.loc[dgemm_data['region'] == 'dgemm']
+        #dgemm_data = dgemm_data.set_index(['Agent', 'region', 'host'])
+        #print(dgemm_data)
+        #dgemm_data = dgemm_data.loc['region' == 'dgemm']
+        #dgemm_data = dgemm_data.xs(['dgemm'])
+        print(dgemm_data)
+        result = balancer_comparison.balancer_comparison(output.get_df())
         margin_factor = 0.25
         agent_runtime = dict()
         for agent in self._agent_list:
@@ -246,7 +225,9 @@ class TestIntegration_power_balancer(unittest.TestCase):
     def test_power_balancer_geopmbench(self):
         self.balancer_test_helper('geopmbench')
 
-    @unittest.expectedFailure
+    def test_power_balancer_geopmbench_balance(self):
+        self.balancer_test_helper('geopmbench-balanced')
+
     def test_power_balancer_socket_imbalance(self):
         self.balancer_test_helper('socket_imbalance')
 
