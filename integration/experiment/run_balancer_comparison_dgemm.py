@@ -90,4 +90,5 @@ if __name__ == '__main__':
 
     report_data = geopmpy.io.RawReportCollection("*report", dir_name=output_dir)
     report_epoch_data = report_data.get_epoch_df()
-    balancer_comparison.balancer_comparison(report_epoch_data)
+    result = balancer_comparison.balancer_comparison(report_epoch_data)
+    balancer_comparison.print_summary(result)
