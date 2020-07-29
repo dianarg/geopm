@@ -80,6 +80,8 @@ def launch_power_sweep(file_prefix, machine_config, output_dir, iterations,
                  "EPOCH_RUNTIME_IGNORE@package",
                  "TEMPERATURE_PACKAGE@package"]
 
+    app_conf.write()
+
     for iteration in range(iterations):
         for power_cap in range(min_power, max_power+1, step_power):
             for agent in agent_types:
@@ -135,6 +137,7 @@ if __name__ == '__main__':
     output_dir = aargs.args
 
     output = geopmpy.io.RawReportCollection("*report", dir_name=output_dir)
+    # TODO: this should go in its own file
     result = summary(output.get_epoch_df())
 
     sys.stdout.write('{}\n'.format(result))

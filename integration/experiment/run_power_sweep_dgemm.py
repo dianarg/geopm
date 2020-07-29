@@ -37,16 +37,12 @@ Example power sweep experiment using geopmbench.
 
 import sys
 import os
-import math
-import pandas
-import glob
-import argparse
 
 import geopmpy.io
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from integration.util import sys_power_avail
-from integration.experiment import common_args, power_sweep
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from util import sys_power_avail
+from experiment import common_args, power_sweep
 
 
 if __name__ == '__main__':
@@ -65,18 +61,20 @@ if __name__ == '__main__':
             os.mkdir(output_dir)
 
         # application parameters
+        app_conf = dgemm.AppConf()
+
         app_name = 'dgemm'
         app_conf = geopmpy.io.BenchConf(path=os.path.join(output_dir, 'dgemm.conf'))
         app_conf.append_region('dgemm', 8.0)
         app_conf.set_loop_count(500)
-        app_conf.write()
         rank_per_node = 2
 
         # experiment parameters
         # TODO: can dynamically choose whole range with
         # setup_power_bounds(None, None), or add command line options
         step_power = 10
-        min_power, max_power = power_sweep.setup_power_bounds(180, 190, step_power)
+        min_power, max_power = power_sweep.setup_power_bounds(None, None, step_power)
+        #min_power, max_power = power_sweep.setup_power_bounds(180, 190, step_power)
         iterations = 2
         power_sweep.launch_power_sweep(file_prefix=app_name,
                                        machine_config=machine_info,
