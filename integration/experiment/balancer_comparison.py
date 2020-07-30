@@ -161,9 +161,9 @@ def balancer_comparison(report_epoch_data, detailed=False):
         edf = edf.set_index(['Agent', 'POWER_PACKAGE_LIMIT_TOTAL', 'Profile', 'host'])
         if detailed:
             sys.stdout.write('{}\n'.format(edf.xs(['power_governor', cap])))
-        mean_runtime_gov = edf.xs(['power_governor', cap])['sync-runtime (sec)'].mean()
-        max_runtime_gov = edf.xs(['power_governor', cap])['sync-runtime (sec)'].max()
-        max_runtime_bal = edf.xs(['power_balancer', cap])['sync-runtime (sec)'].max()
+        mean_runtime_gov = edf.xs(['power_governor', cap])['runtime (sec)'].mean()
+        max_runtime_gov = edf.xs(['power_governor', cap])['runtime (sec)'].max()
+        max_runtime_bal = edf.xs(['power_balancer', cap])['runtime (sec)'].max()
         margin = margin_factor * (max_runtime_gov - mean_runtime_gov)
         runtime_pct = (max_runtime_gov - max_runtime_bal) / max_runtime_bal
 

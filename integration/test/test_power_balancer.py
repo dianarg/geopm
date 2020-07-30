@@ -69,6 +69,8 @@ class TestIntegration_power_balancer(unittest.TestCase):
         """Create launcher, execute benchmark and set up class variables.
 
         """
+        cls._show_details = True
+
         cls._test_name = 'test_power_balancer'
         cls._num_node = 4
         cls._agent_list = ['power_governor', 'power_balancer']
@@ -112,11 +114,7 @@ class TestIntegration_power_balancer(unittest.TestCase):
                 else:
                     raise RuntimeError('No application config for app name {}'.format(app_name))
 
-                add_trace_signals = ['MSR::PKG_POWER_LIMIT:PL1_POWER_LIMIT@package',
-                                     'EPOCH_RUNTIME@package',
-                                     'EPOCH_RUNTIME_NETWORK@package']
                 # TODO: time_limit for launcher = 2700
-                # TODO: add trace signals
                 # TODO: need logging about power cap
                 #launcher.write_log(run_name, 'Power cap = {}W'.format(power_budget))
                 power_sweep.launch_power_sweep(file_prefix=cls._test_name + '_' + app_name,
@@ -187,40 +185,47 @@ class TestIntegration_power_balancer(unittest.TestCase):
         # Require that the balancer moves the maximum dgemm runtime at
         # least 1/4 the distance to the mean dgemm runtime under the
         # governor.
-        output = geopmpy.io.RawReportCollection(self._test_name + '_' + app_name + '*report')
-        # TODO: this says epoch but code actually uses dgemm region because of the barrier
-        dgemm_data = output.get_df()
-        dgemm_data = dgemm_data.loc[dgemm_data['region'] == 'dgemm']
-        #dgemm_data = dgemm_data.set_index(['Agent', 'region', 'host'])
-        #print(dgemm_data)
-        #dgemm_data = dgemm_data.loc['region' == 'dgemm']
-        #dgemm_data = dgemm_data.xs(['dgemm'])
-        print(dgemm_data)
-        result = balancer_comparison.balancer_comparison(output.get_df())
-        margin_factor = 0.25
-        agent_runtime = dict()
-        for agent in self._agent_list:
-            run_name = '{}_{}_{}'.format(self._test_name, agent, app_name)
-            report_path = '{}.report'.format(run_name)
-            trace_path = '{}.trace'.format(run_name)
+        output = geopmpy.io.RawReportCollection(self._test_name + '_' + app_name + '_*report')
 
-            runtime_list = self.get_power_data(app_name, agent, report_path, trace_path)
-            agent_runtime[agent] = max(runtime_list)
+        # check average power does not exceed policy
+        # TODO: why did this need to use the trace before?  A: power_data.describe() for verbose output
+        # also checks that assigned power limits across the 4 nodes did not exceed the budget
+        # this check using the report only cannot confirm that.  would be simple with issue #1211
+        app_df = output.get_app_df()
+        policy_power = app_df['POWER_PACKAGE_LIMIT_TOTAL'].unique().item()
+        gov_avg_power = app_df.loc[app_df['Agent'] == 'power_governor']['power (watts)'].mean()
+        self.assertLessEqual(gov_avg_power, policy_power, "power_governor average power exceeded policy: {}".format(gov_avg_power))
 
-            if agent == 'power_governor':
-                mean_runtime = sum(runtime_list) / len(runtime_list)
-                max_runtime = max(runtime_list)
-                margin = margin_factor * (max_runtime - mean_runtime)
+        bal_avg_power = app_df.loc[app_df['Agent'] == 'power_balancer']['power (watts)'].mean()
+        self.assertLessEqual(bal_avg_power, policy_power, "power_governor average power exceeded policy: {}".format(bal_avg_power))
+
+        # compare runtime with balancer vs. governor
+        app_result = balancer_comparison.balancer_comparison(app_df)
 
         if self._show_details:
             sys.stdout.write("\nAverage runtime stats:\n")
-            sys.stdout.write("governor runtime: {}, balancer runtime: {}, margin: {}\n".format(
-                agent_runtime['power_governor'], agent_runtime['power_balancer'], margin))
+            sys.stdout.write("{}\n".format(app_result))
+            sys.stdout.write("\nAverage power:\n")
+            sys.stdout.write("power_governor: {}\n".format(gov_avg_power))
+            sys.stdout.write("power_balancer: {}\n".format(bal_avg_power))
+            # sys.stdout.write("governor runtime: {}, balancer runtime: {}, margin: {}, runtime_pct: {}\n".format(
+            #     result['max_runtime_gov'], result['max_runtime_bal'], result['margin'], result['runtime_pct']))
 
-        self.assertGreater(agent_runtime['power_governor'] - margin,
-                           agent_runtime['power_balancer'],
-                           "governor runtime: {}, balancer runtime: {}, margin: {}".format(
-                               agent_runtime['power_governor'], agent_runtime['power_balancer'], margin))
+        self.assertGreater(app_result['max_runtime_gov'].item() - app_result['margin'].item(),
+                           app_result['max_runtime_bal'].item(),
+                           "governor runtime: {}, balancer runtime: {}, margin: {}, runtime_pct: {}\n".format(
+                               app_result['max_runtime_gov'], app_result['max_runtime_bal'], app_result['margin'], app_result['runtime_pct']))
+
+        # TODO: previous version of test used dgemm region only
+        # comparison based on epoch is more correct
+        epoch_data = output.get_epoch_df()
+        print(epoch_data)
+        epoch_result = balancer_comparison.balancer_comparison(epoch_data)
+
+        self.assertGreater(epoch_result['max_runtime_gov'].item() - epoch_result['margin'].item(),
+                           epoch_result['max_runtime_bal'].item(),
+                           "governor runtime: {}, balancer runtime: {}, margin: {}, runtime_pct: {}\n".format(
+                               epoch_result['max_runtime_gov'], epoch_result['max_runtime_bal'], epoch_result['margin'], epoch_result['runtime_pct']))
 
     def test_power_balancer_geopmbench(self):
         self.balancer_test_helper('geopmbench')
