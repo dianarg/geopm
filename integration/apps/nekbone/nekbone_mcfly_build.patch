@@ -1,0 +1,16 @@
+7c7
+< GEOPM_HOME="/home/$(whoami)/build/geopm"
+---
+> GEOPM_HOME="/projects/intel/geopm-home/$(whoami)/build/geopm"
+10c10
+< F77="mpiifort -fpp -I${GEOPM_HOME}/lib/ifort/modules/geopm-x86_64/"
+---
+> F77="ftn -fpp -I${GEOPM_HOME}/lib/ftn/modules/geopm-x86_64/ -dynamic"
+13c13
+< CC="mpicc -dynamic"
+---
+> CC="cc -dynamic"
+37c37
+< G=" -DGEOPM ${OPT_INC_DIR}"
+---
+> G="-xMIC-AVX512 -DGEOPM ${OPT_INC_DIR}"
