@@ -77,7 +77,7 @@ TEST_F(EditDistPeriodicityDetectorTest, pattern_ab)
 {
     int warmup = 3;
     int period = 2;
-    int history_size = 100;
+    int history_size = 10;
 
     check_vals(m_trace_file_prefix + "1_pattern_ab.trace", warmup, period, history_size);
 }

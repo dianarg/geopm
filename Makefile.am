@@ -623,6 +623,8 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/msr_data_snb.cpp \
                             src/record.cpp \
                             src/record.hpp \
+                            test/InternalProfile.cpp \
+                            test/InternalProfile.hpp \
                             # end
 
 beta_source_files = src/Daemon.cpp \

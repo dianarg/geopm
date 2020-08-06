@@ -59,13 +59,20 @@ namespace geopm
             ///        determined, returns -1.
             int get_score(void) const;
         private:
+            unsigned int Dget(int i, int j, int m);
+            void Dset(int i, int j, int m, unsigned int val);
+            unsigned int myinf;
+            int nn;
+
             void calc_period();
             uint64_t get_history_value(int index) const;
             int find_min_match(int index) const;
 
             CircularBuffer<uint64_t> m_history_buffer;
+            unsigned int *DP;
             int m_period;
             int m_score;
+            int history_buffer_size;
     };
 }
 

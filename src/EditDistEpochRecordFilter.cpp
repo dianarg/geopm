@@ -242,7 +242,7 @@ namespace geopm
         GEOPM_DEBUG_ASSERT(pieces.size() > 0, "string_split() failed.");
 
         // empirically determined default values
-        history_buffer_size = 100;
+        history_buffer_size = 20;
         min_stable_period = 4;
         stable_period_hysteresis = 1.0;
         unstable_period_hysteresis = 1.5;

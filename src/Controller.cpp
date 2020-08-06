@@ -57,6 +57,9 @@
 #include "ApplicationSampler.hpp"
 #include "record.hpp"
 
+#include <iostream>
+#include "InternalProfile.hpp"
+
 extern "C"
 {
     static int geopm_run_imp(struct geopm_ctl_c *ctl);
@@ -279,6 +282,7 @@ namespace geopm
     Controller::~Controller()
     {
         m_platform_io.restore_control();
+	std::cerr << ip_report();
     }
 
     void Controller::create_agents(void)

@@ -40,62 +40,89 @@
 #include "record.hpp"
 #include "geopm_debug.hpp"
 
+#include "InternalProfile.hpp"
 
 namespace geopm
 {
     EditDistPeriodicityDetector::EditDistPeriodicityDetector(int history_buffer_size)
         : m_history_buffer(history_buffer_size)
+        , history_buffer_size(history_buffer_size)
         , m_period(-1)
         , m_score(-1)
+        , nn(0)
     {
-
+        DP = new unsigned int[history_buffer_size * history_buffer_size * history_buffer_size];
+        myinf = 2*history_buffer_size;
     }
+
+    void
+    EditDistPeriodicityDetector::Dset(int i, int j, int m, unsigned int val) {
+        DP[((i % history_buffer_size) * history_buffer_size + (j % history_buffer_size)) * history_buffer_size + (m % history_buffer_size)] = val;
+    }
+
+    unsigned int
+    EditDistPeriodicityDetector::Dget(int i, int j, int m) {
+        if (i <= nn - history_buffer_size) {
+            return myinf;
+        }
+        if (j >= history_buffer_size) {
+            return myinf;
+        }
+        if (m <= nn - history_buffer_size) {
+            return myinf;
+        }
+        return DP[((i % history_buffer_size) * history_buffer_size
+                + (j % history_buffer_size)) * history_buffer_size + (m % history_buffer_size)];
+    }
+
 
     void EditDistPeriodicityDetector::update(const record_s &record)
     {
         if (record.event == EVENT_REGION_ENTRY) {
             m_history_buffer.insert(record.signal);
+            nn ++;
             calc_period();
         }
     }
 
     void EditDistPeriodicityDetector::calc_period(void)
     {
-        int buffer_size = m_history_buffer.size();
-        if (buffer_size < 2) {
+        int NN = m_history_buffer.size();
+
+ip_enter(__func__);
+        for (int ii = std::max({0, nn-history_buffer_size}); ii < nn; ++ii) {
+            Dset(ii, 0, nn-1, 0);
+        }
+        for (int mm = std::max({0, nn-history_buffer_size}); mm < nn; ++mm) {
+            Dset(0, nn-mm, mm, nn-mm);
+        }
+
+
+        for (int mm = std::max({1, nn-history_buffer_size}); mm < nn; ++mm) {
+            for (int ii = std::max({1, nn-history_buffer_size}); ii <= mm; ++ii) {
+                int term = 2;
+                if (nn-(ii-1) <= NN) {
+                    term = (m_history_buffer.value(NN-(nn-(ii-1))) !=
+                            m_history_buffer.value(NN - 1)) ?
+                           2 : 0;
+                }
+                Dset(ii, nn-mm, mm,
+                        std::min({Dget(ii - 1, nn - mm    , mm) + 1,
+                                  Dget(ii    , nn - mm - 1, mm) + 1,
+                                  Dget(ii - 1, nn - mm - 1, mm) + term}));
+            }
+        }
+
+        if (NN < 2) {
             return;
         }
 
-        size_t dim_i = m_history_buffer.size();
-        size_t dim_j = dim_i + 1;
-        size_t dim_m = dim_i + 1;
-        int DD[dim_i][dim_j][dim_m];
-        for (int mm = 0; mm < buffer_size + 1; ++mm) {
-            for (int ii = 0; ii < buffer_size; ++ii) {
-                DD[ii][0][mm] = 0;
-                DD[0][ii][mm] = ii;
-            }
-        }
-
-        for (int mm = 1; mm < buffer_size + 1; ++mm) {
-            for (int ii = 1; ii < mm; ++ii) {
-                for (int jj = 1; jj < buffer_size - mm + 2; ++jj) {
-                    int term = (get_history_value(ii) !=
-                                get_history_value(mm + jj - 1)) ?
-                               2 : 0;
-                    DD[ii][jj][mm] = std::min({DD[ii - 1][jj    ][mm] + 1,
-                                               DD[ii    ][jj - 1][mm] + 1,
-                                               DD[ii - 1][jj - 1][mm] + term});
-                }
-            }
-        }
-
-        int mm = 1 + (buffer_size / 2.0 + 0.5);
+        int mm = std::max({(int)(nn / 2.0 + 0.5), nn-history_buffer_size});
         int bestm = mm;
-        int bestval = DD[mm - 1][buffer_size - mm + 1][mm];
+        unsigned int bestval = Dget(mm, nn - mm, mm);
         ++mm;
-        for(; mm != buffer_size + 1; ++mm) {
-            int val = DD[mm - 1][buffer_size - mm + 1][mm];
+        for(; mm < nn; ++mm) {
+            unsigned int val = Dget(mm, nn - mm, mm);
             if(val < bestval) {
                 bestval = val;
                 bestm = mm;
@@ -107,8 +134,9 @@ namespace geopm
         // However since the algorithm find the bestm with the lowest index it will
         // return a string with a repeating pattern in it. For example:
         //     A B A B A B ...
-        // find_gcd will find the smallest repeating pattern in it: A B
-        m_period = find_min_match(bestm);
+        // find_min_match will find the smallest repeating pattern in it: A B
+ip_exit(__func__);
+        m_period = find_min_match(NN-(nn-bestm));
     }
 
     int EditDistPeriodicityDetector::get_period(void) const
@@ -131,8 +159,9 @@ namespace geopm
         if (m_history_buffer.size() == slice_start) {
             return 1;
         }
+ip_enter(__func__);
         std::vector<uint64_t> recs = m_history_buffer.make_vector(
-            slice_start - 1, m_history_buffer.size());
+            slice_start, m_history_buffer.size());
         int result = recs.size();
         bool perfect_match = false;
         int div_max = (recs.size() / 2) + 1;
@@ -153,6 +182,7 @@ namespace geopm
                 }
             }
         }
+ip_exit(__func__);
         return result;
     }
 }
