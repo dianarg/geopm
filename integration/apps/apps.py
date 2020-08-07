@@ -79,15 +79,14 @@ class AppConf(object):
         if type(app_params) is list:
             app_params = ' '.join(self.get_exec_args())
 
-        script = textwrap.dedent('''\
-            #!/bin/bash
+        script = '''#!/bin/bash
             {setup}
             {app_exec} {app_params}
             {cleanup}
         '''.format(setup=self.setup(),
                    app_exec=self.get_exec_path(),
                    app_params=app_params,
-                   cleanup=self.cleanup()))
+                   cleanup=self.cleanup())
         bash_file = os.path.join(output_dir, '{}.sh'.format(self.name()))
         with open(bash_file, 'w') as ofile:
             ofile.write(script)

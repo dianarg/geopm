@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 #  Copyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -31,35 +29,48 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-'''
-Run Nekbone with the monitor agent.
-'''
+import os
+import textwrap
 
-import argparse
+from .. import apps
 
-from experiment import common_args
-from experiment.monitor import monitor
-from apps.nekbone import nekbone
 
-if __name__ == '__main__':
+class NekboneAppConf(apps.AppConf):
 
-    parser = argparse.ArgumentParser()
-    common_args.add_output_dir(parser)
-    common_args.add_nodes(parser)
+    @staticmethod
+    def name():
+        return 'nekbone'
 
-    args, experiment_cli_args = parser.parse_known_args()
+    def __init__(self):
+        benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+        self._nekbone_path = os.path.join(benchmark_dir, 'nekbone-2.3.4/test/example1/')
 
-    output_dir = args.output_dir
-    num_node = args.nodes
+        # TODO: needed? is size in setup() related ?
+        self._num_node = 2
+        self._num_rank_per_node = 8
+        #self._machine_file = machine_file
 
-    # application parameters
-    app_conf = nekbone.NekboneAppConf()
+    def get_num_node(self):
+        return self._num_node
 
-    # experiment parameters
-    iterations = 2
+    def get_rank_per_node(self):
+        # TODO: use self._machine_file to determine
+        return self._num_rank_per_node
 
-    monitor.launch_monitor(output_dir=output_dir,
-                           iterations=iterations,
-                           num_node=num_node,
-                           app_conf=app_conf,
-                           experiment_cli_args=experiment_cli_args)
+    def setup(self):
+        size = 10000  # this size varies per system
+        input_file = textwrap.dedent('''
+        .true. = ifbrick               ! brick or linear geometry
+        {size} {size} 1  = iel0,ielN,ielD (per processor)  ! range of number of elements per proc.
+        12 12 1 = nx0,nxN,nxD         ! poly. order range for nx1
+        1  1  1 = npx, npy, npz       ! processor distribution in x,y,z
+        1  1  1 = mx, my, mz          ! local element distribution in x,y,z
+        EOF
+        '''.format(size=size))
+        return 'cat > ./data.rea << EOF {}'.format(input_file)
+
+    def get_exec_path(self):
+        return os.path.join(self._nekbone_path, 'nekbone')
+
+    def get_exec_args(self):
+        return ['ex1']
