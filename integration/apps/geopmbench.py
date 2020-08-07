@@ -1,7 +1,7 @@
 import os
 import textwrap
 
-from apps import apps
+from . import apps
 import geopmpy.io
 
 
@@ -16,9 +16,6 @@ class DgemmAppConf(apps.AppConf):
         self._bench_conf.append_region('dgemm', 8.0)
         self._bench_conf.set_loop_count(500)
 
-        # TODO: not in setup; no need to do this in bash
-        self._bench_conf.write()
-
     def get_num_node(self):
         # TODO: this seems bad
         # proposal: num_nodes always an input to __init__, app throws if it can't handle.
@@ -32,6 +29,7 @@ class DgemmAppConf(apps.AppConf):
         return 2
 
     def setup(self):
+        self._bench_conf.write()
         return ""
 
     def get_exec_path(self):
@@ -54,9 +52,6 @@ class TinyAppConf(apps.AppConf):
         self._bench_conf.append_region('dgemm', 0.2)
         self._bench_conf.set_loop_count(500)
 
-        # TODO: not in setup; no need to do this in bash
-        self._bench_conf.write()
-
     def get_num_node(self):
         # TODO: this seems bad
         # proposal: num_nodes always an input to __init__, app throws if it can't handle.
@@ -70,6 +65,7 @@ class TinyAppConf(apps.AppConf):
         return 2
 
     def setup(self):
+        self._bench_conf.write()
         return ""
 
     def get_exec_path(self):
