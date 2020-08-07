@@ -30,6 +30,8 @@
 #
 
 import os
+import sys
+import glob
 
 from apps import apps
 
@@ -43,7 +45,7 @@ class MinifeAppConf(apps.AppConf):
     def is_geopm_linked():
         return True
 
-    def __init__(self, num_nodes):
+    def __init__(self, num_nodes, unique_name):
         self.ranks_per_node = 2
         problem_sizes = {
             1: '-nx=396 -ny=384 -nz=384',  # '-nx=264 -ny=256 -nz=256',
@@ -56,7 +58,8 @@ class MinifeAppConf(apps.AppConf):
         }
         if num_nodes not in problem_sizes:
             raise RuntimeError("No input size defined for minife on {} nodes".format(self.num_nodes))
-        self.app_params = problem_sizes[num_nodes]
+        self.unique_name = unique_name
+        self.app_params = problem_sizes[num_nodes] + ' name=' + self.unique_name
         # TODO: find a better place for this config
         benchmark_dir = '$HOME/benchmarks/geopm_markup'
         self.exe_path = os.path.join(benchmark_dir, 'minife/miniFE_openmp-2.0-rc3/src/miniFE.x')
@@ -72,3 +75,18 @@ class MinifeAppConf(apps.AppConf):
 
     def get_exec_args(self):
         return self.app_params
+
+    def parse_fom(self, log_path):
+        # log path is ignored; use unique_name from init
+        matching_files = glob.glob('.*' + self.unique_name + '.*.yaml')
+        if len(matching_files) > 1:
+            sys.stderr.write('<geopm> Warning: multiple yml files matched for miniFE\n')
+        if len(matching_files) == 0:
+            raise RuntimeError('No miniFE yml files found with pattern "{}"'.format(self.unique_name))
+
+        result = ''
+        with open(matching_files[0]) as outfile:
+            for line in outfile:
+                if 'Total CG Mflops' in line:
+                    result += line.split()[-1]
+        return result
