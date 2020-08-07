@@ -30,70 +30,47 @@
 #
 
 import os
-import stat
 import textwrap
 
+from .. import apps
 
-class AppConf(object):
-    """
-    An object that contains all details needed to run an
-    application.  When used with experiment run scripts, write()
-    should be called by the run function before starting the run,
-    and get_exec_path() and get_exec_args() will be used to
-    construct command line arguments to the launcher.
-    """
-    @classmethod
+
+class NekboneAppConf(apps.AppConf):
+
+    @staticmethod
     def name():
-        return "APP"
+        return 'nekbone'
 
-    def __init__(self, exec_path, exec_args=[]):
-        self._exec_path = exec_path
-        self._exec_args = exec_args
-        # TODO: consider injecting num node and ranks here too
+    def __init__(self):
+        benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+        self._nekbone_path = os.path.join(benchmark_dir, 'nekbone-2.3.4/test/example1/')
+
+        # TODO: needed? is size in setup() related ?
+        self._num_node = 2
+        self._num_rank_per_node = 8
+        #self._machine_file = machine_file
 
     def get_num_node(self):
-        ''' Total number of nodes required by the application. '''
-        return None
+        return self._num_node
 
     def get_rank_per_node(self):
-        ''' Total number of ranks required by the application. '''
-        return None
-
-    def get_cpu_per_rank(self):
-        ''' Hardware threads per rank required by the application. '''
-        return None
+        # TODO: use self._machine_file to determine
+        return self._num_rank_per_node
 
     def setup(self):
-        return ''
+        size = 10000  # this size varies per system
+        input_file = textwrap.dedent('''
+        .true. = ifbrick               ! brick or linear geometry
+        {size} {size} 1  = iel0,ielN,ielD (per processor)  ! range of number of elements per proc.
+        12 12 1 = nx0,nxN,nxD         ! poly. order range for nx1
+        1  1  1 = npx, npy, npz       ! processor distribution in x,y,z
+        1  1  1 = mx, my, mz          ! local element distribution in x,y,z
+        EOF
+        '''.format(size=size))
+        return 'cat > ./data.rea << EOF {}'.format(input_file)
 
     def get_exec_path(self):
-        return self._exec_path
+        return os.path.join(self._nekbone_path, 'nekbone')
 
     def get_exec_args(self):
-        return self._exec_args
-
-    def cleanup(self):
-        return ''
-
-    def parse_fom(self, log_path):
-        return None
-
-    def make_bash(self, output_dir):
-        app_params = self.get_exec_args()
-        if type(app_params) is list:
-            app_params = ' '.join(self.get_exec_args())
-
-        script = '''#!/bin/bash
-            {setup}
-            {app_exec} {app_params}
-            {cleanup}
-        '''.format(setup=self.setup(),
-                   app_exec=self.get_exec_path(),
-                   app_params=app_params,
-                   cleanup=self.cleanup())
-        bash_file = os.path.join(output_dir, '{}.sh'.format(self.name()))
-        with open(bash_file, 'w') as ofile:
-            ofile.write(script)
-        # read, write, execute for owner
-        os.chmod(bash_file, stat.S_IRWXU)
-        return bash_file
+        return ['ex1']
