@@ -75,6 +75,9 @@ class AppConf(object):
     def cleanup(self):
         return ''
 
+    def parse_fom(self, log_path):
+        return None
+
     def make_bash(self, output_dir):
         app_params = self.get_exec_args()
         if type(app_params) is list:
