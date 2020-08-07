@@ -32,7 +32,7 @@
 import os
 import textwrap
 
-from apps import apps
+from . import apps
 
 
 class NekboneAppConf(apps.AppConf):
