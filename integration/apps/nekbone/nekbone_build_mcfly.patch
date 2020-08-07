@@ -1,0 +1,29 @@
+diff -rup nekbone-2.3.4-orig/test/example1/makenek nekbone-2.3.4/test/example1/makenek
+--- nekbone-2.3.4-orig/test/example1/makenek	2020-08-07 14:37:15.210541073 -0700
++++ nekbone-2.3.4/test/example1/makenek	2020-08-07 14:35:36.623482974 -0700
+@@ -4,13 +4,13 @@
+ 
+ # source path
+ SOURCE_ROOT="../../src"
+-GEOPM_HOME="/projects/intel/geopm-home/$(whoami)/build/geopm"
++GEOPM_HOME="$HOME/build/geopm"
+ 
+ # Fortran compiler
+-F77="ftn -fpp -I${GEOPM_HOME}/lib/ftn/modules/geopm-x86_64/ -dynamic"
++F77="mpiifort -fpp -I${GEOPM_HOME}/lib/ifort/modules/geopm-x86_64/"
+ 
+ # C compiler
+-CC="cc -dynamic"
++CC="mpicc"
+ 
+ # pre-processor symbol list
+ # (set PPLIST=? to get a list of available symbols)
+@@ -34,7 +34,7 @@ OPT_INCDIR="-I${GEOPM_HOME}/include"
+ USR_LFLAGS="-qopenmp -L${GEOPM_HOME}/lib -lgeopm -lgeopmfort"
+ 
+ # generic compiler flags
+-G="-xMIC-AVX512 -DGEOPM ${OPT_INC_DIR}"
++G=" -DGEOPM ${OPT_INC_DIR}"
+ 
+ # optimization flags
+ OPT_FLAGS_STD="-O3 -g -qopenmp -mcmodel=medium"
