@@ -39,7 +39,7 @@ import argparse
 
 from experiment import common_args
 from experiment.monitor import monitor
-from apps import nekbone
+from apps.nekbone import nekbone
 
 if __name__ == '__main__':
 
@@ -62,4 +62,4 @@ if __name__ == '__main__':
                            iterations=iterations,
                            num_node=num_node,
                            app_conf=app_conf,
-                           extra_cli_args=experiment_cli_args)
+                           experiment_cli_args=experiment_cli_args)
