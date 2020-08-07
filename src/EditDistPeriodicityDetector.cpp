@@ -46,13 +46,18 @@ namespace geopm
 {
     EditDistPeriodicityDetector::EditDistPeriodicityDetector(int history_buffer_size)
         : m_history_buffer(history_buffer_size)
+        , m_repeat_count(history_buffer_size)
         , history_buffer_size(history_buffer_size)
-        , m_period(-1)
         , m_score(-1)
         , nn(0)
+        , m_squash_records(true)
     {
+        m_period = m_squash_records ? 1 : -1;
         DP = new unsigned int[history_buffer_size * history_buffer_size * history_buffer_size];
         myinf = 2*history_buffer_size;
+
+        m_last_event = 0;
+        m_last_event_count = 0;
     }
 
     void
@@ -79,9 +84,26 @@ namespace geopm
     void EditDistPeriodicityDetector::update(const record_s &record)
     {
         if (record.event == EVENT_REGION_ENTRY) {
-            m_history_buffer.insert(record.signal);
-            nn ++;
-            calc_period();
+            if (m_squash_records) {
+                if (m_last_event == record.signal) {
+                    m_last_event_count ++;
+                }
+                else {
+                    if (m_last_event_count > 0) {
+                        m_history_buffer.insert(record.signal);
+                        m_repeat_count.insert(m_last_event_count);
+                        nn ++;
+                        calc_period();
+                    }
+                    m_last_event = record.signal;
+                    m_last_event_count = 1;
+                }
+            }
+            else {
+                m_history_buffer.insert(record.signal);
+                nn ++;
+                calc_period();
+            }
         }
     }
 
@@ -100,11 +122,21 @@ ip_enter(__func__);
 
         for (int mm = std::max({1, nn-history_buffer_size}); mm < nn; ++mm) {
             for (int ii = std::max({1, nn-history_buffer_size}); ii <= mm; ++ii) {
-                int term = 2;
+                int term = m_squash_records ? 2 * m_repeat_count.value(NN - 1) : 2;
                 if (nn-(ii-1) <= NN) {
-                    term = (m_history_buffer.value(NN-(nn-(ii-1))) !=
-                            m_history_buffer.value(NN - 1)) ?
-                           2 : 0;
+                    if (m_squash_records) {
+                        if (m_history_buffer.value(NN-(nn-(ii-1))) ==
+                            m_history_buffer.value(NN - 1)) {
+                            term = abs(m_repeat_count.value(NN-(nn-(ii-1))) - m_repeat_count.value(NN - 1));
+                        }
+                        else {
+                            term = m_repeat_count.value(NN-(nn-(ii-1))) + m_repeat_count.value(NN - 1);
+                        }
+                    } else {
+                        term = (m_history_buffer.value(NN-(nn-(ii-1))) !=
+                                m_history_buffer.value(NN - 1)) ?
+                            2 : 0;
+                    }
                 }
                 Dset(ii, nn-mm, mm,
                         std::min({Dget(ii - 1, nn - mm    , mm) + 1,
@@ -162,6 +194,11 @@ ip_exit(__func__);
 ip_enter(__func__);
         std::vector<uint64_t> recs = m_history_buffer.make_vector(
             slice_start, m_history_buffer.size());
+        std::vector<int> reps;
+        if (m_squash_records) {
+            reps = m_repeat_count.make_vector(
+                    slice_start, m_history_buffer.size());
+        }
         int result = recs.size();
         bool perfect_match = false;
         int div_max = (recs.size() / 2) + 1;
@@ -175,6 +212,15 @@ ip_enter(__func__);
                     auto cmp2_begin = cmp1_end;
                     if (!std::equal(cmp1_begin, cmp1_end, cmp2_begin)) {
                         perfect_match = false;
+                    }
+
+                    if (perfect_match && m_squash_records) {
+                        auto cmp1_begin = reps.begin() + div * (group - 1);
+                        auto cmp1_end = reps.begin() + div * group;
+                        auto cmp2_begin = cmp1_end;
+                        if (!std::equal(cmp1_begin, cmp1_end, cmp2_begin)) {
+                            perfect_match = false;
+                        }
                     }
                 }
                 if (perfect_match) {

@@ -69,10 +69,16 @@ namespace geopm
             int find_min_match(int index) const;
 
             CircularBuffer<uint64_t> m_history_buffer;
+            CircularBuffer<int> m_repeat_count;
             unsigned int *DP;
             int m_period;
             int m_score;
             int history_buffer_size;
+
+            uint64_t m_last_event;
+            uint32_t m_last_event_count;
+
+            bool m_squash_records;
     };
 }
 
