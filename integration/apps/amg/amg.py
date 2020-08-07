@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 #  Copyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -31,36 +29,44 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-'''
-Run AMG with the monitor agent.
-'''
-
-import argparse
-
-from experiment import common_args
-from experiment.monitor import monitor
-from apps.amg import amg
+import os
+from .. import apps
 
 
-if __name__ == '__main__':
+class AmgAppConf(apps.AppConf):
+    @staticmethod
+    def name():
+        return 'amg'
 
-    parser = argparse.ArgumentParser()
-    common_args.add_output_dir(parser)
-    common_args.add_nodes(parser)
+    def __init__(self, num_nodes):
+        self.num_nodes = num_nodes
+        self.ranks_per_node = 16
+        self.threads_per_rank = 2
+        if self.num_nodes == 128 and self.ranks_per_node == 16:
+            self.app_params = '-problem 1 -n 96 96 96 -P 16 16 8'  # total product of -P must == total ranks
+        elif self.num_nodes == 1 and self.ranks_per_node == 16:
+            self.app_params = '-problem 1 -n 96 96 96 -P 4 2 2'
+        else:
+            raise RuntimeError("No input size defined for amg on {} nodes with {} ranks per node".format(self.num_nodes, self.ranks_per_node))
+        benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+        self.exe_path = os.path.join(benchmark_dir, 'AMG-master/test/amg')
 
-    args, experiment_cli_args = parser.parse_known_args()
+    def get_rank_per_node(self):
+        return self.ranks_per_node
 
-    output_dir = args.output_dir
-    num_node = args.nodes
+    def setup(self):
+        return ''
 
-    # application parameters
-    app_conf = amg.AmgAppConf(num_node)
+    def get_exec_path(self):
+        return self.exe_path
 
-    # experiment parameters
-    iterations = 2
+    def get_exec_args(self):
+        return self.app_params
 
-    monitor.launch_monitor(output_dir=output_dir,
-                           iterations=iterations,
-                           num_node=num_node,
-                           app_conf=app_conf,
-                           experiment_cli_args=experiment_cli_args)
+    def parse_fom(self, logfile):
+        result = ''
+        with open(logfile) as log:
+            for line in log:
+                if 'Figure of Merit' in line:
+                    result += line.split()[-1] + ' '
+        return result
