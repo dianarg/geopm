@@ -70,6 +70,43 @@ def generate_runtime_energy_plot(df, name, output_dir='.'):
     plt.savefig(os.path.join(output_dir, '{}_freq_energy.{}'.format(name.replace(' ', '_'), 'png')))
     plt.close()
 
+
+def plot_runtime_energy(report_df, label, output_dir, show_details=False):
+    # TODO: only for freq map agent
+
+    # rename some columns
+    report_df['freq_mhz'] = report_df['FREQ_DEFAULT']
+    report_df['runtime'] = report_df['runtime (sec)']
+    report_df['network_time'] = report_df['network-time (sec)']
+    report_df['energy_pkg'] = report_df['package-energy (joules)']
+    report_df['frequency'] = report_df['frequency (Hz)']
+    report_df = report_df.set_index(['Agent', 'freq_mhz', 'Profile', 'host', 'region'])
+
+    # select only columns of interest
+    report_df = report_df[['runtime', 'network_time', 'energy_pkg',
+                           'frequency', 'count']]
+
+    if show_details:
+        sys.stdout.write('{}\n'.format(report_df))
+
+
+    # find region of interest
+    # TODO: command line option to override
+    max_freq = report_df.index.get_level_values(level='freq_mhz').max()
+    import code
+    code.interact(local=dict(globals(), **locals()))
+    temp = report_df.loc[max_freq]
+    longest_region = 8
+
+    _runtime_energy_sweep(report_df, 'na')
+
+    means_df = _region_means_df(report_df)
+
+    generate_runtime_energy_plot(df, region, soutput_dir)
+    print(means_df)
+
+
+
 def summary_process(self, parse_output):
     output = {}
     report_df = parse_output.get_report_df()
@@ -199,33 +236,6 @@ def _region_means_df(report_df):
     return means_df[cols]
 
 
-def plot_runtime_energy(report_df, output_dir):
-    # rename some columns
-    report_df['freq_mhz'] = report_df['FREQ_DEFAULT']
-    report_df['runtime'] = report_df['runtime (sec)']
-    report_df['network_time'] = report_df['network-time (sec)']
-    report_df['energy_pkg'] = report_df['package-energy (joules)']
-    report_df['frequency'] = report_df['frequency (Hz)']
-    report_df = report_df.set_index(['Agent', 'freq_mhz', 'Profile', 'host', 'region'])
-
-    # select only columns of interest
-    report_df = report_df[['runtime', 'network_time', 'energy_pkg',
-                           'frequency', 'count']]
-
-    # find region of interest
-    # TODO: command line option to override
-    max_freq = report_df.index.get_level_values(level='freq_mhz').max()
-    import code
-    code.interact(local=dict(globals(), **locals()))
-    temp = report_df.loc[max_freq]
-    longest_region = 8
-
-    _runtime_energy_sweep(report_df, 'na')
-
-    means_df = _region_means_df(report_df)
-
-    generate_runtime_energy_plot(df, region, soutput_dir)
-    print(means_df)
 
 
 def midden():
@@ -277,6 +287,7 @@ if __name__ == '__main__':
         sys.stderr.write('<geopm> Error: No report data found in {}; run a frequency sweep before using this analysis\n'.format(output_dir))
         sys.exit(1)
 
-
     plot_runtime_energy(output.get_df(),
-                        output_dir=output_dir)
+                        label=args.label,
+                        output_dir=output_dir,
+                        show_details=args.show_details)
