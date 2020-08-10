@@ -41,14 +41,15 @@ import time
 
 import geopmpy.io
 
+from experiment import machine
 from experiment import util
 
 
-def setup_frequency_bounds(machine, min_freq, max_freq, step_freq, add_turbo_step):
-    sys_min = machine.frequency_min()
-    sys_max = machine.frequency_max()
-    sys_step = machine.frequency_step()
-    sys_sticker = machine.frequency_sticker()
+def setup_frequency_bounds(mach, min_freq, max_freq, step_freq, add_turbo_step):
+    sys_min = mach.frequency_min()
+    sys_max = mach.frequency_max()
+    sys_step = mach.frequency_step()
+    sys_sticker = mach.frequency_sticker()
     if min_freq is None:
         min_freq = sys_min
     if max_freq is None:
@@ -70,30 +71,36 @@ def setup_frequency_bounds(machine, min_freq, max_freq, step_freq, add_turbo_ste
     return freqs
 
 
-def launch_frequency_sweep(file_prefix, output_dir, iterations,
+def launch_frequency_sweep(output_dir, iterations,
                            freq_range,
-                           agent_types, num_node, num_rank,
+                           agent_types, num_node,
                            app_conf, experiment_cli_args,
                            cool_off_time=60):
     '''
     Run the application over a range of fixed processor frequencies.
     Currently only supports the frequency map agent
     '''
-    name = file_prefix
-    util.init_output_dir(output_dir)
+    machine.init_output_dir(output_dir)
+    app_name = app_conf.name()
+    rank_per_node = app_conf.get_rank_per_node()
+    num_rank = num_node * rank_per_node
 
     # report extensions
-    report_sig = []
+    report_sig = ["CYCLES_THREAD@package", "CYCLES_REFERENCE@package",
+                  "TIME@package", "ENERGY_PACKAGE@package"]
+
     # trace extensions
     trace_sig = []
     print(experiment_cli_args)
     for iteration in range(iterations):
         for freq in freq_range:
             for agent in agent_types:
-                uid = '{}_{}_{}_{}'.format(name, agent, freq, iteration)
+                uid = '{}_{}_{}_{}'.format(app_name, agent, freq, iteration)
                 report_path = os.path.join(output_dir, '{}.report'.format(uid))
                 trace_path = os.path.join(output_dir, '{}.trace'.format(uid))
                 profile_name = 'iteration_{}'.format(iteration)
+                log_path = os.path.join(output_dir, '{}.log'.format(uid))
+
                 # TODO: handle energy efficient agent ?
                 options = {'FREQ_DEFAULT': freq}
                 agent_conf = geopmpy.io.AgentConf(os.path.join(output_dir, '{}_agent_{}.config'.format(agent, freq)), agent, options)
@@ -108,8 +115,15 @@ def launch_frequency_sweep(file_prefix, output_dir, iterations,
                                   '--geopm-trace-signals=' + ','.join(trace_sig)]
                 extra_cli_args += experiment_cli_args
                 # any arguments after run_args are passed directly to launcher
-                util.try_launch(agent_conf, app_conf, extra_cli_args,
+                util.launch_run(agent_conf, app_conf, output_dir,
+                                extra_cli_args, log_path=log_path,
                                 num_node=num_node, num_rank=num_rank)  # raw launcher factory args
+
+                # Get app-reported figure of merit
+                fom = app_conf.parse_fom(log_path)
+                # Append to report????????????????
+                with open(report_path, 'a') as report:
+                    report.write('\nFigure of Merit: {}'.format(fom))
 
                 # rest to cool off between runs
                 time.sleep(cool_off_time)

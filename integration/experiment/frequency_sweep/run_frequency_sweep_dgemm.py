@@ -35,49 +35,41 @@
 Example frequency sweep experiment using geopmbench.
 '''
 
-import os
 import argparse
-
-import geopmpy.io
 
 from experiment import common_args
 from experiment.frequency_sweep import frequency_sweep
-from experiment import util
-
+from experiment import machine
+from apps import geopmbench
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     common_args.add_output_dir(parser)
     common_args.add_nodes(parser)
+    common_args.add_min_frequency(parser)
+    common_args.add_max_frequency(parser)
 
     args, extra_cli_args = parser.parse_known_args()
 
     output_dir = args.output_dir
     num_nodes = args.nodes
-    machine = util.init_output_dir(output_dir)
+    mach = machine.init_output_dir(output_dir)
 
     # application parameters
-    app_name = 'dgemm'
-    app_conf = geopmpy.io.BenchConf(path=os.path.join(output_dir, 'dgemm.conf'))
-    app_conf.append_region('dgemm', 8.0)
-    app_conf.set_loop_count(500)
-    app_conf.write()
-    rank_per_node = 2
+    app_conf = geopmbench.DgemmAppConf(output_dir)
 
     # experiment parameters
-    min_freq = None  # 1.4e9  # args.min_freq
-    max_freq = None  # 1.6e9  # args.max_power
-    step_freq = None  # 100e6
-    freqs = frequency_sweep.setup_frequency_bounds(machine, min_freq, max_freq, step_freq,
+    min_freq = args.min_frequency
+    max_freq = args.max_frequency
+    step_freq = None
+    freqs = frequency_sweep.setup_frequency_bounds(mach, min_freq, max_freq, step_freq,
                                                    add_turbo_step=True)
     iterations = 2
-    frequency_sweep.launch_frequency_sweep(file_prefix=app_name,
-                                           output_dir=output_dir,
+    frequency_sweep.launch_frequency_sweep(output_dir=output_dir,
                                            iterations=iterations,
                                            freq_range=freqs,
                                            agent_types=['frequency_map'],
                                            num_node=num_nodes,
-                                           num_rank=num_nodes*rank_per_node,
                                            app_conf=app_conf,
                                            experiment_cli_args=extra_cli_args)

@@ -116,5 +116,11 @@ def launch_power_sweep(file_prefix, output_dir, iterations,
                 util.launch_run(agent_conf, app_conf, output_dir, extra_cli_args, log_path,
                                 num_node=num_node, num_rank=num_rank)  # raw launcher factory args
 
+                # Get app-reported figure of merit
+                fom = app_conf.parse_fom(log_path)
+                # Append to report????????????????
+                with open(report_path, 'a') as report:
+                    report.write('\nFigure of Merit: {}'.format(fom))
+
                 # rest to cool off between runs
                 time.sleep(cool_off_time)
