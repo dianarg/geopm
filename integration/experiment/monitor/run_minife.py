@@ -39,7 +39,7 @@ import argparse
 
 from experiment import common_args
 from experiment.monitor import monitor
-from apps import minife
+from apps.minife import minife
 
 if __name__ == '__main__':
 
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     num_node = args.nodes
 
     # application parameters
-    app_conf = minife.MinifeAppConf(num_node)
+    app_conf = minife.MinifeAppConf(num_node, 'unique')
 
     # experiment parameters
     iterations = 2
