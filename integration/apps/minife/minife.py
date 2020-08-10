@@ -59,10 +59,11 @@ class MinifeAppConf(apps.AppConf):
         if num_nodes not in problem_sizes:
             raise RuntimeError("No input size defined for minife on {} nodes".format(self.num_nodes))
         self.unique_name = unique_name
-        self.app_params = problem_sizes[num_nodes] + ' name=' + self.unique_name
-        # TODO: find a better place for this config
-        benchmark_dir = '$HOME/benchmarks/geopm_markup'
-        self.exe_path = os.path.join(benchmark_dir, 'minife/miniFE_openmp-2.0-rc3/src/miniFE.x')
+        # todo: needs to be per launch
+        self.app_params = problem_sizes[num_nodes] + ' -name=' + self.unique_name
+
+        benchmark_dir = os.path.dirname(os.path.abspath(__file__))
+        self.exe_path = os.path.join(benchmark_dir, 'miniFE_openmp-2.0-rc3/src/miniFE.x')
 
     def get_rank_per_node(self):
         return self.ranks_per_node
@@ -78,14 +79,16 @@ class MinifeAppConf(apps.AppConf):
 
     def parse_fom(self, log_path):
         # log path is ignored; use unique_name from init
-        matching_files = glob.glob('.*' + self.unique_name + '.*.yaml')
+        matching_files = glob.glob('*' + self.unique_name + '*.yaml')
         if len(matching_files) > 1:
             sys.stderr.write('<geopm> Warning: multiple yml files matched for miniFE\n')
         if len(matching_files) == 0:
             raise RuntimeError('No miniFE yml files found with pattern "{}"'.format(self.unique_name))
 
         result = ''
-        with open(matching_files[0]) as outfile:
+        # use last one in list if multiple matches
+        # TODO: this is a problem
+        with open(matching_files[-1]) as outfile:
             for line in outfile:
                 if 'Total CG Mflops' in line:
                     result += line.split()[-1]
