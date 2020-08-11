@@ -99,6 +99,8 @@ namespace geopm
             int m_last_epoch;
             int m_epoch_count;
             int m_record_count;
+
+            char hostname[1024];
     };
 }
 
