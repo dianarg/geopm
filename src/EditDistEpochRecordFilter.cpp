@@ -41,6 +41,10 @@
 #include "record.hpp"
 #include "geopm_debug.hpp"
 
+// TODO delete
+#include <iostream>
+#include <fstream>
+
 namespace geopm
 {
     static int parse_history_buffer_size(const std::string &name)
@@ -136,7 +140,8 @@ namespace geopm
         , m_epoch_count(0)
         , m_record_count(0)
     {
-
+        std::ifstream hostnamef("/proc/sys/kernel/hostname");
+        hostnamef >> hostname;
     }
 
     std::vector<record_s> EditDistEpochRecordFilter::filter(const record_s &record)
@@ -154,6 +159,7 @@ namespace geopm
                     epoch_event.event = EVENT_EPOCH_COUNT;
                     epoch_event.signal = m_epoch_count;
                     result.push_back(epoch_event);
+                    std::cout << hostname << " EPOCH NUM_RECORDS " << m_record_count << std::endl;
                 }
             }
         }
@@ -164,7 +170,7 @@ namespace geopm
     bool EditDistEpochRecordFilter::epoch_detected()
     {
         if (!m_is_period_detected) {
-            if (m_edpd->get_score() >= m_edpd->get_period()) {
+            if (m_edpd->get_score() >= m_edpd->get_period() || m_edpd->get_period() < 3) {
                 // If the score is the same as the period or greater the detected period is really low quality.
                 // For example: A B C D ... will give period = 1 with score = 1.
                 // In that case, we reset the period detection, i.e., we don;t even treat the
@@ -242,7 +248,7 @@ namespace geopm
         GEOPM_DEBUG_ASSERT(pieces.size() > 0, "string_split() failed.");
 
         // empirically determined default values
-        history_buffer_size = 100;
+        history_buffer_size = 300;
         min_stable_period = 4;
         stable_period_hysteresis = 1.0;
         unstable_period_hysteresis = 1.5;
