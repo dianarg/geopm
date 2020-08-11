@@ -58,7 +58,7 @@
 #include "record.hpp"
 
 #include <iostream>
-#include "InternalProfile.hpp"
+#include "../test/InternalProfile.hpp"
 
 extern "C"
 {

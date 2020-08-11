@@ -40,7 +40,7 @@
 #include "record.hpp"
 #include "geopm_debug.hpp"
 
-#include "InternalProfile.hpp"
+#include "../test/InternalProfile.hpp"
 
 namespace geopm
 {
