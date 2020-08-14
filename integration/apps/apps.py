@@ -37,7 +37,7 @@ import textwrap
 class AppConf(object):
     """
     An object that contains all details needed to run an application.
-    When used with experiment run scripts, setup(), get_exec_path(),
+    When used with experiment run scripts, setup_iteration(), get_exec_path(),
     get_exec_args(), and cleanup() will be used to construct command
     line arguments to the launcher.
     """
@@ -57,7 +57,7 @@ class AppConf(object):
         ''' Hardware threads per rank required by the application. '''
         return None
 
-    def setup(self):
+    def setup_iteration(self, run_id):
         ''' Any steps to be run prior to running one iteration of the application. '''
         return ''
 
@@ -76,7 +76,7 @@ class AppConf(object):
     def parse_fom(self, log_path):
         return None
 
-    def make_bash(self, output_dir):
+    def make_bash(self, output_dir, run_id):
         app_params = self.get_exec_args()
         if type(app_params) is list:
             app_params = ' '.join(self.get_exec_args())
@@ -88,7 +88,7 @@ class AppConf(object):
             {app_exec} {app_params}
             {cleanup}
         '''.format(output_dir=output_dir,
-                   setup=self.setup(),
+                   setup=self.setup_iteration(run_id),
                    app_exec=self.get_exec_path(),
                    app_params=app_params,
                    cleanup=self.cleanup()))
