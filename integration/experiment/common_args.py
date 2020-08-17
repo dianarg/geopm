@@ -80,3 +80,15 @@ def add_max_frequency(parser):
     parser.add_argument('--max-frequency', dest='max_frequency',
                         action='store', type=float, default=None,
                         help='top frequency limit for the sweep')
+
+
+def add_reference_frequency(parser):
+    parser.add_argument('--reference-frequency', dest='reference_frequency',
+                        action='store', type=float, default=None,
+                        help='fixed frequency for baseline run to compare agent against')
+
+
+def add_policy_file(parser):
+    parser.add_argument('--policy-file', dest='policy_file',
+                        action='store', type=str, default=None,
+                        help='path to the agent policy file for target run')
