@@ -163,7 +163,7 @@ def launch_run(agent_conf, app_conf, run_id, output_dir, extra_cli_args, log_pat
 
     argv.extend(['--'])
 
-    bash_path = app_conf.make_bash(output_dir)
+    bash_path = app_conf.make_bash(output_dir, uid)
     argv.extend([bash_path])
 
     launcher = geopmpy.launcher.Factory().create(argv, **launcher_factory_args)

@@ -77,6 +77,8 @@ class AppConf(object):
         return None
 
     def make_bash(self, output_dir, run_id):
+        # setup has side effects; call before get_exec_args
+        setup = self.setup_iteration(run_id)
         app_params = self.get_exec_args()
         if type(app_params) is list:
             app_params = ' '.join(self.get_exec_args())
@@ -88,7 +90,7 @@ class AppConf(object):
             {app_exec} {app_params}
             {cleanup}
         '''.format(output_dir=output_dir,
-                   setup=self.setup_iteration(run_id),
+                   setup=setup,
                    app_exec=self.get_exec_path(),
                    app_params=app_params,
                    cleanup=self.cleanup()))
