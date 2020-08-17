@@ -41,11 +41,7 @@ class MinifeAppConf(apps.AppConf):
     def name():
         return 'minife'
 
-    @staticmethod
-    def is_geopm_linked():
-        return True
-
-    def __init__(self, num_nodes, unique_name):
+    def __init__(self, num_nodes):
         self.ranks_per_node = 2
         problem_sizes = {
             1: '-nx=396 -ny=384 -nz=384',  # '-nx=264 -ny=256 -nz=256',
@@ -57,10 +53,8 @@ class MinifeAppConf(apps.AppConf):
             512: '-nx=2112 -ny=2048 -nz=2048',  # scale each dimension of 1-node size by 512^(1/3)=8
         }
         if num_nodes not in problem_sizes:
-            raise RuntimeError("No input size defined for minife on {} nodes".format(self.num_nodes))
-        self.unique_name = unique_name
-        # todo: needs to be per launch
-        self.app_params = problem_sizes[num_nodes] + ' -name=' + self.unique_name
+            raise RuntimeError("No input size defined for minife on {} nodes".format(num_nodes))
+        self.app_params = problem_sizes[num_nodes]
 
         benchmark_dir = os.path.dirname(os.path.abspath(__file__))
         self.exe_path = os.path.join(benchmark_dir, 'miniFE_openmp-2.0-rc3/src/miniFE.x')
@@ -68,14 +62,15 @@ class MinifeAppConf(apps.AppConf):
     def get_rank_per_node(self):
         return self.ranks_per_node
 
-    def setup(self):
+    def setup_iteration(self, run_id):
+        self.unique_name = run_id
         return ''
 
     def get_exec_path(self):
         return self.exe_path
 
     def get_exec_args(self):
-        return self.app_params
+        return self.app_params + ' -name=' + self.unique_name
 
     def parse_fom(self, log_path):
         # log path is ignored; use unique_name from init

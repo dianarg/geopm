@@ -58,7 +58,7 @@ if __name__ == '__main__':
     mach = machine.init_output_dir(output_dir)
 
     # application parameters
-    app_conf = minife.MinifeAppConf(num_nodes, "todo_unique")
+    app_conf = minife.MinifeAppConf(num_nodes)
 
     # experiment parameters
     min_freq = args.min_frequency

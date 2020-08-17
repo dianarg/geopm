@@ -58,7 +58,7 @@ if __name__ == '__main__':
     mach = machine.init_output_dir(output_dir)
 
     # application parameters
-    app_conf = minife.MinifeAppConf(num_nodes, "todo_unique")
+    app_conf = minife.MinifeAppConf(num_nodes)
     num_rank = num_nodes * app_conf.get_rank_per_node()
 
     # experiment parameters

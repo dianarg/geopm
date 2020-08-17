@@ -53,7 +53,7 @@ if __name__ == '__main__':
     num_node = args.nodes
 
     # application parameters
-    app_conf = minife.MinifeAppConf(num_node, 'unique')
+    app_conf = minife.MinifeAppConf(num_node)
 
     # experiment parameters
     iterations = 2
