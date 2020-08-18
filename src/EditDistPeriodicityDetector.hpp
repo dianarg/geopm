@@ -48,7 +48,8 @@ namespace geopm
             EditDistPeriodicityDetector(int history_buffer_size);
             virtual ~EditDistPeriodicityDetector() = default;
             /// @brief Update detector with a new record from the application.
-            void update(const record_s &record);
+            ///        Returns true if the history is affected with the new record.
+            bool update(const record_s &record);
             /// @brief Return the best estimate of the period length
             ///        in number of records, based on the data
             ///        inserted through update().  Until a stable
@@ -61,8 +62,6 @@ namespace geopm
         private:
             unsigned int Dget(int i, int j, int m);
             void Dset(int i, int j, int m, unsigned int val);
-            unsigned int myinf;
-            int nn;
 
             void calc_period();
             uint64_t get_history_value(int index) const;
@@ -70,15 +69,17 @@ namespace geopm
 
             CircularBuffer<uint64_t> m_history_buffer;
             CircularBuffer<int> m_repeat_count;
+            int history_buffer_size;
+            int m_score;
+            int nn;
+            bool m_squash_records;
+
+            unsigned int myinf;
             unsigned int *DP;
             int m_period;
-            int m_score;
-            int history_buffer_size;
-
             uint64_t m_last_event;
             uint32_t m_last_event_count;
 
-            bool m_squash_records;
     };
 }
 

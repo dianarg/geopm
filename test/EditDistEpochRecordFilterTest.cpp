@@ -41,10 +41,15 @@
 #include "record.hpp"
 #include "Helper.hpp"
 #include "geopm_test.hpp"
+#include "ProfileTracerImp.hpp"
+#include "ProfileTracer.hpp"
 
+using geopm::ProfileTracer;
+using geopm::ProfileTracerImp;
 using geopm::EditDistEpochRecordFilter;
 using geopm::record_s;
 
+void dump_recs(std::vector<record_s> recs, std::string csv_file_path);
 void check_vals(std::vector<record_s> testout, std::vector<int> epoch_time_vector);
 std::vector<int> extract_epoch_times(std::vector<record_s> recs);
 
@@ -283,6 +288,24 @@ TEST_F(EditDistEpochRecordFilterTest, pattern_subtract1)
     check_vals(testout, {11, 15, 19, 23, 33, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74});
 }
 
+/// Pattern 8: (ABCD)x6 (ABC) (ABCD)x12
+TEST_F(EditDistEpochRecordFilterTest, hacc)
+{
+  int history_size = 50;
+
+  std::vector<record_s> testout = filter_file(m_trace_file_prefix + "hacc_profile-mcfly5.trace", history_size);
+  dump_recs(testout, "hacc_output.trace");
+}
+
+/// Pattern 8: (ABCD)x6 (ABC) (ABCD)x12
+TEST_F(EditDistEpochRecordFilterTest, hacc2)
+{
+  int history_size = 50;
+
+  std::vector<record_s> testout = filter_file(m_trace_file_prefix + "hacc_profile-mcfly5_small.trace", history_size);
+  dump_recs(testout, "hacc_output_small.trace");
+}
+
 TEST_F(EditDistEpochRecordFilterTest, parse_name)
 {
     int buffer_size = -1;
@@ -395,6 +418,12 @@ std::vector<record_s> EditDistEpochRecordFilterTest::filter_file(std::string tra
 }
 
 /// HELPER FUNCTIONS
+
+void dump_recs(std::vector<record_s> recs, std::string csv_file_path)
+{
+  std::unique_ptr<ProfileTracer> tracer = geopm::make_unique<ProfileTracerImp>(1000, true, csv_file_path, "", geopm::time_zero());
+  tracer->update(recs);
+}
 
 void check_vals(std::vector<record_s> testout, std::vector<int> epoch_time_vector)
 {

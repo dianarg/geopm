@@ -146,20 +146,29 @@ namespace geopm
 
     std::vector<record_s> EditDistEpochRecordFilter::filter(const record_s &record)
     {
+        static bool skip_records = false;
+        static uint64_t signal_MPI_Wait = 0x00000000e22ce943;
+        static uint64_t signal_MPI_Waitall = 0x000000009b88f62c;
         std::vector<record_s> result;
         // EVENT_EPOCH_COUNT needs to be filtered but everything else passes through.
         if (record.event != EVENT_EPOCH_COUNT) {
             result.push_back(record);
+            // FILTER
             if (record.event == EVENT_REGION_ENTRY) {
-                m_edpd->update(record);
-                m_record_count++;
-                if (epoch_detected()) {
-                    m_epoch_count++;
-                    record_s epoch_event = record;
-                    epoch_event.event = EVENT_EPOCH_COUNT;
-                    epoch_event.signal = m_epoch_count;
-                    result.push_back(epoch_event);
-                    std::cout << hostname << " EPOCH NUM_RECORDS " << m_record_count << std::endl;
+                if ((!skip_records) || (record.signal != signal_MPI_Wait && record.signal != signal_MPI_Waitall)) {
+                    bool history_affected = m_edpd->update(record);
+                    if (history_affected) {
+                        m_record_count++;
+                        if (epoch_detected()) {
+                            m_epoch_count++;
+                            record_s epoch_event = record;
+                            epoch_event.event = EVENT_EPOCH_COUNT;
+                            epoch_event.signal = m_epoch_count;
+                            result.push_back(epoch_event);
+                            //std::cout << hostname << " EPOCH NUM_RECORDS " << m_record_count << std::endl;
+                            //std::cout << hostname << " EPOCH PERIOD " << m_edpd->get_period() << std::endl;
+                        }
+                    }
                 }
             }
         }
@@ -170,7 +179,7 @@ namespace geopm
     bool EditDistEpochRecordFilter::epoch_detected()
     {
         if (!m_is_period_detected) {
-            if (m_edpd->get_score() >= m_edpd->get_period() || m_edpd->get_period() < 3) {
+            if (m_edpd->get_score() >= m_edpd->get_period() || m_edpd->get_period() < 5) {
                 // If the score is the same as the period or greater the detected period is really low quality.
                 // For example: A B C D ... will give period = 1 with score = 1.
                 // In that case, we reset the period detection, i.e., we don;t even treat the
@@ -189,9 +198,9 @@ namespace geopm
             }
 
             if ((m_edpd->get_period() <= m_min_stable_period &&
-                 (m_period_stable == m_stable_period_hysteresis * m_min_stable_period)) ||
+                 (m_period_stable >= m_stable_period_hysteresis * m_min_stable_period)) ||
                 (m_edpd->get_period() > m_min_stable_period &&
-                 (m_period_stable == m_stable_period_hysteresis * m_edpd->get_period()))) {
+                 (m_period_stable >= m_stable_period_hysteresis * m_edpd->get_period()))) {
                 // To understand this criteria read m_min_stable_period and m_stable_period_hysteresis documentation.
 
                 m_is_period_detected = true;
@@ -212,7 +221,7 @@ namespace geopm
                 m_period_unstable += 1;
             }
 
-            if (m_period_unstable == (int)(m_unstable_period_hysteresis *  m_edpd->get_period())) {
+            if (m_period_unstable == (int)(m_unstable_period_hysteresis *  m_last_period)) {
                 m_is_period_detected = false;
                 // Reset for next use
                 m_period_unstable = 0;
@@ -248,7 +257,7 @@ namespace geopm
         GEOPM_DEBUG_ASSERT(pieces.size() > 0, "string_split() failed.");
 
         // empirically determined default values
-        history_buffer_size = 300;
+        history_buffer_size = 50;
         min_stable_period = 4;
         stable_period_hysteresis = 1.0;
         unstable_period_hysteresis = 1.5;

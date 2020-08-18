@@ -42,6 +42,9 @@
 
 #include "../test/InternalProfile.hpp"
 
+// TODO delete
+#include <iostream>
+
 namespace geopm
 {
     EditDistPeriodicityDetector::EditDistPeriodicityDetector(int history_buffer_size)
@@ -61,32 +64,33 @@ namespace geopm
     }
 
     void
-    EditDistPeriodicityDetector::Dset(int i, int j, int m, unsigned int val) {
-        DP[((i % history_buffer_size) * history_buffer_size + (j % history_buffer_size)) * history_buffer_size + (m % history_buffer_size)] = val;
+    EditDistPeriodicityDetector::Dset(int i, int j, int mm, unsigned int val) {
+        DP[((i % history_buffer_size) * history_buffer_size + (j % history_buffer_size)) * history_buffer_size + (mm % history_buffer_size)] = val;
     }
 
     unsigned int
-    EditDistPeriodicityDetector::Dget(int i, int j, int m) {
+    EditDistPeriodicityDetector::Dget(int i, int j, int mm) {
         if (i <= nn - history_buffer_size) {
             return myinf;
         }
         if (j >= history_buffer_size) {
             return myinf;
         }
-        if (m <= nn - history_buffer_size) {
+        if (mm <= nn - history_buffer_size) {
             return myinf;
         }
         return DP[((i % history_buffer_size) * history_buffer_size
-                + (j % history_buffer_size)) * history_buffer_size + (m % history_buffer_size)];
+                + (j % history_buffer_size)) * history_buffer_size + (mm % history_buffer_size)];
     }
 
 
-    void EditDistPeriodicityDetector::update(const record_s &record)
+    bool EditDistPeriodicityDetector::update(const record_s &record)
     {
         if (record.event == EVENT_REGION_ENTRY) {
             if (m_squash_records) {
                 if (m_last_event == record.signal) {
                     m_last_event_count ++;
+                    return false;
                 }
                 else {
                     if (m_last_event_count > 0) {
@@ -97,14 +101,18 @@ namespace geopm
                     }
                     m_last_event = record.signal;
                     m_last_event_count = 1;
+                    return true;
                 }
             }
             else {
                 m_history_buffer.insert(record.signal);
                 nn ++;
                 calc_period();
+                return true;
             }
         }
+        // This is non-reachable but here for completementt
+        return false;
     }
 
     void EditDistPeriodicityDetector::calc_period(void)
@@ -121,8 +129,8 @@ ip_enter(__func__);
 
 
         for (int mm = std::max({1, nn-history_buffer_size}); mm < nn; ++mm) {
-            for (int ii = std::max({1, nn-history_buffer_size}); ii <= mm; ++ii) {
-                int term = m_squash_records ? 2 * m_repeat_count.value(NN - 1) : 2;
+            for (int ii = std::max({1, nn-history_buffer_size}); ii < mm+1; ++ii) {
+                int term;
                 if (nn-(ii-1) <= NN) {
                     if (m_squash_records) {
                         if (m_history_buffer.value(NN-(nn-(ii-1))) ==
@@ -137,6 +145,8 @@ ip_enter(__func__);
                                 m_history_buffer.value(NN - 1)) ?
                             2 : 0;
                     }
+                } else {
+                    term = m_squash_records ? 2 * m_repeat_count.value(NN - 1) : 2;
                 }
                 Dset(ii, nn-mm, mm,
                         std::min({Dget(ii - 1, nn - mm    , mm) + 1,
