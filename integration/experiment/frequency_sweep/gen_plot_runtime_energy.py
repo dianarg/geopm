@@ -83,7 +83,7 @@ def find_longest_region(report_df):
     return longest
 
 
-def plot_runtime_energy(report_df, label, output_dir, show_details=False):
+def plot_runtime_energy(report_df, label, output_dir, region, show_details=False):
     # rename some columns
     # TODO: only works for freq map agent
     report_df['freq_hz'] = report_df['FREQ_DEFAULT']
@@ -94,7 +94,10 @@ def plot_runtime_energy(report_df, label, output_dir, show_details=False):
     report_df = report_df[['freq_hz', 'runtime', 'region', 'network_time',
                            'energy_pkg', 'frequency', 'count']]
 
-    longest_region = find_longest_region(report_df)
+    if not region:
+        longest_region = find_longest_region(report_df)
+    else:
+        longest_region = region
     region_df = report_df.loc[report_df['region'] == longest_region]
     data = []
     freqs = sorted(region_df['freq_hz'].unique())
@@ -109,7 +112,38 @@ def plot_runtime_energy(report_df, label, output_dir, show_details=False):
     if show_details:
         sys.stdout.write('Data for longest region "{}":\n{}\n'.format(longest_region, result))
 
-    generate_runtime_energy_plot(result, label, output_dir)
+    generate_runtime_energy_plot(result, label + ': ' + longest_region, output_dir)
+
+
+def plot_runtime_energy_fom(report_df, label, output_dir, show_details=False):
+    # rename some columns
+    # TODO: only works for freq map agent
+    print(report_df)
+    report_df['freq_hz'] = report_df['FREQ_DEFAULT']
+    report_df['runtime'] = report_df['runtime (sec)']
+    report_df['network_time'] = report_df['network-time (sec)']
+    report_df['energy_pkg'] = report_df['package-energy (joules)']
+    report_df['frequency'] = report_df['frequency (Hz)']
+    return
+
+    report_df = report_df[['freq_hz', 'runtime', 'region', 'network_time',
+                           'energy_pkg', 'frequency', 'count']]
+
+    region_df = report_df.loc[report_df['region'] == longest_region]
+    data = []
+    freqs = sorted(region_df['freq_hz'].unique())
+    for freq in freqs:
+        freq_df = region_df.loc[region_df['freq_hz'] == freq]
+        region_mean_runtime = freq_df['runtime'].mean()
+        region_mean_energy = freq_df['energy_pkg'].mean()
+        data.append([region_mean_runtime, region_mean_energy])
+    result = pandas.DataFrame(data, index=freqs,
+                              columns=['runtime', 'energy_pkg'])
+
+    if show_details:
+        sys.stdout.write('Data for longest region "{}":\n{}\n'.format(longest_region, result))
+
+    generate_runtime_energy_plot(result, label + ': ' + longest_region, output_dir)
 
 
 if __name__ == '__main__':
@@ -117,9 +151,16 @@ if __name__ == '__main__':
     common_args.add_output_dir(parser)
     common_args.add_show_details(parser)
     common_args.add_label(parser)
+    parser.add_argument('--region', dest='region',
+                        action='store', default=None,
+                        help='region of interest to plot')
+    parser.add_argument('--fom', dest='fom',
+                        action='store_true', default=False,
+                        help='use figure of merit instead of runtime')
 
     args, _ = parser.parse_known_args()
     output_dir = args.output_dir
+    region = args.region
 
     try:
         output = geopmpy.io.RawReportCollection("*report", dir_name=output_dir)
@@ -127,7 +168,16 @@ if __name__ == '__main__':
         sys.stderr.write('<geopm> Error: No report data found in {}; run a frequency sweep before using this analysis\n'.format(output_dir))
         sys.exit(1)
 
-    plot_runtime_energy(output.get_df(),
-                        label=args.label,
-                        output_dir=output_dir,
-                        show_details=args.show_details)
+    if args.fom:
+        import code
+        code.interact(local=dict(globals(), **locals()))
+        plot_runtime_energy_fom(output.get_app_df(),
+                                label=args.label,
+                                output_dir=output_dir,
+                                show_details=args.show_details)
+    else:
+        plot_runtime_energy(output.get_df(),
+                            label=args.label,
+                            output_dir=output_dir,
+                            region=region,
+                            show_details=args.show_details)

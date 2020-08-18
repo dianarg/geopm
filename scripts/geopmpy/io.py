@@ -1352,6 +1352,8 @@ class RawReport(object):
                     if line.startswith('Host:'):
                         host = line.split(':')[1].strip()
                         out_fid.write('{}:\n'.format(host))
+                    elif line.startswith('Figure of Merit'):
+                        out_fid.write(line)
                     else:
                         out_fid.write('    {}'.format(line))
             out_fid.seek(0)
