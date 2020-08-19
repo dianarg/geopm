@@ -62,7 +62,7 @@ class MinifeAppConf(apps.AppConf):
     def get_rank_per_node(self):
         return self.ranks_per_node
 
-    def setup_iteration(self, run_id):
+    def setup(self, run_id):
         self.unique_name = run_id
         return ''
 
