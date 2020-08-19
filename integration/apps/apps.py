@@ -57,7 +57,7 @@ class AppConf(object):
         ''' Hardware threads per rank required by the application. '''
         return None
 
-    def setup_iteration(self, run_id):
+    def setup(self, run_id):
         ''' Any steps to be run prior to running one iteration of the application. '''
         return ''
 
@@ -69,6 +69,10 @@ class AppConf(object):
         ''' Command line arguments to the application. '''
         return self._exec_args
 
+    def get_custom_geopm_args(self):
+        ''' Additional geopm arguments required for the app, such as --geopm-ompt-disable.'''
+        return []
+
     def cleanup(self):
         ''' Any steps to be run after running one iteration of the application. '''
         return ''
@@ -78,14 +82,16 @@ class AppConf(object):
 
     def make_bash(self, output_dir, run_id):
         # setup has side effects; call before get_exec_args
-        setup = self.setup_iteration(run_id)
+        setup = self.setup(run_id)
         app_params = self.get_exec_args()
         if type(app_params) is list:
             app_params = ' '.join(self.get_exec_args())
 
         script = '''#!/bin/bash\n'''
+        # TODO: cd interferes with AgentConf ability to correctly write the agent policy file
+        # and later be read by the controller
         script += textwrap.dedent('''\
-            cd {output_dir}
+            # cd {output_dir}
             {setup}
             {app_exec} {app_params}
             {cleanup}

@@ -139,7 +139,11 @@ def launch_run(agent_conf, app_conf, run_id, output_dir, extra_cli_args, log_pat
 
     agent_name = 'monitor'
     if agent_conf is not None:
+        if os.path.dirname(agent_conf.get_path()) != output_dir:
+            raise RuntimeError("Agent policy is not located in output_dir")
         agent_name = agent_conf.get_agent()
+        agent_conf.write()
+
     if agent_name != 'monitor':
         argv.append('--geopm-agent=' + agent_conf.get_agent())
         argv.append('--geopm-policy=' + agent_conf.get_path())
@@ -149,7 +153,7 @@ def launch_run(agent_conf, app_conf, run_id, output_dir, extra_cli_args, log_pat
     uid = '{}_{}_{}'.format(app_name.lower(), agent_name, run_id)
     report_path = os.path.join(output_dir, '{}.report'.format(uid))
     trace_path = os.path.join(output_dir, '{}.trace'.format(uid))
-    profile_name = 'iteration_{}'.format(run_id)
+    profile_name = uid
     log_path = os.path.join(output_dir, '{}.log'.format(uid))
 
     # TODO: these are not passed to launcher create()
@@ -158,8 +162,10 @@ def launch_run(agent_conf, app_conf, run_id, output_dir, extra_cli_args, log_pat
                       '--geopm-trace', trace_path,
                       '--geopm-profile', profile_name,
     ]
-
     argv.extend(extra_cli_args)
+
+    # extra geopm args needed by app
+    argv.extend(app_conf.get_custom_geopm_args())
 
     argv.extend(['--'])
 
