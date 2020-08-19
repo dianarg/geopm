@@ -47,19 +47,21 @@ import geopmpy.io
 from experiment import common_args
 
 
-def generate_runtime_energy_plot(df, name, output_dir='.'):
+def generate_runtime_energy_plot(df, name, output_dir='.',
+                                 y2_column='runtime', perf_label='Runtime (s)'):
     """
     Creates a plot comparing the runtime and energy of a region on two axes.
     """
     f, ax = plt.subplots()
 
-    ax.plot(df.index, df['energy_pkg'], color='DarkBlue', label='Energy', marker='o', linestyle='-')
     ax.set_xlabel('Frequency (GHz)')
+
+    ax.plot(df.index, df['energy_pkg'], color='DarkBlue', label='Energy', marker='o', linestyle='-')
     ax.set_ylabel('Energy (J)')
 
     ax2 = ax.twinx()
-    ax2.plot(df.index, df['runtime'], color='Red', label='Runtime', marker='s', linestyle='-')
-    ax2.set_ylabel('Runtime (s)')
+    ax2.plot(df.index, df[y2_column], color='Red', label=perf_label, marker='s', linestyle='-')
+    ax2.set_ylabel(perf_label)
 
     lines, labels = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
@@ -115,7 +117,7 @@ def plot_runtime_energy(report_df, label, output_dir, region, show_details=False
     generate_runtime_energy_plot(result, label + ': ' + longest_region, output_dir)
 
 
-def plot_runtime_energy_fom(report_df, label, output_dir, show_details=False):
+def plot_runtime_energy_fom(report_df, label, fom_label, output_dir, show_details=False):
     # rename some columns
     # TODO: only works for freq map agent
     print(report_df)
@@ -123,27 +125,25 @@ def plot_runtime_energy_fom(report_df, label, output_dir, show_details=False):
     report_df['runtime'] = report_df['runtime (sec)']
     report_df['network_time'] = report_df['network-time (sec)']
     report_df['energy_pkg'] = report_df['package-energy (joules)']
-    report_df['frequency'] = report_df['frequency (Hz)']
-    return
 
-    report_df = report_df[['freq_hz', 'runtime', 'region', 'network_time',
-                           'energy_pkg', 'frequency', 'count']]
+    report_df = report_df[['freq_hz', 'runtime', 'network_time',
+                           'energy_pkg', 'FOM']]
 
-    region_df = report_df.loc[report_df['region'] == longest_region]
     data = []
-    freqs = sorted(region_df['freq_hz'].unique())
+    freqs = sorted(report_df['freq_hz'].unique())
     for freq in freqs:
-        freq_df = region_df.loc[region_df['freq_hz'] == freq]
-        region_mean_runtime = freq_df['runtime'].mean()
+        freq_df = report_df.loc[report_df['freq_hz'] == freq]
+        region_mean_fom = freq_df['FOM'].mean()
         region_mean_energy = freq_df['energy_pkg'].mean()
-        data.append([region_mean_runtime, region_mean_energy])
+        data.append([region_mean_fom, region_mean_energy])
     result = pandas.DataFrame(data, index=freqs,
-                              columns=['runtime', 'energy_pkg'])
+                              columns=['FOM', 'energy_pkg'])
 
     if show_details:
-        sys.stdout.write('Data for longest region "{}":\n{}\n'.format(longest_region, result))
+        sys.stdout.write('Data for application:\n{}\n'.format(result))
 
-    generate_runtime_energy_plot(result, label + ': ' + longest_region, output_dir)
+    generate_runtime_energy_plot(result, label, output_dir,
+                                 y2_column='FOM', perf_label='FOM ({})'.format(fom_label))
 
 
 if __name__ == '__main__':
@@ -169,10 +169,11 @@ if __name__ == '__main__':
         sys.exit(1)
 
     if args.fom:
-        import code
-        code.interact(local=dict(globals(), **locals()))
+        # import code
+        # code.interact(local=dict(globals(), **locals()))
         plot_runtime_energy_fom(output.get_app_df(),
                                 label=args.label,
+                                fom_label='MFlops', #TODOOOO
                                 output_dir=output_dir,
                                 show_details=args.show_details)
     else:
