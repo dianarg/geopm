@@ -35,7 +35,7 @@ Helper functions for running the frequency map and energy efficient agents.
 
 import time
 import os
-
+import json
 from experiment import machine
 from experiment import util
 import geopmpy.io
@@ -65,12 +65,24 @@ def launch_frequency_map_agent(output_dir, iterations,
 
     # Agent run with policy
     # AgentConf class isn't exactly right for this purpose
+
     # just set geopm command line here instead of in launch_run()
-    target_cli_args = extra_cli_args
-    target_cli_args += ['--geopm-agent', 'frequency_map']
-    target_cli_args += ['--geopm-policy', policy_file]
+    # TODO: doesn't work
+    # target_cli_args = extra_cli_args
+    # target_cli_args += ['--geopm-agent', 'frequency_map']
+    # target_cli_args += ['--geopm-policy', policy_file]
+
+    with open(policy_file) as fid:
+        options = json.load(fid)
+    # TODO: check that policy_file != target.conf
+    target_agent_conf = geopmpy.io.AgentConf(path=os.path.join(output_dir, 'target.conf'),
+                                             agent='frequency_map',
+                                             options=options)
+    target_agent_conf.write()
 
     for iteration in range(iterations):
+        # TODO: add monitor run
+
         run_id = 'ref_{}'.format(iteration)
         util.launch_run(agent_conf=ref_agent_conf,
                         app_conf=app_conf,
@@ -80,11 +92,11 @@ def launch_frequency_map_agent(output_dir, iterations,
                         num_node=num_node, num_rank=num_rank)  # raw launcher factory args
 
         run_id = 'target_{}'.format(iteration)
-        util.launch_run(agent_conf=None,
+        util.launch_run(agent_conf=target_agent_conf,
                         app_conf=app_conf,
                         run_id=run_id,
                         output_dir=output_dir,
-                        extra_cli_args=target_cli_args,
+                        extra_cli_args=extra_cli_args,
                         num_node=num_node, num_rank=num_rank)  # raw launcher factory args
 
         # rest to cool off between runs

@@ -55,6 +55,7 @@ if __name__ == '__main__':
 
     output_dir = args.output_dir
     num_node = args.nodes
+    # TODO: take a list of policies for FMA, run all in sequence
     policy_file = args.policy_file
 
     # reference run will create a different policy, so this argument
