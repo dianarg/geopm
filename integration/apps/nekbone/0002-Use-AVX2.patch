@@ -1,0 +1,30 @@
+From ebf7b3c74f53fb32aeba6d1be24511dc96465a5b Mon Sep 17 00:00:00 2001
+From: Brad Geltz <brad.geltz@intel.com>
+Date: Mon, 24 Aug 2020 15:53:59 -0700
+Subject: [PATCH 2/8] Use AVX2
+
+- xHost could enable AVX-512.
+
+Signed-off-by: Brad Geltz <brad.geltz@intel.com>
+---
+ test/example1/makenek-intel | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/test/example1/makenek-intel b/test/example1/makenek-intel
+index fa6e4f3..a5cce80 100755
+--- a/test/example1/makenek-intel
++++ b/test/example1/makenek-intel
+@@ -35,8 +35,8 @@ USR_LFLAGS="-qopenmp -mcmodel=medium -shared-intel"
+ #G="-g"
+ 
+ # optimization flags
+-OPT_FLAGS_STD="-qopenmp -O3 -g -xHost -mcmodel=medium -shared-intel"
+-OPT_FLAGS_MAG="-qopenmp -O3 -g -xHost -mcmodel=medium -shared-intel"
++OPT_FLAGS_STD="-qopenmp -O3 -g -xCORE-AVX2 -mcmodel=medium -shared-intel"
++OPT_FLAGS_MAG="-qopenmp -O3 -g -xCORE-AVX2 -mcmodel=medium -shared-intel"
+ 
+ ###############################################################################
+ # DONT'T TOUCH WHAT FOLLOWS !!!
+-- 
+2.23.0
+

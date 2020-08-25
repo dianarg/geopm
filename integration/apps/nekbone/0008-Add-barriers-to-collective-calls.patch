@@ -1,0 +1,65 @@
+From 479c5ab17bdd9ae592f678f76638334778b7c3e1 Mon Sep 17 00:00:00 2001
+From: Brad Geltz <brad.geltz@intel.com>
+Date: Mon, 24 Aug 2020 17:14:19 -0700
+Subject: [PATCH 8/8] Add barriers to collective calls
+
+- Add special makefile to set build flag which enables
+  barrier usage before collectives.
+
+Signed-off-by: Brad Geltz <brad.geltz@intel.com>
+---
+ src/comm_mpi.f              | 9 +++++++++
+ test/example1/makenek-intel | 3 +++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/src/comm_mpi.f b/src/comm_mpi.f
+index 11df316..bf3dc4b 100644
+--- a/src/comm_mpi.f
++++ b/src/comm_mpi.f
+@@ -107,6 +107,9 @@ c
+       real x(n), w(n)
+       character*3 op
+ c
++#ifdef GEOPM_BARRIER
++      call mpi_barrier(nekcomm, ierr)
++#endif
+       if (op.eq.'+  ') then
+          call mpi_allreduce (x,w,n,nekreal,mpi_sum ,nekcomm,ierr)
+       elseif (op.EQ.'M  ') then
+@@ -135,6 +138,9 @@ c
+       integer x(n), w(n)
+       character*3 op
+ 
++#ifdef GEOPM_BARRIER
++      call mpi_barrier(nekcomm, ierr)
++#endif
+       if     (op.eq.'+  ') then
+         call mpi_allreduce (x,w,n,mpi_integer,mpi_sum ,nekcomm,ierr)
+       elseif (op.EQ.'M  ') then
+@@ -163,6 +169,9 @@ c
+       integer*8 x(n), w(n)
+       character*3 op
+ 
++#ifdef GEOPM_BARRIER
++      call mpi_barrier(nekcomm, ierr)
++#endif
+       if     (op.eq.'+  ') then
+         call mpi_allreduce (x,w,n,mpi_integer8,mpi_sum ,nekcomm,ierr)
+       elseif (op.EQ.'M  ') then
+diff --git a/test/example1/makenek-intel b/test/example1/makenek-intel
+index 1a2733b..affd0e7 100755
+--- a/test/example1/makenek-intel
++++ b/test/example1/makenek-intel
+@@ -34,6 +34,9 @@ USR_LFLAGS="-qopenmp -mcmodel=medium -shared-intel -L${GEOPM_ROOT}/lib -lgeopm -
+ 
+ # generic compiler flags
+ G="-DGEOPM -I${GEOPM_ROOT}/include"
++if [ ! -z "${GEOPM_BARRIER+x}" ]; then
++    G="-DGEOPM_BARRIER ${G}"
++fi
+ 
+ # optimization flags
+ OPT_FLAGS_STD="-qopenmp -O3 -g -xCORE-AVX2 -mcmodel=medium -shared-intel"
+-- 
+2.23.0
+

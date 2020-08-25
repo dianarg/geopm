@@ -1,0 +1,26 @@
+From 92492983175ebc59b4d14a4be412cef0538669bd Mon Sep 17 00:00:00 2001
+From: Brad Geltz <brad.geltz@intel.com>
+Date: Wed, 5 Aug 2020 15:42:57 -0700
+Subject: [PATCH 7/8] Increase iterations to 2000
+
+Signed-off-by: Brad Geltz <brad.geltz@intel.com>
+---
+ test/example1/makenek-intel | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/example1/makenek-intel b/test/example1/makenek-intel
+index 491621b..1a2733b 100755
+--- a/test/example1/makenek-intel
++++ b/test/example1/makenek-intel
+@@ -15,7 +15,7 @@ CC="mpicc"
+ # pre-processor symbol list
+ # (set PPLIST=? to get a list of available symbols)
+ #PPLSIT="BGQ BGP K10_MXM TIMERS MPITIMER BGQTIMER CGTTIMER NITER=20 LOG MPITHREADS XSMM MXMBASIC MKL BLAS_MXM XSMM_FIXED XSMM_DISPATCH NPOLY=8"
+-PPLIST="TIMERS CGTIMERS"
++PPLIST="TIMERS CGTIMERS NITER=2000"
+ 
+ 
+ # OPTIONAL SETTINGS
+-- 
+2.23.0
+
