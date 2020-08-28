@@ -47,11 +47,13 @@ if __name__ == '__main__':
     common_args.add_output_dir(parser)
     common_args.add_nodes(parser)
     common_args.add_iterations(parser)
+    common_args.add_enable_traces(parser)
 
     args, experiment_cli_args = parser.parse_known_args()
 
     output_dir = args.output_dir
     num_node = args.nodes
+    disable_traces = not args.enable_traces
 
     # application parameters
     app_conf = nekbone.NekboneAppConf()
@@ -63,4 +65,5 @@ if __name__ == '__main__':
                    iterations=iterations,
                    num_node=num_node,
                    app_conf=app_conf,
-                   experiment_cli_args=experiment_cli_args)
+                   experiment_cli_args=experiment_cli_args,
+                   disable_traces=disable_traces)

@@ -86,3 +86,9 @@ def add_iterations(parser):
     parser.add_argument('--iterations', dest='iterations',
                         action='store', type=int, default=2,
                         help='number of iterations to launch')
+
+
+def add_enable_traces(parser):
+    parser.add_argument('--enable-traces', dest='enable_traces',
+                        action='store_true', default=False,
+                        help='enable generation of trace files for runs')

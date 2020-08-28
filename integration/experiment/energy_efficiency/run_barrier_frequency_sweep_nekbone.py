@@ -54,6 +54,7 @@ if __name__ == '__main__':
     common_args.add_min_frequency(parser)
     common_args.add_max_frequency(parser)
     common_args.add_iterations(parser)
+    common_args.add_enable_traces(parser)
     # TODO: option for add turbo step
 
     args, extra_cli_args = parser.parse_known_args()
@@ -75,10 +76,14 @@ if __name__ == '__main__':
                                                    add_turbo_step=True)
     default_freq = max(freqs)
     iterations = args.iterations
+    disable_traces = not args.enable_traces
 
     report_sig = ["CYCLES_THREAD@package", "CYCLES_REFERENCE@package",
                   "TIME@package", "ENERGY_PACKAGE@package"]
-    extra_cli_args += launch_util.geopm_signal_args(report_sig, [])
+    trace_sig = []
+    if not disable_traces:
+        trace_sig = ["MSR::UNCORE_PERF_STATUS:FREQ"]
+    extra_cli_args += launch_util.geopm_signal_args(report_sig, trace_sig)
 
     # baseline run
     targets = [launch_util.LaunchConfig(app_conf=baseline_app, agent_conf=None, name='base')]
@@ -98,4 +103,5 @@ if __name__ == '__main__':
                                 num_nodes=num_nodes,
                                 iterations=iterations,
                                 extra_cli_args=extra_cli_args,
-                                output_dir=output_dir)
+                                output_dir=output_dir,
+                                disable_traces=disable_traces)
