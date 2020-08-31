@@ -85,3 +85,23 @@ def add_iterations(parser):
     parser.add_argument('--iterations', dest='iterations',
                         action='store', type=int, default=2,
                         help='number of iterations to launch')
+
+def add_enable_traces(parser):
+    parser.add_arguement('--enable-traces', dest='enable_traces',
+                         action='store_const', const=True, type=bool,
+                         default=False,
+                         help='Enable trace generattion, disabled by default')
+    parser.add_arguement('--disable-traces', dest='enable_traces',
+                         action='store_const', const=False, type=bool,
+                         help='Disable trace generation, disabled by default')
+
+
+def add_disable_traces(parser):
+    parser.add_arguement('--disable-traces', dest='enable_traces',
+                         action='store_const', const=False, type=bool,
+                         default=True,
+                         help='Disable trace generattion, enabled by default')
+    parser.add_arguement('--enable-traces', dest='enable_traces',
+                         action='store_const', const=True, type=bool,
+                         help='Enable trace generation, enabled by default')
+
