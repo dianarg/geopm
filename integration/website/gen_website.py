@@ -99,24 +99,40 @@ def add_head(doc):
             doc.asis(stylesheet)
 
 
+def make_toc(doc, items):
+    with doc.tag('div', klass='note'):
+        for link_name in items:
+            with doc.tag('a', href='#{}'.format(link_name)):
+                doc.text(link_name)
+            doc.stag('br')
+
+
 class ResultInfo:
     def __init__(self, path, description):
         self.path = path
         self.description = description
 
 
-def benchmark_results(bench_name, result_dirs):
-    doc.line('h3', bench_name)
-    for result in result_dirs:
-        rdir = result.path
-        images = glob.glob(os.path.join(rdir, 'figures', '*.png'))
-        with doc.tag('div', klass='note'):
+def benchmark_results(doc, bench_name, result_dirs):
+    doc.line('h3', bench_name, id=bench_name.lower())
+    with doc.tag('div', klass='note'):
+        for result in result_dirs:
+            rdir = result.path
+            # discover text tables
+            # TODO: super brittle
+            stat_logs = glob.glob(os.path.join(rdir, '*_stats.log'))
+            # discover plots in figures subdir
+            images = glob.glob(os.path.join(rdir, 'figures', '*.png'))
             with doc.tag('p'):
                 with doc.tag('b'):
                     doc.text('{}: '.format(rdir))
                 with doc.tag('a', href=rdir):
                     doc.text('raw data')
             doc.line('p', result.description)
+            for log in stat_logs:
+                with doc.tag('a', href=log):
+                    doc.text(os.path.basename(log))
+                doc.stag('br')
             for img in images:
                 doc.stag('img', src=img)
             doc.stag('br')
@@ -189,9 +205,25 @@ if __name__ == '__main__':
     with doc.tag('html'):
         add_head(doc)
         with doc.tag('body'):
-            nekbone_jobs = [ResultInfo(os.path.join('data', '49666_nekbone_energy_efficiency'),
-                                       'Nekbone with inserted MPI_Barriers, sweeping over frequency setting for barrier')]
-            benchmark_results('Nekbone', nekbone_jobs)
+            make_toc(doc, ['nekbone', 'minife'])
+            nekbone_jobs = [
+                ResultInfo(os.path.join('data', 'power_balancer_energy_nekbone_v1.1.0-470-ge978df6_2020-08-27-1598515356'),
+                           'Nekbone with power balancer, 12 nodes, 5 iterations'),
+                ResultInfo(os.path.join('data','49727_nekbone_energy_efficiency'),
+                           'Nekbone with inserted MPI_Barriers, 8 nodes, 10-12 iterations'),
+                # ResultInfo(os.path.join('data', '49666_nekbone_energy_efficiency'),
+                #            'Nekbone with inserted MPI_Barriers, sweeping over frequency setting for barrier\n12 nodes, 5 iterations'),
+                # ResultInfo(os.path.join('data', '49676_nekbone_energy_efficiency'),
+                #            '12 nodes, 12 iterations'),
+            ]
+            minife_jobs = [
+                #ResultInfo(os.path.join('data', '49678_minife_power_sweep'), 'MiniFE power sweep, 8 nodes. 5 iterations'),
+                ResultInfo(os.path.join('data', 'power_balancer_energy_minife_v1.1.0-485-g2365b27_2020-08-31-1598915009'),
+                           'MiniFE power sweep, 8 nodes, 20 iterations'),
+                ResultInfo(os.path.join('data', '49677_minife_frequency_sweep'), 'MiniFE frequency sweep, 8 nodes, 5 iterations'),
+            ]
+            benchmark_results(doc, 'Nekbone', nekbone_jobs)
+            benchmark_results(doc, 'MiniFE', minife_jobs)
             weekly_status(doc)
 
     result = yattag.indent(doc.getvalue())
