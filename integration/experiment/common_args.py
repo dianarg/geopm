@@ -92,3 +92,21 @@ def add_use_stdev(parser):
     parser.add_argument('--use-stdev', dest='use_stdev',
                         action='store_true', default=False,
                         help='use standard deviation instead of min-max spread for error bars')
+
+
+def add_enable_traces(parser):
+    parser.add_argument('--enable-traces', dest='enable_traces',
+                         action='store_const', const=True,
+                         default=False, help='Enable trace generattion, disabled by default')
+    parser.add_argument('--disable-traces', dest='enable_traces',
+                        action='store_const', const=False,
+                        help='Disable trace generation, disabled by default')
+
+
+def add_disable_traces(parser):
+    parser.add_argument('--disable-traces', dest='enable_traces',
+                        action='store_const', const=False,
+                        default=True, help='Disable trace generattion, enabled by default')
+    parser.add_argument('--enable-traces', dest='enable_traces',
+                        action='store_const', const=True,
+                        help='Enable trace generation, enabled by default')
