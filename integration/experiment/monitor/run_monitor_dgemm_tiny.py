@@ -48,6 +48,7 @@ if __name__ == '__main__':
     common_args.add_output_dir(parser)
     common_args.add_nodes(parser)
     common_args.add_iterations(parser)
+    common_args.add_disable_traces(parser)
 
     args, experiment_cli_args = parser.parse_known_args()
 
@@ -59,10 +60,12 @@ if __name__ == '__main__':
 
     # experiment parameters
     iterations = args.iterations
+    enable_traces = args.enable_traces
 
     monitor.launch(output_dir=output_dir,
                    iterations=iterations,
                    num_node=num_node,
                    app_conf=app_conf,
                    experiment_cli_args=experiment_cli_args,
-                   cool_off_time=0)
+                   cool_off_time=0,
+                   enable_traces=enable_traces)

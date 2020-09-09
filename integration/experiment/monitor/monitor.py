@@ -42,7 +42,7 @@ def report_signals():
 
 
 def launch(output_dir, iterations,
-           num_node, app_conf, experiment_cli_args, cool_off_time=60):
+           num_node, app_conf, experiment_cli_args, cool_off_time=60, enable_traces=True):
 
     extra_cli_args = launch_util.geopm_signal_args(report_signals(), None)
     extra_cli_args += experiment_cli_args
@@ -55,4 +55,5 @@ def launch(output_dir, iterations,
                                 iterations=iterations,
                                 extra_cli_args=extra_cli_args,
                                 output_dir=output_dir,
-                                cool_off_time=cool_off_time)
+                                cool_off_time=cool_off_time,
+                                enable_traces=enable_traces)
