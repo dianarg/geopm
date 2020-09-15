@@ -37,6 +37,8 @@ import textwrap
 import glob
 import yattag
 import argparse
+import csv
+import json
 
 
 def add_license(doc):
@@ -114,8 +116,10 @@ class ResultInfo:
 
 
 def benchmark_results(doc, bench_name, result_dirs):
-    doc.line('h3', bench_name, id=bench_name.lower())
+    doc.line('h3', bench_name, id=bench_name)
     with doc.tag('div', klass='note'):
+        if len(result_dirs) == 0:
+            doc.line('h4', 'TODO')
         for result in result_dirs:
             rdir = result.path
             # discover text tables
@@ -146,23 +150,22 @@ class SmokeStatus:
 
 
 def weekly_status(doc):
-    experiments = ['monitor', 'power_sweep', 'frequency_sweep']
+    experiments = ['monitor', 'power_sweep', 'frequency_sweep', 'energy_efficiency']
     apps = ['dgemm_tiny', 'dgemm', 'nekbone', 'minife', 'gadget', 'amg', 'hpcg']
-    # TODO: currently evaluated by hand; load from disk
-    status = {
-              ('frequency_sweep', 'dgemm_tiny'): SmokeStatus('smoke/49667_dgemm_tiny_frequency_sweep', 'PASS', 'PASS'),
-              ('frequency_sweep', 'dgemm'): SmokeStatus('smoke/49667_dgemm_frequency_sweep', 'PASS', 'PASS'),
-              ('frequency_sweep', 'minife'): SmokeStatus('smoke/49667_minife_frequency_sweep', 'PASS', 'PASS'),
-              ('frequency_sweep', 'nekbone'): SmokeStatus('smoke/49667_nekbone_frequency_sweep', 'PASS', 'PASS'),
-              ('monitor', 'dgemm_tiny'): SmokeStatus('smoke/49668_dgemm_tiny_monitor', 'PASS', 'PASS'),
-              ('monitor', 'dgemm'): SmokeStatus('smoke/49668_dgemm_monitor', 'PASS', 'PASS'),
-              ('monitor', 'minife'): SmokeStatus('smoke/49668_minife_monitor', 'PASS', 'PASS'),
-              ('monitor', 'nekbone'): SmokeStatus('smoke/49668_nekbone_monitor', 'PASS', 'PASS'),
-              ('power_sweep', 'dgemm_tiny'): SmokeStatus('smoke/49669_dgemm_tiny_power_sweep', 'PASS', 'PASS'),
-              ('power_sweep', 'dgemm'): SmokeStatus('smoke/49669_dgemm_power_sweep', 'PASS', 'PASS'),
-              ('power_sweep', 'minife'): SmokeStatus('smoke/49669_minife_power_sweep', 'PASS', 'PASS'),
-              ('power_sweep', 'nekbone'): SmokeStatus('smoke/49669_nekbone_power_sweep', 'PASS', 'PASS'),
-    }
+    status = {}
+    status_file = os.path.join('smoke', 'status.csv')
+    try:
+        with open(status_file) as infile:
+            reader = csv.DictReader(infile, delimiter=',')
+            for row in reader:
+                if (row['exp_type'], row['app']) in status:
+                    sys.stderr.write('Warning: multiple results for {} with {}'.format(row['exp_type'], row['app']))
+                status[(row['exp_type'], row['app'])] = SmokeStatus(run_status=row['run_status'],
+                                                                    analysis_status=row['analysis_status'],
+                                                                    path=row['path'])
+    except Exception as ex:
+        sys.stderr.write('Warning: {} missing or wrong format: {}'.format(status_file, ex))
+
     with doc.tag('div', klass='note'):
         doc.line('h3', 'Integration smoke tests')
         doc.line('p', 'Check that: 1) run scripts produce the expected reports; ' +
@@ -195,6 +198,24 @@ def weekly_status(doc):
                             doc.line('td', 'not run', colspan=3, style='text-align: center;')
 
 
+def discover_experiments():
+    summary_file = os.path.join('data', 'summary.json')
+    experiments = {}
+    try:
+        with open(summary_file) as infile:
+            summary = json.load(infile)
+            for app in summary["apps"]:
+                name = app["name"]
+                jobs = app["jobs"]
+                experiments[name] = []
+                for jj in jobs:
+                    experiments[name].append(ResultInfo(os.path.join('data', jj["subdir"]),
+                                                        jj["description"]))
+    except Exception as ex:
+        sys.stderr.write('Warning: {} not found or bad format: {}'.format(summary_file, ex))
+    return experiments
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--debug', action='store_true', default=False)
@@ -205,25 +226,12 @@ if __name__ == '__main__':
     with doc.tag('html'):
         add_head(doc)
         with doc.tag('body'):
-            make_toc(doc, ['nekbone', 'minife'])
-            nekbone_jobs = [
-                ResultInfo(os.path.join('data', 'power_balancer_energy_nekbone_v1.1.0-470-ge978df6_2020-08-27-1598515356'),
-                           'Nekbone with power balancer, 12 nodes, 5 iterations'),
-                ResultInfo(os.path.join('data','49727_nekbone_energy_efficiency'),
-                           'Nekbone with inserted MPI_Barriers, 8 nodes, 10-12 iterations'),
-                # ResultInfo(os.path.join('data', '49666_nekbone_energy_efficiency'),
-                #            'Nekbone with inserted MPI_Barriers, sweeping over frequency setting for barrier\n12 nodes, 5 iterations'),
-                # ResultInfo(os.path.join('data', '49676_nekbone_energy_efficiency'),
-                #            '12 nodes, 12 iterations'),
-            ]
-            minife_jobs = [
-                #ResultInfo(os.path.join('data', '49678_minife_power_sweep'), 'MiniFE power sweep, 8 nodes. 5 iterations'),
-                ResultInfo(os.path.join('data', 'power_balancer_energy_minife_v1.1.0-485-g2365b27_2020-08-31-1598915009'),
-                           'MiniFE power sweep, 8 nodes, 20 iterations'),
-                ResultInfo(os.path.join('data', '49677_minife_frequency_sweep'), 'MiniFE frequency sweep, 8 nodes, 5 iterations'),
-            ]
-            benchmark_results(doc, 'Nekbone', nekbone_jobs)
-            benchmark_results(doc, 'MiniFE', minife_jobs)
+            doc.line('h2', 'Experiments')
+            experiments = discover_experiments()
+            make_toc(doc, experiments.keys())
+            for name, jobs in experiments.items():
+                benchmark_results(doc, name, jobs)
+
             weekly_status(doc)
 
     result = yattag.indent(doc.getvalue())
