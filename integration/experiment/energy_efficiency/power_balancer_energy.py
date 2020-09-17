@@ -67,8 +67,8 @@ def trace_signals():
 def launch(app_conf, args, experiment_cli_args):
     agent_types = args.agent_list.split(',')
     mach = machine.init_output_dir(args.output_dir)
-    min_power, max_power = setup_power_bounds(mach, args.min_power,
-                                              args.max_power, args.step_power)
+    min_power, max_power = power_sweep.setup_power_bounds(mach, args.min_power,
+                                                          args.max_power, args.step_power)
     targets = launch_configs(app_conf, agent_types, min_power, max_power, args.step_power)
     extra_cli_args = list(experiment_cli_args)
     extra_cli_args += launch_util.geopm_signal_args(report_signals=report_signals(),
