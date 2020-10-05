@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Example user private/custom environment
+
+# define only; no append
+
+# required vars
+export GEOPM_INSTALL=$HOME/build/geopm
+export GEOPM_SOURCE=$HOME/geopm
+export GEOPM_APPS_SOURCES=/home/geopm/shared_tarballs
+export GEOPM_WORKDIR=$HOME/public_html
+
+# non-public system
+#export GEOPM_SYSTEM_ENV=/home/geopm/geopm_mcfly_env.sh
+#export GEOPM_SYSTEM_ENV=$HOME/intel_quartz.sh
+
+# public systems
+#export GEOPM_SYSTEM_ENV=$GEOPM_SOURCE/integration/system_env/intel_tools.sh
+export GEOPM_SYSTEM_ENV=$GEOPM_SOURCE/integration/system_env/quartz.sh
+
+# private vars (could be in a private GEOPM_SYSTEM_ENV)
+export GEOPM_SLURM_ACCOUNT=test_account
