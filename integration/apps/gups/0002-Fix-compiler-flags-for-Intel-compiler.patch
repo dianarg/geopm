@@ -1,0 +1,26 @@
+From 8fcdd9b9a44543d0e6964f0eb1ee3d26d45b6515 Mon Sep 17 00:00:00 2001
+From: Diana Guttman <diana.r.guttman@intel.com>
+Date: Thu, 8 Oct 2020 13:45:08 -0700
+Subject: [PATCH 2/2] Fix compiler flags for Intel compiler
+
+Signed-off-by: Diana Guttman <diana.r.guttman@intel.com>
+---
+ Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile b/Makefile
+index 14ab434..060d008 100644
+--- a/Makefile
++++ b/Makefile
+@@ -11,7 +11,7 @@
+ 
+ CC =  ${MPICC}
+ CXX = ${MPICC}
+-CFLAGS = -O2 -q64 -qsmp=omp
++CFLAGS = -O2 -qopenmp -g
+ INCDIR = -Iinclude/
+ LDFLAGS = $(CFLAGS) -lm 
+ TARGET  = ra_mpiomp
+-- 
+1.8.3.1
+
