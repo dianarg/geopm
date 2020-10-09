@@ -1,0 +1,28 @@
+From 4067e7f02a9da5e2a375eb94c3a8789d000c07aa Mon Sep 17 00:00:00 2001
+From: Diana Guttman <diana.r.guttman@intel.com>
+Date: Thu, 8 Oct 2020 13:29:53 -0700
+Subject: [PATCH 1/2] Use MPICC environment variable for compilers
+
+Signed-off-by: Diana Guttman <diana.r.guttman@intel.com>
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index be95fd4..14ab434 100644
+--- a/Makefile
++++ b/Makefile
+@@ -9,8 +9,8 @@
+ # even the implied warranty of MERCHANTABILITY or FITNESS FOR A            
+ # PARTICULAR PURPOSE.                         
+ 
+-CC =  mpcc_r
+-CXX = mpcc_r
++CC =  ${MPICC}
++CXX = ${MPICC}
+ CFLAGS = -O2 -q64 -qsmp=omp
+ INCDIR = -Iinclude/
+ LDFLAGS = $(CFLAGS) -lm 
+-- 
+1.8.3.1
+
