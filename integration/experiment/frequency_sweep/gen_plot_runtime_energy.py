@@ -106,6 +106,7 @@ def plot_runtime_energy(report_df, perf_metric, use_stdev, label, output_dir, sh
     #report_df = report_df[['FREQ_DEFAULT', 'runtime', 'network_time', energy_metric, 'FOM']]
     # TODO: might want loop_key to be passed in as a function instead
     freqs = sorted(report_df['FREQ_DEFAULT'].unique())
+
     result = report.energy_perf_summary(df=report_df,
                                         loop_key='FREQ_DEFAULT',
                                         loop_vals=freqs,
@@ -113,6 +114,27 @@ def plot_runtime_energy(report_df, perf_metric, use_stdev, label, output_dir, sh
                                         perf_metric=perf_metric,
                                         use_stdev=use_stdev)
     perf_metric_label, energy_metric_label = report.perf_metric_label(perf_metric)
+
+    ##############################################
+    # error calculated across all nodes within one trial
+    temp_df = report_df.set_index('FREQ_DEFAULT')
+    temp_df = temp_df.groupby('FREQ_DEFAULT').mean()
+
+    # TODO: not necessarily correct!!!!
+    turbo = freqs[-1]
+    sticker = freqs[-2]
+    import pandas
+    idx = pandas.IndexSlice
+    turbo_data = result.loc[idx[turbo], ]
+    sticker_data = result.loc[idx[sticker], ]
+    turbo_perf = turbo_data['performance']
+    turbo_energy = turbo_data['energy_perf']
+    sticker_perf = sticker_data['performance']
+    sticker_energy = sticker_data['energy_perf']
+    result['perf_norm_turbo'] = result['performance'] / turbo_perf
+    result['energy_norm_turbo'] = result['energy_perf'] / turbo_energy
+    result['perf_norm_sticker'] = result['performance'] / sticker_perf
+    result['energy_norm_sticker'] = result['energy_perf'] / sticker_energy
 
     if show_details:
         sys.stdout.write('Data for {}:\n{}\n'.format(label, result))

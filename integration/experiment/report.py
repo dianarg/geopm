@@ -108,7 +108,7 @@ def energy_perf_summary(df, loop_key, loop_vals, baseline, perf_metric, use_stde
     for rr in loop_vals:
         row_df = df.loc[df[loop_key] == rr]
         # error calculated across all nodes within one trial
-        row_df.set_index('trial')
+        row_df = row_df.set_index('trial')
         row_df = row_df.groupby('trial').mean()
 
         mean_energy = row_df[energy_metric].mean() / base_energy

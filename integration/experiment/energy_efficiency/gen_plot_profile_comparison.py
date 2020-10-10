@@ -66,7 +66,7 @@ def summary(df, perf_metric, use_stdev, baseline, targets, show_details):
     # reset output stats
     # TODO: make this less of a mess
     output_prefix = os.path.join(output_dir, '{}'.format(common_prefix))
-    output_stats_name = '{}_stats.log'.format(output_prefix)
+    output_stats_name = '{}_{}_stats.log'.format(output_prefix, perf_metric)
     with open(output_stats_name, 'w') as outfile:
         # re-create file to be appended to
         pass
