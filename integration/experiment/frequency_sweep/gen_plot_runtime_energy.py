@@ -135,6 +135,17 @@ def plot_runtime_energy(report_df, perf_metric, use_stdev, label, output_dir, sh
     result['energy_norm_turbo'] = result['energy_perf'] / turbo_energy
     result['perf_norm_sticker'] = result['performance'] / sticker_perf
     result['energy_norm_sticker'] = result['energy_perf'] / sticker_energy
+    # TODO: where to put this? similar to baseline norm in energy_perf_summary
+    # relative error
+    result['perf_min_delta_norm_turbo'] = result['min_delta_perf'] / turbo_perf
+    result['perf_max_delta_norm_turbo'] = result['max_delta_perf'] / turbo_perf
+    result['perf_min_delta_norm_sticker'] = result['min_delta_perf'] / sticker_perf
+    result['perf_max_delta_norm_sticker'] = result['max_delta_perf'] / sticker_perf
+    result['energy_min_delta_norm_turbo'] = result['min_delta_energy'] / turbo_energy
+    result['energy_max_delta_norm_turbo'] = result['max_delta_energy'] / turbo_energy
+    result['energy_min_delta_norm_sticker'] = result['min_delta_energy'] / sticker_energy
+    result['energy_max_delta_norm_sticker'] = result['max_delta_energy'] / sticker_energy
+
 
     if show_details:
         sys.stdout.write('Data for {}:\n{}\n'.format(label, result))
