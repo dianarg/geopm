@@ -1,15 +1,18 @@
 #!/bin/bash
-#SBATCH -N 4
+#SBATCH -N 32
 #SBATCH -t 4:00:00
 #SBATCH -o %j.out
 
-set -x
 
 source openfoam_env.sh
 
-export I_MPI_PIN_PROCESSOR=allcores:map=spread
+# TODO: doesn't work
+#export I_MPI_PIN_PROCESSOR=allcores:map=spread
 # OPA specific
-export I_MPI_FABRICS=sm:ofi
+
+set -x
+
+export I_MPI_FABRICS=shm:ofi
 export FI_PROVIDER=psm2
 
 # |-------+-------+-------+----------|
@@ -29,18 +32,23 @@ export FI_PROVIDER=psm2
 # NX=20
 # NY=8
 # NZ=8
-export NX=60
-export NY=24
-export NZ=24
+# export NX=60
+# export NY=24
+# export NZ=24
+
+export NX=130
+export NY=52
+export NZ=52
 
 # TODO: make these inputs
 export NODES=$SLURM_NNODES
 # mcfly has 44 total, but reserve some for GEOPM + OS
-export CORES_PER_NODE=42
+export CORES_PER_NODE=34
 export NPROCS=$(($NODES * $CORES_PER_NODE))
 
 SETUP_RESULT_DIR=motorbike_${NPROCS}ranks_${NX}_${NY}_${NZ}
 
+export OPENFOAM_APP_DIR=$HOME/geopm/integration/apps/openfoam
 ${OPENFOAM_APP_DIR}/prepare_input.sh
 if [ $? -ne 0 ]; then
     echo "Failed to setup problem inputs."
@@ -65,7 +73,7 @@ geopmlaunch srun -N $NODES -n $NPROCS --geopm-ctl=application --geopm-report=sim
 cd ${OPENFOAM_APP_DIR}
 
 ###
-export CORES_PER_NODE=44
+export CORES_PER_NODE=36
 export NPROCS=$(($NODES * $CORES_PER_NODE))
 SETUP_RESULT_DIR=motorbike_${NPROCS}ranks_${NX}_${NY}_${NZ}
 ${OPENFOAM_APP_DIR}/prepare_input.sh
@@ -76,7 +84,7 @@ fi
 
 OUTPUT_DIR=${SLURM_JOB_ID}_no_geopm
 mkdir $OUTPUT_DIR
-cd ${OUTPUT_DIR} 
+cd ${OUTPUT_DIR}
 
 cp -r ${OPENFOAM_APP_DIR}/${SETUP_RESULT_DIR} .
 cd ${SETUP_RESULT_DIR}

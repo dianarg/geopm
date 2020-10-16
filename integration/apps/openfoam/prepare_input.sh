@@ -2,7 +2,8 @@
 
 set -e
 
-source openfoam_env.sh
+# TODO: fix me
+source ${OPENFOAM_APP_DIR}/openfoam_env.sh
 
 # Use 42M cell workload
 # NX=130
@@ -32,6 +33,7 @@ else
     if [ -d ${OPENFOAM_APP_DIR}/${MESH_RESULT_DIR} ]; then
         echo "Found existing mesh in $MESH_RESULT_DIR"
     else
+        echo "No mesh for $NX $NY $NZ"
         cd ${OPENFOAM_APP_DIR}
         mkdir -p ${MESH_RESULT_DIR}
         cd ${MESH_RESULT_DIR}
