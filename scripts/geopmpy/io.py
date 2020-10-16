@@ -1542,7 +1542,8 @@ class RawReportCollection(object):
                     sys.stdout.flush()
         else:
             self.parse_reports(report_paths, verbose)
-
+        self.hdf5_name = report_h5_name
+            
     def parse_reports(self, report_paths, verbose):
         # Note: overlapping key names can break this
         # Insert repeated data for non-leaf levels
