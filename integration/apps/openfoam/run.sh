@@ -65,10 +65,12 @@ cd ${SETUP_RESULT_DIR}
 . $WM_PROJECT_DIR/bin/tools/RunFunctions
 
 # exec args
+date
 geopmlaunch srun -N $NODES -n $NPROCS --geopm-ctl=application --geopm-report=simplefoam.report -- simpleFoam -parallel
+date
 
 # bash cleanup
-./Clean
+#./Clean
 
 cd ${OPENFOAM_APP_DIR}
 
@@ -97,4 +99,4 @@ srun -N $NODES -n $NPROCS -- simpleFoam -parallel
 date
 
 # bash cleanup
-./Clean
+#./Clean

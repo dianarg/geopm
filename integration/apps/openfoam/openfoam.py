@@ -30,28 +30,64 @@
 #
 
 import os
+import textwrap
+import subprocess
+import stat
 
 from .. import apps
 
 
-class HpcgAppConf(apps.AppConf):
-    @staticmethod
-    def name():
-        return 'hpcg'
+class OpenfoamAppConf(apps.AppConf):
 
-    def __init__(self, mach):
-        benchmark_dir = os.path.dirname(os.path.abspath(__file__))
-        self._hpcg_exe = os.path.join(benchmark_dir, 'hpcg', 'bin', 'xhpcg.x')
+    def __init__(self, num_nodes, mach, pin_config):
+        self._benchmark_dir = os.path.dirname(os.path.abspath(__file__))
 
-        self._ranks_per_node = mach.num_package()
-        self._cpu_per_rank = (mach.num_core() - 2) // self._ranks_per_node
+        app_cores = mach.num_core()
+        if pin_config == 'all_cores':
+            pass
+        elif pin_config == 'geopm_os_shared':
+            app_cores -= 1
+        elif pin_config == 'geopm_os_reserved':
+            app_cores -= 2
+        else:
+            raise RuntimeError("Unknown pin_config: {}".format(pin_config))
 
-        # per-process size; should be tuned to use at least 25% of main memory.
-        # must be multiple of 8 and greater than 24
-        # size for mcfly (93GB per node) with 2 ranks per node:
-        size = "256 256 256"  # 24GB, 1000 sec with reference, 220 sec with MKL benchmark
-        runtime = "1800"
-        self._exec_args = '-n{} -t{}'.format(size, runtime)
+        self._num_nodes = num_nodes
+        self._ranks_per_node = app_cores
+        self._cpu_per_rank = 1
+        self._total_ranks = self._ranks_per_node * self._num_nodes
+
+        # |-------+-------+-------+----------|
+        # |   X   |   Y   |   Z   |  MCells  | Solve time (2 nodes)
+        # |-------+-------+-------+----------|
+        # |    20 |     8 |     8 |     0.35 | 20 sec
+        # |    60 |    24 |    24 |     5.38 | 178
+        # |    80 |    32 |    32 |    11.2  |
+        # |    90 |    36 |    36 |    15.5  |
+        # |   100 |    40 |    40 |    20    |
+        # |-------+-------+-------+----------|
+        # Other sizes:
+        # 42M cell: 130 52 52
+        self.NX = 130
+        self.NY = 52
+        self.NZ = 52
+
+        # TODO: remove
+        # toy input for testing
+        if self._num_nodes == 1:
+            self.NX = 20
+            self.NY = 8
+            self.NZ = 8
+        # export NX=60
+        # export NY=24
+        # export NZ=24
+
+        self._mesh_result_dir = 'motorbike_mesh_{}_{}_{}'.format(self.NX, self.NY, self.NZ)
+        self._setup_result_dir = 'motorbike_{}ranks_{}_{}_{}'.format(self._total_ranks, self.NX, self.NY, self.NZ)
+
+    # TODO: temporary workaround to distinguish baseline runs
+    def name(self):
+        return 'openfoam_'+str(self._total_ranks)+'R'
 
     def get_cpu_per_rank(self):
         return self._cpu_per_rank
@@ -59,11 +95,111 @@ class HpcgAppConf(apps.AppConf):
     def get_rank_per_node(self):
         return self._ranks_per_node
 
+    def get_custom_geopm_args(self):
+        return ['--geopm-ctl=application']
+
+    def _environment_bash(self):
+        script = ""
+        # OpenFOAM bash settings
+        #script += 'module purge; module load intel impi\n'
+        script += 'export MPI_ROOT=$(which mpiicc | grep -o ".*/^Ci/")\n'
+        script += 'export OPENFOAM_APP_DIR={}\n'.format(self._benchmark_dir)
+        script += 'source ${OPENFOAM_APP_DIR}/OpenFOAM-v2006/etc/bashrc || true\n'
+        script += 'module list\n'
+        script += 'env | grep WM\n'
+        return script
+
+    def trial_setup(self, run_id, output_dir):
+        start_dir = os.getcwd()
+        os.chdir(output_dir)
+
+        setup = '#!/bin/bash\n'
+        setup += self._environment_bash()
+        # problem size
+        setup += 'export NX={}\n'.format(self.NX)
+        setup += 'export NY={}\n'.format(self.NY)
+        setup += 'export NZ={}\n'.format(self.NZ)
+        # Prepare input
+        setup += 'export NODES={}\n'.format(self._num_nodes)
+        setup += 'export NPROCS={}\n'.format(self._total_ranks)
+        setup += 'export MESH_RESULT_DIR={}\n'.format(self._mesh_result_dir)
+        setup += 'export SETUP_RESULT_DIR={}\n'.format(self._setup_result_dir)
+
+        setup += textwrap.dedent('''\
+        if [ -d ${OPENFOAM_APP_DIR}/${SETUP_RESULT_DIR} ]; then
+            echo "Found existing decomposed mesh in $SETUP_RESULT_DIR "
+        else
+            echo "No decomposition for $NX $NY $NZ and ${NPROCS} ranks"
+            if [ -d ${OPENFOAM_APP_DIR}/${MESH_RESULT_DIR} ]; then
+                echo "Found existing mesh in $MESH_RESULT_DIR"
+            else
+                echo "No mesh for $NX $NY $NZ"
+                cd ${OPENFOAM_APP_DIR}
+                mkdir -p ${MESH_RESULT_DIR}
+                cd ${MESH_RESULT_DIR}
+                # this should have been checked out by build.sh
+                cp -r ${OPENFOAM_APP_DIR}/OpenFOAM-Intel/benchmarks/motorbike/* .
+
+                ./Mesh $NX $NY $NZ
+            fi
+
+            cd ${OPENFOAM_APP_DIR}
+            mkdir -p ${SETUP_RESULT_DIR}
+            cd ${SETUP_RESULT_DIR}
+            cp -r ${OPENFOAM_APP_DIR}/${MESH_RESULT_DIR}/* .
+
+            ./Setup ${NPROCS} ${NODES}
+        fi
+        ''')
+
+        # TODO: try ln instead of cp
+
+        setup += 'cp -rf {}/{}/* .\n'.format(self._benchmark_dir,
+                                             self._setup_result_dir)
+
+        script_name = 'prepare_input.sh'
+        with open(script_name, 'w') as setup_script:
+            setup_script.write(setup)
+        os.chmod(script_name, stat.S_IRWXU)
+
+        # TODO: subprocess.run is py3 only
+        proc = subprocess.run('./'+script_name, shell=True)
+
+        # return to start
+        os.chdir(start_dir)
+
+    def get_bash_setup_commands(self):
+        setup = ''
+        # MPI settings
+        # TODO: make sure FI_PROVIDER is set in system-specific env
+        setup += 'export I_MPI_FABRICS=shm:ofi\n'
+        #setup += 'export FI_PROVIDER=psm2\n'
+        setup += self._environment_bash()
+        setup += 'source $WM_PROJECT_DIR/bin/tools/RunFunctions\n'
+        return setup
+
     def get_bash_exec_path(self):
-        return self._hpcg_exe
+        return 'simpleFoam'
 
     def get_bash_exec_args(self):
-        return self._exec_args
+        return '-parallel'
+
+    def trial_teardown(self, run_id, output_dir):
+        start_dir = os.getcwd()
+        os.chdir(output_dir)
+
+        # TODO: helper to make and execute bash scripts
+        teardown = '#!/bin/bash\n'
+        teardown += self._environment_bash()
+        teardown += './Clean\n'
+        script_name = 'clean_input.sh'
+        with open(script_name, 'w') as script:
+            script.write(teardown)
+        os.chmod(script_name, stat.S_IRWXU)
+        proc = subprocess.run('./'+script_name, shell=True)
+
+        # return to start
+        os.chdir(start_dir)
 
     def parse_fom(self, log_path):
         result = None
