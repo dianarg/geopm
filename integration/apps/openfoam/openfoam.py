@@ -42,15 +42,7 @@ class OpenfoamAppConf(apps.AppConf):
     def __init__(self, num_nodes, mach, pin_config):
         self._benchmark_dir = os.path.dirname(os.path.abspath(__file__))
 
-        app_cores = mach.num_core()
-        if pin_config == 'all_cores':
-            pass
-        elif pin_config == 'geopm_os_shared':
-            app_cores -= 1
-        elif pin_config == 'geopm_os_reserved':
-            app_cores -= 2
-        else:
-            raise RuntimeError("Unknown pin_config: {}".format(pin_config))
+        app_cores = apps.get_available_app_cores(mach, pin_config)
 
         self._num_nodes = num_nodes
         self._ranks_per_node = app_cores
