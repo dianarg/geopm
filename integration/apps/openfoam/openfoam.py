@@ -97,8 +97,6 @@ class OpenfoamAppConf(apps.AppConf):
         script += 'export MPI_ROOT=$(which mpiicc | grep -o ".*/^Ci/")\n'
         script += 'export OPENFOAM_APP_DIR={}\n'.format(self._benchmark_dir)
         script += 'source ${OPENFOAM_APP_DIR}/OpenFOAM-v2006/etc/bashrc || true\n'
-        script += 'module list\n'
-        script += 'env | grep WM\n'
         return script
 
     def trial_setup(self, run_id, output_dir):
@@ -107,6 +105,7 @@ class OpenfoamAppConf(apps.AppConf):
 
         setup = '#!/bin/bash\n'
         setup += self._environment_bash()
+        setup += 'export I_MPI_PIN_PROCESSOR=allcores:map=spread\n'
         # problem size
         setup += 'export NX={}\n'.format(self.NX)
         setup += 'export NY={}\n'.format(self.NY)
