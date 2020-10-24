@@ -167,6 +167,8 @@ def launch_all_runs(targets, num_nodes, iterations, extra_cli_args, output_dir, 
         for tar in targets:
             agent_conf = tar.agent_conf()
             app_conf = tar.app_conf()
+            run_id = tar.run_id(iteration)
+
             app_conf.trial_setup(run_id, output_dir)
             launch_run(agent_conf, app_conf, run_id, output_dir,
                        extra_cli_args=extra_cli_args,
