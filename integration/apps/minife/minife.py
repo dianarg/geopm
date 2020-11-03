@@ -41,7 +41,7 @@ class MinifeAppConf(apps.AppConf):
     def name():
         return 'minife'
 
-    def __init__(self, num_nodes, mach, pin_config='geopm_os_reserved'):
+    def __init__(self, num_nodes, mach, pin_config='geopm_os_reserved', rank_count=1):
         problem_sizes = {
             1: '-nx=396 -ny=384 -nz=384',  # '-nx=264 -ny=256 -nz=256',
             4: '-nx=528 -ny=512 -nz=512',  # '-nx=419 -ny=406 -nz=406',
@@ -57,8 +57,11 @@ class MinifeAppConf(apps.AppConf):
 
         app_cores = apps.get_available_app_cores(mach, pin_config)
         # TODO: test other thread configs
-        self.cpu_per_rank = 1
-        self.ranks_per_node = app_cores // self.cpu_per_rank
+        #self.cpu_per_rank = 1
+        #self.ranks_per_node = app_cores // self.cpu_per_rank
+        self.ranks_per_node = rank_count
+        self.cpu_per_rank = app_cores // self.ranks_per_node
+        print('DRG using {} ranks, {} threads'.format(self.ranks_per_node, self.cpu_per_rank))
 
         benchmark_dir = os.path.dirname(os.path.abspath(__file__))
         self.exe_path = os.path.join(benchmark_dir, 'miniFE_openmp-2.0-rc3/src/miniFE.x')

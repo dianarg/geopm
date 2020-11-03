@@ -47,10 +47,13 @@ if __name__ == '__main__':
     baseline.setup_run_args(parser)
     args, extra_args = parser.parse_known_args()
     mach = machine.init_output_dir(args.output_dir)
-    app_conf_full = minife.MinifeAppConf(args.node_count, mach, 'all_cores')
-    app_conf_reserved = minife.MinifeAppConf(args.node_count, mach, 'geopm_os_reserved')
-    baseline.launch(app_conf_configs={'full': app_conf_full,
-                                      'reserved': app_conf_reserved},
+
+    configs = {}
+    for rank_count in [1, 2, 4, 8, 16, 20, 22]:
+        app_conf_full = minife.MinifeAppConf(args.node_count, mach, 'all_cores', rank_count=rank_count)
+        app_conf_reserved = minife.MinifeAppConf(args.node_count, mach, 'geopm_os_reserved',rank_count=rank_count)
+        configs['full_{}'.format(rank_count)] = app_conf_full
+        configs['reserved_{}'.format(rank_count)] = app_conf_reserved
+    baseline.launch(app_conf_configs=configs,
                     args=args,
                     experiment_cli_args=extra_args)
-
