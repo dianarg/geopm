@@ -456,6 +456,8 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/ApplicationSampler.cpp \
                             src/ApplicationSampler.hpp \
                             src/ApplicationSamplerImp.hpp \
+                            src/BusyWaitIOGroup.cpp \
+                            src/BusyWaitIOGroup.hpp \
                             src/CircularBuffer.hpp \
                             src/CNLIOGroup.cpp \
                             src/CNLIOGroup.hpp \
