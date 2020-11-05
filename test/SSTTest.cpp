@@ -30,17 +30,28 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <memory>
+
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
+#include "SSTSignal.hpp"
+#include "MockSSTTransaction.hpp"
+
+using geopm::SSTSignal;
+using testing::Return;
 
 class SSTTest : public :: testing :: Test
 {
     protected:
         void SetUp(void);
         void TearDown(void);
+        std::shared_ptr<MockSSTTransaction> m_trans;
+        int m_num_cpu = 4;
 };
 
 void SSTTest::SetUp(void)
 {
+    m_trans = std::make_shared<MockSSTTransaction>();
 }
 
 void SSTTest::TearDown(void)
@@ -48,7 +59,29 @@ void SSTTest::TearDown(void)
 
 }
 
-TEST_F(SSTTest, read)
+TEST_F(SSTTest, mailbox_read_batch)
 {
+    // TODO: multiple cpu
+    int cpu = 3;
+    uint32_t command = 0x7f;
+    uint32_t subcommand = 0x33;
+    uint32_t sub_arg = 0x56;
+    uint32_t interface_param = 0x93;
+
+    SSTSignal sig {m_trans, cpu, command, subcommand, sub_arg,
+                   interface_param};
+
+    int batch_idx = 42;
+    EXPECT_CALL(*m_trans, add_mbox_read(cpu, command, subcommand, sub_arg,
+                                        interface_param))
+        .WillOnce(Return(batch_idx));
+
+    sig.setup_batch();
+
+    uint32_t expected = 6;
+    EXPECT_CALL(*m_trans, sample(batch_idx))
+        .WillOnce(Return(expected));
+    uint32_t result = sig.sample();
+    EXPECT_EQ(expected, result);
 
 }

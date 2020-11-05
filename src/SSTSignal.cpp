@@ -31,40 +31,46 @@
  */
 
 #include "config.h"
-#include "SST.hpp"
+#include "SSTSignal.hpp"
 
-struct sst_mmio_interface_s
-{
-    uint32_t is_write;
-    uint32_t cpu_index;
-    uint32_t register_offset;
-    uint32_t value;
-};
-
-struct sst_mmio_interfaces_s
-{
-    uint32_t num_entries;
-    sst_mmio_interface_s interfaces[0];
-};
-
-struct sst_mbox_interface_s
-{
-    uint32_t cpu_index;
-    uint32_t mbox_interface_param; // Parameter to the mbox interface itself
-    uint32_t write_value; // Mailbox data (write-only)
-    uint32_t read_value; // Mailbox data (read-only)
-    uint16_t command;
-    uint16_t subcommand;
-    uint32_t reserved;
-};
-
-struct sst_mbox_interfaces_s
-{
-    uint32_t num_entries;
-    sst_mbox_interface_s interfaces[0];
-};
-
-
+// TODO: fix problems with NAN and replace -1 below
 namespace geopm
 {
+
+    SSTSignal::SSTSignal(std::shared_ptr<geopm::SSTTransaction> trans,
+                         int cpu_idx,
+                         uint32_t command,
+                         uint32_t subcommand,
+                         uint32_t subcommand_arg,  //write_value
+                         uint32_t interface_parameter) // mbox_interface_param
+        : m_trans(trans)
+        , m_cpu_idx(cpu_idx)
+        , m_command(command)
+        , m_subcommand(subcommand)
+        , m_subcommand_arg(subcommand_arg)
+        , m_interface_parameter(interface_parameter)
+        , m_batch_idx(-1)
+    {
+
+    }
+
+    void SSTSignal::setup_batch(void)
+    {
+
+        // commit will be called by iogroup read_batch()
+        m_batch_idx = m_trans->add_mbox_read(m_cpu_idx, m_command, m_subcommand,
+                                             m_subcommand_arg, m_interface_parameter);
+    }
+
+    double SSTSignal::sample(void)
+    {
+        return m_trans->sample(m_batch_idx);
+    }
+
+    double SSTSignal::read(void) const
+    {
+        // mbox_read()
+        // commit
+        return -1;
+    }
 }

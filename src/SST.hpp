@@ -33,7 +33,7 @@
 #ifndef SST_HPP_INCLUDE
 #define SST_HPP_INCLUDE
 
-#include <stdint>
+#include <cstdint>
 
 
 // ioctl(fd_to_interface, 2-or=3, struct address)
@@ -41,26 +41,41 @@
 // #define GEOPM_IOC_SST_MBOX _IOWR(0xfe, 3, struct geopm::SST::sst_mbox_interfaces_s)
 // ioctl(fd, GEOPM_IOC_SST_MMIO, structy)
 //
-
-class SSTInterfaceTransaction
+namespace geopm
 {
-public:
-    // Interact with the mailbox on commands that are expected to return data
-    uint32_t mbox_read(uint32_t cpu_index, uint32_t command, uint32_t subcommand,
-                       uint32_t subcommand_arg, uint32_t interface_parameter);
 
-    // Interact with the mailbox on commands that are not expected to return data
-    void mbox_write(uint32_t cpu_index, uint32_t command, uint32_t subcommand,
-                    uint32_t interface_parameter, uint32_t write_value);
+class SSTTransaction
+{
+    public:
+        /// Interact with the mailbox on commands that are expected to return data
+        virtual int add_mbox_read(uint32_t cpu_index, uint32_t command,
+                                  uint32_t subcommand, uint32_t subcommand_arg,
+                                  uint32_t interface_parameter) = 0;
 
-    // Read data from the mmio interface
-    uint32_t mmio_read(uint32_t cpu_index, uint32_t register_offset);
+        // TODO: write_value probably will go away
+        // /// Interact with the mailbox on commands that are not expected to return data
+        // virtual void add_mbox_write(uint32_t cpu_index, uint32_t command,
+        //                         uint32_t subcommand, uint32_t interface_parameter,
+        //                         uint32_t write_value) = 0;
 
-    // Write data to the mmio interface
-    void mmio_write(uint32_t cpu_index, uint32_t register_offset, uint32_t value);
+        // /// Read data from the mmio interface
+        // virtual int add_mmio_read(uint32_t cpu_index, uint32_t register_offset) = 0;
 
-private:
-        // lists
+        // /// Write data to the mmio interface
+        // virtual int add_mmio_write(uint32_t cpu_index, uint32_t register_offset,
+        //                         uint32_t value) = 0;
+
+        // call ioctl() for both mbox list and mmio list,
+        // unless we end up splitting this class
+        virtual void read_batch(void) = 0;
+
+        // TODO: might need separate call for mbox and mmio
+        virtual uint32_t sample(int index) = 0;
+
+        // later:
+        // void adjust(int index, uint32_t write_value);
 };
+
+}
 
 #endif
