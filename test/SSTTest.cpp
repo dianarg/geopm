@@ -32,7 +32,6 @@
 
 #include "gtest/gtest.h"
 
-
 class SSTTest : public :: testing :: Test
 {
     protected:
@@ -51,4 +50,5 @@ void SSTTest::TearDown(void)
 
 TEST_F(SSTTest, read)
 {
+
 }

@@ -439,6 +439,7 @@ GTEST_TESTS = test/gtest_links/AcceleratorTopoTest.default_config \
               test/gtest_links/SharedMemoryTest.lock_shmem_u \
               test/gtest_links/SharedMemoryTest.share_data \
               test/gtest_links/SharedMemoryTest.share_data_ipc \
+              test/gtest_links/SSTTest.all_the_tests \
               test/gtest_links/TimeIOGroupTest.adjust \
               test/gtest_links/TimeIOGroupTest.is_valid \
               test/gtest_links/TimeIOGroupTest.push \
@@ -638,6 +639,7 @@ test_geopm_test_SOURCES = test/AcceleratorTopoTest.cpp \
                           test/SampleRegulatorTest.cpp \
                           test/SchedTest.cpp \
                           test/SharedMemoryTest.cpp \
+                          test/SSTTest.cpp \
                           test/TimeIOGroupTest.cpp \
                           test/TracerTest.cpp \
                           test/TreeCommLevelTest.cpp \

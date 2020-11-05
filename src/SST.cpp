@@ -30,37 +30,41 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SST_HPP_INCLUDE
-#define SST_HPP_INCLUDE
+#include "config.h"
+#include "SST.hpp"
 
-#include <stdint>
-
-
-// ioctl(fd_to_interface, 2-or=3, struct address)
-// #define GEOPM_IOC_SST_MMIO _IOWR(0xfe, 2, struct geopm::SST::sst_mmio_interfaces_s)
-// #define GEOPM_IOC_SST_MBOX _IOWR(0xfe, 3, struct geopm::SST::sst_mbox_interfaces_s)
-// ioctl(fd, GEOPM_IOC_SST_MMIO, structy)
-//
-
-class SSTInterfaceTransaction
+struct sst_mmio_interface_s
 {
-public:
-    // Interact with the mailbox on commands that are expected to return data
-    uint32_t mbox_read(uint32_t cpu_index, uint32_t command, uint32_t subcommand,
-                       uint32_t subcommand_arg, uint32_t interface_parameter);
-
-    // Interact with the mailbox on commands that are not expected to return data
-    void mbox_write(uint32_t cpu_index, uint32_t command, uint32_t subcommand,
-                    uint32_t interface_parameter, uint32_t write_value);
-
-    // Read data from the mmio interface
-    uint32_t mmio_read(uint32_t cpu_index, uint32_t register_offset);
-
-    // Write data to the mmio interface
-    void mmio_write(uint32_t cpu_index, uint32_t register_offset, uint32_t value);
-
-private:
-        // lists
+    uint32_t is_write;
+    uint32_t cpu_index;
+    uint32_t register_offset;
+    uint32_t value;
 };
 
-#endif
+struct sst_mmio_interfaces_s
+{
+    uint32_t num_entries;
+    sst_mmio_interface_s interfaces[0];
+};
+
+struct sst_mbox_interface_s
+{
+    uint32_t cpu_index;
+    uint32_t interface_parameter; // Parameter to the mbox interface itself
+    uint32_t write_value; // Mailbox data (write-only)
+    uint32_t read_value; // Mailbox data (read-only)
+    uint16_t command;
+    uint16_t subcommand;
+    uint32_t reserved;
+};
+
+struct sst_mbox_interfaces_s
+{
+    uint32_t num_entries;
+    sst_mbox_interface_s interfaces[0];
+};
+
+
+namespace geopm
+{
+}
