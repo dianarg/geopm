@@ -32,39 +32,71 @@
 
 #include "config.h"
 #include "SST.hpp"
+#include "SSTImp.hpp"
 
-struct sst_mmio_interface_s
-{
-    uint32_t is_write;
-    uint32_t cpu_index;
-    uint32_t register_offset;
-    uint32_t value;
-};
+#include <sys/ioctl.h>
+#include <fcntl.h>
 
-struct sst_mmio_interfaces_s
-{
-    uint32_t num_entries;
-    sst_mmio_interface_s interfaces[0];
-};
+#include "Exception.hpp"
 
-struct sst_mbox_interface_s
-{
-    uint32_t cpu_index;
-    uint32_t mbox_interface_param; // Parameter to the mbox interface itself
-    uint32_t write_value; // Mailbox data (write-only)
-    uint32_t read_value; // Mailbox data (read-only)
-    uint16_t command;
-    uint16_t subcommand;
-    uint32_t reserved;
-};
-
-struct sst_mbox_interfaces_s
-{
-    uint32_t num_entries;
-    sst_mbox_interface_s interfaces[0];
-};
+#define GEOPM_IOC_SST_MMIO _IOWR(0xfe, 2, struct geopm::SSTTransactionImp::sst_mmio_interface_batch_s)
+#define GEOPM_IOC_SST_MBOX _IOWR(0xfe, 3, struct geopm::SSTTransactionImp::sst_mbox_interface_batch_s)
 
 
 namespace geopm
 {
+
+    SSTTransactionImp::SSTTransactionImp()
+    {
+        // TODO: error checking
+        m_path = "/dev/isst_interface";
+        m_fd = open(m_path.c_str(), O_RDWR);
+
+        if (m_fd < 0) {
+            throw Exception("SSTTransactionImp: failed to open SST driver",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+
+        }
+    }
+
+    int SSTTransactionImp::add_mbox_read(uint32_t cpu_index, uint32_t command,
+                                          uint32_t subcommand, uint32_t subcommand_arg,
+                                          uint32_t interface_parameter)
+    {
+        // save the stuff in the list
+        struct sst_mbox_interface_s mbox {
+            .cpu_index = cpu_index,
+            .mbox_interface_param = interface_parameter,
+            .write_value = subcommand_arg,
+            .read_value = 0,
+            .command = command,
+            .subcommand = subcommand,
+            .reserved = 0
+        };
+        int idx = m_mbox_interfaces.size();
+        m_mbox_interfaces.push_back(mbox);
+        return idx;
+    }
+
+        // call ioctl() for both mbox list and mmio list,
+        // unless we end up splitting this class
+    void SSTTransactionImp::read_batch(void)
+    {
+        m_mbox_read_batch.num_entries = m_mbox_interfaces.size();
+        m_mbox_read_batch.interfaces = m_mbox_interfaces.data();
+        int err = ioctl(m_fd, GEOPM_IOC_SST_MBOX, &m_mbox_read_batch);
+        if (err) {
+            throw Exception("SSTTransactionImp::read_batch(): read failed",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+    }
+
+
+    // TODO: might need separate call for mbox and mmio
+    uint32_t SSTTransactionImp::sample(int batch_idx) const
+    {
+        return m_mbox_read_batch.interfaces[batch_idx].read_value;
+    }
+
+
 }

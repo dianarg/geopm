@@ -30,55 +30,34 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SSTSIGNAL_HPP_INCLUDE
-#define SSTSIGNAL_HPP_INCLUDE
+#ifndef MOCKSSTTRANSACTION_HPP_INCLUDE
+#define MOCKSSTTRANSACTION_HPP_INCLUDE
 
-#include <memory>
+#include "gmock/gmock.h"
 
-#include "Signal.hpp"
 #include "SST.hpp"
 
-namespace geopm
+
+class MockSSTTransaction : public geopm::SSTTransaction
 {
+    public:
+        MOCK_METHOD5(add_mbox_read,
+                     int(uint32_t cpu_index, uint32_t command,
+                         uint32_t subcommand, uint32_t subcommand_arg,
+                         uint32_t interface_parameter));
+        // MOCK_METHOD5(add_mbox_write,
+        //              int(uint32_t cpu_index, uint32_t command, uint32_t subcommand,
+        //                  uint32_t interface_parameter, uint32_t write_value));
+        // MOCK_METHOD2(mmio_read,
+        //              uint32_t(uint32_t cpu_index, uint32_t register_offset));
+        // MOCK_METHOD3(mmio_write,
+        //              void(uint32_t cpu_index, uint32_t register_offset,
+        //                   uint32_t value));
 
-    // TODO: think about whether to use same class with multiple constructors
-    // for both MMIO and Mailbox, or different signal types
-    class SSTSignal : public geopm::Signal
-    {
-        public:
-            // signal that does not need a subcommand arg
-            SSTSignal(std::shared_ptr<geopm::SSTTransaction> trans,
-                      int cpu_idx,
-                      uint32_t command,
-                      uint32_t subcommand,
-                      uint32_t subcommand_arg,
-                      uint32_t interface_parameter);
-
-            // // signal that requires dynamic subcommand arg value
-            // SSTSignal(std::shared_ptr<geopm::SSTTransaction> trans,
-            //           std::shared_ptr<geopm::Signal> subcommand_arg,
-            //           uint32_t command,
-            //           uint32_t subcommand,
-            //           int start_bit,
-            //           int end_bit);
-
-            virtual ~SSTSignal() = default;
-
-            void setup_batch(void) override;
-            double sample(void) override;
-            double read(void) const override;
-
-        private:
-            std::shared_ptr<geopm::SSTTransaction> m_trans;
-            const int m_cpu_idx;
-            const uint32_t m_command;
-            const uint32_t m_subcommand;
-            const uint32_t m_subcommand_arg;
-            const uint32_t m_interface_parameter;
-
-            int m_batch_idx;
-    };
-
-}
+        MOCK_METHOD0(read_batch,
+                     void(void));
+        MOCK_CONST_METHOD1(sample,
+                           uint32_t(int index));
+};
 
 #endif

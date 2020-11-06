@@ -30,52 +30,69 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SST_HPP_INCLUDE
-#define SST_HPP_INCLUDE
+#include <string>
 
-#include <cstdint>
+#include "SST.hpp"
 
-#include <vector>
-
-// ioctl(fd_to_interface, 2-or=3, struct address)
-// ioctl(fd, GEOPM_IOC_SST_MMIO, structy)
-//
 namespace geopm
 {
 
-    // TODO: maybe rename
-    class SSTTransaction
+
+    class SSTTransactionImp : public SSTTransaction
     {
         public:
+            SSTTransactionImp();
+            virtual ~SSTTransactionImp() = default;
+
             /// Interact with the mailbox on commands that are expected to return data
-            virtual int add_mbox_read(uint32_t cpu_index, uint32_t command,
-                                      uint32_t subcommand, uint32_t subcommand_arg,
-                                      uint32_t interface_parameter) = 0;
-
-            // TODO: write_value probably will go away
-            // /// Interact with the mailbox on commands that are not expected to return data
-            // virtual void add_mbox_write(uint32_t cpu_index, uint32_t command,
-            //                         uint32_t subcommand, uint32_t interface_parameter,
-            //                         uint32_t write_value) = 0;
-
-            // /// Read data from the mmio interface
-            // virtual int add_mmio_read(uint32_t cpu_index, uint32_t register_offset) = 0;
-
-            // /// Write data to the mmio interface
-            // virtual int add_mmio_write(uint32_t cpu_index, uint32_t register_offset,
-            //                         uint32_t value) = 0;
-
+            int add_mbox_read(uint32_t cpu_index, uint32_t command,
+                              uint32_t subcommand, uint32_t subcommand_arg,
+                              uint32_t interface_parameter) override;
             // call ioctl() for both mbox list and mmio list,
             // unless we end up splitting this class
-            virtual void read_batch(void) = 0;
+            void read_batch(void) override;
 
             // TODO: might need separate call for mbox and mmio
-            virtual uint32_t sample(int index) const = 0;
+            uint32_t sample(int index) const override;
 
             // later:
             // void adjust(int index, uint32_t write_value);
+
+        private:
+            struct sst_mmio_interface_s
+            {
+                uint32_t is_write;
+                uint32_t cpu_index;
+                uint32_t register_offset;
+                uint32_t value;
+            };
+
+            struct sst_mmio_interfaces_s
+            {
+                uint32_t num_entries;
+                sst_mmio_interface_s interfaces[0];
+            };
+
+            struct sst_mbox_interface_s
+            {
+                uint32_t cpu_index;
+                uint32_t mbox_interface_param; // Parameter to the mbox interface itself
+                uint32_t write_value; // Mailbox data (write-only)
+                uint32_t read_value; // Mailbox data (read-only)
+                uint16_t command;
+                uint16_t subcommand;
+                uint32_t reserved;
+            };
+
+            struct sst_mbox_interface_batch_s
+            {
+                uint32_t num_entries;
+                sst_mbox_interface_s *interfaces;  // TODO: might need to be array instead
+            };
+
+            std::string m_path;
+            int m_fd;
+            std::vector<struct sst_mbox_interface_s> m_mbox_interfaces;
+            struct sst_mbox_interface_batch_s m_mbox_read_batch;
     };
-
 }
-
-#endif
