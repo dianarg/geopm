@@ -33,6 +33,7 @@
 #include "config.h"
 #include "SSTIOGroup.hpp"
 
+#include "geopm_debug.hpp"
 #include "PlatformTopo.hpp"
 #include "Helper.hpp"
 #include "Exception.hpp"
@@ -43,13 +44,17 @@
 #include "SSTImp.hpp"
 #include "SSTSignal.hpp"
 
+#include <algorithm>
+
 namespace geopm
 {
     SSTIOGroup::SSTIOGroup(const PlatformTopo &topo, std::shared_ptr<SSTTransaction> trans)
         : m_is_signal_pushed(false)
         , m_is_batch_read(false)
+        , m_valid_signal_name({"ISST::CONFIG_LEVEL"})
         , m_topo(topo)
         , m_trans(trans)
+        , m_is_read(false)
     {
         // TODO: need SST::make_shared() function in interface
         if (m_trans == nullptr) {
@@ -102,7 +107,14 @@ namespace geopm
             std::shared_ptr<Signal> signal = std::make_shared<MSRFieldSignal>(
                 levels_info, 16, 23, MSR::M_FUNCTION_SCALE, 1.0);
             result = m_signal_pushed.size();
-            m_signal_pushed.push_back(signal);
+
+            bool is_found = std::find(m_signal_pushed.begin(), m_signal_pushed.end(),
+                    signal) != m_signal_pushed.end();
+            if (!is_found)
+            {
+                m_signal_pushed.push_back(signal);
+            }
+            signal->setup_batch();
         }
         else {
             throw Exception("invalid signal", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
@@ -137,7 +149,8 @@ namespace geopm
         // if (m_is_signal_pushed) {
         //     m_time_curr = geopm_time_since(&m_time_zero);
         // }
-        // m_is_batch_read = true;
+        m_trans->read_batch();
+        m_is_read = true;
     }
 
     void SSTIOGroup::write_batch(void)
@@ -160,7 +173,17 @@ namespace geopm
         //                     GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         // }
         // return m_time_curr;
-        return NAN;
+        if (batch_idx < 0 || batch_idx >= static_cast<int>(m_signal_pushed.size())) {
+            throw Exception("SSTIOGroup::sample(): batch_idx out of range",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+
+        if (!m_is_read) {
+            throw Exception("SSTIOGroup::sample() called before the signal was read.",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
+
+        return m_signal_pushed[batch_idx]->sample();
     }
 
     void SSTIOGroup::adjust(int batch_idx, double setting)
@@ -171,6 +194,9 @@ namespace geopm
 
     double SSTIOGroup::read_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
+        auto idx = push_signal(signal_name, domain_type, domain_idx);
+        read_batch();
+        return sample(idx);
         // if (!is_valid_signal(signal_name)) {
         //     throw Exception("SSTIOGroup:read_signal(): " + signal_name +
         //                     "not valid for SSTIOGroup",
@@ -182,7 +208,6 @@ namespace geopm
         //                     GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         // }
         // return geopm_time_since(&m_time_zero);
-        return NAN;
     }
 
     void SSTIOGroup::write_control(const std::string &control_name, int domain_type, int domain_idx, double setting)

@@ -81,6 +81,7 @@ namespace geopm
 
             const PlatformTopo &m_topo;
             std::shared_ptr<SSTTransaction> m_trans;
+            bool m_is_read;
 
             // All available signals: map from name to signal_info.
             // The signals vector is over the indices for the domain.

@@ -87,7 +87,7 @@ namespace geopm
             struct sst_mbox_interface_batch_s
             {
                 uint32_t num_entries;
-                sst_mbox_interface_s *interfaces;  // TODO: might need to be array instead
+                sst_mbox_interface_s interfaces[1];  // TODO: might need to be array instead
             };
 
             std::string m_path;

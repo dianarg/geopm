@@ -36,12 +36,12 @@
 
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <cstring>
 
 #include "Exception.hpp"
 
-#define GEOPM_IOC_SST_MMIO _IOWR(0xfe, 2, struct geopm::SSTTransactionImp::sst_mmio_interface_batch_s)
-#define GEOPM_IOC_SST_MBOX _IOWR(0xfe, 3, struct geopm::SSTTransactionImp::sst_mbox_interface_batch_s)
-
+#define GEOPM_IOC_SST_MMIO _IOWR(0xfe, 2, struct geopm::SSTTransactionImp::sst_mmio_interface_batch_s *)
+#define GEOPM_IOC_SST_MBOX _IOWR(0xfe, 3, struct geopm::SSTTransactionImp::sst_mbox_interface_batch_s *)
 
 namespace geopm
 {
@@ -83,9 +83,19 @@ namespace geopm
     void SSTTransactionImp::read_batch(void)
     {
         m_mbox_read_batch.num_entries = m_mbox_interfaces.size();
-        m_mbox_read_batch.interfaces = m_mbox_interfaces.data();
+        if (m_mbox_read_batch.num_entries == 0)
+        {
+            return;
+        }
+
+        if (m_mbox_read_batch.num_entries > 1) {
+            throw Exception("SSTTransactionImp::read_batch(): Too many mailbox commands",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        std::memcpy(m_mbox_read_batch.interfaces, m_mbox_interfaces.data(), m_mbox_read_batch.num_entries * sizeof m_mbox_read_batch.interfaces[0]);
+
         int err = ioctl(m_fd, GEOPM_IOC_SST_MBOX, &m_mbox_read_batch);
-        if (err) {
+        if (err == -1) {
             throw Exception("SSTTransactionImp::read_batch(): read failed",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
