@@ -53,10 +53,10 @@ namespace geopm
                                       uint32_t interface_parameter) = 0;
 
             // TODO: write_value probably will go away
-            // /// Interact with the mailbox on commands that are not expected to return data
-            // virtual void add_mbox_write(uint32_t cpu_index, uint32_t command,
-            //                         uint32_t subcommand, uint32_t interface_parameter,
-            //                         uint32_t write_value) = 0;
+            /// Interact with the mailbox on commands that are not expected to return data
+            virtual int add_mbox_write(uint32_t cpu_index, uint32_t command,
+                                       uint32_t subcommand, uint32_t interface_parameter,
+                                       uint32_t write_value) = 0;
 
             // /// Read data from the mmio interface
             // virtual int add_mmio_read(uint32_t cpu_index, uint32_t register_offset) = 0;
@@ -72,8 +72,7 @@ namespace geopm
             // TODO: might need separate call for mbox and mmio
             virtual uint32_t sample(int index) const = 0;
 
-            // later:
-            // void adjust(int index, uint32_t write_value);
+            virtual void adjust(int index, uint32_t write_value, uint64_t mask) = 0;
     };
 
 }

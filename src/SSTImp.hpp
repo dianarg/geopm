@@ -48,15 +48,16 @@ namespace geopm
             int add_mbox_read(uint32_t cpu_index, uint32_t command,
                               uint32_t subcommand, uint32_t subcommand_arg,
                               uint32_t interface_parameter) override;
+            int add_mbox_write(uint32_t cpu_index, uint32_t command,
+                               uint32_t subcommand, uint32_t interface_parameter,
+                               uint32_t write_value) override;
             // call ioctl() for both mbox list and mmio list,
             // unless we end up splitting this class
             void read_batch(void) override;
 
             // TODO: might need separate call for mbox and mmio
             uint32_t sample(int index) const override;
-
-            // later:
-            // void adjust(int index, uint32_t write_value);
+            void adjust(int index, uint32_t write_value, uint64_t mask) override;
 
         private:
             struct sst_mmio_interface_s

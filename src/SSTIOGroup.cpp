@@ -46,6 +46,7 @@
 #include "SST.hpp"
 #include "SSTImp.hpp"
 #include "SSTSignal.hpp"
+#include "SSTControl.hpp"
 
 namespace geopm
 {
@@ -53,7 +54,7 @@ namespace geopm
                            std::shared_ptr<SSTTransaction> trans)
         : m_is_signal_pushed(false)
         , m_is_batch_read(false)
-        , m_valid_signal_name({"ISST::CONFIG_LEVEL"})
+        , m_valid_signal_name({"SST::CONFIG_LEVEL"})
         , m_topo(topo)
         , m_trans(trans)
         , m_is_read(false)
@@ -82,7 +83,7 @@ namespace geopm
 
     bool SSTIOGroup::is_valid_control(const std::string &control_name) const
     {
-        return false;
+        return true;
     }
 
     int SSTIOGroup::signal_domain_type(const std::string &signal_name) const
@@ -102,7 +103,7 @@ namespace geopm
     int SSTIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         int result = -1;
-        if (signal_name == "ISST::CONFIG_LEVEL") {
+        if (signal_name == "SST::CONFIG_LEVEL") {
             if (domain_type != GEOPM_DOMAIN_PACKAGE) {
                 throw Exception("wrong domain type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
@@ -144,8 +145,25 @@ namespace geopm
 
     int SSTIOGroup::push_control(const std::string &control_name, int domain_type, int domain_idx)
     {
-        throw Exception("SSTIOGroup::push_control(): there are no controls supported by the SSTIOGroup",
-                        GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        int result = -1;
+        if (control_name == "SST::TURBO_ENABLE") {
+            if (domain_type != GEOPM_DOMAIN_PACKAGE) {
+                throw Exception("wrong domain type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+            // TODO: assumes using any CPU in package is fine
+            auto cpus = m_topo.domain_nested(GEOPM_DOMAIN_CPU, domain_type, domain_idx);
+            int cpu_idx = *(cpus.begin());
+
+            auto control = std::make_shared<SSTControl>(m_trans, cpu_idx, 0x7F, 0x2, 0x0, 0x1,
+                                                        16, 16);
+            control->setup_batch();
+            result = m_control_pushed.size();
+            m_control_pushed.push_back(control);
+        }
+        else {
+            throw Exception("invalid signal", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+        return result;
     }
 
     void SSTIOGroup::read_batch(void)
@@ -191,6 +209,7 @@ namespace geopm
 
     void SSTIOGroup::adjust(int batch_idx, double setting)
     {
+        m_control_pushed[batch_idx]->adjust(setting);
         // throw Exception("SSTIOGroup::adjust(): there are no controls supported by the SSTIOGroup",
         //                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }

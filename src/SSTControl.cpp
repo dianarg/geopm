@@ -30,37 +30,54 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MOCKSSTTRANSACTION_HPP_INCLUDE
-#define MOCKSSTTRANSACTION_HPP_INCLUDE
+#include "config.h"
+#include "SSTControl.hpp"
 
-#include "gmock/gmock.h"
+#include "SSTIO.hpp"
 
-#include "SST.hpp"
-
-
-class MockSSTTransaction : public geopm::SSTTransaction
+namespace geopm
 {
-    public:
-        MOCK_METHOD5(add_mbox_read,
-                     int(uint32_t cpu_index, uint32_t command,
-                         uint32_t subcommand, uint32_t subcommand_arg,
-                         uint32_t interface_parameter));
-        MOCK_METHOD5(add_mbox_write,
-                     int(uint32_t cpu_index, uint32_t command,
-                         uint32_t subcommand,
-                         uint32_t interface_parameter, uint32_t write_value));
-        // MOCK_METHOD2(mmio_read,
-        //              uint32_t(uint32_t cpu_index, uint32_t register_offset));
-        // MOCK_METHOD3(mmio_write,
-        //              void(uint32_t cpu_index, uint32_t register_offset,
-        //                   uint32_t value));
+    SSTControl::SSTControl(std::shared_ptr<SSTIO> sstio,
+                           int cpu_idx, uint32_t command, uint32_t subcommand,
+                           uint32_t interface_parameter, uint32_t write_value,
+                           int begin_bit, int end_bit)
+        : m_sstio(sstio)
+        , m_cpu_idx(cpu_idx)
+        , m_command(command)
+        , m_subcommand(subcommand)
+        , m_interface_parameter(interface_parameter)
+        , m_write_value(write_value)
+        , m_shift(begin_bit)
+        , m_num_bit(end_bit - begin_bit + 1)
+        , m_mask(((1ULL << m_num_bit) - 1) << begin_bit)
+    {
 
-        MOCK_METHOD0(read_batch,
-                     void(void));
-        MOCK_CONST_METHOD1(sample,
-                           uint32_t(int index));
-        MOCK_METHOD3(adjust,
-                     void(int index, uint32_t write_value, uint64_t mask));
-};
+    }
 
-#endif
+    void SSTControl::setup_batch(void)
+    {
+        m_adjust_idx = m_sstio->add_mbox_write(m_cpu_idx, m_command, m_subcommand,
+                                               m_interface_parameter, m_write_value);
+
+    }
+
+    void SSTControl::adjust(double value)
+    {
+        m_sstio->adjust(m_adjust_idx, value, m_mask);
+    }
+
+    void SSTControl::write(double value)
+    {
+
+    }
+
+    void SSTControl::save(void)
+    {
+
+    }
+
+    void SSTControl::restore(void)
+    {
+
+    }
+}

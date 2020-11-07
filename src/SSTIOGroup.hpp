@@ -44,6 +44,7 @@ namespace geopm
     class PlatformTopo;
     class SSTTransaction;
     class Signal;
+    class Control;
 
     /// @brief IOGroup that provides a signal for the time since GEOPM startup.
     class SSTIOGroup : public IOGroup
@@ -99,6 +100,9 @@ namespace geopm
 
             // Mapping of signal index to pushed signals.
             std::vector<std::shared_ptr<Signal> > m_signal_pushed;
+
+            // Mapping of control index to pushed controls
+            std::vector<std::shared_ptr<Control> > m_control_pushed;
     };
 }
 

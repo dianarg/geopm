@@ -77,6 +77,13 @@ namespace geopm
         m_mbox_interfaces.push_back(mbox);
         return idx;
     }
+    int SSTTransactionImp::add_mbox_write(uint32_t cpu_index, uint32_t command,
+                                          uint32_t subcommand, uint32_t interface_parameter,
+                                          uint32_t write_value)
+    {
+        throw Exception("unimplemented", -1);
+        return -1;
+    }
 
     // call ioctl() for both mbox list and mmio list,
     // unless we end up splitting this class
@@ -109,4 +116,9 @@ namespace geopm
     }
 
 
+    void SSTTransactionImp::adjust(int index, uint32_t write_value, uint64_t mask)
+    {
+        throw Exception("unimplemented", -1);
+
+    }
 }

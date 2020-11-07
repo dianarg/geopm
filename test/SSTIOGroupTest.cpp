@@ -103,8 +103,8 @@ TEST_F(SSTIOGroupTest, sample_config_level)
     EXPECT_CALL(*m_trans, add_mbox_read(pkg_1_cpu, 0x7F, 0x00, 0x00, 0x00))
         .WillOnce(Return(CONFIG_LEVEL_1));
 
-    int idx0 = m_group->push_signal("ISST::CONFIG_LEVEL", GEOPM_DOMAIN_PACKAGE, 0);
-    int idx1 = m_group->push_signal("ISST::CONFIG_LEVEL", GEOPM_DOMAIN_PACKAGE, 1);
+    int idx0 = m_group->push_signal("SST::CONFIG_LEVEL", GEOPM_DOMAIN_PACKAGE, 0);
+    int idx1 = m_group->push_signal("SST::CONFIG_LEVEL", GEOPM_DOMAIN_PACKAGE, 1);
     EXPECT_NE(idx0, idx1);
 
     uint32_t result = 0;
@@ -139,4 +139,31 @@ TEST_F(SSTIOGroupTest, sample_config_level)
 
     }
 
+}
+
+TEST_F(SSTIOGroupTest, adjust_turbo_enable)
+{
+    enum sst_idx_e {
+        TURBO_ENABLE_0,
+        TURBO_ENABLE_1
+    };
+
+    int pkg_0_cpu = 0;
+    int pkg_1_cpu = 2;
+
+    EXPECT_CALL(*m_trans, add_mbox_write(pkg_0_cpu, 0x7F, 0x02, 0x00, 0x01))
+        .WillOnce(Return(TURBO_ENABLE_0));
+    EXPECT_CALL(*m_trans, add_mbox_write(pkg_1_cpu, 0x7F, 0x02, 0x00, 0x01))
+        .WillOnce(Return(TURBO_ENABLE_1));
+
+    int idx0 = m_group->push_control("SST::TURBO_ENABLE", GEOPM_DOMAIN_PACKAGE, 0);
+    int idx1 = m_group->push_control("SST::TURBO_ENABLE", GEOPM_DOMAIN_PACKAGE, 1);
+    EXPECT_NE(idx0, idx1);
+
+    // bit 16
+    uint64_t mask = 0x10000;
+    EXPECT_CALL(*m_trans, adjust(idx0, 0x1, mask));
+    EXPECT_CALL(*m_trans, adjust(idx1, 0x0, mask));
+    m_group->adjust(idx0, 0x1);
+    m_group->adjust(idx1, 0x0);
 }

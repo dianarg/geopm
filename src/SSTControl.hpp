@@ -30,37 +30,38 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MOCKSSTTRANSACTION_HPP_INCLUDE
-#define MOCKSSTTRANSACTION_HPP_INCLUDE
+#include <memory>
 
-#include "gmock/gmock.h"
+#include "Control.hpp"
 
-#include "SST.hpp"
-
-
-class MockSSTTransaction : public geopm::SSTTransaction
+namespace geopm
 {
-    public:
-        MOCK_METHOD5(add_mbox_read,
-                     int(uint32_t cpu_index, uint32_t command,
-                         uint32_t subcommand, uint32_t subcommand_arg,
-                         uint32_t interface_parameter));
-        MOCK_METHOD5(add_mbox_write,
-                     int(uint32_t cpu_index, uint32_t command,
-                         uint32_t subcommand,
-                         uint32_t interface_parameter, uint32_t write_value));
-        // MOCK_METHOD2(mmio_read,
-        //              uint32_t(uint32_t cpu_index, uint32_t register_offset));
-        // MOCK_METHOD3(mmio_write,
-        //              void(uint32_t cpu_index, uint32_t register_offset,
-        //                   uint32_t value));
+    class SSTIO;
 
-        MOCK_METHOD0(read_batch,
-                     void(void));
-        MOCK_CONST_METHOD1(sample,
-                           uint32_t(int index));
-        MOCK_METHOD3(adjust,
-                     void(int index, uint32_t write_value, uint64_t mask));
-};
+    class SSTControl : public geopm::Control
+    {
+        public:
+            SSTControl(std::shared_ptr<SSTIO> sstio,
+                       int cpu_idx, uint32_t command, uint32_t subcommand,
+                       uint32_t interface_parameter, uint32_t write_value,
+                       int begin_bit, int end_bit);
+            virtual ~SSTControl() = default;
+            void setup_batch(void) override;
+            void adjust(double value) override;
+            void write(double value) override;
+            void save(void) override;
+            void restore(void) override;
+        private:
+            std::shared_ptr<SSTIO> m_sstio;
+            const int m_cpu_idx;
+            const uint32_t m_command;
+            const uint32_t m_subcommand;
+            const uint32_t m_interface_parameter;
+            const uint32_t m_write_value;
+            const int m_shift;
+            const int m_num_bit;
+            const uint64_t m_mask;
+            int m_adjust_idx;
 
-#endif
+    };
+}
