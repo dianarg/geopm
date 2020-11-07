@@ -42,6 +42,8 @@
 
 using geopm::SSTIOGroup;
 using testing::Return;
+using testing::_;
+using testing::AtLeast;
 
 class SSTIOGroupTest : public :: testing :: Test
 {
@@ -58,6 +60,7 @@ class SSTIOGroupTest : public :: testing :: Test
 void SSTIOGroupTest::SetUp()
 {
     m_topo = make_topo(m_num_package, m_num_core, m_num_cpu);
+    EXPECT_CALL(*m_topo, domain_nested(_, _, _)).Times(AtLeast(0));
 
     m_trans = std::make_shared<MockSSTTransaction>();
 
@@ -92,9 +95,10 @@ TEST_F(SSTIOGroupTest, sample_config_level)
         CONFIG_LEVEL_1
     };
 
+    int pkg_0_cpu = 0;
     int pkg_1_cpu = 2;
 
-    EXPECT_CALL(*m_trans, add_mbox_read(0, 0x7F, 0x00, 0x00, 0x00))
+    EXPECT_CALL(*m_trans, add_mbox_read(pkg_0_cpu, 0x7F, 0x00, 0x00, 0x00))
         .WillOnce(Return(CONFIG_LEVEL_0));
     EXPECT_CALL(*m_trans, add_mbox_read(pkg_1_cpu, 0x7F, 0x00, 0x00, 0x00))
         .WillOnce(Return(CONFIG_LEVEL_1));
@@ -112,12 +116,17 @@ TEST_F(SSTIOGroupTest, sample_config_level)
 
     //bits 16:23
     //0b 1111 1111 0000 0000 0000 0000
-    //uint64_t mask = 0xFF0000
+    //uint64_t mask =nullptr 0xFF0000
     uint32_t raw0 = 0x1428000;
-    uint32_t expected0 = 42;
-    EXPECT_CALL(*m_trans, sample(CONFIG_LEVEL_0)).WillOnce(Return(raw0));
+    uint32_t raw1 = 0x1678000;
+    uint32_t expected0 = 0x42;
+    uint32_t expected1 = 0x67;
+    EXPECT_CALL(*m_trans, sample(CONFIG_LEVEL_0)).WillRepeatedly(Return(raw0));
+    EXPECT_CALL(*m_trans, sample(CONFIG_LEVEL_1)).WillRepeatedly(Return(raw1));
     result = m_group->sample(idx0);
     EXPECT_EQ(expected0, result);
+    result = m_group->sample(idx1);
+    EXPECT_EQ(expected1, result);
     }
 
     // sample again without read should get same value

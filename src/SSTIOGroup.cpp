@@ -33,6 +33,9 @@
 #include "config.h"
 #include "SSTIOGroup.hpp"
 
+#include <algorithm>
+
+
 #include "geopm_debug.hpp"
 #include "PlatformTopo.hpp"
 #include "Helper.hpp"
@@ -44,11 +47,10 @@
 #include "SSTImp.hpp"
 #include "SSTSignal.hpp"
 
-#include <algorithm>
-
 namespace geopm
 {
-    SSTIOGroup::SSTIOGroup(const PlatformTopo &topo, std::shared_ptr<SSTTransaction> trans)
+    SSTIOGroup::SSTIOGroup(const PlatformTopo &topo,
+                           std::shared_ptr<SSTTransaction> trans)
         : m_is_signal_pushed(false)
         , m_is_batch_read(false)
         , m_valid_signal_name({"ISST::CONFIG_LEVEL"})
@@ -101,19 +103,21 @@ namespace geopm
     {
         int result = -1;
         if (signal_name == "ISST::CONFIG_LEVEL") {
+            if (domain_type != GEOPM_DOMAIN_PACKAGE) {
+                throw Exception("wrong domain type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+            // TODO: assumes using any CPU in package is fine
+            auto cpus = m_topo.domain_nested(GEOPM_DOMAIN_CPU, domain_type, domain_idx);
+            int cpu_idx = *(cpus.begin());
             // "ISST::LEVELS_INFO#"
             std::shared_ptr<Signal> levels_info = std::make_shared<SSTSignal>(
-                m_trans, 0, 0x7F, 0x00, 0x00, 0x00);
+                m_trans, cpu_idx, 0x7F, 0x00, 0x00, 0x00);
             std::shared_ptr<Signal> signal = std::make_shared<MSRFieldSignal>(
                 levels_info, 16, 23, MSR::M_FUNCTION_SCALE, 1.0);
-            result = m_signal_pushed.size();
 
-            bool is_found = std::find(m_signal_pushed.begin(), m_signal_pushed.end(),
-                    signal) != m_signal_pushed.end();
-            if (!is_found)
-            {
-                m_signal_pushed.push_back(signal);
-            }
+            // TODO: see linear search in MSRIO::push_signal to check for already pushed
+            result = m_signal_pushed.size();
+            m_signal_pushed.push_back(signal);
             signal->setup_batch();
         }
         else {
@@ -182,7 +186,6 @@ namespace geopm
             throw Exception("SSTIOGroup::sample() called before the signal was read.",
                             GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
-
         return m_signal_pushed[batch_idx]->sample();
     }
 

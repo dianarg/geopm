@@ -78,8 +78,8 @@ namespace geopm
         return idx;
     }
 
-        // call ioctl() for both mbox list and mmio list,
-        // unless we end up splitting this class
+    // call ioctl() for both mbox list and mmio list,
+    // unless we end up splitting this class
     void SSTTransactionImp::read_batch(void)
     {
         m_mbox_read_batch.num_entries = m_mbox_interfaces.size();

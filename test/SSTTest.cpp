@@ -34,11 +34,14 @@
 
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
+
 #include "SSTSignal.hpp"
 #include "MockSSTTransaction.hpp"
+#include "geopm_hash.h"
 
 using geopm::SSTSignal;
 using testing::Return;
+using testing::_;
 
 class SSTTest : public :: testing :: Test
 {
@@ -78,10 +81,9 @@ TEST_F(SSTTest, mailbox_read_batch)
 
     sig.setup_batch();
 
-    uint32_t expected = 6;
-    EXPECT_CALL(*m_trans, sample(batch_idx))
-        .WillOnce(Return(expected));
-    uint32_t result = sig.sample();
-    EXPECT_EQ(expected, result);
+    double expected = 6;
+    EXPECT_CALL(*m_trans, sample(batch_idx)).WillOnce(Return(geopm_signal_to_field(expected)));
 
+    double result = sig.sample();
+    EXPECT_EQ(expected, result);
 }
