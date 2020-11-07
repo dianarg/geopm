@@ -42,7 +42,7 @@
 namespace geopm
 {
     class PlatformTopo;
-    class SSTTransaction;
+    class SSTIO;
     class Signal;
     class Control;
 
@@ -50,7 +50,7 @@ namespace geopm
     class SSTIOGroup : public IOGroup
     {
         public:
-            SSTIOGroup(const PlatformTopo &topo, std::shared_ptr<SSTTransaction> trans);
+            SSTIOGroup(const PlatformTopo &topo, std::shared_ptr<SSTIO> sstio);
             virtual ~SSTIOGroup() = default;
             std::set<std::string> signal_names(void) const override;
             std::set<std::string> control_names(void) const override;
@@ -81,7 +81,7 @@ namespace geopm
             /////// old above
 
             const PlatformTopo &m_topo;
-            std::shared_ptr<SSTTransaction> m_trans;
+            std::shared_ptr<SSTIO> m_sstio;
             bool m_is_read;
 
             // All available signals: map from name to signal_info.

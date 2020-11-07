@@ -34,18 +34,20 @@
 #include "SSTSignal.hpp"
 
 #include "geopm_hash.h"
-#include <iostream>
+#include "SSTIO.hpp"
+
+
 // TODO: fix problems with NAN and replace -1 below
 namespace geopm
 {
 
-    SSTSignal::SSTSignal(std::shared_ptr<geopm::SSTTransaction> trans,
+    SSTSignal::SSTSignal(std::shared_ptr<geopm::SSTIO> sstio,
                          int cpu_idx,
                          uint32_t command,
                          uint32_t subcommand,
                          uint32_t subcommand_arg,  //write_value
                          uint32_t interface_parameter) // mbox_interface_param
-        : m_trans(trans)
+        : m_sstio(sstio)
         , m_cpu_idx(cpu_idx)
         , m_command(command)
         , m_subcommand(subcommand)
@@ -59,13 +61,13 @@ namespace geopm
     void SSTSignal::setup_batch(void)
     {
         // commit will be called by iogroup read_batch()
-        m_batch_idx = m_trans->add_mbox_read(m_cpu_idx, m_command, m_subcommand,
+        m_batch_idx = m_sstio->add_mbox_read(m_cpu_idx, m_command, m_subcommand,
                                              m_subcommand_arg, m_interface_parameter);
     }
 
     double SSTSignal::sample(void)
     {
-        return geopm_field_to_signal(m_trans->sample(m_batch_idx));
+        return geopm_field_to_signal(m_sstio->sample(m_batch_idx));
     }
 
     double SSTSignal::read(void) const

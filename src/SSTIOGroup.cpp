@@ -43,25 +43,23 @@
 #include "Agg.hpp"
 #include "MSR.hpp"
 #include "MSRFieldSignal.hpp"
-#include "SST.hpp"
-#include "SSTImp.hpp"
+#include "SSTIO.hpp"
 #include "SSTSignal.hpp"
 #include "SSTControl.hpp"
 
 namespace geopm
 {
     SSTIOGroup::SSTIOGroup(const PlatformTopo &topo,
-                           std::shared_ptr<SSTTransaction> trans)
+                           std::shared_ptr<SSTIO> sstio)
         : m_is_signal_pushed(false)
         , m_is_batch_read(false)
         , m_valid_signal_name({"SST::CONFIG_LEVEL"})
         , m_topo(topo)
-        , m_trans(trans)
+        , m_sstio(sstio)
         , m_is_read(false)
     {
-        // TODO: need SST::make_shared() function in interface
-        if (m_trans == nullptr) {
-            m_trans = std::make_shared<SSTTransactionImp>();
+        if (m_sstio == nullptr) {
+            m_sstio = SSTIO::make_shared();
         }
     }
 
@@ -112,7 +110,7 @@ namespace geopm
             int cpu_idx = *(cpus.begin());
             // "ISST::LEVELS_INFO#"
             std::shared_ptr<Signal> levels_info = std::make_shared<SSTSignal>(
-                m_trans, cpu_idx, 0x7F, 0x00, 0x00, 0x00);
+                m_sstio, cpu_idx, 0x7F, 0x00, 0x00, 0x00);
             std::shared_ptr<Signal> signal = std::make_shared<MSRFieldSignal>(
                 levels_info, 16, 23, MSR::M_FUNCTION_SCALE, 1.0);
 
@@ -154,7 +152,7 @@ namespace geopm
             auto cpus = m_topo.domain_nested(GEOPM_DOMAIN_CPU, domain_type, domain_idx);
             int cpu_idx = *(cpus.begin());
 
-            auto control = std::make_shared<SSTControl>(m_trans, cpu_idx, 0x7F, 0x2, 0x0, 0x1,
+            auto control = std::make_shared<SSTControl>(m_sstio, cpu_idx, 0x7F, 0x2, 0x0, 0x1,
                                                         16, 16);
             control->setup_batch();
             result = m_control_pushed.size();
@@ -171,7 +169,7 @@ namespace geopm
         // if (m_is_signal_pushed) {
         //     m_time_curr = geopm_time_since(&m_time_zero);
         // }
-        m_trans->read_batch();
+        m_sstio->read_batch();
         m_is_read = true;
     }
 

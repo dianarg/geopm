@@ -36,33 +36,33 @@
 #include "gmock/gmock.h"
 
 #include "SSTSignal.hpp"
-#include "MockSSTTransaction.hpp"
+#include "MockSSTIO.hpp"
 #include "geopm_hash.h"
 
 using geopm::SSTSignal;
 using testing::Return;
 using testing::_;
 
-class SSTTest : public :: testing :: Test
+class SSTSignalTest : public :: testing :: Test
 {
     protected:
         void SetUp(void);
         void TearDown(void);
-        std::shared_ptr<MockSSTTransaction> m_trans;
+        std::shared_ptr<MockSSTIO> m_sstio;
         int m_num_cpu = 4;
 };
 
-void SSTTest::SetUp(void)
+void SSTSignalTest::SetUp(void)
 {
-    m_trans = std::make_shared<MockSSTTransaction>();
+    m_sstio = std::make_shared<MockSSTIO>();
 }
 
-void SSTTest::TearDown(void)
+void SSTSignalTest::TearDown(void)
 {
 
 }
 
-TEST_F(SSTTest, mailbox_read_batch)
+TEST_F(SSTSignalTest, mailbox_read_batch)
 {
     // TODO: multiple cpu
     int cpu = 3;
@@ -71,18 +71,18 @@ TEST_F(SSTTest, mailbox_read_batch)
     uint32_t sub_arg = 0x56;
     uint32_t interface_param = 0x93;
 
-    SSTSignal sig {m_trans, cpu, command, subcommand, sub_arg,
+    SSTSignal sig {m_sstio, cpu, command, subcommand, sub_arg,
                    interface_param};
 
     int batch_idx = 42;
-    EXPECT_CALL(*m_trans, add_mbox_read(cpu, command, subcommand, sub_arg,
+    EXPECT_CALL(*m_sstio, add_mbox_read(cpu, command, subcommand, sub_arg,
                                         interface_param))
         .WillOnce(Return(batch_idx));
 
     sig.setup_batch();
 
     double expected = 6;
-    EXPECT_CALL(*m_trans, sample(batch_idx)).WillOnce(Return(geopm_signal_to_field(expected)));
+    EXPECT_CALL(*m_sstio, sample(batch_idx)).WillOnce(Return(geopm_signal_to_field(expected)));
 
     double result = sig.sample();
     EXPECT_EQ(expected, result);

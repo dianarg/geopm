@@ -30,15 +30,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef MOCKSSTTRANSACTION_HPP_INCLUDE
-#define MOCKSSTTRANSACTION_HPP_INCLUDE
+#ifndef MOCKSSTIO_HPP_INCLUDE
+#define MOCKSSTIO_HPP_INCLUDE
 
 #include "gmock/gmock.h"
 
-#include "SST.hpp"
+#include "SSTIO.hpp"
 
 
-class MockSSTTransaction : public geopm::SSTTransaction
+class MockSSTIO : public geopm::SSTIO
 {
     public:
         MOCK_METHOD5(add_mbox_read,

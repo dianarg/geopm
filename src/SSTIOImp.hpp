@@ -32,17 +32,17 @@
 
 #include <string>
 
-#include "SST.hpp"
+#include "SSTIO.hpp"
 
 namespace geopm
 {
 
 
-    class SSTTransactionImp : public SSTTransaction
+    class SSTIOImp : public SSTIO
     {
         public:
-            SSTTransactionImp();
-            virtual ~SSTTransactionImp() = default;
+            SSTIOImp();
+            virtual ~SSTIOImp() = default;
 
             /// Interact with the mailbox on commands that are expected to return data
             int add_mbox_read(uint32_t cpu_index, uint32_t command,

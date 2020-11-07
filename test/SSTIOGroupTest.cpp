@@ -38,7 +38,7 @@
 #include "Helper.hpp"
 #include "SSTIOGroup.hpp"
 #include "MockPlatformTopo.hpp"
-#include "MockSSTTransaction.hpp"
+#include "MockSSTIO.hpp"
 
 using geopm::SSTIOGroup;
 using testing::Return;
@@ -49,7 +49,7 @@ class SSTIOGroupTest : public :: testing :: Test
 {
     protected:
         void SetUp();
-        std::shared_ptr<MockSSTTransaction> m_trans;
+        std::shared_ptr<MockSSTIO> m_sstio;
         std::unique_ptr<SSTIOGroup> m_group;
         std::shared_ptr<MockPlatformTopo> m_topo;
         int m_num_package = 2;
@@ -62,9 +62,9 @@ void SSTIOGroupTest::SetUp()
     m_topo = make_topo(m_num_package, m_num_core, m_num_cpu);
     EXPECT_CALL(*m_topo, domain_nested(_, _, _)).Times(AtLeast(0));
 
-    m_trans = std::make_shared<MockSSTTransaction>();
+    m_sstio = std::make_shared<MockSSTIO>();
 
-    m_group = geopm::make_unique<SSTIOGroup>(*m_topo, m_trans);
+    m_group = geopm::make_unique<SSTIOGroup>(*m_topo, m_sstio);
 }
 
 TEST_F(SSTIOGroupTest, valid_signal_names)
@@ -98,9 +98,9 @@ TEST_F(SSTIOGroupTest, sample_config_level)
     int pkg_0_cpu = 0;
     int pkg_1_cpu = 2;
 
-    EXPECT_CALL(*m_trans, add_mbox_read(pkg_0_cpu, 0x7F, 0x00, 0x00, 0x00))
+    EXPECT_CALL(*m_sstio, add_mbox_read(pkg_0_cpu, 0x7F, 0x00, 0x00, 0x00))
         .WillOnce(Return(CONFIG_LEVEL_0));
-    EXPECT_CALL(*m_trans, add_mbox_read(pkg_1_cpu, 0x7F, 0x00, 0x00, 0x00))
+    EXPECT_CALL(*m_sstio, add_mbox_read(pkg_1_cpu, 0x7F, 0x00, 0x00, 0x00))
         .WillOnce(Return(CONFIG_LEVEL_1));
 
     int idx0 = m_group->push_signal("SST::CONFIG_LEVEL", GEOPM_DOMAIN_PACKAGE, 0);
@@ -111,7 +111,7 @@ TEST_F(SSTIOGroupTest, sample_config_level)
 
     // first batch
     {
-    EXPECT_CALL(*m_trans, read_batch());
+    EXPECT_CALL(*m_sstio, read_batch());
     m_group->read_batch();
 
     //bits 16:23
@@ -121,8 +121,8 @@ TEST_F(SSTIOGroupTest, sample_config_level)
     uint32_t raw1 = 0x1678000;
     uint32_t expected0 = 0x42;
     uint32_t expected1 = 0x67;
-    EXPECT_CALL(*m_trans, sample(CONFIG_LEVEL_0)).WillRepeatedly(Return(raw0));
-    EXPECT_CALL(*m_trans, sample(CONFIG_LEVEL_1)).WillRepeatedly(Return(raw1));
+    EXPECT_CALL(*m_sstio, sample(CONFIG_LEVEL_0)).WillRepeatedly(Return(raw0));
+    EXPECT_CALL(*m_sstio, sample(CONFIG_LEVEL_1)).WillRepeatedly(Return(raw1));
     result = m_group->sample(idx0);
     EXPECT_EQ(expected0, result);
     result = m_group->sample(idx1);
@@ -151,9 +151,9 @@ TEST_F(SSTIOGroupTest, adjust_turbo_enable)
     int pkg_0_cpu = 0;
     int pkg_1_cpu = 2;
 
-    EXPECT_CALL(*m_trans, add_mbox_write(pkg_0_cpu, 0x7F, 0x02, 0x00, 0x01))
+    EXPECT_CALL(*m_sstio, add_mbox_write(pkg_0_cpu, 0x7F, 0x02, 0x00, 0x01))
         .WillOnce(Return(TURBO_ENABLE_0));
-    EXPECT_CALL(*m_trans, add_mbox_write(pkg_1_cpu, 0x7F, 0x02, 0x00, 0x01))
+    EXPECT_CALL(*m_sstio, add_mbox_write(pkg_1_cpu, 0x7F, 0x02, 0x00, 0x01))
         .WillOnce(Return(TURBO_ENABLE_1));
 
     int idx0 = m_group->push_control("SST::TURBO_ENABLE", GEOPM_DOMAIN_PACKAGE, 0);
@@ -162,8 +162,8 @@ TEST_F(SSTIOGroupTest, adjust_turbo_enable)
 
     // bit 16
     uint64_t mask = 0x10000;
-    EXPECT_CALL(*m_trans, adjust(idx0, 0x1, mask));
-    EXPECT_CALL(*m_trans, adjust(idx1, 0x0, mask));
+    EXPECT_CALL(*m_sstio, adjust(idx0, 0x1, mask));
+    EXPECT_CALL(*m_sstio, adjust(idx1, 0x0, mask));
     m_group->adjust(idx0, 0x1);
     m_group->adjust(idx1, 0x0);
 }

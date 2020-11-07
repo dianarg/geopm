@@ -36,10 +36,10 @@
 #include <memory>
 
 #include "Signal.hpp"
-#include "SST.hpp"
 
 namespace geopm
 {
+    class SSTIO;
 
     // TODO: think about whether to use same class with multiple constructors
     // for both MMIO and Mailbox, or different signal types
@@ -47,7 +47,7 @@ namespace geopm
     {
         public:
             // signal that does not need a subcommand arg
-            SSTSignal(std::shared_ptr<geopm::SSTTransaction> trans,
+            SSTSignal(std::shared_ptr<geopm::SSTIO> sstio,
                       int cpu_idx,
                       uint32_t command,
                       uint32_t subcommand,
@@ -55,7 +55,7 @@ namespace geopm
                       uint32_t interface_parameter);
 
             // // signal that requires dynamic subcommand arg value
-            // SSTSignal(std::shared_ptr<geopm::SSTTransaction> trans,
+            // SSTSignal(std::shared_ptr<geopm::SSTIO> sstio,
             //           std::shared_ptr<geopm::Signal> subcommand_arg,
             //           uint32_t command,
             //           uint32_t subcommand,
@@ -69,7 +69,7 @@ namespace geopm
             double read(void) const override;
 
         private:
-            std::shared_ptr<geopm::SSTTransaction> m_trans;
+            std::shared_ptr<geopm::SSTIO> m_sstio;
             const int m_cpu_idx;
             const uint32_t m_command;
             const uint32_t m_subcommand;

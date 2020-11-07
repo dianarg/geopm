@@ -595,9 +595,9 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/SharedMemoryScopedLock.hpp \
                             src/SharedMemoryUser.hpp \
                             src/Signal.hpp \
-                            src/SST.cpp \
-                            src/SSTImp.hpp \
-                            src/SST.hpp \
+                            src/SSTIO.cpp \
+                            src/SSTIOImp.hpp \
+                            src/SSTIO.hpp \
                             src/SSTControl.cpp \
                             src/SSTControl.hpp \
                             src/SSTIOGroup.cpp \

@@ -36,15 +36,11 @@
 #include <cstdint>
 
 #include <vector>
+#include <memory>
 
-// ioctl(fd_to_interface, 2-or=3, struct address)
-// ioctl(fd, GEOPM_IOC_SST_MMIO, structy)
-//
 namespace geopm
 {
-
-    // TODO: maybe rename
-    class SSTTransaction
+    class SSTIO
     {
         public:
             /// Interact with the mailbox on commands that are expected to return data
@@ -73,6 +69,8 @@ namespace geopm
             virtual uint32_t sample(int index) const = 0;
 
             virtual void adjust(int index, uint32_t write_value, uint64_t mask) = 0;
+
+            static std::shared_ptr<SSTIO> make_shared(void);
     };
 
 }
