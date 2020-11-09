@@ -64,8 +64,8 @@ namespace geopm
         }
     }
 
-    int SSTIOImp::add_mbox_read(uint32_t cpu_index, uint32_t command,
-                                          uint32_t subcommand, uint32_t subcommand_arg,
+    int SSTIOImp::add_mbox_read(uint32_t cpu_index, uint16_t command,
+                                          uint16_t subcommand, uint32_t subcommand_arg,
                                           uint32_t interface_parameter)
     {
         // save the stuff in the list
@@ -82,8 +82,8 @@ namespace geopm
         m_mbox_interfaces.push_back(mbox);
         return idx;
     }
-    int SSTIOImp::add_mbox_write(uint32_t cpu_index, uint32_t command,
-                                          uint32_t subcommand, uint32_t interface_parameter,
+    int SSTIOImp::add_mbox_write(uint32_t cpu_index, uint16_t command,
+                                          uint16_t subcommand, uint32_t interface_parameter,
                                           uint32_t write_value)
     {
         throw Exception("unimplemented", -1);

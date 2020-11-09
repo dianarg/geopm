@@ -44,14 +44,14 @@ namespace geopm
     {
         public:
             /// Interact with the mailbox on commands that are expected to return data
-            virtual int add_mbox_read(uint32_t cpu_index, uint32_t command,
-                                      uint32_t subcommand, uint32_t subcommand_arg,
+            virtual int add_mbox_read(uint32_t cpu_index, uint16_t command,
+                                      uint16_t subcommand, uint32_t subcommand_arg,
                                       uint32_t interface_parameter) = 0;
 
             // TODO: write_value probably will go away
             /// Interact with the mailbox on commands that are not expected to return data
-            virtual int add_mbox_write(uint32_t cpu_index, uint32_t command,
-                                       uint32_t subcommand, uint32_t interface_parameter,
+            virtual int add_mbox_write(uint32_t cpu_index, uint16_t command,
+                                       uint16_t subcommand, uint32_t interface_parameter,
                                        uint32_t write_value) = 0;
 
             // /// Read data from the mmio interface

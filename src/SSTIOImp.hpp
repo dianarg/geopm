@@ -45,11 +45,11 @@ namespace geopm
             virtual ~SSTIOImp() = default;
 
             /// Interact with the mailbox on commands that are expected to return data
-            int add_mbox_read(uint32_t cpu_index, uint32_t command,
-                              uint32_t subcommand, uint32_t subcommand_arg,
+            int add_mbox_read(uint32_t cpu_index, uint16_t command,
+                              uint16_t subcommand, uint32_t subcommand_arg,
                               uint32_t interface_parameter) override;
-            int add_mbox_write(uint32_t cpu_index, uint32_t command,
-                               uint32_t subcommand, uint32_t interface_parameter,
+            int add_mbox_write(uint32_t cpu_index, uint16_t command,
+                               uint16_t subcommand, uint32_t interface_parameter,
                                uint32_t write_value) override;
             // call ioctl() for both mbox list and mmio list,
             // unless we end up splitting this class
