@@ -88,7 +88,7 @@ namespace geopm
     {
         int result = GEOPM_DOMAIN_INVALID;
         if (is_valid_signal(signal_name)) {
-            result = GEOPM_DOMAIN_CPU;
+            result = GEOPM_DOMAIN_PACKAGE;
         }
         return result;
     }
