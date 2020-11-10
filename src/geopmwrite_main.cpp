@@ -34,7 +34,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <getopt.h>
 #include <errno.h>
 #include <cmath>
 
@@ -49,85 +48,45 @@
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
 #include "Exception.hpp"
+#include "OptionParser.hpp"
 
 #include "config.h"
 
 using geopm::PlatformIO;
 using geopm::PlatformTopo;
+using geopm::OptionParser;
 
 int parse_domain_type(const std::string &dom);
 
 int main(int argc, char **argv)
 {
-    const char *usage = "\nUsage:\n"
-                        "       geopmwrite CONTROL_NAME DOMAIN_TYPE DOMAIN_INDEX VALUE\n"
-                        "       geopmwrite [--info [CONTROL_NAME]]\n"
-                        "       geopmwrite [--help] [--version] [--cache] [--info-all] [--domain]\n"
-                        "\n"
-                        "  CONTROL_NAME:  name of the control\n"
-                        "  DOMAIN_TYPE:  name of the domain for which the control should be written\n"
-                        "  DOMAIN_INDEX: index of the domain, starting from 0\n"
-                        "  VALUE:        setting to adjust control to\n"
-                        "\n"
-                        "  -d, --domain                     print domains detected\n"
-                        "  -i, --info                       print longer description of a control\n"
-                        "  -I, --info-all                   print longer description of all controls\n"
-                        "  -c, --cache                      create geopm topo cache if it does not exist\n"
-                        "  -h, --help                       print brief summary of the command line\n"
-                        "                                   usage information, then exit\n"
-                        "  -v, --version                    print version of GEOPM to standard output,\n"
-                        "                                   then exit\n"
-                        "\n"
-                        "Copyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation. All rights reserved.\n"
-                        "\n";
-
-    static struct option long_options[] = {
-        {"domain", no_argument, NULL, 'd'},
-        {"info", no_argument, NULL, 'i'},
-        {"info-all", no_argument, NULL, 'I'},
-        {"cache", no_argument, NULL, 'c'},
-        {"help", no_argument, NULL, 'h'},
-        {"version", no_argument, NULL, 'v'},
-        {NULL, 0, NULL, 0}
-    };
-
-    int opt;
-    int err = 0;
-    bool is_domain = false;
-    bool is_info = false;
-    bool is_all_info = false;
-    while (!err && (opt = getopt_long(argc, argv, "diIchv", long_options, NULL)) != -1) {
-        switch (opt) {
-            case 'd':
-                is_domain = true;
-                break;
-            case 'i':
-                is_info = true;
-                break;
-            case 'I':
-                is_all_info = true;
-                break;
-            case 'c':
-                geopm::PlatformTopo::create_cache();
-                return 0;
-            case 'h':
-                printf("%s", usage);
-                return 0;
-            case 'v':
-                printf("%s\n", geopm_version());
-                printf("\n\nCopyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation. All rights reserved.\n\n");
-                return 0;
-            case '?': // opt is ? when an option required an arg but it was missing
-                fprintf(stderr, usage, argv[0]);
-                err = EINVAL;
-                break;
-            default:
-                fprintf(stderr, "Error: getopt returned character code \"0%o\"\n", opt);
-                err = EINVAL;
-                break;
-        }
+    OptionParser parser("geopmwrite", std::cout, std::cerr);
+    parser.add_option("domain", 'd', "domain", false, "print domains detected");
+    parser.add_option("info", 'i', "info", false, "print longer description of a control");
+    parser.add_option("info_all", 'I', "info-all", false, "print longer description of all controls");
+    parser.add_option("cache", 'c', "cache", false, "create geopm topo cache if it does not exist");
+    parser.add_example_usage("CONTROL_NAME DOMAIN_TYPE DOMAIN_INDEX VALUE");
+    parser.add_example_usage("[--info [CONTROL_NAME]]");
+    parser.add_example_usage("[--info-all]");
+    parser.add_example_usage("[--domain]");
+    parser.add_example_usage("[--cache]");
+    parser.add_usage_description("  CONTROL_NAME:  name of the control\n"
+                                 "  DOMAIN_TYPE:   name of the domain for which the control should be written\n"
+                                 "  DOMAIN_INDEX:  index of the domain, starting from 0\n"
+                                 "  VALUE:         setting to adjust control to");
+    bool do_exit = parser.parse(argc, argv);
+    if (do_exit) {
+        return 0;
+    }
+    if (parser.is_set("cache")) {
+        geopm::PlatformTopo::create_cache();
+        return 0;
     }
 
+    int err = 0;
+    bool is_domain = parser.is_set("domain");
+    bool is_info = parser.is_set("info");
+    bool is_all_info = parser.is_set("info_all");
 
     if (is_domain && is_info) {
         std::cerr << "Error: info about domain not implemented." << std::endl;
