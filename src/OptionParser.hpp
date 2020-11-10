@@ -81,6 +81,8 @@ namespace geopm
             /// @brief Add an example to the usage output. The program
             ///        name and indentation should be omitted.
             void add_example_usage(const std::string &example);
+            /// @brief Add more description about usage after the examples.
+            void add_usage_description(const std::string &usage);
             /// @brief Returns the usage string containing description
             ///        of all options.
             std::string format_help(void);
@@ -100,6 +102,7 @@ namespace geopm
             std::ostream &m_err_out;
             std::string m_custom_help;
             std::vector<std::string> m_example_usage;
+            std::vector<std::string> m_usage_desc;
             std::vector<std::string> m_option_order;
 
             template <typename T>

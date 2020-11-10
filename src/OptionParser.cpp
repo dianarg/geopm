@@ -202,9 +202,15 @@ namespace geopm
     {
         return m_positional_args;
     }
+
     void OptionParser::add_example_usage(const std::string &example)
     {
         m_example_usage.push_back(example);
+    }
+
+    void OptionParser::add_usage_description(const std::string &usage)
+    {
+        m_usage_desc.push_back(usage);
     }
 
     std::string OptionParser::format_help(void)
@@ -226,6 +232,9 @@ namespace geopm
             usage_start = "       " + m_prog_name;
         }
         tmp << usage_start << " [--help] [--version]\n";
+        for (auto const &usage : m_usage_desc) {
+            tmp << usage << "\n";
+        }
         tmp << "\nMandatory arguments to long options are mandatory for short options too.\n\n";
 
         for (const auto &name : m_option_order) {

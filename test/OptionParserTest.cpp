@@ -264,11 +264,13 @@ TEST_F(OptionParserTest, format_help)
                      "still wraps");
     m_opt.add_example_usage("[--cache]");
     m_opt.add_example_usage("[-a AGENT] [-p POLICY0,POLICY1,...]");
+    m_opt.add_usage_description("  POLICYn is the nth policy field as a double.");
 
     const char * const usage = "\n"
                         "Usage: option_parser_test [--cache]\n"
                         "       option_parser_test [-a AGENT] [-p POLICY0,POLICY1,...]\n"
                         "       option_parser_test [--help] [--version]\n"
+                        "  POLICYn is the nth policy field as a double.\n"
                         "\n"
                         "Mandatory arguments to long options are mandatory for short options too.\n"
                         "\n"
