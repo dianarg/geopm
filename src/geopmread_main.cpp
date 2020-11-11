@@ -30,6 +30,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -48,8 +50,8 @@
 #include "PlatformTopo.hpp"
 #include "Exception.hpp"
 #include "OptionParser.hpp"
+#include "Helper.hpp"
 
-#include "config.h"
 
 using geopm::PlatformIO;
 using geopm::PlatformTopo;
@@ -64,7 +66,10 @@ int main(int argc, char **argv)
     parser.add_option("info", 'i', "info", false, "print longer description of a signal");
     parser.add_option("info_all", 'I', "info-all", false, "print longer description of all signals");
     parser.add_option("cache", 'c', "cache", false, "create geopm topo cache if it does not exist");
-    parser.add_example_usage("SIGNAL_NAME DOMAIN_TYPE DOMAIN_INDEX");
+    parser.add_option("label", 'l', "label", false, "label output values with signal details");
+    parser.add_option("batch", 'b', "batch", false, "use read_batch interface instead of read_signal");
+
+    parser.add_example_usage("[--batch] [--label] SIGNAL_NAME0,DOMAIN_TYPE0,DOMAIN_INDEX0 [NAME1,TYPE1,INDEX1 ...]");
     parser.add_example_usage("[--info [SIGNAL_NAME]]");
     parser.add_example_usage("[--info-all]");
     parser.add_example_usage("[--domain]");
@@ -86,6 +91,8 @@ int main(int argc, char **argv)
     bool is_domain = parser.is_set("domain");
     bool is_info = parser.is_set("info");
     bool is_all_info = parser.is_set("info_all");
+    bool add_label = parser.is_set("label");
+    bool use_batch = parser.is_set("batch");
 
     if (is_domain && is_info) {
         std::cerr << "Error: info about domain not implemented." << std::endl;
@@ -137,32 +144,88 @@ int main(int argc, char **argv)
                 std::cout << sig << std::endl;
             }
         }
-        else if (pos_args.size() >= 3) {
-            // read signal
-            std::string signal_name = pos_args[0];
-            int domain_idx = -1;
-            try {
-                domain_idx = std::stoi(pos_args[2]);
-            }
-            catch (const std::invalid_argument &) {
-                std::cerr << "Error: invalid domain index.\n" << std::endl;
-                err = EINVAL;
-            }
-            if (!err) {
+        else {
+            // read signals
+            std::vector<int> signal_idx;
+            std::vector<std::string> signal_names;
+            for (auto const& bundle : pos_args) {
+                auto pieces = geopm::string_split(bundle, ",");
+                if (pieces.size() != 3) {
+                    std::cerr << "Error: signal request must be a comma-separated tuple of name, domain type, domain index." << std::endl;
+                    return EINVAL;
+                }
+                std::string signal_name = pieces[0];
+                int domain_type = -1;
+                int domain_idx = -1;
                 try {
-                    int domain_type = PlatformTopo::domain_name_to_type(pos_args[1]);
-                    double result = platform_io.read_signal(signal_name, domain_type, domain_idx);
-                    std::cout << platform_io.format_function(signal_name)(result) << std::endl;
+                    domain_type = PlatformTopo::domain_name_to_type(pieces[1]);
                 }
                 catch (const geopm::Exception &ex) {
-                    std::cerr << "Error: cannot read signal: " << ex.what() << std::endl;
+                    std::cerr << "Error: invalid domain index: " << pieces[1] << std::endl;
                     err = EINVAL;
                 }
+                try {
+                    domain_idx = std::stoi(pieces[2]);
+                }
+                catch (const std::invalid_argument &) {
+                    std::cerr << "Error: invalid domain index: " << pieces[2] << std::endl;
+                    err = EINVAL;
+                }
+                if (use_batch) {
+                    try {
+                        int idx = platform_io.push_signal(signal_name, domain_type, domain_idx);
+                        signal_idx.push_back(idx);
+                        signal_names.push_back(signal_name);
+                    }
+                    catch (const geopm::Exception &ex) {
+                        std::cerr << "Error: cannot push signal: " << ex.what() << std::endl;
+                        err = EINVAL;
+                    }
+                }
+                else {
+                    try {
+                        double result = platform_io.read_signal(signal_name, domain_type, domain_idx);
+                        std::string label = "";
+                        if (add_label) {
+                            label = signal_name + ": ";
+                        }
+                        std::cout << label << platform_io.format_function(signal_name)(result) << std::endl;
+                    }
+                    catch (const geopm::Exception &ex) {
+                        std::cerr << "Error: cannot read signal: " << ex.what() << std::endl;
+                        err = EINVAL;
+                    }
+                }
             }
-        }
-        else {
-            std::cerr << "Error: domain type and domain index are required to read signal.\n" << std::endl;
-            err = EINVAL;
+            if (use_batch) {
+                if (signal_idx.size() != signal_names.size()) {
+                    std::cerr << "Something went wrong with size of arrays" << std::endl;
+                    return EINVAL;
+                }
+                try {
+                    platform_io.read_batch();
+                }
+                catch (const geopm::Exception &ex) {
+                    std::cerr << "Error: cannot read batch: " << ex.what() << std::endl;
+                    err = EINVAL;
+                }
+                for (int ii = 0; ii < signal_idx.size(); ++ii) {
+                    try {
+                        double result = platform_io.sample(signal_idx.at(ii));
+                        std::string name = signal_names.at(ii);
+                        std::string label = "";
+                        if (add_label) {
+                            label = name + ": ";
+                        }
+                        std::cout << label << platform_io.format_function(name)(result) << std::endl;
+                    }
+                    catch (const geopm::Exception &ex) {
+                        std::cerr << "Error: cannot sample signal: " << ex.what() << std::endl;
+                        err = EINVAL;
+                    }
+
+                }
+            }
         }
     }
     return err;
