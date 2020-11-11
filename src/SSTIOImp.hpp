@@ -30,9 +30,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <cstring>
 #include <string>
 
 #include "SSTIO.hpp"
+#include <type_traits>
 
 namespace geopm
 {
@@ -57,7 +59,8 @@ namespace geopm
 
             // TODO: might need separate call for mbox and mmio
             uint32_t sample(int index) const override;
-            void adjust(int index, uint32_t write_value, uint64_t mask) override;
+            void write_batch(void) override;
+            void adjust(int index, uint32_t write_value) override;
 
         private:
             struct sst_mmio_interface_s
@@ -71,7 +74,7 @@ namespace geopm
             struct sst_mmio_interfaces_s
             {
                 uint32_t num_entries;
-                sst_mmio_interface_s interfaces[0];
+                sst_mmio_interface_s interfaces[1];
             };
 
             struct sst_mbox_interface_s
@@ -91,9 +94,39 @@ namespace geopm
                 sst_mbox_interface_s interfaces[1];  // TODO: might need to be array instead
             };
 
+            template<typename ListStruct, typename CommandStruct>
+            class CommandList
+            {
+                public:
+                explicit CommandList(size_t command_count);
+            };
+
+            template<typename OuterStruct>
+            using InnerStruct =
+                typename std::remove_all_extents<decltype(OuterStruct::interfaces)>::type;
+
+            template<typename OuterStruct>
+            std::unique_ptr<OuterStruct>
+                ioctl_struct_from_vector(std::vector<InnerStruct<OuterStruct>> commands)
+
+            {
+                std::unique_ptr<OuterStruct> outer_struct(reinterpret_cast<OuterStruct *>(
+                    new char[sizeof(OuterStruct::num_entries) +
+                             sizeof(InnerStruct<OuterStruct>) *
+                                 commands.size()]));
+
+                outer_struct->num_entries = commands.size();
+                std::memcpy(outer_struct->interfaces, commands.data(),
+                            outer_struct->num_entries *
+                                sizeof(InnerStruct<OuterStruct>));
+
+                return outer_struct;
+            }
+
             std::string m_path;
             int m_fd;
             std::vector<struct sst_mbox_interface_s> m_mbox_interfaces;
-            struct sst_mbox_interface_batch_s m_mbox_read_batch;
+            std::unique_ptr<sst_mbox_interface_batch_s> m_mbox_read_batch;
+            std::unique_ptr<sst_mbox_interface_batch_s> m_mbox_write_batch;
     };
 }

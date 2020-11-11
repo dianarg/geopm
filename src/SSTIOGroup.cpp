@@ -54,6 +54,7 @@ namespace geopm
         : m_is_signal_pushed(false)
         , m_is_batch_read(false)
         , m_valid_signal_name({"SST::CONFIG_LEVEL"})
+        , m_valid_control_name({"SST::TURBO_ENABLE"})
         , m_topo(topo)
         , m_sstio(sstio)
         , m_is_read(false)
@@ -70,18 +71,17 @@ namespace geopm
 
     std::set<std::string> SSTIOGroup::control_names(void) const
     {
-        return {};
+        return m_valid_control_name;
     }
 
     bool SSTIOGroup::is_valid_signal(const std::string &signal_name) const
     {
-        return true;
-        //return m_valid_signal_name.find(signal_name) != m_valid_signal_name.end();
+        return m_valid_signal_name.find(signal_name) != m_valid_signal_name.end();
     }
 
     bool SSTIOGroup::is_valid_control(const std::string &control_name) const
     {
-        return true;
+        return m_valid_control_name.find(control_name) != m_valid_control_name.end();
     }
 
     int SSTIOGroup::signal_domain_type(const std::string &signal_name) const
@@ -95,13 +95,17 @@ namespace geopm
 
     int SSTIOGroup::control_domain_type(const std::string &control_name) const
     {
-        return GEOPM_DOMAIN_INVALID;
+        int result = GEOPM_DOMAIN_INVALID;
+        if (is_valid_control(control_name)) {
+            result = GEOPM_DOMAIN_PACKAGE;
+        }
+        return result;
     }
 
     int SSTIOGroup::push_signal(const std::string &signal_name, int domain_type, int domain_idx)
     {
         int result = -1;
-        if (signal_name == "SST::CONFIG_LEVEL") {
+        if (is_valid_signal(signal_name)) {
             if (domain_type != GEOPM_DOMAIN_PACKAGE) {
                 throw Exception("wrong domain type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
@@ -144,22 +148,23 @@ namespace geopm
     int SSTIOGroup::push_control(const std::string &control_name, int domain_type, int domain_idx)
     {
         int result = -1;
-        if (control_name == "SST::TURBO_ENABLE") {
+        if (is_valid_control(control_name)) {
             if (domain_type != GEOPM_DOMAIN_PACKAGE) {
-                throw Exception("wrong domain type", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+                throw Exception("wrong domain type", GEOPM_ERROR_INVALID,
+                                __FILE__, __LINE__);
             }
             // TODO: assumes using any CPU in package is fine
             auto cpus = m_topo.domain_nested(GEOPM_DOMAIN_CPU, domain_type, domain_idx);
             int cpu_idx = *(cpus.begin());
 
-            auto control = std::make_shared<SSTControl>(m_sstio, cpu_idx, 0x7F, 0x2, 0x0, 0x1,
-                                                        16, 16);
+            auto control = std::make_shared<SSTControl>(m_sstio, cpu_idx, 0x7F,
+                                                        0x2, 0x0, 0x1, 16, 16);
             control->setup_batch();
             result = m_control_pushed.size();
             m_control_pushed.push_back(control);
         }
         else {
-            throw Exception("invalid signal", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            throw Exception("invalid control", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
         }
         return result;
     }
@@ -175,7 +180,7 @@ namespace geopm
 
     void SSTIOGroup::write_batch(void)
     {
-
+        m_sstio->write_batch();
     }
 
     double SSTIOGroup::sample(int batch_idx)
@@ -212,8 +217,10 @@ namespace geopm
         //                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }
 
-    double SSTIOGroup::read_signal(const std::string &signal_name, int domain_type, int domain_idx)
+    double SSTIOGroup::read_signal(const std::string &signal_name,
+                                   int domain_type, int domain_idx)
     {
+        // TODO: This needs to call SSTSignal::read();
         auto idx = push_signal(signal_name, domain_type, domain_idx);
         read_batch();
         return sample(idx);
@@ -230,9 +237,15 @@ namespace geopm
         // return geopm_time_since(&m_time_zero);
     }
 
-    void SSTIOGroup::write_control(const std::string &control_name, int domain_type, int domain_idx, double setting)
+    void SSTIOGroup::write_control(const std::string &control_name,
+                                   int domain_type, int domain_idx, double setting)
     {
-        // throw Exception("SSTIOGroup::write_control(): there are no controls supported by the SSTIOGroup",
+        // TODO: This needs to call SSTSignal::read();
+        auto idx = push_control(control_name, domain_type, domain_idx);
+        adjust(idx, setting);
+        write_batch();
+        // throw Exception("SSTIOGroup::write_control(): there are no controls
+        // supported by the SSTIOGroup",
         //                 GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }
 
@@ -296,7 +309,15 @@ namespace geopm
 
     std::string SSTIOGroup::control_description(const std::string &control_name) const
     {
-        throw Exception("SSTIOGroup::control_description(): there are no controls supported by the SSTIOGroup",
-                        GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        if (!is_valid_control(control_name)) {
+            throw Exception("SSTIOGroup::control_description(): " + control_name +
+                            "not valid for SSTIOGroup",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+
+        std::string result = "Invalid control description: no description found "
+            "(description is not yet implemented for SSTIOGroup).";
+
+        return result;
     }
 }

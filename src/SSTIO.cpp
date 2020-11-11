@@ -31,32 +31,32 @@
  */
 
 #include "config.h"
-#include "SSTIO.hpp"
-#include "SSTIOImp.hpp"
 
-#include <sys/ioctl.h>
+#include "SSTIO.hpp"
+
 #include <fcntl.h>
-#include <cstring>
+#include <sys/ioctl.h>
 
 #include "Exception.hpp"
+#include "SSTIOImp.hpp"
 
 #define GEOPM_IOC_SST_MMIO _IOWR(0xfe, 2, struct geopm::SSTIOImp::sst_mmio_interface_batch_s *)
 #define GEOPM_IOC_SST_MBOX _IOWR(0xfe, 3, struct geopm::SSTIOImp::sst_mbox_interface_batch_s *)
 
 namespace geopm
 {
-
     std::shared_ptr<SSTIO> SSTIO::make_shared(void)
     {
         return std::make_shared<SSTIOImp>();
     }
 
     SSTIOImp::SSTIOImp()
+        : m_path("/dev/isst_interface")
+        , m_fd(open(m_path.c_str(), O_RDWR))
+        , m_mbox_read_batch(nullptr)
+        , m_mbox_write_batch(nullptr)
     {
         // TODO: error checking
-        m_path = "/dev/isst_interface";
-        m_fd = open(m_path.c_str(), O_RDWR);
-
         if (m_fd < 0) {
             throw Exception("SSTIOImp: failed to open SST driver",
                             GEOPM_ERROR_INVALID, __FILE__, __LINE__);
@@ -65,8 +65,8 @@ namespace geopm
     }
 
     int SSTIOImp::add_mbox_read(uint32_t cpu_index, uint16_t command,
-                                          uint16_t subcommand, uint32_t subcommand_arg,
-                                          uint32_t interface_parameter)
+                                uint16_t subcommand, uint32_t subcommand_arg,
+                                uint32_t interface_parameter)
     {
         // save the stuff in the list
         struct sst_mbox_interface_s mbox {
@@ -82,48 +82,68 @@ namespace geopm
         m_mbox_interfaces.push_back(mbox);
         return idx;
     }
+
     int SSTIOImp::add_mbox_write(uint32_t cpu_index, uint16_t command,
-                                          uint16_t subcommand, uint32_t interface_parameter,
-                                          uint32_t write_value)
+                                 uint16_t subcommand, uint32_t interface_parameter,
+                                 uint32_t write_value)
     {
-        throw Exception("unimplemented", -1);
-        return -1;
+        struct sst_mbox_interface_s mbox {
+            .cpu_index = cpu_index,
+            .mbox_interface_param = interface_parameter,
+            .write_value = subcommand,
+            .read_value = 0,
+            .command = command,
+            .subcommand = subcommand,
+            .reserved = 0
+        };
+        int idx = m_mbox_interfaces.size();
+        m_mbox_interfaces.push_back(mbox);
+        return idx;
     }
 
     // call ioctl() for both mbox list and mmio list,
     // unless we end up splitting this class
     void SSTIOImp::read_batch(void)
     {
-        m_mbox_read_batch.num_entries = m_mbox_interfaces.size();
-        if (m_mbox_read_batch.num_entries == 0)
-        {
-            return;
-        }
+        if (!m_mbox_interfaces.empty()) {
+            m_mbox_read_batch = ioctl_struct_from_vector<sst_mbox_interface_batch_s>(
+                m_mbox_interfaces);
+            //m_mbox_read_batch->interfaces = m_mbox_interfaces.data();
+            //std::memcpy(m_mbox_read_batch->interfaces, m_mbox_interfaces.data(),
+            //            m_mbox_read_batch->num_entries *
+            //                sizeof m_mbox_read_batch->interfaces[0]);
 
-        if (m_mbox_read_batch.num_entries > 1) {
-            throw Exception("SSTIOImp::read_batch(): Too many mailbox commands",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
-        }
-        std::memcpy(m_mbox_read_batch.interfaces, m_mbox_interfaces.data(), m_mbox_read_batch.num_entries * sizeof m_mbox_read_batch.interfaces[0]);
-
-        int err = ioctl(m_fd, GEOPM_IOC_SST_MBOX, &m_mbox_read_batch);
-        if (err == -1) {
-            throw Exception("SSTIOImp::read_batch(): read failed",
-                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            int err = ioctl(m_fd, GEOPM_IOC_SST_MBOX, m_mbox_read_batch.get());
+            if (err == -1) {
+                throw Exception("SSTIOImp::read_batch(): read failed",
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
         }
     }
-
 
     // TODO: might need separate call for mbox and mmio
     uint32_t SSTIOImp::sample(int batch_idx) const
     {
-        return m_mbox_read_batch.interfaces[batch_idx].read_value;
+        return m_mbox_read_batch->interfaces[batch_idx].read_value;
     }
 
-
-    void SSTIOImp::adjust(int index, uint32_t write_value, uint64_t mask)
+    void SSTIOImp::write_batch(void)
     {
-        throw Exception("unimplemented", -1);
+        if (!m_mbox_interfaces.empty()) {
+            m_mbox_write_batch = ioctl_struct_from_vector<sst_mbox_interface_batch_s>(
+                m_mbox_interfaces);
 
+            int err = ioctl(m_fd, GEOPM_IOC_SST_MBOX, m_mbox_write_batch.get());
+            if (err == -1) {
+                throw Exception("SSTIOImp::write_batch(): write failed",
+                                GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+            }
+        }
+    }
+
+    void SSTIOImp::adjust(int index, uint32_t write_value)
+    {
+        // TODO: check index in range
+        m_mbox_interfaces[index].write_value = write_value;
     }
 }

@@ -68,7 +68,10 @@ namespace geopm
             // TODO: might need separate call for mbox and mmio
             virtual uint32_t sample(int index) const = 0;
 
-            virtual void adjust(int index, uint32_t write_value, uint64_t mask) = 0;
+            // See also the mock implementation
+            virtual void write_batch(void) = 0;
+
+            virtual void adjust(int index, uint32_t write_value) = 0;
 
             static std::shared_ptr<SSTIO> make_shared(void);
     };

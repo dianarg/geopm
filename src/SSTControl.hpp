@@ -51,6 +51,8 @@ namespace geopm
             void write(double value) override;
             void save(void) override;
             void restore(void) override;
+            // static SSTControl make_sstmmio_control(... )
+            // static SSTControl make_sstmbox_control (...)
         private:
             std::shared_ptr<SSTIO> m_sstio;
             const int m_cpu_idx;

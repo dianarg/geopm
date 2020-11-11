@@ -56,6 +56,7 @@ namespace geopm
 
     void SSTControl::setup_batch(void)
     {
+        // If (mbox or mmio ) ...
         m_adjust_idx = m_sstio->add_mbox_write(m_cpu_idx, m_command, m_subcommand,
                                                m_interface_parameter, m_write_value);
 
@@ -63,7 +64,9 @@ namespace geopm
 
     void SSTControl::adjust(double value)
     {
-        m_sstio->adjust(m_adjust_idx, value, m_mask);
+        // TODO: check if value in range of uint32_t
+        //     : Or check if in range of mask
+        m_sstio->adjust(m_adjust_idx, (uint32_t)value << m_shift);
     }
 
     void SSTControl::write(double value)
