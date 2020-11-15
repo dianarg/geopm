@@ -43,10 +43,12 @@ function check {
 
 
 function print_result {
-    if [ $result -ne 0 ]; then
-        echo -e "\e[1;31m[ FAIL ] $EXP_TYPE with $APP\e[0m" 1>&2
-    else
+    if [ $result -eq 0 ]; then
         echo -e "\e[1;32m[ PASS ] $EXP_TYPE with $APP\e[0m" 1>&2
+    elif [ $result -eq 1 ]; then
+        echo -e "\e[1;31m[ FAIL ] $EXP_TYPE with $APP\e[0m" 1>&2
+    elif [ $result -eq 2 ]; then
+        echo -e "\e[1;33m[ SKIP ] $EXP_TYPE with $APP\e[0m" 1>&2
     fi
 }
 
@@ -70,6 +72,9 @@ function gen_all_monitor {
             python3 ${EXP_DIR}/${EXP_TYPE}/gen_plot_achieved_power.py --output-dir=${OUTDIR} --show-details
             check
         done
+        if [ -z "${OUTPUT_DIRS}" ]; then
+            result=2
+        fi
         print_result
     done
 }
@@ -95,6 +100,9 @@ function gen_all_power_sweep {
             python3 ${EXP_DIR}/${EXP_TYPE}/gen_policy_recommendation.py --path ${OUTDIR}
             check
         done
+        if [ -z "${OUTPUT_DIRS}" ]; then
+            result=2
+        fi
         print_result
     done
 }
@@ -114,6 +122,9 @@ function gen_all_freq_sweep {
             python3 ${EXP_DIR}/${EXP_TYPE}/gen_region_summary.py --output-dir=${OUTDIR} --show-details
             check
         done
+        if [ -z "${OUTPUT_DIRS}" ]; then
+            result=2
+        fi
         print_result
     done
 }
