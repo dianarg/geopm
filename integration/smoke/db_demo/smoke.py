@@ -28,6 +28,13 @@ class SQLiteDBConn:
                                       app text,
                                       experiment_type text,
                                       result text)''')
+        cursor.execute('''CREATE TABLE IF NOT EXISTS
+                          GenResults (id integer PRIMARY KEY,
+                                      jobid integer,
+                                      date text,
+                                      app text,
+                                      experiment_type text,
+                                      result text)''')
         self.conn.commit()
 
 
@@ -54,17 +61,26 @@ class SmokeTestDB:
         self.cursor.execute(sql, (jobid, timestamp, app_name, exp_type, result))
         self.conn.commit()
 
+    def add_gen_test_result(self, jobid, app_name, exp_type, result):
+        timestamp = datetime.datetime.now()
+        sql = 'INSERT INTO GenResults (jobid, date, app, experiment_type, result) VALUES ({b},{b},{b},{b},{b})'.format(b=self.bind_str)
+        self.cursor.execute(sql, (jobid, timestamp, app_name, exp_type, result))
+        self.conn.commit()
+
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--gen-result', default=False, action='store_true',
+                        dest='gen_result',
+                        help='whether this is a gen smoke test result (default False is a run result)')
     parser.add_argument('--app', type=str, required=True,
                         help='application name')
     parser.add_argument('--exp-type', type=str, dest='exp_type', required=True,
                         help='experiment type')
     parser.add_argument('--result', type=str, required=True,
                         help='result of experiment')
-    parser.add_argument('--jobid', type=int, required=True,
+    parser.add_argument('--jobid', type=int, default=None,
                         help='job id')
     args = parser.parse_args()
 
@@ -80,12 +96,12 @@ if __name__ == '__main__':
 
     db_conn = SQLiteDBConn()
     #db_conn = MariaDBConn()
-    print('created conn')
 
     db = SmokeTestDB(db_conn)
-    print('created db')
 
-    db.add_run_test_result(jobid=jobid, app_name=app_name,
-                           exp_type=exp_type, result=result)
-
-    print('done')
+    if args.gen_result:
+        db.add_gen_test_result(jobid=jobid, app_name=app_name,
+                               exp_type=exp_type, result=result)
+    else:
+        db.add_run_test_result(jobid=jobid, app_name=app_name,
+                               exp_type=exp_type, result=result)
