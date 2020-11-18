@@ -265,7 +265,6 @@ namespace geopm
         return m_record_buffer;
     }
 
-
     std::map<uint64_t, std::string> ApplicationSamplerImp::get_name_map(uint64_t name_key) const
     {
         throw Exception("ApplicationSamplerImp::" + std::string(__func__) + "() is not yet implemented",

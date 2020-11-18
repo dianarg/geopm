@@ -78,12 +78,15 @@ namespace geopm
         EVENT_RELEASE_CPU = 7,   /// EVENT: The application is shutting down.  Each
                                  ///        process will send one "release" event for
                                  ///        every previous "claim" event.
-        EVENT_NAME_KEY = 8,      /// EVENT: The application is shutting down and has
+        EVENT_NAME_MAP = 8,      /// EVENT: The application is shutting down and has
                                  ///        recorded all region names.
                                  /// SIGNAL: A unique identifier which can be used to
                                  ///         access the map to all strings hashed
                                  ///         by the application (get_name_map()
                                  ///         parameter).
+        EVENT_SHORT_REGION = 9,  /// EVENT: The application entered and exited a
+                                 ///        region at least once since last update.
+                                 /// SIGNAL: Handle to pass to AppliationSampler::get_short_region()
     };
 
     /// @brief Format an event_e type as a string.

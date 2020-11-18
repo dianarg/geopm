@@ -57,7 +57,7 @@ namespace geopm
             static ApplicationSampler &application_sampler(void);
             /// @brief Returns set of region hashes associated with
             ///        application network functions.
-            /// @return Set of netowrk function region hashes.
+            /// @return Set of network function region hashes.
             static std::set<uint64_t> region_hash_network(void);
             /// @brief Set the reference time that will be used for
             ///        all future record time reporting.
@@ -77,11 +77,32 @@ namespace geopm
             ///        record to the string that generated the hash.
             ///        The result includes the names of all entered
             ///        regions and the profile name.
-            /// @param [in] name_key The signal from the name key
-            ///        event record.
+            /// @param [in] event_signal The "signal" from the
+            ///        geopm::record_s with the EVENT_NAME_MAP
+            ///        "event".
             /// @return A map from record-provided hash value to the
             ///         string the record refers to.
-            virtual std::map<uint64_t, std::string> get_name_map(uint64_t name_key) const = 0;
+            virtual std::map<uint64_t, std::string> get_name_map(uint64_t event_signal) const = 0;
+            /// @brief An EVENT_SHORT_REGION event is generated if a
+            ///        region was entered and exited since the last
+            ///        call to update_records().  In this case the entry
+            ///        and exit events are not recorded, but the total
+            ///        number of occurances and the total duration is.
+            /// @param [in] event_signal The "signal" from the
+            ///        geopm::record_s with the EVENT_SHORT_REGION
+            ///        "event".
+            /// @param [out] region_hash The region hash of the short
+            ///        regions.
+            /// @param [out] count The number of times the region with
+            ///        region_hash was entered and exited since the
+            ///        last call to update_records().
+            /// @param [out] total_time Total time in seconds spent in
+            ///        the region with region_hash since the last call
+            ///        to update_records().
+            virtual void get_short_region(uint64_t event_signal,
+                                          uint64_t &region_hash,
+                                          int &count,
+                                          double &total_time) const = 0;
             /// @brief Sample the current hint for every cpu.
             /// @return Vector over Linux logical CPU of the GEOPM
             ///         region hint currently being executed.
@@ -90,9 +111,31 @@ namespace geopm
             /// @return Vector over Linux logical CPU of the region
             ///         progress.
             virtual std::vector<double> per_cpu_progress(void) const = 0;
-            /// @brief Return a per-cpu vector of the process mapped
-            ///        to each cpu.
+            /// @brief Return a per-cpu vector of the process id
+            ///        mapped to each cpu.
+            ///
+            /// This unique identifier may be a linux process id, or
+            /// an MPI rank index.  A process may be running on
+            /// several CPU's with multiple child threads, and these
+            /// threads are uniquely identified by the
+            /// per_cpu_thread() method.
+            ///
+            /// @return A vector over linux logical CPUs containing
+            ///         the MPI rank or parent process ID for threads
+            ///         that are affinitized to each CPU.
             virtual std::vector<int> per_cpu_process(void) const = 0;
+            /// @brief Return a per-cpu vector of the thread id
+            ///        running on each CPU.
+            ///
+            /// Returns the Linux process ID of the tracked
+            /// application child thread running on each linux logical
+            /// CPU.  This thread is expected to be explicitly
+            /// affinitized to the CPU.
+            ///
+            /// @return A vector over linux logical CPUs containing
+            ///         the Linux process ID of a child thread owned
+            ///         by the application being tracked.
+            virtual std::vector<int> per_cpu_thread(void) const = 0;
 
             // Deprecated API's below for access to legacy objects
             virtual void set_sampler(std::shared_ptr<ProfileSampler> sampler) = 0;

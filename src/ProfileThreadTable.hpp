@@ -45,10 +45,11 @@ namespace geopm
             ProfileThreadTable() = default;
             ProfileThreadTable(const ProfileThreadTable &other) = default;
             virtual ~ProfileThreadTable() = default;
-            virtual void init(int num_thread, int thread_idx, size_t num_iter) = 0;
-            virtual void init(int num_thread, int thread_idx, size_t num_iter, size_t chunk_size) = 0;
             virtual void init(uint32_t num_work_unit) = 0;
             virtual void post(void) = 0;
+            virtual void push_hint(uint64_t hint) = 0;
+            virtual void pop_hint(uint64_t hint) = 0;
+            virtual std::vector<uint64_t> get_hint(void) = 0;
             virtual void dump(std::vector<double> &progress) = 0;
             virtual int num_cpu(void) = 0;
     };
@@ -62,8 +63,6 @@ namespace geopm
             ProfileThreadTableImp(const PlatformTopo &topo, size_t buffer_size, void *buffer);
             ProfileThreadTableImp(const ProfileThreadTableImp &other) = delete;
             virtual ~ProfileThreadTableImp() = default;
-            void init(int num_thread, int thread_idx, size_t num_iter) override;
-            void init(int num_thread, int thread_idx, size_t num_iter, size_t chunk_size) override;
             void init(uint32_t num_work_unit) override;
             void post(void) override;
             void dump(std::vector<double> &progress) override;
