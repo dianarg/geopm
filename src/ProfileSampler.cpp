@@ -58,6 +58,7 @@
 #include "SharedMemoryImp.hpp"
 #include "Exception.hpp"
 #include "config.h"
+#include "test/InternalProfile.hpp"
 
 namespace geopm
 {
