@@ -545,6 +545,7 @@ test_geopm_test_SOURCES = test/AcceleratorTopoTest.cpp \
                           test/AgentFactoryTest.cpp \
                           test/AggTest.cpp \
                           test/ApplicationIOTest.cpp \
+                          test/ApplicationRecordLogTest.cpp \
                           test/ApplicationSamplerTest.cpp \
                           test/CircularBufferTest.cpp \
                           test/CNLIOGroupTest.cpp \

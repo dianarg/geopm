@@ -61,6 +61,7 @@ enum geopm_region_hint_e {
     GEOPM_REGION_HINT_SERIAL =    1ULL << 37, /* Single threaded region */
     GEOPM_REGION_HINT_PARALLEL =  1ULL << 38, /* Region is threaded */
     GEOPM_REGION_HINT_IGNORE =    1ULL << 39, /* Do not add region time to epoch */
+    GEOPM_REGION_HINT_IDLE =      1ULL << 40, /* Thread is currently idle */
     GEOPM_MASK_REGION_HINT =      GEOPM_REGION_HINT_UNKNOWN |
                                   GEOPM_REGION_HINT_COMPUTE |
                                   GEOPM_REGION_HINT_MEMORY |
@@ -68,7 +69,8 @@ enum geopm_region_hint_e {
                                   GEOPM_REGION_HINT_IO |
                                   GEOPM_REGION_HINT_SERIAL |
                                   GEOPM_REGION_HINT_PARALLEL |
-                                  GEOPM_REGION_HINT_IGNORE,
+                                  GEOPM_REGION_HINT_IGNORE |
+                                  GEOPM_REGION_HINT_IDLE,
     GEOPM_U64_SENTINEL_REGION_HINT = UINT64_MAX, /* Force enum type to uint64_t */
 };
 
