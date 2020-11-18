@@ -58,8 +58,8 @@
 #include "SharedMemoryImp.hpp"
 #include "Exception.hpp"
 #include "config.h"
-#include "test/InternalProfile.hpp"
 
+#include "test/InternalProfile.hpp"
 namespace geopm
 {
     const struct geopm_prof_message_s GEOPM_INVALID_PROF_MSG = {-1, 0, {{0,0}}, -1.0};
@@ -177,6 +177,7 @@ namespace geopm
         if (m_ctl_msg->is_sample_begin() ||
             m_ctl_msg->is_sample_end()) {
             auto content_it = content.begin();
+            ip_enter("rank_samp_loop");
             for (auto rank_sampler_it = m_rank_sampler.begin();
                  rank_sampler_it != m_rank_sampler.end();
                  ++rank_sampler_it) {
@@ -185,7 +186,9 @@ namespace geopm
                 content_it += rank_length;
                 length += rank_length;
             }
+            ip_exit("rank_samp_loop");
             if (m_ctl_msg->is_sample_end()) {  // M_STATUS_SAMPLE_END
+                ip_enter("sample_end");
                 comm->barrier();
                 m_ctl_msg->step();
                 while (!m_ctl_msg->is_name_begin() &&
@@ -195,11 +198,13 @@ namespace geopm
                 if (m_ctl_msg->is_name_begin()) {  // M_STATUS_NAME_BEGIN
                     region_names();
                 }
+                ip_exit("sample_end");
             }
         }
         else if (!m_ctl_msg->is_shutdown()) {
             throw Exception("ProfileSamplerImp: invalid application status, expected shutdown status", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
+        ip_enter("cache_copy");
         auto content_end = content.begin() + length;
         m_cache.resize(length);
         auto cache_it = m_cache.begin();
@@ -208,6 +213,7 @@ namespace geopm
              ++content_it, ++cache_it) {
              *cache_it = content_it->second;
         }
+        ip_exit("cache_copy");
     }
 
     bool ProfileSamplerImp::do_shutdown(void) const

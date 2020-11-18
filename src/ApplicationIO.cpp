@@ -45,6 +45,7 @@
 #include "ProfileIOGroup.hpp"
 #include "Helper.hpp"
 #include "config.h"
+#include "test/InternalProfile.hpp"
 
 #ifdef GEOPM_HAS_XMMINTRIN
 #include <xmmintrin.h>
@@ -321,11 +322,21 @@ namespace geopm
         }
 #endif
         size_t length = 0;
+        ip_enter("appio_sampler_sample");
         m_application_sampler.get_sampler()->sample(m_prof_sample, length, comm);
+        ip_exit("appio_sampler_sample");
+        ip_enter("appio_update_records");
         m_application_sampler.update_records();
+        ip_exit("appio_update_records");
+        ip_enter("appio_io_update");
         m_application_sampler.get_io_sample()->update(m_prof_sample.cbegin(), m_prof_sample.cbegin() + length);
+        ip_exit("appio_io_update");
+        ip_enter("appio_dump");
         m_application_sampler.get_sampler()->tprof_table()->dump(m_thread_progress);
+        ip_exit("appio_dump");
+        ip_enter("appio_update_thread");
         m_application_sampler.get_io_sample()->update_thread(m_thread_progress);
+        ip_exit("appio_update_thread");
     }
 
     std::list<geopm_region_info_s> ApplicationIOImp::region_info(void) const

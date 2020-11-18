@@ -57,6 +57,9 @@
 #include "ApplicationSampler.hpp"
 #include "record.hpp"
 
+#include <iostream>
+#include "test/InternalProfile.hpp"
+
 extern "C"
 {
     static int geopm_run_imp(struct geopm_ctl_c *ctl);
@@ -361,6 +364,7 @@ namespace geopm
         while (!m_application_io->do_shutdown()) {
             step();
         }
+        std::cout << ip_report() << std::endl;
         m_application_io->update(m_comm);
         m_platform_io.read_batch();
         m_tracer->update(m_trace_sample, m_application_io->region_info());
@@ -391,10 +395,17 @@ namespace geopm
 
     void Controller::step(void)
     {
+        ip_enter("walk_down");
         walk_down();
+        ip_exit("walk_down");
 
+        ip_enter("walk_up");
         walk_up();
+        ip_exit("walk_up");
+
+        ip_enter("wait");
         m_agent[0]->wait();
+        ip_exit("wait");
     }
 
     void Controller::walk_down(void)
@@ -448,14 +459,22 @@ namespace geopm
 
     void Controller::walk_up(void)
     {
+        //ip_enter("appio_update");
         m_application_io->update(m_comm);
+        //ip_exit("appio_update");
+        ip_enter("read_batch");
         m_platform_io.read_batch();
+        ip_exit("read_batch");
+        ip_enter("agent_sample");
         m_agent[0]->sample_platform(m_out_sample);
         bool do_send = m_agent[0]->do_send_sample();
-        m_reporter->update();
         m_agent[0]->trace_values(m_trace_sample);
+        ip_exit("agent_sample");
+        ip_enter("report_trace_update");
+        m_reporter->update();
         m_tracer->update(m_trace_sample, m_application_io->region_info());
         m_profile_tracer->update(m_application_sampler.get_records());
+        ip_exit("report_trace_update");
         m_application_io->clear_region_info();
 
         for (int level = 0; level < m_num_level_ctl; ++level) {

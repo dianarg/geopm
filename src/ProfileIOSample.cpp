@@ -49,6 +49,7 @@
 #include "ProfileTracer.hpp"
 #include "config.h"
 
+#include "test/InternalProfile.hpp"
 namespace geopm
 {
     ProfileIOSampleImp::ProfileIOSampleImp()
@@ -136,12 +137,14 @@ namespace geopm
                 struct m_rank_sample_s rank_sample { .timestamp = sample_it->second.timestamp,
                                                      .progress = sample_it->second.progress };
                 if (m_region_id[local_rank] != region_id) {
+                    // DRG: entering the region
                     if (rank_sample.progress == 0.0) {
                         if (m_region_id[local_rank] == GEOPM_REGION_HASH_UNMARKED) {
                             m_application_sampler.get_regulator()->record_exit(GEOPM_REGION_HASH_UNMARKED, local_rank, rank_sample.timestamp);
                         }
                         m_application_sampler.get_regulator()->record_entry(region_id, local_rank, rank_sample.timestamp);
                     }
+                    // DRG: what does it mean if progress is not 0.0?
                     m_rank_sample_buffer[local_rank].clear();
                 }
                 if (rank_sample.progress == 1.0) {
@@ -158,6 +161,7 @@ namespace geopm
                     }
                 }
                 else {
+                    // DRG: isn't this already true?
                     m_region_id[local_rank] = region_id;
                 }
                 m_rank_sample_buffer[local_rank].insert(rank_sample);
