@@ -58,7 +58,7 @@ void geopm_set_rate_limited(void);
  *  code.  Note this approach is thread safe because of the underlying
  *  lock in geopm_prof_region().
  */
-#define ENTRY_RATE_LIMIT 0.0005
+#define ENTRY_RATE_LIMIT 0.00005
 #define GEOPM_PMPI_ENTER_MACRO(FUNC) \
     static unsigned is_once = 1; \
     static uint64_t func_rid = 0; \
