@@ -54,8 +54,10 @@ namespace geopm
                 struct geopm_time_s enter_time;
                 double total_time;
                 int count;
+                double min_time;
+                double max_time;
             };
-            const struct m_region_s M_REGION_ZERO {{{0,0}}, 0.0, 0};
+            const struct m_region_s M_REGION_ZERO {{{0,0}}, 0.0, 0, 1e99, 0.0};
             std::map<std::string, m_region_s> m_region_map;
             std::string m_region_stack;
             size_t m_region_stack_colon;
