@@ -33,6 +33,12 @@
 
 namespace geopm
 {
+
+    size_t ApplicationRecordLog::buffer_size(void)
+    {
+        return sizeof(m_layout_s);
+    }
+
     void ApplicationRecordLog::check_reset(void)
     {
         if (m_shmem->num_record == 0)
@@ -41,10 +47,33 @@ namespace geopm
         }
     }
 
+    void *ApplicationRecordLog::pointer(void) const
+    {
+        void *result = nullptr;
+        if (m_shmem) {
+            result = m_shmem->pointer();
+        }
+        else if (m_shmem_user) {
+            result = m_shmem_user->pointer();
+        }
+        return result;
+    }
+
+    std::unique_ptr<SharedMemoryScopedLock> ApplicationRecordLog::get_scoped_lock(void)
+    {
+        std::unique_ptr<SharedMemoryScopedLock> result;
+        if (m_shmem) {
+            result = m_shmem->get_scoped_lock();
+        }
+        else if (m_shmem_user) {
+            result = m_shmem_user->get_scoped_lock();
+        }
+        return result;
+    }
 
     void ApplicationRecordLog::set_process(int process)
     {
-
+        m_process = process;
     }
 
     /// @brief Get the index into the short_table for a

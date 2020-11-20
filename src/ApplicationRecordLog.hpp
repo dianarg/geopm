@@ -36,14 +36,16 @@ namespace geopm
     class ApplicationRecordLog
     {
         public:
-            std::unique_ptr<RecordLog> record_log(std::unique_ptr<SharedMemory> shmem);
-            std::unique_ptr<RecordLog> record_log(std::unique_ptr<SharedMemoryUser> shmem);
+            std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemory> shmem);
+            std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemoryUser> shmem);
             void set_process(int process) = 0;
+            void set_zero_time(const geopm_time_s &time) = 0;
             virtual void enter(uint64_t hash, const geopm_time_s &time) = 0;
             virtual void exit(uint64_t hash, const geopm_time_s &time) = 0;
             virtual void epoch(const geopm_time_s &time) = 0;
             virtual void dump(std::vector<record_s> &records,
                               std::vector<short_region_s> &short_regions) = 0;
+            static size_t buffer_size(void);
         private:
             RecordLog() = default;
             virtual ~RecordLog() = default;
@@ -52,9 +54,10 @@ namespace geopm
     class ApplicationRecordLogImp
     {
         public:
-            RecordLogImp(std::unique_ptr<SharedMemory> shmem);
-            RecordLogImp(std::unique_ptr<SharedMemoryUser> shmem);
+            RecordLogImp(std::shared_ptr<SharedMemory> shmem);
+            RecordLogImp(std::shared_ptr<SharedMemoryUser> shmem);
             void set_process(int process) override;
+            void set_zero_time(const geopm_time_s &time) override;
             void enter(uint64_t hash, const geopm_time_s &time) override;
             void exit(uint64_t hash, const geopm_time_s &time) override;
             void epoch(const geopm_time_s &time) override;
@@ -80,6 +83,7 @@ namespace geopm
                 size_t num_enter;
                 struct m_short_el_s short_table[M_MAX_ENTER];
             };
+            int m_process;
             std::shared_ptr<SharedMemory> m_shmem;
             std::shared_ptr<SharedMemoryUser> m_shmem_user;
             std::map<uint64_t, int> m_hash_record_map;
