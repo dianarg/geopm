@@ -136,7 +136,11 @@ namespace geopm
             ///         the Linux process ID of a child thread owned
             ///         by the application being tracked.
             virtual std::vector<int> per_cpu_thread(void) const = 0;
-
+            /// @brief Connect with an application using the provided
+            ///        key.
+            /// @param shmem_key [in] Base key for connecting to the
+            ///                  application.
+            virtual void connect(const std::string &shmem_key);
             // Deprecated API's below for access to legacy objects
             virtual void set_sampler(std::shared_ptr<ProfileSampler> sampler) = 0;
             virtual std::shared_ptr<ProfileSampler> get_sampler(void) = 0;

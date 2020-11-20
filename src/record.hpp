@@ -118,6 +118,12 @@ namespace geopm
         /// @brief The signal associated with the event type.
         uint64_t signal;
     };
+
+    struct short_region_s {
+        uint64_t hash;
+        int num_complete;
+        double total_time;
+    };
 }
 
 #endif

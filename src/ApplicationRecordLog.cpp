@@ -30,49 +30,59 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PROFILETHREADTABLE_HPP_INCLUDE
-#define PROFILETHREADTABLE_HPP_INCLUDE
-
-#include <stdlib.h>
-#include <cstdint>
-#include <vector>
 
 namespace geopm
 {
-    class ProfileThreadTable
+    void ApplicationRecordLog::check_reset(void)
     {
-        public:
-            ProfileThreadTable() = default;
-            ProfileThreadTable(const ProfileThreadTable &other) = default;
-            virtual ~ProfileThreadTable() = default;
-            virtual void init(uint32_t num_work_unit) = 0;
-            virtual void post(void) = 0;
-            virtual void push_hint(uint64_t hint) = 0;
-            virtual void pop_hint(void) = 0;
-            virtual std::vector<uint64_t> get_hint(void) = 0;
-            virtual void dump(std::vector<double> &progress) = 0;
-            virtual int num_cpu(void) = 0;
-    };
+        if (m_shmem->num_record == 0)
+        {
+            m_hash_record_map.clear();
+        }
+    }
 
-    class PlatformTopo;
 
-    class ProfileThreadTableImp : public ProfileThreadTable
+    void ApplicationRecordLog::set_process(int process)
     {
-        public:
-            ProfileThreadTableImp(size_t buffer_size, void *buffer);
-            ProfileThreadTableImp(const PlatformTopo &topo, size_t buffer_size, void *buffer);
-            ProfileThreadTableImp(const ProfileThreadTableImp &other) = delete;
-            virtual ~ProfileThreadTableImp() = default;
-            void init(uint32_t num_work_unit) override;
-            void post(void) override;
-            void dump(std::vector<double> &progress) override;
-            int num_cpu(void) override;
-        private:
-            static int cpu_idx(void);
-            uint32_t *m_buffer;
-            uint32_t m_num_cpu;
-            size_t m_stride;
-    };
+
+    }
+
+    /// @brief Get the index into the short_table for a
+    /// specific hash.  If the hash has not been observed
+    /// since the last dump() call a new element in the
+    /// table is initialized
+    void ApplicationRecordLog::enter(uint64_t hash, const geopm_time_s &time)
+    {
+        auto emplace_pair = m_hash_record_map.emplace(hash, m_shmem->num_enter);
+        bool is_new  = emplace_pair.second;
+        int short_idx = emplace_pair.first->second;
+
+        // Region with hash has not been entered since last dump
+        if (short_idx < M_MAX_ENTER) {
+            if (is_new) {
+                m_shmem->short_table[short_idx] = {
+                    .record_idx = result,
+                    .hash = hash,
+                    .enter_time = time,
+                    .num_complete = 0,
+                    .total_time = 0.0,
+                };
+                ++(m_shmem->num_enter);
+                record_s enter_record = {
+                    .time = time,
+                    .process = m_process,
+                    .event = EVENT_REGION_ENTRY,
+                    .signal = hash,
+                };
+                append_record(enter_record);
+            }
+            else {
+                m_shmem->short_table[short_idx].enter_time = time;
+            }
+        }
+        else {
+            throw Exception("Table overflow");
+        }
+        return result;
+    }
 }
-
-#endif
