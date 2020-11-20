@@ -30,6 +30,9 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "ApplicationRecordLog.hpp"
+#include "SharedMemory.hpp"
+#include "SharedMemoryUser.hpp"
 
 namespace geopm
 {
@@ -39,15 +42,31 @@ namespace geopm
         return sizeof(m_layout_s);
     }
 
-    void ApplicationRecordLog::check_reset(void)
+    ApplicationRecordLogImp::ApplicationRecordLogImp(std::shared_ptr<SharedMemory> shmem)
+        : m_process(-1)
+        , m_shmem(shmem)
+        , m_layout(*((m_layout_s *)(shmem->pointer())))
     {
-        if (m_shmem->num_record == 0)
+
+    }
+
+    ApplicationRecordLogImp::ApplicationRecordLogImp(std::shared_ptr<SharedMemoryUser> shmem)
+        : m_process(-1)
+        , m_shmem_user(shmem)
+        , m_layout(*((m_layout_s *)(shmem->pointer())))
+    {
+
+    }
+
+    void ApplicationRecordLogImp::check_reset(void)
+    {
+        if (m_layout.num_record == 0)
         {
             m_hash_record_map.clear();
         }
     }
 
-    void *ApplicationRecordLog::pointer(void) const
+    void *ApplicationRecordLogImp::pointer(void) const
     {
         void *result = nullptr;
         if (m_shmem) {
@@ -59,7 +78,7 @@ namespace geopm
         return result;
     }
 
-    std::unique_ptr<SharedMemoryScopedLock> ApplicationRecordLog::get_scoped_lock(void)
+    std::unique_ptr<SharedMemoryScopedLock> ApplicationRecordLogImp::get_scoped_lock(void)
     {
         std::unique_ptr<SharedMemoryScopedLock> result;
         if (m_shmem) {
@@ -71,47 +90,47 @@ namespace geopm
         return result;
     }
 
-    void ApplicationRecordLog::set_process(int process)
+    void ApplicationRecordLogImp::set_process(int process)
     {
         m_process = process;
+    }
+
+    void ApplicationRecordLogImp::set_time_zero(const geopm_time_s &time)
+    {
+        m_time_zero = time;
     }
 
     /// @brief Get the index into the short_table for a
     /// specific hash.  If the hash has not been observed
     /// since the last dump() call a new element in the
     /// table is initialized
-    void ApplicationRecordLog::enter(uint64_t hash, const geopm_time_s &time)
+    void ApplicationRecordLogImp::enter(uint64_t hash, const geopm_time_s &time)
     {
-        auto emplace_pair = m_hash_record_map.emplace(hash, m_shmem->num_enter);
+        std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
+        auto emplace_pair = m_hash_record_map.emplace(hash, m_layout.num_enter);
         bool is_new  = emplace_pair.second;
         int short_idx = emplace_pair.first->second;
-
+        int record_idx = m_layout.num_enter;
         // Region with hash has not been entered since last dump
         if (short_idx < M_MAX_ENTER) {
             if (is_new) {
-                m_shmem->short_table[short_idx] = {
-                    .record_idx = result,
+                m_layout.short_table[short_idx] = {
+                    .record_idx = record_idx,
                     .hash = hash,
                     .enter_time = time,
                     .num_complete = 0,
                     .total_time = 0.0,
                 };
-                ++(m_shmem->num_enter);
+                ++(m_layout.num_enter);
                 record_s enter_record = {
-                    .time = time,
+                    .time = geopm_time_diff(&m_time_zero, &time),
                     .process = m_process,
                     .event = EVENT_REGION_ENTRY,
                     .signal = hash,
                 };
-                append_record(enter_record);
-            }
-            else {
-                m_shmem->short_table[short_idx].enter_time = time;
+                m_layout.record_table[record_idx] = enter_record;
+                ++(m_layout.num_record);
             }
         }
-        else {
-            throw Exception("Table overflow");
-        }
-        return result;
     }
 }

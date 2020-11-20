@@ -30,34 +30,65 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef APPLICATIONRECORDLOG_HPP_INCLUDE
+#define APPLICATIONRECORDLOG_HPP_INCLUDE
+
+#include <cstdint>
+#include <cstddef>
+#include <map>
+#include <vector>
+#include <memory>
+
+#include "geopm_time.h"
+#include "record.hpp"
 
 namespace geopm
 {
+    class SharedMemory;
+    class SharedMemoryUser;
+    class SharedMemoryScopedLock;
+
     class ApplicationRecordLog
     {
         public:
             std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemory> shmem);
             std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemoryUser> shmem);
-            void set_process(int process) = 0;
-            void set_zero_time(const geopm_time_s &time) = 0;
+            virtual void set_process(int process) = 0;
+            virtual void set_time_zero(const geopm_time_s &time) = 0;
             virtual void enter(uint64_t hash, const geopm_time_s &time) = 0;
             virtual void exit(uint64_t hash, const geopm_time_s &time) = 0;
             virtual void epoch(const geopm_time_s &time) = 0;
             virtual void dump(std::vector<record_s> &records,
                               std::vector<short_region_s> &short_regions) = 0;
             static size_t buffer_size(void);
-        private:
-            RecordLog() = default;
-            virtual ~RecordLog() = default;
-    }
+        protected:
+            struct m_short_el_s {
+                int record_idx;
+                uint64_t hash;
+                geopm_time_s enter_time;
+                int num_complete;
+                double total_time;
+            };
+            static constexpr int M_MAX_ENTER = 1024;
+            static constexpr int M_MAX_RECORD = 1024;
+            struct m_layout_s {
+                size_t num_record;
+                record_s record_table[M_MAX_RECORD];
+                size_t num_enter;
+                m_short_el_s short_table[M_MAX_ENTER];
+            };
+            ApplicationRecordLog() = default;
+            virtual ~ApplicationRecordLog() = default;
+    };
 
-    class ApplicationRecordLogImp
+    class ApplicationRecordLogImp : public ApplicationRecordLog
     {
         public:
-            RecordLogImp(std::shared_ptr<SharedMemory> shmem);
-            RecordLogImp(std::shared_ptr<SharedMemoryUser> shmem);
+            ApplicationRecordLogImp(std::shared_ptr<SharedMemory> shmem);
+            ApplicationRecordLogImp(std::shared_ptr<SharedMemoryUser> shmem);
+            virtual ~ApplicationRecordLogImp() = default;
             void set_process(int process) override;
-            void set_zero_time(const geopm_time_s &time) override;
+            void set_time_zero(const geopm_time_s &time) override;
             void enter(uint64_t hash, const geopm_time_s &time) override;
             void exit(uint64_t hash, const geopm_time_s &time) override;
             void epoch(const geopm_time_s &time) override;
@@ -67,25 +98,13 @@ namespace geopm
             void check_reset(void);
             void *pointer(void) const;
             std::unique_ptr<SharedMemoryScopedLock> get_scoped_lock(void);
-
-            struct m_short_el_s {
-                int record_idx;
-                uint64_t hash;
-                geopm_time_s enter_time;
-                int num_complete;
-                double total_time;
-            };
-            static constexpr size_t M_MAX_ENTER = 1024;
-            static constexpr size_t M_MAX_RECORD = 1024;
-            struct m_layout_s {
-                size_t num_record;
-                struct m_record_s record_table[M_MAX_RECORD];
-                size_t num_enter;
-                struct m_short_el_s short_table[M_MAX_ENTER];
-            };
             int m_process;
             std::shared_ptr<SharedMemory> m_shmem;
             std::shared_ptr<SharedMemoryUser> m_shmem_user;
             std::map<uint64_t, int> m_hash_record_map;
+            struct m_layout_s &m_layout;
+            geopm_time_s m_time_zero;
     };
 }
+
+#endif
