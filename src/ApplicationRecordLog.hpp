@@ -51,8 +51,9 @@ namespace geopm
     class ApplicationRecordLog
     {
         public:
-            std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemory> shmem);
-            std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemoryUser> shmem);
+            static std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemory> shmem);
+            static std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemoryUser> shmem);
+            virtual ~ApplicationRecordLog() = default;
             virtual void set_process(int process) = 0;
             virtual void set_time_zero(const geopm_time_s &time) = 0;
             virtual void enter(uint64_t hash, const geopm_time_s &time) = 0;
@@ -62,6 +63,7 @@ namespace geopm
                               std::vector<short_region_s> &short_regions) = 0;
             static size_t buffer_size(void);
         protected:
+            ApplicationRecordLog() = default;
             struct m_short_el_s {
                 int record_idx;
                 uint64_t hash;
@@ -77,8 +79,6 @@ namespace geopm
                 size_t num_enter;
                 m_short_el_s short_table[M_MAX_ENTER];
             };
-            ApplicationRecordLog() = default;
-            virtual ~ApplicationRecordLog() = default;
     };
 
     class ApplicationRecordLogImp : public ApplicationRecordLog

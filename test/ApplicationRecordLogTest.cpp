@@ -50,70 +50,67 @@ class ApplicationRecordLogTest : public ::testing::Test
         void SetUp();
         void will_lock(void);
         std::shared_ptr<MockSharedMemory> m_mock_shared_memory;
+        std::unique_ptr<ApplicationRecordLog> m_record_log;
+
 };
 
 void ApplicationRecordLogTest::SetUp()
 {
     size_t buffer_size = ApplicationRecordLog::buffer_size();
     m_mock_shared_memory = std::make_shared<MockSharedMemory>(buffer_size);
+    m_record_log = ApplicationRecordLog::record_log(m_mock_shared_memory);
 }
 
 void ApplicationRecordLogTest::will_lock()
 {
-    EXPECT_CALL(m_mock_shared_memory, get_scoped_lock(void))
+    EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
         .Times(1);
 }
 
 TEST_F(ApplicationRecordLogTest, empty_dump)
 {
-    std::unique_ptr<ApplicationRecordLog> record_log =
-        ApplicationRecordLog::record_log(m_mock_shared_memory);
-
     std::vector<record_s> records;
     std::vector<short_region_s> short_regions;
-    EXPECT_CALL(m_mock_shared_memory, get_scoped_lock(void))
+    EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
         .Times(1);
-    record_log->dump(records, regions);
+    m_record_log->dump(records, short_regions);
     EXPECT_EQ(0ULL, records.size());
     EXPECT_EQ(0ULL, short_regions.size());
 }
 
 TEST_F(ApplicationRecordLogTest, no_proc_set)
 {
-    std::unique_ptr<ApplicationRecordLog> record_log =
-        ApplicationRecordLog::record_log(m_mock_shared_memory);
-
-    EXPECT_CALL(m_mock_shared_memory, get_scoped_lock(void))
+    EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
         .Times(0);
-    GEOPM_EXPECT_THROW_MESSAGE(record_log.enter(0,{{0,0}}),
+    GEOPM_EXPECT_THROW_MESSAGE(m_record_log->enter(0,{{0,0}}),
+                               GEOPM_ERROR_RUNTIME,
                                "set_process() must be called prior to calling enter()");
-    GEOPM_EXPECT_THROW_MESSAGE(record_log.exit(0,{{0,0}}),
+    GEOPM_EXPECT_THROW_MESSAGE(m_record_log->exit(0,{{0,0}}),
+                               GEOPM_ERROR_RUNTIME,
                                "set_process() must be called prior to calling exit()");
-    GEOPM_EXPECT_THROW_MESSAGE(record_log.epoch({{0,0}}),
+    GEOPM_EXPECT_THROW_MESSAGE(m_record_log->epoch({{0,0}}),
+                               GEOPM_ERROR_RUNTIME,
                                "set_process() must be called prior to calling epoch()");
 }
 
 TEST_F(ApplicationRecordLogTest, no_time_zero_set)
 {
-    std::unique_ptr<ApplicationRecordLog> record_log =
-        ApplicationRecordLog::record_log(m_mock_shared_memory);
-
-    EXPECT_CALL(m_mock_shared_memory, get_scoped_lock(void))
+    EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
         .Times(0);
-    record_log->set_process(123);
-    GEOPM_EXPECT_THROW_MESSAGE(record_log.enter(0,{{0,0}}),
-                               "set_zero_time() must be called prior to calling enter()");
-    GEOPM_EXPECT_THROW_MESSAGE(record_log.exit(0,{{0,0}}),
-                               "set_zero_time() must be called prior to calling exit()");
-    GEOPM_EXPECT_THROW_MESSAGE(record_log.epoch({{0,0}}),
-                               "set_zero_time() must be called prior to calling epoch()");
+    m_record_log->set_process(123);
+    GEOPM_EXPECT_THROW_MESSAGE(m_record_log->enter(0,{{0,0}}),
+                               GEOPM_ERROR_RUNTIME,
+                               "set_time_zero() must be called prior to calling enter()");
+    GEOPM_EXPECT_THROW_MESSAGE(m_record_log->exit(0,{{0,0}}),
+                               GEOPM_ERROR_RUNTIME,
+                               "set_time_zero() must be called prior to calling exit()");
+    GEOPM_EXPECT_THROW_MESSAGE(m_record_log->epoch({{0,0}}),
+                               GEOPM_ERROR_RUNTIME,
+                               "set_time_zero() must be called prior to calling epoch()");
 }
 
 TEST_F(ApplicationRecordLogTest, one_entry)
 {
-    std::unique_ptr<ApplicationRecordLog> record_log =
-        ApplicationRecordLog::record_log(m_mock_shared_memory);
-
     std::vector<record_s> records;
     std::vector<short_region_s> short_regions;
     int proc_id = 123;
@@ -121,24 +118,24 @@ TEST_F(ApplicationRecordLogTest, one_entry)
     geopm_time_s time_0 = {{1, 0}};
     geopm_time_s time = {{2, 0}};
 
-    record_log->set_process(proc_id);
-    record_log->set_zero_time(time_0);
+    m_record_log->set_process(proc_id);
+    m_record_log->set_time_zero(time_0);
 
     {
-        EXPECT_CALL(m_mock_shared_memory, get_scoped_lock(void))
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
             .Times(1);
-        record_log->enter(hash, time);
+        m_record_log->enter(hash, time);
     }
 
     {
-        EXPECT_CALL(m_mock_shared_memory, get_scoped_lock(void))
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
             .Times(1);
-        record_log->dump(records, regions);
+        m_record_log->dump(records, short_regions);
     }
     EXPECT_EQ(0ULL, short_regions.size());
     ASSERT_EQ(1ULL, records.size());
-    EXPECT_EQ(records[0].time, 1.0);
-    EXPECT_EQ(records[0].process = proc_id);
-    EXPECT_EQ(records[0].event = EVENT_REGION_ENTRY);
-    EXPECT_EQ(records[0].signal = hash);
+    EXPECT_EQ(1.0, records[0].time);
+    EXPECT_EQ(proc_id, records[0].process);
+    EXPECT_EQ(geopm::EVENT_REGION_ENTRY, records[0].event);
+    EXPECT_EQ(hash, records[0].signal);
 }
