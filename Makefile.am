@@ -100,7 +100,6 @@ pkginclude_HEADERS = contrib/json11/json11.hpp \
                      src/RegionAggregator.hpp \
                      src/SharedMemory.hpp \
                      src/SharedMemoryScopedLock.hpp \
-                     src/SharedMemoryUser.hpp \
                      src/TimeIOGroup.hpp \
                      # end
 
@@ -595,7 +594,6 @@ libgeopmpolicy_la_SOURCES = contrib/json11/json11.cpp \
                             src/SharedMemoryImp.hpp \
                             src/SharedMemoryScopedLock.cpp \
                             src/SharedMemoryScopedLock.hpp \
-                            src/SharedMemoryUser.hpp \
                             src/Signal.hpp \
                             src/TimeIOGroup.cpp \
                             src/TimeIOGroup.hpp \
