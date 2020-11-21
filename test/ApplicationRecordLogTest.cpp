@@ -58,7 +58,7 @@ void ApplicationRecordLogTest::SetUp()
 {
     size_t buffer_size = ApplicationRecordLog::buffer_size();
     m_mock_shared_memory = std::make_shared<MockSharedMemory>(buffer_size);
-    m_record_log = ApplicationRecordLog::record_log(m_mock_shared_memory);
+    m_record_log = ApplicationRecordLog::make_unique(m_mock_shared_memory);
 }
 
 void ApplicationRecordLogTest::will_lock()
@@ -84,13 +84,13 @@ TEST_F(ApplicationRecordLogTest, no_proc_set)
         .Times(0);
     GEOPM_EXPECT_THROW_MESSAGE(m_record_log->enter(0,{{0,0}}),
                                GEOPM_ERROR_RUNTIME,
-                               "set_process() must be called prior to calling enter()");
+                               "set_process() must be called prior to calling enter(), exit() or epoch()");
     GEOPM_EXPECT_THROW_MESSAGE(m_record_log->exit(0,{{0,0}}),
                                GEOPM_ERROR_RUNTIME,
-                               "set_process() must be called prior to calling exit()");
+                               "set_process() must be called prior to calling enter(), exit() or epoch()");
     GEOPM_EXPECT_THROW_MESSAGE(m_record_log->epoch({{0,0}}),
                                GEOPM_ERROR_RUNTIME,
-                               "set_process() must be called prior to calling epoch()");
+                               "set_process() must be called prior to calling enter(), exit() or epoch()");
 }
 
 TEST_F(ApplicationRecordLogTest, no_time_zero_set)
@@ -100,13 +100,13 @@ TEST_F(ApplicationRecordLogTest, no_time_zero_set)
     m_record_log->set_process(123);
     GEOPM_EXPECT_THROW_MESSAGE(m_record_log->enter(0,{{0,0}}),
                                GEOPM_ERROR_RUNTIME,
-                               "set_time_zero() must be called prior to calling enter()");
+                               "set_time_zero() must be called prior to calling enter(), exit() or epoch()");
     GEOPM_EXPECT_THROW_MESSAGE(m_record_log->exit(0,{{0,0}}),
                                GEOPM_ERROR_RUNTIME,
-                               "set_time_zero() must be called prior to calling exit()");
+                               "set_time_zero() must be called prior to calling enter(), exit() or epoch()");
     GEOPM_EXPECT_THROW_MESSAGE(m_record_log->epoch({{0,0}}),
                                GEOPM_ERROR_RUNTIME,
-                               "set_time_zero() must be called prior to calling epoch()");
+                               "set_time_zero() must be called prior to calling enter(), exit() or epoch()");
 }
 
 TEST_F(ApplicationRecordLogTest, one_entry)

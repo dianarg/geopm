@@ -51,8 +51,8 @@ namespace geopm
     class ApplicationRecordLog
     {
         public:
-            static std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemory> shmem);
-            static std::unique_ptr<ApplicationRecordLog> record_log(std::shared_ptr<SharedMemoryUser> shmem);
+            static std::unique_ptr<ApplicationRecordLog> make_unique(std::shared_ptr<SharedMemory> shmem);
+            static std::unique_ptr<ApplicationRecordLog> make_unique(std::shared_ptr<SharedMemoryUser> shmem);
             virtual ~ApplicationRecordLog() = default;
             virtual void set_process(int process) = 0;
             virtual void set_time_zero(const geopm_time_s &time) = 0;
@@ -95,15 +95,16 @@ namespace geopm
             void dump(std::vector<record_s> &records,
                       std::vector<short_region_s> &short_regions) override;
         private:
-            void check_reset(void);
+            void check_setup(void);
+            void check_reset(const m_layout_s &layout);
             void *pointer(void) const;
             std::unique_ptr<SharedMemoryScopedLock> get_scoped_lock(void);
             int m_process;
             std::shared_ptr<SharedMemory> m_shmem;
             std::shared_ptr<SharedMemoryUser> m_shmem_user;
             std::map<uint64_t, int> m_hash_record_map;
-            struct m_layout_s &m_layout;
             geopm_time_s m_time_zero;
+            bool m_is_setup;
     };
 }
 

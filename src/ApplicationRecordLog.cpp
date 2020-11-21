@@ -33,9 +33,20 @@
 #include "ApplicationRecordLog.hpp"
 #include "SharedMemory.hpp"
 #include "SharedMemoryUser.hpp"
+#include "Exception.hpp"
+#include "Helper.hpp"
 
 namespace geopm
 {
+    std::unique_ptr<ApplicationRecordLog> ApplicationRecordLog::make_unique(std::shared_ptr<SharedMemory> shmem)
+    {
+        return geopm::make_unique<ApplicationRecordLogImp>(shmem);
+    }
+
+    std::unique_ptr<ApplicationRecordLog> ApplicationRecordLog::make_unique(std::shared_ptr<SharedMemoryUser> shmem)
+    {
+        return geopm::make_unique<ApplicationRecordLogImp>(shmem);
+    }
 
     size_t ApplicationRecordLog::buffer_size(void)
     {
@@ -45,7 +56,8 @@ namespace geopm
     ApplicationRecordLogImp::ApplicationRecordLogImp(std::shared_ptr<SharedMemory> shmem)
         : m_process(-1)
         , m_shmem(shmem)
-        , m_layout(*((m_layout_s *)(shmem->pointer())))
+        , m_time_zero({{0, 0}})
+        , m_is_setup(false)
     {
 
     }
@@ -53,7 +65,8 @@ namespace geopm
     ApplicationRecordLogImp::ApplicationRecordLogImp(std::shared_ptr<SharedMemoryUser> shmem)
         : m_process(-1)
         , m_shmem_user(shmem)
-        , m_layout(*((m_layout_s *)(shmem->pointer())))
+        , m_time_zero({{0, 0}})
+        , m_is_setup(false)
     {
 
     }
@@ -61,11 +74,19 @@ namespace geopm
 
     void ApplicationRecordLogImp::set_process(int process)
     {
+        if (m_is_setup) {
+            throw Exception("ApplicationRecordLog::set_process() called after process has been used",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
         m_process = process;
     }
 
     void ApplicationRecordLogImp::set_time_zero(const geopm_time_s &time)
     {
+        if (m_is_setup) {
+            throw Exception("ApplicationRecordLog::set_time_zero() called after time zero has been used",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
         m_time_zero = time;
     }
 
@@ -76,30 +97,34 @@ namespace geopm
     /// table is initialized
     void ApplicationRecordLogImp::enter(uint64_t hash, const geopm_time_s &time)
     {
+        check_setup();
         std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
-        auto emplace_pair = m_hash_record_map.emplace(hash, m_layout.num_enter);
+        m_layout_s &layout = *((m_layout_s *)(pointer()));
+        check_reset(layout);
+        
+        auto emplace_pair = m_hash_record_map.emplace(hash, layout.num_enter);
         bool is_new  = emplace_pair.second;
         int short_idx = emplace_pair.first->second;
-        int record_idx = m_layout.num_enter;
+        int record_idx = layout.num_enter;
         // Region with hash has not been entered since last dump
         if (short_idx < M_MAX_ENTER) {
             if (is_new) {
-                m_layout.short_table[short_idx] = {
+                layout.short_table[short_idx] = {
                     .record_idx = record_idx,
                     .hash = hash,
                     .enter_time = time,
                     .num_complete = 0,
                     .total_time = 0.0,
                 };
-                ++(m_layout.num_enter);
+                ++(layout.num_enter);
                 record_s enter_record = {
                     .time = geopm_time_diff(&m_time_zero, &time),
                     .process = m_process,
                     .event = EVENT_REGION_ENTRY,
                     .signal = hash,
                 };
-                m_layout.record_table[record_idx] = enter_record;
-                ++(m_layout.num_record);
+                layout.record_table[record_idx] = enter_record;
+                ++(layout.num_record);
             }
         }
     }
@@ -107,24 +132,50 @@ namespace geopm
 
     void ApplicationRecordLogImp::exit(uint64_t hash, const geopm_time_s &time)
     {
-
+        check_setup();
+        std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
+        m_layout_s &layout = *((m_layout_s *)(pointer()));
+        check_reset(layout);
     }
 
     void ApplicationRecordLogImp::epoch(const geopm_time_s &time)
     {
-
+        check_setup();
+        std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
+        m_layout_s &layout = *((m_layout_s *)(pointer()));
+        check_reset(layout);
     }
 
     void ApplicationRecordLogImp::dump(std::vector<record_s> &records,
                                        std::vector<short_region_s> &short_regions)
     {
-
+        std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
+        m_layout_s &layout = *((m_layout_s *)(pointer()));
     }
 
-    void ApplicationRecordLogImp::check_reset(void)
+    void ApplicationRecordLogImp::check_setup(void)
     {
-        if (m_layout.num_record == 0)
-        {
+        if (m_is_setup) {
+            return;
+        }
+
+        if (m_process == -1) {
+            throw Exception("ApplicationRecordLog: set_process() must be called prior to calling enter(), exit() or epoch()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
+
+        geopm_time_s zero = {{0, 0}};
+        if (geopm_time_diff(&m_time_zero, &zero) == 0.0) {
+            throw Exception("ApplicationRecordLog: set_time_zero() must be called prior to calling enter(), exit() or epoch()",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
+
+        m_is_setup = true;
+    }
+
+    void ApplicationRecordLogImp::check_reset(const m_layout_s &layout)
+    {
+        if (layout.num_record == 0) {
             m_hash_record_map.clear();
         }
     }
