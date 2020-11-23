@@ -32,18 +32,12 @@
 
 #include "ApplicationRecordLog.hpp"
 #include "SharedMemory.hpp"
-#include "SharedMemoryUser.hpp"
 #include "Exception.hpp"
 #include "Helper.hpp"
 
 namespace geopm
 {
     std::unique_ptr<ApplicationRecordLog> ApplicationRecordLog::make_unique(std::shared_ptr<SharedMemory> shmem)
-    {
-        return geopm::make_unique<ApplicationRecordLogImp>(shmem);
-    }
-
-    std::unique_ptr<ApplicationRecordLog> ApplicationRecordLog::make_unique(std::shared_ptr<SharedMemoryUser> shmem)
     {
         return geopm::make_unique<ApplicationRecordLogImp>(shmem);
     }
@@ -61,16 +55,6 @@ namespace geopm
     {
 
     }
-
-    ApplicationRecordLogImp::ApplicationRecordLogImp(std::shared_ptr<SharedMemoryUser> shmem)
-        : m_process(-1)
-        , m_shmem_user(shmem)
-        , m_time_zero({{0, 0}})
-        , m_is_setup(false)
-    {
-
-    }
-
 
     void ApplicationRecordLogImp::set_process(int process)
     {
@@ -98,8 +82,8 @@ namespace geopm
     void ApplicationRecordLogImp::enter(uint64_t hash, const geopm_time_s &time)
     {
         check_setup();
-        std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
-        m_layout_s &layout = *((m_layout_s *)(pointer()));
+        std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
+        m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         check_reset(layout);
         
         auto emplace_pair = m_hash_record_map.emplace(hash, layout.num_enter);
@@ -133,24 +117,24 @@ namespace geopm
     void ApplicationRecordLogImp::exit(uint64_t hash, const geopm_time_s &time)
     {
         check_setup();
-        std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
-        m_layout_s &layout = *((m_layout_s *)(pointer()));
+        std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
+        m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         check_reset(layout);
     }
 
     void ApplicationRecordLogImp::epoch(const geopm_time_s &time)
     {
         check_setup();
-        std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
-        m_layout_s &layout = *((m_layout_s *)(pointer()));
+        std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
+        m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         check_reset(layout);
     }
 
     void ApplicationRecordLogImp::dump(std::vector<record_s> &records,
                                        std::vector<short_region_s> &short_regions)
     {
-        std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
-        m_layout_s &layout = *((m_layout_s *)(pointer()));
+        std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
+        m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         records.resize(layout.num_record);
         std::copy(layout.record_table, layout.record_table + layout.num_record, records.begin());
     }
@@ -180,29 +164,5 @@ namespace geopm
         if (layout.num_record == 0) {
             m_hash_record_map.clear();
         }
-    }
-
-    void *ApplicationRecordLogImp::pointer(void) const
-    {
-        void *result = nullptr;
-        if (m_shmem) {
-            result = m_shmem->pointer();
-        }
-        else if (m_shmem_user) {
-            result = m_shmem_user->pointer();
-        }
-        return result;
-    }
-
-    std::unique_ptr<SharedMemoryScopedLock> ApplicationRecordLogImp::get_scoped_lock(void)
-    {
-        std::unique_ptr<SharedMemoryScopedLock> result;
-        if (m_shmem) {
-            result = m_shmem->get_scoped_lock();
-        }
-        else if (m_shmem_user) {
-            result = m_shmem_user->get_scoped_lock();
-        }
-        return result;
     }
 }

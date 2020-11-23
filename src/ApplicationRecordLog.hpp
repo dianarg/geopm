@@ -85,7 +85,6 @@ namespace geopm
     {
         public:
             ApplicationRecordLogImp(std::shared_ptr<SharedMemory> shmem);
-            ApplicationRecordLogImp(std::shared_ptr<SharedMemoryUser> shmem);
             virtual ~ApplicationRecordLogImp() = default;
             void set_process(int process) override;
             void set_time_zero(const geopm_time_s &time) override;
@@ -97,11 +96,8 @@ namespace geopm
         private:
             void check_setup(void);
             void check_reset(const m_layout_s &layout);
-            void *pointer(void) const;
-            std::unique_ptr<SharedMemoryScopedLock> get_scoped_lock(void);
             int m_process;
             std::shared_ptr<SharedMemory> m_shmem;
-            std::shared_ptr<SharedMemoryUser> m_shmem_user;
             std::map<uint64_t, int> m_hash_record_map;
             geopm_time_s m_time_zero;
             bool m_is_setup;
