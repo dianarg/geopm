@@ -55,6 +55,10 @@ GTEST_TESTS = test/gtest_links/AcceleratorTopoTest.default_config \
               test/gtest_links/AgentFactoryTest.static_info_frequency_map \
               test/gtest_links/AggTest.agg_function \
               test/gtest_links/AggTest.function_strings \
+              test/gtest_links/ApplicationRecordLogTest.empty_dump \
+              test/gtest_links/ApplicationRecordLogTest.no_proc_set \
+              test/gtest_links/ApplicationRecordLogTest.no_time_zero_set \
+              test/gtest_links/ApplicationRecordLogTest.one_entry \
               test/gtest_links/ApplicationSamplerTest.one_enter_exit \
               test/gtest_links/ApplicationSamplerTest.process_mapping \
               test/gtest_links/ApplicationSamplerTest.string_conversion \
