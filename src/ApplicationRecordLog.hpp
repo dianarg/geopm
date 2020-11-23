@@ -96,11 +96,13 @@ namespace geopm
         private:
             void check_setup(void);
             void check_reset(const m_layout_s &layout);
+            int append_record(m_layout_s &layout, const record_s &record);
             int m_process;
             std::shared_ptr<SharedMemory> m_shmem;
             std::map<uint64_t, int> m_hash_record_map;
             geopm_time_s m_time_zero;
             bool m_is_setup;
+            uint64_t m_epoch_count;
     };
 }
 

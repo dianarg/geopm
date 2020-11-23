@@ -52,6 +52,7 @@ namespace geopm
         , m_shmem(shmem)
         , m_time_zero({{0, 0}})
         , m_is_setup(false)
+        , m_epoch_count(0)
     {
 
     }
@@ -74,52 +75,35 @@ namespace geopm
         m_time_zero = time;
     }
 
-
-    /// @brief Get the index into the short_table for a
-    /// specific hash.  If the hash has not been observed
-    /// since the last dump() call a new element in the
-    /// table is initialized
     void ApplicationRecordLogImp::enter(uint64_t hash, const geopm_time_s &time)
     {
         check_setup();
         std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
         m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         check_reset(layout);
-        
-        auto emplace_pair = m_hash_record_map.emplace(hash, layout.num_enter);
-        bool is_new  = emplace_pair.second;
-        int short_idx = emplace_pair.first->second;
-        int record_idx = layout.num_enter;
-        // Region with hash has not been entered since last dump
-        if (short_idx < M_MAX_ENTER) {
-            if (is_new) {
-                layout.short_table[short_idx] = {
-                    .record_idx = record_idx,
-                    .hash = hash,
-                    .enter_time = time,
-                    .num_complete = 0,
-                    .total_time = 0.0,
-                };
-                ++(layout.num_enter);
-                record_s enter_record = {
-                    .time = geopm_time_diff(&m_time_zero, &time),
-                    .process = m_process,
-                    .event = EVENT_REGION_ENTRY,
-                    .signal = hash,
-                };
-                layout.record_table[record_idx] = enter_record;
-                ++(layout.num_record);
-            }
-        }
+
+        record_s enter_record = {
+           .time = geopm_time_diff(&m_time_zero, &time),
+           .process = m_process,
+           .event = EVENT_REGION_ENTRY,
+           .signal = hash,
+        };
+        append_record(layout, enter_record);
     }
-
-
     void ApplicationRecordLogImp::exit(uint64_t hash, const geopm_time_s &time)
     {
         check_setup();
         std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
         m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         check_reset(layout);
+
+        record_s exit_record = {
+           .time = geopm_time_diff(&m_time_zero, &time),
+           .process = m_process,
+           .event = EVENT_REGION_EXIT,
+           .signal = hash,
+        };
+        append_record(layout, exit_record);
     }
 
     void ApplicationRecordLogImp::epoch(const geopm_time_s &time)
@@ -128,6 +112,15 @@ namespace geopm
         std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
         m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         check_reset(layout);
+
+        ++m_epoch_count;
+        record_s epoch_record = {
+           .time = geopm_time_diff(&m_time_zero, &time),
+           .process = m_process,
+           .event = EVENT_EPOCH_COUNT,
+           .signal = m_epoch_count,
+        };
+        append_record(layout, epoch_record);
     }
 
     void ApplicationRecordLogImp::dump(std::vector<record_s> &records,
@@ -164,5 +157,17 @@ namespace geopm
         if (layout.num_record == 0) {
             m_hash_record_map.clear();
         }
+    }
+
+
+    int ApplicationRecordLogImp::append_record(m_layout_s &layout, const record_s &record)
+    {
+        int record_idx = layout.num_record;
+        // Don't overrun the buffer
+        if (record_idx < M_MAX_RECORD) {
+            layout.record_table[record_idx] = record;
+            ++(layout.num_record);
+        }
+        return record_idx;
     }
 }

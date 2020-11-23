@@ -132,10 +132,118 @@ TEST_F(ApplicationRecordLogTest, one_entry)
             .Times(1);
         m_record_log->dump(records, short_regions);
     }
+
     EXPECT_EQ(0ULL, short_regions.size());
     ASSERT_EQ(1ULL, records.size());
     EXPECT_EQ(1.0, records[0].time);
     EXPECT_EQ(proc_id, records[0].process);
     EXPECT_EQ(geopm::EVENT_REGION_ENTRY, records[0].event);
     EXPECT_EQ(hash, records[0].signal);
+}
+
+TEST_F(ApplicationRecordLogTest, one_exit)
+{
+    std::vector<record_s> records;
+    std::vector<short_region_s> short_regions;
+    int proc_id = 123;
+    uint64_t hash = 0x1234abcd;
+    geopm_time_s time_0 = {{1, 0}};
+    geopm_time_s time = {{2, 0}};
+
+    m_record_log->set_process(proc_id);
+    m_record_log->set_time_zero(time_0);
+
+    {
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
+            .Times(1);
+        m_record_log->exit(hash, time);
+    }
+
+    {
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
+            .Times(1);
+        m_record_log->dump(records, short_regions);
+    }
+
+    EXPECT_EQ(0ULL, short_regions.size());
+    ASSERT_EQ(1ULL, records.size());
+    EXPECT_EQ(1.0, records[0].time);
+    EXPECT_EQ(proc_id, records[0].process);
+    EXPECT_EQ(geopm::EVENT_REGION_EXIT, records[0].event);
+    EXPECT_EQ(hash, records[0].signal);
+}
+
+TEST_F(ApplicationRecordLogTest, one_epoch)
+{
+    std::vector<record_s> records;
+    std::vector<short_region_s> short_regions;
+    int proc_id = 123;
+    geopm_time_s time_0 = {{1, 0}};
+    geopm_time_s time = {{2, 0}};
+
+    m_record_log->set_process(proc_id);
+    m_record_log->set_time_zero(time_0);
+
+    {
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
+            .Times(1);
+        m_record_log->epoch(time);
+    }
+
+    {
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
+            .Times(1);
+        m_record_log->dump(records, short_regions);
+    }
+
+    EXPECT_EQ(0ULL, short_regions.size());
+    ASSERT_EQ(1ULL, records.size());
+    EXPECT_EQ(1.0, records[0].time);
+    EXPECT_EQ(proc_id, records[0].process);
+    EXPECT_EQ(geopm::EVENT_EPOCH_COUNT, records[0].event);
+    EXPECT_EQ(1ULL, records[0].signal);
+}
+
+TEST_F(ApplicationRecordLogTest, one_entry_exit)
+{
+    std::vector<record_s> records;
+    std::vector<short_region_s> short_regions;
+    int proc_id = 123;
+    uint64_t hash = 0x1234abcd;
+    // Note time_zero is one second after 1970
+    geopm_time_s time_0 = {{1, 0}};
+    geopm_time_s time_entry = {{2, 0}};
+    geopm_time_s time_exit = {{3, 0}};
+
+    m_record_log->set_process(proc_id);
+    m_record_log->set_time_zero(time_0);
+
+
+    {
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
+            .Times(1);
+        m_record_log->enter(hash, time_entry);
+    }
+
+    {
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
+            .Times(1);
+        m_record_log->exit(hash, time_exit);
+    }
+
+    {
+        EXPECT_CALL(*m_mock_shared_memory, get_scoped_lock())
+            .Times(1);
+        m_record_log->dump(records, short_regions);
+    }
+
+    ASSERT_EQ(1ULL, short_regions.size());
+    ASSERT_EQ(1ULL, records.size());
+    EXPECT_EQ(1.0, records[0].time);
+    EXPECT_EQ(proc_id, records[0].process);
+    EXPECT_EQ(geopm::EVENT_SHORT_REGION, records[0].event);
+    EXPECT_EQ(0ULL, records[0].signal);
+    EXPECT_EQ(hash, short_regions[0].hash);
+    EXPECT_EQ(1, short_regions[0].num_complete);
+    EXPECT_EQ(1.0, short_regions[0].total_time);
 }
