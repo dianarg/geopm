@@ -151,6 +151,8 @@ namespace geopm
     {
         std::unique_ptr<SharedMemoryScopedLock> lock = get_scoped_lock();
         m_layout_s &layout = *((m_layout_s *)(pointer()));
+        records.resize(layout.num_record);
+        std::copy(layout.record_table, layout.record_table + layout.num_record, records.begin());
     }
 
     void ApplicationRecordLogImp::check_setup(void)
