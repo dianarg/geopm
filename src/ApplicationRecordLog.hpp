@@ -64,20 +64,13 @@ namespace geopm
             static size_t buffer_size(void);
         protected:
             ApplicationRecordLog() = default;
-            struct m_short_el_s {
-                int record_idx;
-                uint64_t hash;
-                geopm_time_s enter_time;
-                int num_complete;
-                double total_time;
-            };
-            static constexpr int M_MAX_ENTER = 1024;
             static constexpr int M_MAX_RECORD = 1024;
+            static constexpr int M_MAX_REGION = 1024;
             struct m_layout_s {
                 size_t num_record;
                 record_s record_table[M_MAX_RECORD];
-                size_t num_enter;
-                m_short_el_s short_table[M_MAX_ENTER];
+                size_t num_region;
+                short_region_s region_table[M_MAX_REGION];
             };
     };
 
@@ -94,15 +87,21 @@ namespace geopm
             void dump(std::vector<record_s> &records,
                       std::vector<short_region_s> &short_regions) override;
         private:
+            struct m_region_enter_s {
+                int record_idx;
+                int region_idx;
+                geopm_time_s enter_time;
+            };
             void check_setup(void);
-            void check_reset(const m_layout_s &layout);
-            int append_record(m_layout_s &layout, const record_s &record);
+            void check_reset(m_layout_s &layout);
+            void append_record(m_layout_s &layout, const record_s &record);
             int m_process;
             std::shared_ptr<SharedMemory> m_shmem;
-            std::map<uint64_t, int> m_hash_record_map;
+            std::map<uint64_t, m_region_enter_s> m_hash_region_enter_map;
             geopm_time_s m_time_zero;
             bool m_is_setup;
             uint64_t m_epoch_count;
+            uint64_t m_entered_region_hash;
     };
 }
 

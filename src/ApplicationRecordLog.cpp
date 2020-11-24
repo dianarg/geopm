@@ -30,6 +30,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "geopm.h"
 #include "ApplicationRecordLog.hpp"
 #include "SharedMemory.hpp"
 #include "Exception.hpp"
@@ -81,15 +82,31 @@ namespace geopm
         std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
         m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         check_reset(layout);
-
-        record_s enter_record = {
-           .time = geopm_time_diff(&m_time_zero, &time),
-           .process = m_process,
-           .event = EVENT_REGION_ENTRY,
-           .signal = hash,
-        };
-        append_record(layout, enter_record);
+        /// @todo: Optimize with piecewise_construct
+        auto emplace_pair = m_hash_region_enter_map.emplace(
+                                std::make_pair(hash,
+                                               m_region_enter_s {
+                                                   layout.num_record,
+                                                   -1,
+                                                   time}));
+        bool is_new  = emplace_pair.second;
+        // Note: region_idx == layout.num_region if the region has not
+        // been entered yet.  If region was entered previously
+        // region_idx will be the location in the table data is stored
+        // for that region.
+        auto &region_enter = emplace_pair.first->second;
+        if (is_new) {
+            record_s enter_record = {
+               .time = geopm_time_diff(&m_time_zero, &time),
+               .process = m_process,
+               .event = EVENT_REGION_ENTRY,
+               .signal = hash,
+            };
+            append_record(layout, enter_record);
+        }
+        m_entered_region_hash = hash;
     }
+
     void ApplicationRecordLogImp::exit(uint64_t hash, const geopm_time_s &time)
     {
         check_setup();
@@ -97,13 +114,45 @@ namespace geopm
         m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         check_reset(layout);
 
-        record_s exit_record = {
-           .time = geopm_time_diff(&m_time_zero, &time),
-           .process = m_process,
-           .event = EVENT_REGION_EXIT,
-           .signal = hash,
-        };
-        append_record(layout, exit_record);
+        auto region_it = m_hash_region_enter_map.find(hash);
+        if (region_it == m_hash_region_enter_map.end()) {
+            record_s exit_record = {
+               .time = geopm_time_diff(&m_time_zero, &time),
+               .process = m_process,
+               .event = EVENT_REGION_EXIT,
+               .signal = hash,
+            };
+            append_record(layout, exit_record);
+        }
+        else {
+            int region_idx = region_it->second.region_idx;
+            ++(layout.num_region);
+            if (layout.num_region == M_MAX_REGION) {
+                throw Exception("ApplicationRecordLogImp::exit(): too many regions entered and exited within one control loop",
+                                GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            }
+            auto region_enter_it = m_hash_region_enter_map.find(hash);
+            if (region_enter_it == m_hash_region_enter_map.end()) {
+                throw Exception("ApplicationRecordLogImp::exit(): Exited a region that has not been entered",
+                                GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            }
+            auto &enter_info = region_enter_it->second;
+            if (enter_info.region_idx == -1) {
+                enter_info.region_idx = region_idx;
+                layout.region_table[region_idx] = {
+                    .hash = hash,
+                    .num_complete = 0,
+                    .total_time = 0.0,
+                };
+                // Convert the region entry event into a short region event
+                layout.record_table[enter_info.record_idx].event = EVENT_SHORT_REGION;
+                layout.record_table[enter_info.record_idx].signal = region_idx;
+            }
+            auto &region = layout.region_table[region_idx];
+            ++(region.num_complete);
+            region.total_time += geopm_time_diff(&(enter_info.enter_time), &time);
+        }
+        m_entered_region_hash = GEOPM_REGION_HASH_INVALID;
     }
 
     void ApplicationRecordLogImp::epoch(const geopm_time_s &time)
@@ -130,6 +179,8 @@ namespace geopm
         m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         records.resize(layout.num_record);
         std::copy(layout.record_table, layout.record_table + layout.num_record, records.begin());
+        short_regions.resize(layout.num_region);
+        std::copy(layout.region_table, layout.region_table + layout.num_region, short_regions.begin());
     }
 
     void ApplicationRecordLogImp::check_setup(void)
@@ -152,15 +203,30 @@ namespace geopm
         m_is_setup = true;
     }
 
-    void ApplicationRecordLogImp::check_reset(const m_layout_s &layout)
+    void ApplicationRecordLogImp::check_reset(m_layout_s &layout)
     {
         if (layout.num_record == 0) {
-            m_hash_record_map.clear();
+            auto region_enter_it = m_hash_region_enter_map.find(m_entered_region_hash);
+            if (region_enter_it != m_hash_region_enter_map.end()) {
+                auto &entry_info = region_enter_it->second;
+                record_s entry_record = {
+                    .time = geopm_time_diff(&m_time_zero, &(entry_info.enter_time)),
+                    .process = m_process,
+                    .event = EVENT_REGION_ENTRY,
+                    .signal = m_entered_region_hash,
+                };
+                append_record(layout, entry_record);
+                entry_info.record_idx = 0;
+                m_hash_region_enter_map = {*region_enter_it};
+            }
+            else {
+                m_hash_region_enter_map.clear();
+            }
         }
     }
 
 
-    int ApplicationRecordLogImp::append_record(m_layout_s &layout, const record_s &record)
+    void ApplicationRecordLogImp::append_record(m_layout_s &layout, const record_s &record)
     {
         int record_idx = layout.num_record;
         // Don't overrun the buffer
@@ -168,6 +234,5 @@ namespace geopm
             layout.record_table[record_idx] = record;
             ++(layout.num_record);
         }
-        return record_idx;
     }
 }
