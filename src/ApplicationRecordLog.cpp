@@ -35,6 +35,8 @@
 #include "SharedMemory.hpp"
 #include "Exception.hpp"
 #include "Helper.hpp"
+#include "geopm_debug.hpp"
+
 
 namespace geopm
 {
@@ -90,11 +92,11 @@ namespace geopm
                                                    -1,
                                                    time}));
         bool is_new  = emplace_pair.second;
+        emplace_pair.first->second.enter_time = time;
         // Note: region_idx == layout.num_region if the region has not
         // been entered yet.  If region was entered previously
         // region_idx will be the location in the table data is stored
         // for that region.
-        auto &region_enter = emplace_pair.first->second;
         if (is_new) {
             record_s enter_record = {
                .time = geopm_time_diff(&m_time_zero, &time),
@@ -125,20 +127,34 @@ namespace geopm
             append_record(layout, exit_record);
         }
         else {
-            int region_idx = region_it->second.region_idx;
-            ++(layout.num_region);
-            if (layout.num_region == M_MAX_REGION) {
-                throw Exception("ApplicationRecordLogImp::exit(): too many regions entered and exited within one control loop",
-                                GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+            auto &enter_info = region_it->second;
+
+            if (enter_info.record_idx == -1) {
+                GEOPM_DEBUG_ASSERT(enter_info.region_idx == -1,
+                                   "Short region in list with no matching record");
+                // There is a region entry from a previous control loop that
+                // is not in records array yet.  This will be converted
+                // to a short region record by the next block.
+                record_s enter_record = {
+                    .time = geopm_time_diff(&m_time_zero, &time),
+                    .process = m_process,
+                    .event = EVENT_REGION_ENTRY,
+                    .signal = hash,
+                };
+                enter_info.record_idx = layout.num_record;
+                append_record(layout, enter_record);
             }
-            auto region_enter_it = m_hash_region_enter_map.find(hash);
-            if (region_enter_it == m_hash_region_enter_map.end()) {
-                throw Exception("ApplicationRecordLogImp::exit(): Exited a region that has not been entered",
-                                GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
-            }
-            auto &enter_info = region_enter_it->second;
-            if (enter_info.region_idx == -1) {
+            GEOPM_DEBUG_ASSERT(enter_info.record_idx >= 0 && enter_info.record_idx < layout.num_record,
+                               "Invalid record index");
+
+            // find or add the region in short regions array
+            int region_idx = enter_info.region_idx;
+            if (region_idx == -1) {
+                region_idx = layout.num_region;
                 enter_info.region_idx = region_idx;
+                ++(layout.num_region);
+                GEOPM_DEBUG_ASSERT(layout.num_region <= M_MAX_REGION,
+                                   "ApplicationRecordLogImp::exit(): too many regions entered and exited within one control loop");
                 layout.region_table[region_idx] = {
                     .hash = hash,
                     .num_complete = 0,
@@ -148,6 +164,8 @@ namespace geopm
                 layout.record_table[enter_info.record_idx].event = EVENT_SHORT_REGION;
                 layout.record_table[enter_info.record_idx].signal = region_idx;
             }
+            GEOPM_DEBUG_ASSERT(region_idx >= 0 && region_idx < layout.num_region,
+                               "Invalid region index");
             auto &region = layout.region_table[region_idx];
             ++(region.num_complete);
             region.total_time += geopm_time_diff(&(enter_info.enter_time), &time);
@@ -175,12 +193,15 @@ namespace geopm
     void ApplicationRecordLogImp::dump(std::vector<record_s> &records,
                                        std::vector<short_region_s> &short_regions)
     {
+        // this function should not do anything with m_hash_region_enter_map
         std::unique_ptr<SharedMemoryScopedLock> lock = m_shmem->get_scoped_lock();
         m_layout_s &layout = *((m_layout_s *)(m_shmem->pointer()));
         records.resize(layout.num_record);
         std::copy(layout.record_table, layout.record_table + layout.num_record, records.begin());
         short_regions.resize(layout.num_region);
         std::copy(layout.region_table, layout.region_table + layout.num_region, short_regions.begin());
+        layout.num_record = 0;
+        layout.num_region = 0;
     }
 
     void ApplicationRecordLogImp::check_setup(void)
@@ -209,14 +230,8 @@ namespace geopm
             auto region_enter_it = m_hash_region_enter_map.find(m_entered_region_hash);
             if (region_enter_it != m_hash_region_enter_map.end()) {
                 auto &entry_info = region_enter_it->second;
-                record_s entry_record = {
-                    .time = geopm_time_diff(&m_time_zero, &(entry_info.enter_time)),
-                    .process = m_process,
-                    .event = EVENT_REGION_ENTRY,
-                    .signal = m_entered_region_hash,
-                };
-                append_record(layout, entry_record);
-                entry_info.record_idx = 0;
+                entry_info.record_idx = -1;
+                entry_info.region_idx = -1;
                 m_hash_region_enter_map = {*region_enter_it};
             }
             else {
@@ -233,6 +248,10 @@ namespace geopm
         if (record_idx < M_MAX_RECORD) {
             layout.record_table[record_idx] = record;
             ++(layout.num_record);
+        }
+        else {
+            throw Exception("ApplicationRecordLog: maximum number of records reached.",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
     }
 }

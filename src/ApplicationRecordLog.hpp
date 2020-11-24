@@ -65,11 +65,11 @@ namespace geopm
         protected:
             ApplicationRecordLog() = default;
             static constexpr int M_MAX_RECORD = 1024;
-            static constexpr int M_MAX_REGION = 1024;
+            static constexpr int M_MAX_REGION = M_MAX_RECORD + 1;
             struct m_layout_s {
-                size_t num_record;
+                int num_record;
                 record_s record_table[M_MAX_RECORD];
-                size_t num_region;
+                int num_region;
                 short_region_s region_table[M_MAX_REGION];
             };
     };
