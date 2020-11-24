@@ -113,6 +113,23 @@ TEST_F(ApplicationRecordLogTest, no_time_zero_set)
                                "set_time_zero() must be called prior to calling enter(), exit() or epoch()");
 }
 
+TEST_F(ApplicationRecordLogTest, setup_only_once)
+{
+    int proc_id = 123;
+    geopm_time_s time_0 = {{1, 0}};
+
+    m_record_log->set_process(proc_id);
+    m_record_log->set_time_zero(time_0);
+
+    m_record_log->epoch(time_0);
+
+    GEOPM_EXPECT_THROW_MESSAGE(m_record_log->set_process(proc_id),
+                               GEOPM_ERROR_RUNTIME, "set_process() called after process has been used");
+    GEOPM_EXPECT_THROW_MESSAGE(m_record_log->set_time_zero(time_0),
+                               GEOPM_ERROR_RUNTIME, "set_time_zero() called after time zero has been used");
+}
+
+
 TEST_F(ApplicationRecordLogTest, scoped_lock_test)
 {
     int proc_id = 123;
