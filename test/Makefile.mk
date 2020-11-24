@@ -58,7 +58,15 @@ GTEST_TESTS = test/gtest_links/AcceleratorTopoTest.default_config \
               test/gtest_links/ApplicationRecordLogTest.empty_dump \
               test/gtest_links/ApplicationRecordLogTest.no_proc_set \
               test/gtest_links/ApplicationRecordLogTest.no_time_zero_set \
+              test/gtest_links/ApplicationRecordLogTest.scoped_lock_test \
               test/gtest_links/ApplicationRecordLogTest.one_entry \
+              test/gtest_links/ApplicationRecordLogTest.one_exit \
+              test/gtest_links/ApplicationRecordLogTest.one_epoch \
+              test/gtest_links/ApplicationRecordLogTest.short_region_entry_exit \
+              test/gtest_links/ApplicationRecordLogTest.dump_twice \
+              test/gtest_links/ApplicationRecordLogTest.dump_within_region \
+              test/gtest_links/ApplicationRecordLogTest.overflow_record_table \
+              test/gtest_links/ApplicationRecordLogTest.cannot_overflow_region_table \
               test/gtest_links/ApplicationSamplerTest.one_enter_exit \
               test/gtest_links/ApplicationSamplerTest.process_mapping \
               test/gtest_links/ApplicationSamplerTest.string_conversion \

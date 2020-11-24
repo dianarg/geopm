@@ -147,7 +147,6 @@ TEST_F(ApplicationRecordLogTest, scoped_lock_test)
 
 }
 
-
 TEST_F(ApplicationRecordLogTest, one_entry)
 {
     std::vector<record_s> records;
