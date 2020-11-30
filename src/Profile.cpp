@@ -53,6 +53,8 @@
 #include "ProfileTable.hpp"
 #include "ProfileThreadTable.hpp"
 #include "SampleScheduler.hpp"
+#include "ApplicationRecordLog.hpp"
+#include "ApplicationStatus.hpp"
 #include "ControlMessage.hpp"
 #include "SharedMemory.hpp"
 #include "Exception.hpp"
@@ -73,6 +75,8 @@ namespace geopm
                            std::unique_ptr<ProfileTable> table,
                            std::shared_ptr<ProfileThreadTable> t_table,
                            std::unique_ptr<SampleScheduler> scheduler,
+                           std::shared_ptr<ApplicationRecordLog> app_record_log,
+                           std::shared_ptr<ApplicationStatus> app_status,
                            std::shared_ptr<Comm> reduce_comm)
         : m_is_enabled(false)
         , m_prof_name(prof_name)
@@ -92,6 +96,8 @@ namespace geopm
         , m_tprof_shmem(nullptr)
         , m_tprof_table(t_table)
         , m_scheduler(std::move(scheduler))
+        , m_app_record_log(app_record_log)
+        , m_app_status(app_status)
         , m_shm_comm(nullptr)
         , m_rank(0)
         , m_shm_rank(0)
@@ -162,6 +168,17 @@ namespace geopm
             }
             m_is_enabled = false;
         }
+        // TODO: make functions for creation step; might need some barriers
+        std::string rec_log_key(m_key_base + "-records");
+        std::string status_key(m_key_base + "-status");
+        if (m_app_record_log == nullptr) {
+            auto rec_log_shmem = SharedMemory::make_unique_user(rec_log_key, m_timeout);
+            m_app_record_log = ApplicationRecordLog::make_unique(std::move(rec_log_shmem));
+        }
+        if (m_app_status == nullptr) {
+            auto status_shmem = SharedMemory::make_unique_user(status_key, m_timeout);
+            m_app_status = ApplicationStatus::make_unique(m_topo, std::move(status_shmem));
+        }
 #ifdef GEOPM_OVERHEAD
         m_overhead_time_startup = geopm_time_since(&overhead_entry);
 #endif
@@ -182,6 +199,12 @@ namespace geopm
             if (!m_scheduler) {
                 null_objects.push_back("m_scheduler");
             }
+            if (!m_app_record_log) {
+                null_objects.push_back("m_app_record_log");
+            }
+            if (!m_app_status) {
+                null_objects.push_back("m_app_status");
+            }
             if (!null_objects.empty()) {
                 std::string objs = string_join(null_objects, ", ");
                 throw Exception("Profile::init(): one or more internal objects not initialized: " + objs,
@@ -196,7 +219,8 @@ namespace geopm
         : ProfileImp(environment().profile(), environment().shmkey(), environment().report(),
                      environment().timeout(), environment().do_region_barrier(),
                      nullptr, nullptr, platform_topo(), nullptr,
-                     nullptr, geopm::make_unique<SampleSchedulerImp>(0.01), nullptr)
+                     nullptr, geopm::make_unique<SampleSchedulerImp>(0.01),
+                     nullptr, nullptr, nullptr)
     {
     }
 

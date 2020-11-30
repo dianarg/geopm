@@ -178,6 +178,8 @@ namespace geopm
     class PlatformTopo;
     class ProfileTable;
     class SampleScheduler;
+    class ApplicationRecordLog;
+    class ApplicationStatus;
 
     class ProfileImp : public Profile
     {
@@ -229,6 +231,8 @@ namespace geopm
                        const PlatformTopo &topo, std::unique_ptr<ProfileTable> table,
                        std::shared_ptr<ProfileThreadTable> t_table,
                        std::unique_ptr<SampleScheduler> scheduler,
+                       std::shared_ptr<ApplicationRecordLog> app_record_log,
+                       std::shared_ptr<ApplicationStatus> app_status,
                        std::shared_ptr<Comm> reduce_comm);
             /// @brief ProfileImp destructor, virtual.
             virtual ~ProfileImp();
@@ -311,6 +315,8 @@ namespace geopm
             std::unique_ptr<SharedMemory> m_tprof_shmem;
             std::shared_ptr<ProfileThreadTable> m_tprof_table;
             std::unique_ptr<SampleScheduler> m_scheduler;
+            std::shared_ptr<ApplicationRecordLog> m_app_record_log;
+            std::shared_ptr<ApplicationStatus> m_app_status;
             /// @brief Holds a list of cpus that the rank process is
             ///        bound to.
             std::list<int> m_cpu_list;
