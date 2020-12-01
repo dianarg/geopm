@@ -37,6 +37,7 @@
 #include "geopm.h"
 #include "ProfileThreadTable.hpp"
 #include "Exception.hpp"
+#include "geopm_sched.h"
 
 #include "config.h"
 
@@ -79,6 +80,7 @@ namespace geopm
         return instance;
     }
 }
+
 
 extern "C"
 {
@@ -202,7 +204,8 @@ extern "C"
         int err = 0;
         if (g_pmpi_tprof_enabled) {
             try {
-                geopm::Profile::default_profile().tprof_table()->init(num_work_unit);
+                int cpu = geopm::Profile::get_cpu();
+                geopm::Profile::default_profile().thread_init(cpu, num_work_unit);
             }
             catch (...) {
                 err = geopm::exception_handler(std::current_exception());
@@ -216,7 +219,8 @@ extern "C"
         int err = 0;
         if (g_pmpi_tprof_enabled) {
             try {
-                geopm::Profile::default_profile().tprof_table()->post();
+                int cpu = geopm::Profile::get_cpu();
+                geopm::Profile::default_profile().thread_post(cpu);
             }
             catch (...) {
                 err = geopm::exception_handler(std::current_exception());

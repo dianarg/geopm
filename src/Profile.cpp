@@ -29,6 +29,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY LOG OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "config.h"
+
 #include "Profile.hpp"
 
 #ifndef _GNU_SOURCE
@@ -55,10 +57,12 @@
 #include "SampleScheduler.hpp"
 #include "ControlMessage.hpp"
 #include "SharedMemory.hpp"
+#include "ApplicationRecordLog.hpp"
+#include "ApplicationStatus.hpp"
 #include "Exception.hpp"
 #include "Comm.hpp"
 #include "Helper.hpp"
-#include "config.h"
+#include "geopm_debug.hpp"
 
 namespace geopm
 {
@@ -89,7 +93,8 @@ namespace geopm
                            std::unique_ptr<ProfileTable> table,
                            std::shared_ptr<ProfileThreadTable> t_table,
                            std::unique_ptr<SampleScheduler> scheduler,
-                           std::shared_ptr<Comm> reduce_comm)
+                           std::shared_ptr<Comm> reduce_comm,
+                           std::shared_ptr<Profile> kprofile)
         : m_is_enabled(false)
         , m_prof_name(prof_name)
         , m_key_base(key_base)
@@ -118,6 +123,35 @@ namespace geopm
         , m_overhead_time(0.0)
         , m_overhead_time_startup(0.0)
         , m_overhead_time_shutdown(0.0)
+        , m_kprofile(kprofile)
+    {
+
+    }
+
+    KProfileImp::KProfileImp(const PlatformTopo &topo,
+                             const std::string &key_base,
+                             int timeout,
+                             std::shared_ptr<ApplicationRecordLog> app_record_log,
+                             std::shared_ptr<ApplicationStatus> app_status,
+                             int process)
+        : m_topo(topo)
+        , m_key_base(key_base)
+        , m_timeout(timeout)
+        , m_app_record_log(app_record_log)
+        , m_app_status(app_status)
+        , m_process(process)
+        , m_current_hash(GEOPM_REGION_HASH_INVALID)
+    {
+
+    }
+
+    KProfileImp::KProfileImp()
+        : KProfileImp(platform_topo(),
+                      environment().shmkey(),
+                      environment().timeout(),
+                      nullptr,  // app_record_log
+                      nullptr,  // app_status
+                      -1)
     {
 
     }
@@ -205,14 +239,57 @@ namespace geopm
             }
         }
 #endif
+
+        if (m_kprofile == nullptr) {
+            // TODO: temporary workaround; eventually use default constructor
+            // once comm is connected and handshake implemented.
+            m_kprofile = std::make_shared<KProfileImp>(m_topo,
+                                                       m_key_base,
+                                                       m_timeout,
+                                                       nullptr,
+                                                       nullptr,
+                                                       m_rank);
+        }
+        m_kprofile->init();
     }
 
+    // TODO: merge with above
+    void KProfileImp::init(void)
+    {
+        if (m_app_record_log == nullptr) {
+            std::string key = m_key_base + "-record-log-" + std::to_string(m_process);
+            auto shmem = SharedMemory::make_unique_user(key, m_timeout);
+            m_app_record_log = ApplicationRecordLog::make_unique(std::move(shmem));
+        }
+        if (m_app_status == nullptr) {
+            std::string key = m_key_base + "-status";
+            auto shmem = SharedMemory::make_unique_user(key, m_timeout);
+            m_app_status = ApplicationStatus::make_unique(m_topo, std::move(shmem));
+
+        }
+
+        if (m_process < 0) {
+            throw Exception("Profile::init(): invalid process",
+                            GEOPM_ERROR_INVALID, __FILE__, __LINE__);
+        }
+
+        GEOPM_DEBUG_ASSERT(m_app_record_log != nullptr, "Profile::init(): m_app_record_log not initialized");
+        GEOPM_DEBUG_ASSERT(m_app_status != nullptr, "Profile::init(): m_app_status not initialized");
+        GEOPM_DEBUG_ASSERT(m_process >= 0, "Profile::init(): m_process not initialized");
+
+        m_app_record_log->set_process(m_process);
+        // TODO: start time from where?
+        geopm_time_s start_time;
+        geopm_time(&start_time);
+        m_app_record_log->set_time_zero(start_time);
+    }
 
     ProfileImp::ProfileImp()
         : ProfileImp(environment().profile(), environment().shmkey(), environment().report(),
                      environment().timeout(), environment().do_region_barrier(),
                      nullptr, nullptr, platform_topo(), nullptr,
-                     nullptr, geopm::make_unique<SampleSchedulerImp>(0.01), nullptr)
+                     nullptr, geopm::make_unique<SampleSchedulerImp>(0.01), nullptr,
+                     nullptr)
     {
     }
 
@@ -338,6 +415,11 @@ namespace geopm
         shutdown();
     }
 
+    KProfileImp::~KProfileImp()
+    {
+
+    }
+
     void ProfileImp::shutdown(void)
     {
         if (!m_is_enabled) {
@@ -363,6 +445,12 @@ namespace geopm
         m_shm_comm->tear_down();
         m_shm_comm.reset();
         m_is_enabled = false;
+    }
+
+    // TODO: merge with above
+    void KProfileImp::shutdown()
+    {
+
     }
 
     uint64_t ProfileImp::region(const std::string &region_name, long hint)
@@ -391,6 +479,12 @@ namespace geopm
         return result;
     }
 
+    // TODO: merge with above
+    uint64_t KProfileImp::region(const std::string &region_name, long hint)
+    {
+        return 0;
+    }
+
     void ProfileImp::enter(uint64_t region_id)
     {
         if (!m_is_enabled) {
@@ -402,42 +496,35 @@ namespace geopm
         geopm_time(&overhead_entry);
 #endif
 
-        // if we are not currently in a region
-        if (!m_curr_region_id && region_id) {
-            if (!geopm_region_id_is_mpi(region_id) &&
-                m_do_region_barrier) {
-                m_shm_comm->barrier();
-            }
-            m_curr_region_id = region_id;
-            m_num_enter = 0;
-            m_progress = 0.0;
-            sample();
-        }
-        else {
-            // Allow nesting of one MPI region within a non-mpi region
-            if (m_curr_region_id &&
-                geopm_region_id_hint(m_curr_region_id) != GEOPM_REGION_HINT_NETWORK &&
-                geopm_region_id_is_mpi(region_id)) {
-                m_parent_num_enter = m_num_enter;
-                m_num_enter = 0;
-                m_parent_region = m_curr_region_id;
-                m_parent_progress = m_progress;
-                m_curr_region_id = geopm_region_id_set_mpi(m_curr_region_id);
-                m_progress = 0.0;
-                sample();
-            }
-        }
-        // keep track of number of entries to account for nesting
-        if (m_curr_region_id == region_id ||
-            (geopm_region_id_is_mpi(m_curr_region_id) &&
-             geopm_region_id_is_mpi(region_id))) {
-            ++m_num_enter;
-        }
+        // TODO: fix barrier; if m_do_region_barrier
+        // m_shm_comm->barrier();
+
+
+        m_kprofile->enter(region_id);
 
 #ifdef GEOPM_OVERHEAD
         m_overhead_time += geopm_time_since(&overhead_entry);
 #endif
 
+    }
+
+    // TODO: merge with above
+    void KProfileImp::enter(uint64_t region_id)
+    {
+        uint64_t hash = geopm_region_id_hash(region_id);
+        uint64_t hint = geopm_region_id_hint(region_id);
+
+        if (m_current_hash == GEOPM_REGION_HASH_INVALID) {
+            // not currently in a region; enter region
+            m_current_hash = hash;
+            geopm_time_s now;
+            geopm_time(&now);
+            m_app_record_log->enter(hash, now);
+        }
+        // top level and nested entries inside a region both update hints
+        m_hint_stack.push(hint);
+        // TODO: all CPUs for hint!
+        m_app_status->set_hint(0, hint);
     }
 
     void ProfileImp::exit(uint64_t region_id)
@@ -451,42 +538,43 @@ namespace geopm
         geopm_time(&overhead_entry);
 #endif
 
-        // keep track of number of exits to account for nesting
-        if (m_curr_region_id == region_id ||
-            (geopm_region_id_is_mpi(m_curr_region_id) &&
-             geopm_region_id_is_mpi(region_id))) {
-            --m_num_enter;
-        }
+        m_kprofile->exit(region_id);
 
-        // if we are leaving the outer most nesting of our current region
-        if (!m_num_enter) {
-            if (geopm_region_id_is_mpi(region_id)) {
-                m_curr_region_id = geopm_region_id_set_mpi(m_parent_region);
-            }
-            m_progress = 1.0;
-            sample();
-            m_curr_region_id = 0;
-            m_scheduler->clear();
-            if (geopm_region_id_is_mpi(region_id)) {
-                m_curr_region_id = m_parent_region;
-                m_progress = m_parent_progress;
-                m_num_enter = m_parent_num_enter;
-                m_parent_region = 0;
-                m_parent_progress = 0.0;
-                m_parent_num_enter = 0;
-            }
-
-            if (!geopm_region_id_is_mpi(region_id) &&
-                m_do_region_barrier) {
-                m_shm_comm->barrier();
-            }
-
-        }
+        // TODO: fix barrier; if m_do_region_barrier
+        // m_shm_comm->barrier();
 
 #ifdef GEOPM_OVERHEAD
         m_overhead_time += geopm_time_since(&overhead_entry);
 #endif
 
+    }
+
+    // TODO: merge with above
+    void KProfileImp::exit(uint64_t region_id)
+    {
+        uint64_t hash = geopm_region_id_hash(region_id);
+        geopm_time_s now;
+        geopm_time(&now);
+
+        if (m_hint_stack.empty()) {
+            throw Exception("Profile::exit(): expected at least one enter before exit call",
+                            GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+        }
+
+        m_hint_stack.pop();
+        if (m_hint_stack.empty()) {
+            // leaving outermost region, clear hints and exit region
+            m_app_status->set_hint(0, 0ULL);
+            m_app_record_log->exit(hash, now);
+            // TODO: all CPUs for hint!
+
+            m_current_hash = GEOPM_REGION_HASH_INVALID;
+        }
+        else {
+            // still nested, restore previous hint
+            auto hint = m_hint_stack.top();
+            m_app_status->set_hint(0, hint);
+        }
     }
 
     void ProfileImp::progress(uint64_t region_id, double fraction)
@@ -514,6 +602,12 @@ namespace geopm
 
     }
 
+    // TODO: merge with above
+    void KProfileImp::progress(uint64_t region_id, double fraction)
+    {
+        // note: this API will be deprecated
+    }
+
     void ProfileImp::epoch(void)
     {
         if (!m_is_enabled ||
@@ -527,17 +621,20 @@ namespace geopm
         geopm_time(&overhead_entry);
 #endif
 
-        struct geopm_prof_message_s sample;
-        sample.rank = m_rank;
-        sample.region_id = GEOPM_REGION_ID_EPOCH;
-        (void) geopm_time(&(sample.timestamp));
-        sample.progress = 0.0;
-        m_table->insert(sample);
+        m_kprofile->epoch();
 
 #ifdef GEOPM_OVERHEAD
         m_overhead_time += geopm_time_since(&overhead_entry);
 #endif
 
+    }
+
+    // TODO: merge with above
+    void KProfileImp::epoch(void)
+    {
+        geopm_time_s now;
+        geopm_time(&now);
+        m_app_record_log->epoch(now);
     }
 
     void ProfileImp::sample(void)
@@ -589,7 +686,6 @@ namespace geopm
         if (m_table_shmem->size() < file_name.length() + 1 + m_prof_name.length() + 1) {
             throw Exception("ProfileImp:print() profile file name and profile name are too long to fit in a table buffer", GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
-
         strncpy(buffer_ptr, file_name.c_str(), buffer_remain - 1);
         buffer_ptr += file_name.length() + 1;
         buffer_offset += file_name.length() + 1;
@@ -633,8 +729,45 @@ namespace geopm
         return m_tprof_table;
     }
 
+    std::shared_ptr<ProfileThreadTable> KProfileImp::tprof_table(void)
+    {
+        // this is used for passthroughs for tprof API
+        // it can be removed from interface, but need to add corresponding
+        // init and post to match geopm_prof_c
+        return nullptr;
+    }
+
+    void ProfileImp::thread_init(int cpu, uint32_t num_work_unit)
+    {
+        // Note: cpu_idx() will be called in this function, which
+        // should be the same as the cpu passed in
+        m_tprof_table->init(num_work_unit);
+    }
+
+    void KProfileImp::thread_init(int cpu, uint32_t num_work_unit)
+    {
+        m_app_status->set_total_work_units(cpu, num_work_unit);
+    }
+
+    void ProfileImp::thread_post(int cpu)
+    {
+        // Note: cpu_idx() will be called in this function, which
+        // should be the same as the cpu passed in
+        m_tprof_table->post();
+    }
+
+    void KProfileImp::thread_post(int cpu)
+    {
+        m_app_status->increment_work_unit(cpu);
+    }
+
     void ProfileImp::enable_pmpi(void)
     {
 
+    }
+
+    void KProfileImp::enable_pmpi(void)
+    {
+        // only implemented by DefaultProfile singleton
     }
 }
