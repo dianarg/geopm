@@ -639,14 +639,12 @@ namespace geopm
 
     void ProfileImp::thread_init(int cpu, uint32_t num_work_unit)
     {
-        // Note: cpu will be determined by legacy object; input is ignored
-        m_tprof_table->init(num_work_unit);
+        m_kprofile->thread_init(cpu, num_work_unit);
     }
 
     void ProfileImp::thread_post(int cpu)
     {
-        // Note: cpu will be determined by legacy object; input is ignored
-        m_tprof_table->post();
+        m_kprofile->thread_post(cpu);
     }
 
     void KProfileImp::thread_init(int cpu, uint32_t num_work_unit)
