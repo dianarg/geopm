@@ -232,7 +232,6 @@ TEST_F(KProfileTestIntegration, enter_exit_short)
     // exited region
     EXPECT_EQ(0ULL, m_ctl_status->get_hint(0));
 
-
     m_profile->enter(region_id);
     m_profile->exit(region_id);
     m_profile->enter(region_id);

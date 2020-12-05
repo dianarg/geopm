@@ -739,9 +739,7 @@ namespace geopm
 
     void ProfileImp::thread_init(int cpu, uint32_t num_work_unit)
     {
-        // Note: cpu_idx() will be called in this function, which
-        // should be the same as the cpu passed in
-        m_tprof_table->init(num_work_unit);
+        m_kprofile->thread_init(cpu, num_work_unit);
     }
 
     void KProfileImp::thread_init(int cpu, uint32_t num_work_unit)
@@ -751,9 +749,7 @@ namespace geopm
 
     void ProfileImp::thread_post(int cpu)
     {
-        // Note: cpu_idx() will be called in this function, which
-        // should be the same as the cpu passed in
-        m_tprof_table->post();
+        m_kprofile->thread_post(cpu);
     }
 
     void KProfileImp::thread_post(int cpu)
