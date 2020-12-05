@@ -217,8 +217,6 @@ class MockProfile : public geopm::Profile
                      void(int cpu, uint32_t num_work_unit));
         MOCK_METHOD1(thread_post,
                      void(int cpu));
-        MOCK_METHOD0(tprof_table,
-                     std::shared_ptr<geopm::ProfileThreadTable>(void));
         MOCK_METHOD0(enable_pmpi,
                      void(void));
 
@@ -507,44 +505,7 @@ TEST_F(ProfileTest, shutdown)
     m_profile->exit(0);
     m_profile->epoch();
     m_profile->progress(0, 0.0);
-    m_profile->tprof_table();
     m_profile->shutdown();
-}
-
-TEST_F(ProfileTest, tprof_table)
-{
-    int shm_rank = 0;
-    int world_rank = 0;
-    std::string region_name;
-    uint64_t expected_rid = GEOPM_REGION_ID_EPOCH;
-    double prog_fraction = 0.0;
-
-    auto key_lambda = [&region_name, &expected_rid] (const std::string &name)
-    {
-        EXPECT_EQ(region_name, name);
-        return expected_rid;
-    };
-    auto insert_lambda = [world_rank, &expected_rid, &prog_fraction] (const struct geopm_prof_message_s &value)
-    {
-        EXPECT_EQ(world_rank, value.rank);
-        EXPECT_EQ(expected_rid, value.region_id);
-        EXPECT_EQ(prog_fraction, value.progress);
-    };
-
-    m_table = geopm::make_unique<ProfileTestProfileTable>(key_lambda, insert_lambda);
-    m_tprof = geopm::make_unique<ProfileTestProfileThreadTable>(M_NUM_CPU);
-
-    m_ctl_msg = geopm::make_unique<ProfileTestControlMessage>();
-    m_shm_comm = std::make_shared<ProfileTestComm>(shm_rank, M_SHM_COMM_SIZE);
-    m_world_comm = geopm::make_unique<ProfileTestComm>(world_rank, m_shm_comm);
-    m_scheduler = geopm::make_unique<ProfileTestSampleScheduler>();
-
-    m_profile = geopm::make_unique<ProfileImp>(M_PROF_NAME, M_SHM_KEY, M_REPORT, M_TIMEOUT, M_DO_REGION_BARRIER,
-                                               std::move(m_world_comm),
-                                               std::move(m_ctl_msg), m_topo, std::move(m_table),
-                                               std::move(m_tprof), std::move(m_scheduler), m_comm, m_kprofile);
-    m_profile->init();
-    EXPECT_EQ(M_NUM_CPU, m_profile->tprof_table()->num_cpu());
 }
 
 TEST_F(ProfileTestIntegration, config)

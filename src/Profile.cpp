@@ -116,9 +116,6 @@ namespace geopm
         , m_shm_comm(nullptr)
         , m_rank(0)
         , m_shm_rank(0)
-        , m_parent_region(0)
-        , m_parent_progress(0.0)
-        , m_parent_num_enter(0)
         , m_reduce_comm(reduce_comm)
         , m_overhead_time(0.0)
         , m_overhead_time_startup(0.0)
@@ -722,19 +719,6 @@ namespace geopm
         }
 #endif
 
-    }
-
-    std::shared_ptr<ProfileThreadTable> ProfileImp::tprof_table(void)
-    {
-        return m_tprof_table;
-    }
-
-    std::shared_ptr<ProfileThreadTable> KProfileImp::tprof_table(void)
-    {
-        // this is used for passthroughs for tprof API
-        // it can be removed from interface, but need to add corresponding
-        // init and post to match geopm_prof_c
-        return nullptr;
     }
 
     void ProfileImp::thread_init(int cpu, uint32_t num_work_unit)
