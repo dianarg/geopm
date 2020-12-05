@@ -347,9 +347,6 @@ namespace geopm
             int m_rank;
             /// @brief The process's rank in m_shm_comm.
             int m_shm_rank;
-            uint64_t m_parent_region;
-            double m_parent_progress;
-            int m_parent_num_enter;
             std::shared_ptr<Comm> m_reduce_comm;
             double m_overhead_time;
             double m_overhead_time_startup;
@@ -383,7 +380,6 @@ namespace geopm
             void shutdown(void) override;
             void thread_init(int cpu, uint32_t num_work_unit) override;
             void thread_post(int cpu) override;
-            std::shared_ptr<ProfileThreadTable> tprof_table(void) override;
             void enable_pmpi(void) override;
             // TODO: get implementation of cpu_idx() from ProfileThreadTable;
             // this will now live in C wrappers
