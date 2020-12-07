@@ -60,9 +60,9 @@ namespace geopm
     /// from tuning within previous occurrences of the region.  There
     /// are two competing motivations for defining a region within the
     /// application.  The first is to identify a section of code that
-    /// has distinct compute, memory or network characteristics.  The
+    /// has distinct compute, memory, or network characteristics.  The
     /// second is to avoid defining these regions such that they are
-    /// nested within each other, as nested regions are ignored, and
+    /// nested within each other, as nested regions are ignored and
     /// only the outer most region is used for tuning when nesting
     /// occurs.  Identifying progress within a region can be used to
     /// alleviate load imbalance in the application under the
@@ -111,9 +111,8 @@ namespace geopm
             ///
             /// @return Returns the region_id which is a unique
             ///         identifier derived from the region_name.  This
-            ///         value is passed to Profile::enter(),
-            ///         Profile::exit(), Profile::progress and
-            ///         Profile::sample() to associate these calls with
+            ///         value is passed to Profile::enter() and
+            ///         Profile::exit() to associate these calls with
             ///         the registered region.
             virtual uint64_t region(const std::string &region_name, long hint) = 0;
             /// @brief Mark a region entry point.
@@ -141,23 +140,6 @@ namespace geopm
             ///        Profile::region() when the region was
             ///        registered.
             virtual void exit(uint64_t region_id) = 0;
-            /// @brief Signal fractional progress through a region.
-            ///
-            /// Signals the fractional amount of work completed within
-            /// the phase.  This normalized progress reporting is used
-            /// to identify processes that are closer or further away
-            /// from completion, and resources can be shifted to those
-            /// processes which are further behind.  Calls to this
-            /// method from within a nested region are ignored.
-            ///
-            /// @param [in] region_id The identifier returned by
-            ///        Profile::region() when the region was
-            ///        registered.
-            ///
-            /// @param [in] fraction The fractional progress
-            ///        normalized to be between 0.0 and 1.0 (zero on
-            ///        entry one on completion).
-            virtual void progress(uint64_t region_id, double fraction) = 0;
             /// @brief Signal pass through outer loop.
             ///
             /// Called once for each pass through the outer most
@@ -261,7 +243,6 @@ namespace geopm
             uint64_t region(const std::string &region_name, long hint) override;
             void enter(uint64_t region_id) override;
             void exit(uint64_t region_id) override;
-            void progress(uint64_t region_id, double fraction) override;
             void epoch(void) override;
             void shutdown(void) override;
             void thread_init(int cpu, uint32_t num_work_unit) override;
@@ -287,12 +268,6 @@ namespace geopm
                 M_PROF_SAMPLE_PERIOD = 1,
             };
 
-            /// @brief Post profile sample.
-            ///
-            /// Called to derive a sample based on the profiling
-            /// information collected.  This sample is posted to the
-            /// geopm::Controller through shared memory.
-            void sample(void);
             /// @brief Print profile report to a file.
             ///
             /// Writes a profile report to a file with the given
@@ -318,8 +293,6 @@ namespace geopm
             /// @brief Holds the number of ranks that enter a region in
             ///        order to keep track of nested regions.
             int m_num_enter;
-            /// @brief Holds the rank's current progress in the region.
-            double m_progress;
             /// @brief Attaches to the shared memory region for
             ///        control messages.
             std::unique_ptr<SharedMemory> m_ctl_shmem;
@@ -375,7 +348,6 @@ namespace geopm
             uint64_t region(const std::string &region_name, long hint) override;
             void enter(uint64_t region_id) override;
             void exit(uint64_t region_id) override;
-            void progress(uint64_t region_id, double fraction) override;
             void epoch(void) override;
             void shutdown(void) override;
             void thread_init(int cpu, uint32_t num_work_unit) override;
