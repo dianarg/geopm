@@ -207,8 +207,6 @@ class MockProfile : public geopm::Profile
                      void(uint64_t region_id));
         MOCK_METHOD1(exit,
                      void(uint64_t region_id));
-        MOCK_METHOD2(progress,
-                     void(uint64_t region_id, double fraction));
         MOCK_METHOD0(epoch,
                      void(void));
         MOCK_METHOD0(shutdown,
@@ -393,50 +391,6 @@ TEST_F(ProfileTest, enter_exit)
     m_profile->exit(GEOPM_REGION_ID_MPI);
 }
 
-TEST_F(ProfileTest, progress)
-{
-    int shm_rank = 0;
-    int world_rank = 0;
-    std::string region_name;
-    uint64_t expected_rid;
-    double prog_fraction;
-
-    auto key_lambda = [&region_name, &expected_rid] (const std::string &name)
-    {
-        EXPECT_EQ(region_name, name);
-        return expected_rid;
-    };
-    auto insert_lambda = [world_rank, &expected_rid, &prog_fraction] (const struct geopm_prof_message_s &value)
-    {
-        EXPECT_EQ(world_rank, value.rank);
-        EXPECT_EQ(expected_rid, value.region_id);
-        EXPECT_EQ(prog_fraction, value.progress);
-    };
-
-    m_table = geopm::make_unique<ProfileTestProfileTable>(key_lambda, insert_lambda);
-    m_tprof = geopm::make_unique<ProfileTestProfileThreadTable>(M_NUM_CPU);
-
-    m_ctl_msg = geopm::make_unique<ProfileTestControlMessage>();
-    m_shm_comm = std::make_shared<ProfileTestComm>(shm_rank, M_SHM_COMM_SIZE);
-    m_world_comm = geopm::make_unique<ProfileTestComm>(world_rank, m_shm_comm);
-    m_scheduler = geopm::make_unique<ProfileTestSampleScheduler>();
-    EXPECT_CALL(*m_scheduler, record_exit())
-        .WillOnce(testing::Return());
-
-    m_profile = geopm::make_unique<ProfileImp>(M_PROF_NAME, M_SHM_KEY, M_REPORT, M_TIMEOUT, M_DO_REGION_BARRIER,
-                                               std::move(m_world_comm),
-                                               std::move(m_ctl_msg), m_topo, std::move(m_table),
-                                               std::move(m_tprof), std::move(m_scheduler), m_comm, m_kprofile);
-    m_profile->init();
-    region_name = m_region_names[0];
-    long hint = 0;
-    uint64_t rid = m_profile->region(m_region_names[0], hint);
-    prog_fraction = 0.0;
-    m_profile->enter(rid);
-    prog_fraction = 0.25;
-    m_profile->progress(rid, prog_fraction);
-}
-
 TEST_F(ProfileTest, epoch)
 {
     int shm_rank = 0;
@@ -504,7 +458,6 @@ TEST_F(ProfileTest, shutdown)
     m_profile->enter(0);
     m_profile->exit(0);
     m_profile->epoch();
-    m_profile->progress(0, 0.0);
     m_profile->shutdown();
 }
 

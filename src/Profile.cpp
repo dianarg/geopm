@@ -104,7 +104,6 @@ namespace geopm
         , m_comm(std::move(comm))
         , m_curr_region_id(0)
         , m_num_enter(0)
-        , m_progress(0.0)
         , m_ctl_shmem(nullptr)
         , m_ctl_msg(std::move(ctl_msg))
         , m_topo(topo)
@@ -574,37 +573,6 @@ namespace geopm
         }
     }
 
-    void ProfileImp::progress(uint64_t region_id, double fraction)
-    {
-        if (!m_is_enabled) {
-            return;
-        }
-
-#ifdef GEOPM_OVERHEAD
-        struct geopm_time_s overhead_entry;
-        geopm_time(&overhead_entry);
-#endif
-
-        if (m_num_enter == 1 && m_curr_region_id == region_id &&
-            fraction > 0.0 && fraction < 1.0 &&
-            m_scheduler->do_sample()) {
-            m_progress = fraction;
-            sample();
-            m_scheduler->record_exit();
-        }
-
-#ifdef GEOPM_OVERHEAD
-        m_overhead_time += geopm_time_since(&overhead_entry);
-#endif
-
-    }
-
-    // TODO: merge with above
-    void KProfileImp::progress(uint64_t region_id, double fraction)
-    {
-        // note: this API will be deprecated
-    }
-
     void ProfileImp::epoch(void)
     {
         if (!m_is_enabled ||
@@ -632,30 +600,6 @@ namespace geopm
         geopm_time_s now;
         geopm_time(&now);
         m_app_record_log->epoch(now);
-    }
-
-    void ProfileImp::sample(void)
-    {
-        if (!m_is_enabled) {
-            return;
-        }
-
-#ifdef GEOPM_OVERHEAD
-        struct geopm_time_s overhead_entry;
-        geopm_time(&overhead_entry);
-#endif
-
-        struct geopm_prof_message_s sample;
-        sample.rank = m_rank;
-        sample.region_id = m_curr_region_id;
-        (void) geopm_time(&(sample.timestamp));
-        sample.progress = m_progress;
-        m_table->insert(sample);
-
-#ifdef GEOPM_OVERHEAD
-        m_overhead_time += geopm_time_since(&overhead_entry);
-#endif
-
     }
 
     void ProfileImp::print(const std::string &file_name)
