@@ -623,30 +623,6 @@ namespace geopm
         m_app_status->increment_work_unit(cpu);
     }
 
-    void ProfileImp::sample(void)
-    {
-        if (!m_is_enabled) {
-            return;
-        }
-
-#ifdef GEOPM_OVERHEAD
-        struct geopm_time_s overhead_entry;
-        geopm_time(&overhead_entry);
-#endif
-
-        struct geopm_prof_message_s sample;
-        sample.rank = m_rank;
-        sample.region_id = m_curr_region_id;
-        (void) geopm_time(&(sample.timestamp));
-        sample.progress = m_progress;
-        m_table->insert(sample);
-
-#ifdef GEOPM_OVERHEAD
-        m_overhead_time += geopm_time_since(&overhead_entry);
-#endif
-
-    }
-
     void ProfileImp::print(const std::string &file_name)
     {
         if (!m_is_enabled || !m_table_shmem) {
