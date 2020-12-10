@@ -61,6 +61,7 @@ class KProfileTest : public ::testing::Test
     protected:
         void SetUp();
         const int m_proc_id = 42;
+        std::list<int> m_cpu_list = {2, 3};
         MockPlatformTopo m_topo;
         std::shared_ptr<MockApplicationRecordLog> m_record_log;
         std::shared_ptr<MockApplicationStatus> m_status;
@@ -77,7 +78,7 @@ void KProfileTest::SetUp()
 
     EXPECT_CALL(*m_record_log, set_process(m_proc_id));
     EXPECT_CALL(*m_record_log, set_time_zero(_));
-    m_profile = geopm::make_unique<KProfileImp>(m_topo, "shmem_key", 1,
+    m_profile = geopm::make_unique<KProfileImp>(m_topo, m_cpu_list, "shmem_key", 1,
                                                 m_record_log, m_status, m_proc_id);
     m_profile->init();
 }

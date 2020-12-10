@@ -85,6 +85,7 @@ class KProfileTestIntegration : public ::testing::Test
         const int M_NUM_CPU = 4;
         MockPlatformTopo m_topo;
         const int m_process = 42;
+        std::list<int> m_cpu_list = {2, 3};
         const int m_timeout = 1;
         std::string M_SHM_KEY = "KProfileTestIntegration";
 
@@ -98,7 +99,6 @@ class KProfileTestIntegration : public ::testing::Test
         std::unique_ptr<ProfileTestProfileThreadTable> m_tprof;
         std::unique_ptr<ProfileTestSampleScheduler> m_scheduler;
         std::unique_ptr<ProfileTestControlMessage> m_ctl_msg;
-
 
         // new code path
         std::shared_ptr<SharedMemory> m_ctl_record_shmem;
@@ -133,11 +133,12 @@ void KProfileTestIntegration::SetUp()
 
     // init() will connect to shared memory inside of Profile::init()
     m_kprofile = geopm::make_unique<KProfileImp>(m_topo,
-                                                M_SHM_KEY,
-                                                m_timeout,
-                                                nullptr,
-                                                nullptr,
-                                                m_process);
+                                                 m_cpu_list,
+                                                 M_SHM_KEY,
+                                                 m_timeout,
+                                                 nullptr,
+                                                 nullptr,
+                                                 m_process);
 
     // legacy
     m_ctl_msg = geopm::make_unique<ProfileTestControlMessage>();
@@ -195,6 +196,7 @@ TEST_F(KProfileTestIntegration, enter_exit)
 
     m_profile->enter(region_id);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     ASSERT_EQ(1ull, records.size());
     EXPECT_EQ(m_process, records[0].process);
     EXPECT_EQ(geopm::EVENT_REGION_ENTRY, records[0].event);
@@ -203,6 +205,7 @@ TEST_F(KProfileTestIntegration, enter_exit)
 
     m_profile->exit(region_id);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     ASSERT_EQ(1ull, records.size());
     EXPECT_EQ(m_process, records[0].process);
     EXPECT_EQ(geopm::EVENT_REGION_EXIT, records[0].event);
@@ -222,6 +225,7 @@ TEST_F(KProfileTestIntegration, enter_exit_short)
     m_profile->enter(region_id);
     m_profile->exit(region_id);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     ASSERT_EQ(1ULL, records.size());
     EXPECT_EQ(m_process, records[0].process);
     EXPECT_EQ(geopm::EVENT_SHORT_REGION, records[0].event);
@@ -238,6 +242,7 @@ TEST_F(KProfileTestIntegration, enter_exit_short)
     m_profile->exit(region_id);
     m_profile->enter(region_id);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     ASSERT_EQ(1ULL, records.size());
     EXPECT_EQ(m_process, records[0].process);
     EXPECT_EQ(geopm::EVENT_SHORT_REGION, records[0].event);
@@ -250,6 +255,7 @@ TEST_F(KProfileTestIntegration, enter_exit_short)
 
     m_profile->exit(region_id);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     ASSERT_EQ(1ULL, records.size());
     EXPECT_EQ(m_process, records[0].process);
     EXPECT_EQ(geopm::EVENT_SHORT_REGION, records[0].event);
@@ -275,6 +281,7 @@ TEST_F(KProfileTestIntegration, enter_exit_nested)
 
     m_profile->enter(usr_hint | usr_hash);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     ASSERT_EQ(1ULL, records.size());
     EXPECT_EQ(geopm::EVENT_REGION_ENTRY, records[0].event);
     EXPECT_EQ(usr_hash, records[0].signal);
@@ -282,18 +289,21 @@ TEST_F(KProfileTestIntegration, enter_exit_nested)
 
     m_profile->enter(mpi_hint | mpi_hash);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     // no entry for nested region
     ASSERT_EQ(0ULL, records.size());
     EXPECT_EQ(mpi_hint, m_ctl_status->get_hint(0));
 
     m_profile->exit(mpi_region_id);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     // no exit for nested region
     ASSERT_EQ(0ULL, records.size());
     EXPECT_EQ(usr_hint, m_ctl_status->get_hint(0));
 
     m_profile->exit(usr_region_id);
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     ASSERT_EQ(1ULL, records.size());
     EXPECT_EQ(geopm::EVENT_REGION_EXIT, records[0].event);
     EXPECT_EQ(usr_hash, records[0].signal);
@@ -308,6 +318,7 @@ TEST_F(KProfileTestIntegration, epoch)
     m_profile->epoch();
 
     m_ctl_record_log->dump(records, short_regions);
+    m_ctl_status->update_cache();
     ASSERT_EQ(1ULL, records.size());
     EXPECT_EQ(m_process, records[0].process);
     EXPECT_EQ(geopm::EVENT_EPOCH_COUNT, records[0].event);
@@ -322,21 +333,25 @@ TEST_F(KProfileTestIntegration, progress_multithread)
 
     m_profile->thread_post(3);
     m_profile->thread_post(2);
+    m_ctl_status->update_cache();
     EXPECT_EQ(0.25, m_ctl_status->get_progress_cpu(2));
     EXPECT_EQ(0.125, m_ctl_status->get_progress_cpu(3));
 
     m_profile->thread_post(3);
+    m_ctl_status->update_cache();
     EXPECT_EQ(0.25, m_ctl_status->get_progress_cpu(2));
     EXPECT_EQ(0.25, m_ctl_status->get_progress_cpu(3));
 
     m_profile->thread_post(2);
     m_profile->thread_post(2);
     m_profile->thread_post(3);
+    m_ctl_status->update_cache();
     EXPECT_EQ(0.75, m_ctl_status->get_progress_cpu(2));
     EXPECT_EQ(0.375, m_ctl_status->get_progress_cpu(3));
 
     m_profile->thread_post(3);
     m_profile->thread_post(2);
+    m_ctl_status->update_cache();
     EXPECT_EQ(1.0, m_ctl_status->get_progress_cpu(2));
     EXPECT_EQ(0.5, m_ctl_status->get_progress_cpu(3));
 }
