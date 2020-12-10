@@ -38,6 +38,7 @@
 #include <string>
 #include <list>
 #include <memory>
+#include <stack>
 
 namespace geopm
 {
@@ -200,6 +201,8 @@ namespace geopm
     class ProfileTable;
     class SampleScheduler;
 
+    class KProfileImp;
+
     class ProfileImp : public Profile
     {
         public:
@@ -250,7 +253,8 @@ namespace geopm
                        const PlatformTopo &topo, std::unique_ptr<ProfileTable> table,
                        std::shared_ptr<ProfileThreadTable> t_table,
                        std::unique_ptr<SampleScheduler> scheduler,
-                       std::shared_ptr<Comm> reduce_comm);
+                       std::shared_ptr<Comm> reduce_comm,
+                       std::shared_ptr<Profile> kprofile);
             /// @brief ProfileImp destructor, virtual.
             virtual ~ProfileImp();
             void init(void) override;
@@ -350,6 +354,48 @@ namespace geopm
             double m_overhead_time;
             double m_overhead_time_startup;
             double m_overhead_time_shutdown;
+
+            // TODO: merge later
+            std::shared_ptr<Profile> m_kprofile;
+    };
+
+    class PlatformTopo;
+    class ApplicationRecordLog;
+    class ApplicationStatus;
+
+    class KProfileImp : public Profile
+    {
+        public:
+            KProfileImp();
+            KProfileImp(const PlatformTopo &topo,
+                        const std::string &key_base,
+                        int timeout,
+                        std::shared_ptr<ApplicationRecordLog> app_record_log,
+                        std::shared_ptr<ApplicationStatus> app_status,
+                        int process);
+            virtual ~KProfileImp();
+            void init(void) override;
+            uint64_t region(const std::string &region_name, long hint) override;
+            void enter(uint64_t region_id) override;
+            void exit(uint64_t region_id) override;
+            void progress(uint64_t region_id, double fraction) override;
+            void epoch(void) override;
+            void shutdown(void) override;
+            void thread_init(int cpu, uint32_t num_work_unit) override;
+            void thread_post(int cpu) override;
+            std::shared_ptr<ProfileThreadTable> tprof_table(void) override;
+            void enable_pmpi(void) override;
+            // TODO: get implementation of cpu_idx() from ProfileThreadTable;
+            // this will now live in C wrappers
+        private:
+            const PlatformTopo &m_topo;
+            std::string m_key_base;
+            int m_timeout;
+            std::shared_ptr<ApplicationRecordLog> m_app_record_log;
+            std::shared_ptr<ApplicationStatus> m_app_status;
+            int m_process;
+            uint64_t m_current_hash;
+            std::stack<uint64_t> m_hint_stack;
     };
 }
 
