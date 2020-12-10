@@ -338,6 +338,7 @@ namespace geopm
         public:
             KProfileImp();
             KProfileImp(const PlatformTopo &topo,
+                        const std::list<int> &cpu_list,
                         const std::string &key_base,
                         int timeout,
                         std::shared_ptr<ApplicationRecordLog> app_record_log,
@@ -353,10 +354,11 @@ namespace geopm
             void thread_init(int cpu, uint32_t num_work_unit) override;
             void thread_post(int cpu) override;
             void enable_pmpi(void) override;
-            // TODO: get implementation of cpu_idx() from ProfileThreadTable;
-            // this will now live in C wrappers
         private:
             const PlatformTopo &m_topo;
+            /// @brief Holds a list of cpus that the rank process is
+            ///        bound to.
+            std::list<int> m_cpu_list;
             std::string m_key_base;
             int m_timeout;
             std::shared_ptr<ApplicationRecordLog> m_app_record_log;
