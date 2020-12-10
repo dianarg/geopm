@@ -125,12 +125,14 @@ namespace geopm
     }
 
     KProfileImp::KProfileImp(const PlatformTopo &topo,
+                             const std::list<int> &cpu_list,
                              const std::string &key_base,
                              int timeout,
                              std::shared_ptr<ApplicationRecordLog> app_record_log,
                              std::shared_ptr<ApplicationStatus> app_status,
                              int process)
         : m_topo(topo)
+        , m_cpu_list(cpu_list)
         , m_key_base(key_base)
         , m_timeout(timeout)
         , m_app_record_log(app_record_log)
@@ -143,6 +145,7 @@ namespace geopm
 
     KProfileImp::KProfileImp()
         : KProfileImp(platform_topo(),
+                      {},
                       environment().shmkey(),
                       environment().timeout(),
                       nullptr,  // app_record_log
@@ -240,6 +243,7 @@ namespace geopm
             // TODO: temporary workaround; eventually use default constructor
             // once comm is connected and handshake implemented.
             m_kprofile = std::make_shared<KProfileImp>(m_topo,
+                                                       m_cpu_list,
                                                        m_key_base,
                                                        m_timeout,
                                                        nullptr,
@@ -329,6 +333,7 @@ namespace geopm
         geopm_sched_proc_cpuset(num_cpu, proc_cpuset);
         for (int i = 0; i < num_cpu; ++i) {
             if (CPU_ISSET(i, proc_cpuset)) {
+                // TODO: why is this a list not a vector?
                 m_cpu_list.push_front(i);
             }
         }
@@ -492,10 +497,6 @@ namespace geopm
         geopm_time(&overhead_entry);
 #endif
 
-        // TODO: fix barrier; if m_do_region_barrier
-        // m_shm_comm->barrier();
-
-
         m_kprofile->enter(region_id);
 
 #ifdef GEOPM_OVERHEAD
@@ -536,9 +537,6 @@ namespace geopm
 
         m_kprofile->exit(region_id);
 
-        // TODO: fix barrier; if m_do_region_barrier
-        // m_shm_comm->barrier();
-
 #ifdef GEOPM_OVERHEAD
         m_overhead_time += geopm_time_since(&overhead_entry);
 #endif
@@ -571,6 +569,9 @@ namespace geopm
             auto hint = m_hint_stack.top();
             m_app_status->set_hint(0, hint);
         }
+
+        // TODO: reset both progress ints; calling post() outside of region is an error
+        // TODO: check order of writes
     }
 
     void ProfileImp::epoch(void)
