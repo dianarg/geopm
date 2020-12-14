@@ -1,4 +1,4 @@
-geopm::RegionAggregator(3) -- per-region aggregated signal data
+geopm::SampleAggregator(3) -- per-region aggregated signal data
 ===============================================================
 
 [//]: # (Copyright (c) 2015, 2016, 2017, 2018, 2019, 2020, Intel Corporation)
@@ -33,7 +33,7 @@ geopm::RegionAggregator(3) -- per-region aggregated signal data
 
 ## SYNOPSIS
 
-**\#include [<geopm/RegionAggregator.hpp>](https://github.com/geopm/geopm/blob/dev/src/RegionAggregator.hpp)**
+**\#include [<geopm/SampleAggregator.hpp>](https://github.com/geopm/geopm/blob/dev/src/SampleAggregator.hpp)**
 
 `Link with -lgeopm (MPI) or -lgeopmpolicy (non-MPI)`
 
@@ -56,7 +56,7 @@ geopm::RegionAggregator(3) -- per-region aggregated signal data
     `void) const;`
 
 ## DESCRIPTION
-The RegionAggregator is used to store running totals of various
+The SampleAggregator is used to store running totals of various
 signals per region.  Regions are automatically detected through
 sampling the REGION_HASH signal.  The object also accumulates data for
 the epoch.  The set of signals to be tracked is determined by pushing
@@ -100,7 +100,7 @@ signals similar to the `push_signal()` method of
     PlatformIO::read_batch() has been called.  This should be called
     with every PlatformIO update because sample_total() maybe not be
     called until the end of execution.  Agents that include an
-    instance of the RegionAggregator can include this call in their
+    instance of the SampleAggregator can include this call in their
     implementation of sample_platform().
 
   * `tracked_region_hash`():
