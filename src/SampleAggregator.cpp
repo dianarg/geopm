@@ -36,7 +36,7 @@
 #include "geopm_internal.h"
 #include "geopm_hash.h"
 #include "PlatformIO.hpp"
-#include "PlatformTopo.hpp"
+#include "ApplicationSampler.hpp"
 #include "Exception.hpp"
 #include "Helper.hpp"
 #include "config.h"
@@ -159,7 +159,7 @@ namespace geopm
                     m_last_region_hash[it.first] = region_hash;
 
                     if (m_do_per_hint_agg.find(it.first) != m_do_per_hint_agg.end()) {
-                        m_app_status->cpu_hint_thing();
+                        m_app_sampler->cpu_hint_time();
                     }
                 }
             }

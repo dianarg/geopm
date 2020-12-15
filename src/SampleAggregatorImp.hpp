@@ -47,7 +47,7 @@ namespace geopm
     {
         public:
             SampleAggregatorImp();
-            SampleAggregatorImp(PlatformIO &platio);
+            SampleAggregatorImp(PlatformIO &platio, ApplicationSampler &sampler);
             void init(void) override;
             int push_signal_total(const std::string &signal_idx,
                                   int domain_type,
@@ -59,6 +59,7 @@ namespace geopm
             std::set<uint64_t> tracked_region_hash(void) const override;
         private:
             PlatformIO &m_platform_io;
+            ApplicationSampler &m_app_sampler;
             std::map<int, int> m_region_hash_idx;
             struct m_region_data_s
             {
@@ -69,6 +70,8 @@ namespace geopm
             std::map<std::pair<int, uint64_t>, m_region_data_s> m_region_sample_data;
             std::map<int, uint64_t> m_last_region_hash;
             int m_epoch_count_idx;
+
+
             std::set<uint64_t> m_tracked_region_hash;
     };
 }
