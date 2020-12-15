@@ -58,8 +58,10 @@ namespace geopm
                                const std::map<int, std::shared_ptr<ProcessEpoch> > &epoch)
         : m_topo(topo)
         , m_app(app)
-        , m_epoch_map(epoch)
         , m_num_cpu(m_topo.num_domain(GEOPM_DOMAIN_CPU))
+        , m_epoch_map(epoch)
+        , m_epoch_it(m_epoch_map.begin())
+        , m_epoch_vec(m_num_cpu)
         , m_is_batch_read(false)
         , m_is_initialized(false)
     {
@@ -71,10 +73,22 @@ namespace geopm
         /// messages from processes not in this map.  For now assume
         /// this initial mapping contains all process that will put
         /// messages in queue.
-        m_cpu_process = m_app.per_cpu_process();
-        for (const auto &proc : m_cpu_process) {
-            if (proc != -1 && m_epoch_map.find(proc) == m_epoch_map.end()) {
-                m_epoch_map[proc] = ProcessEpoch::make_unique();
+        std::vector<int> process_vec = m_app.per_cpu_process();
+        GEOPM_DEBUG_ASSERT(process_vec.size() == (size_t)m_num_cpu,
+                           "Vector returned by ApplicationSampler::per_cpu_process() is the wrong size: " +
+                           std::to_string(process_vec.size()));
+        std::set<int> process_set;
+        for (const auto &proc_it : process_vec) {
+            process_set.insert(proc_it);
+        }
+        process_set.erase(-1);
+        for (const auto &proc_it : process_set) {
+            m_epoch_map[proc_it] = ProcessEpoch::make_unique();
+        }
+        for (int cpu_idx = 0; cpu_idx != m_num_cpu; ++cpu_idx) {
+            int proc = process_vec[cpu_idx];
+            if (proc != -1) {
+                m_epoch_vec[cpu_idx] = m_epoch_map[proc];
             }
         }
         m_is_initialized = true;
@@ -173,9 +187,14 @@ namespace geopm
         /// update_records() will get called by controller
         auto records = m_app.get_records();
         for (const auto &record : records) {
-            GEOPM_DEBUG_ASSERT(m_epoch_map.find(record.process) != m_epoch_map.end(),
-                               "ProcessEpoch for process in record not found");
-            m_epoch_map.at(record.process)->update(record);
+            if (record.event == EVENT_EPOCH_COUNT) {
+                if (m_epoch_it->first != record.process) {
+                    m_epoch_it = m_epoch_map.find(record.process);
+                    GEOPM_DEBUG_ASSERT(m_epoch_it != m_epoch_map.end(),
+                                       "ProcessEpoch for process in record not found");
+                }
+                m_epoch_it->second->update(record);
+            }
         }
         m_is_batch_read = true;
     }
@@ -203,12 +222,7 @@ namespace geopm
                             GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
         }
 #endif
-        int process_id = m_cpu_process[cpu_idx];
-        double result = NAN;
-        if (process_id != -1) {
-            result = get_value(sig.signal_type, process_id);
-        }
-        return result;
+        return get_value(sig.signal_type, cpu_idx);
     }
 
     void EpochIOGroup::adjust(int batch_idx, double setting)
@@ -217,28 +231,31 @@ namespace geopm
                         GEOPM_ERROR_INVALID, __FILE__, __LINE__);
     }
 
-    double EpochIOGroup::get_value(int signal_type, int process_id) const
+    double EpochIOGroup::get_value(int signal_type, int cpu_idx) const
     {
         double result = NAN;
-        switch (signal_type) {
-            case M_SIGNAL_EPOCH_COUNT:
-                result = m_epoch_map.at(process_id)->epoch_count();
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME:
-                result = m_epoch_map.at(process_id)->last_epoch_runtime();
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME_NETWORK:
-                result = m_epoch_map.at(process_id)->last_epoch_runtime_network();
-                break;
-            case M_SIGNAL_EPOCH_RUNTIME_IGNORE:
-                result = m_epoch_map.at(process_id)->last_epoch_runtime_ignore();
-                break;
-            default:
+        auto epoch_ptr = m_epoch_vec[cpu_idx];
+        if (epoch_ptr) {
+            switch (signal_type) {
+                case M_SIGNAL_EPOCH_COUNT:
+                    result = epoch_ptr->epoch_count();
+                    break;
+                case M_SIGNAL_EPOCH_RUNTIME:
+                    result = epoch_ptr->last_epoch_runtime();
+                    break;
+                case M_SIGNAL_EPOCH_RUNTIME_NETWORK:
+                    result = epoch_ptr->last_epoch_runtime_network();
+                    break;
+                case M_SIGNAL_EPOCH_RUNTIME_IGNORE:
+                    result = epoch_ptr->last_epoch_runtime_ignore();
+                    break;
+                default:
 #ifdef GEOPM_DEBUG
-                throw Exception("EpochIOGroup::sample(): invalid signal type saved in active signals",
-                                GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
+                    throw Exception("EpochIOGroup::sample(): invalid signal type saved in active signals",
+                                    GEOPM_ERROR_LOGIC, __FILE__, __LINE__);
 #endif
-                break;
+                    break;
+            }
         }
         return result;
     }

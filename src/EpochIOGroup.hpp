@@ -34,6 +34,7 @@
 #define EPOCHIOGROUP_HPP_INCLUDE
 
 #include <memory>
+#include <iterator>
 
 #include "IOGroup.hpp"
 
@@ -94,8 +95,10 @@ namespace geopm
 
             const PlatformTopo &m_topo;
             const ApplicationSampler &m_app;
-            std::map<int, std::shared_ptr<ProcessEpoch> > m_epoch_map;
             int m_num_cpu;
+            std::map<int, std::shared_ptr<ProcessEpoch> > m_epoch_map;
+            std::map<int, std::shared_ptr<ProcessEpoch> >::iterator m_epoch_it;
+            std::vector<std::shared_ptr<ProcessEpoch> > m_epoch_vec;
             bool m_is_batch_read;
             bool m_is_initialized;
             std::vector<int> m_cpu_process;
