@@ -55,6 +55,7 @@ namespace geopm
             double sample_total(int signal_idx, uint64_t region_hash) override;
             double sample_total(int signal_idx) override;
             void read_batch(void) override;
+            // TODO: can we remove this? only used for testing
             std::set<uint64_t> tracked_region_hash(void) const override;
         private:
             PlatformIO &m_platform_io;

@@ -127,6 +127,7 @@ namespace geopm
     {
         for (const auto &it : m_region_hash_idx) {
             double value = m_platform_io.sample(it.first);
+            // sample region hash for the same domain as the signal
             const uint64_t region_hash = m_platform_io.sample(it.second);
             m_tracked_region_hash.insert(region_hash);
 
@@ -156,6 +157,10 @@ namespace geopm
                     double prev_total = value - m_region_sample_data.at(std::make_pair(it.first, last_hash)).last_entry_value;
                     m_region_sample_data[std::make_pair(it.first, last_hash)].total += prev_total;
                     m_last_region_hash[it.first] = region_hash;
+
+                    if (m_do_per_hint_agg.find(it.first) != m_do_per_hint_agg.end()) {
+                        m_app_status->cpu_hint_thing();
+                    }
                 }
             }
         }

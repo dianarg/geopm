@@ -71,6 +71,7 @@ namespace geopm
             virtual int push_signal_total(const std::string &signal_name,
                                           int domain_type,
                                           int domain_idx) = 0;
+            virtual void set_signal_hint_agg(int signal_idx) = 0;
             /// @brief Sample a signal that has been pushed to
             ///        accumlate as per-region values.  Note that
             ///        unlike other signals this is a total
