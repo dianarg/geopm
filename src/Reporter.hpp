@@ -40,6 +40,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <ostream>
 
 namespace geopm
 {
@@ -93,6 +94,12 @@ namespace geopm
                                   const ApplicationIO &application_io,
                                   std::shared_ptr<Comm> comm,
                                   const TreeComm &tree_comm) = 0;
+            struct region_info {
+                std::string name;
+                uint64_t hash;
+                double per_rank_avg_runtime;
+                int count;
+            };
     };
 
     class PlatformIO;
@@ -130,11 +137,15 @@ namespace geopm
             std::string get_max_memory(void);
 
             // TODO: yaml functions could be static?
+            // TODO: rename to indent_write?  does not enforce correct yaml
             // indent level * 2 spaces per indent
             void yaml_write(std::ostream &os, int indent_level, const std::string &val);
             void yaml_write(std::ostream &os, int indent_level,
-                            const std::vector<std::pair<string, string> > &data);
-            std::vector<std::pair<string, string> > get_region_data(uint64_t hash);
+                            const std::vector<std::pair<std::string, std::string> > &data);
+            void yaml_write(std::ostream &os, int indent_level,
+                            const std::vector<std::pair<std::string, double> > &data);
+
+            std::vector<std::pair<std::string, double> > get_region_data(const region_info &region);
 
             // void write_header(ostream, header_val_map, agent_vals);
             // std::vector<string> header_order;
@@ -163,6 +174,7 @@ namespace geopm
             const std::string m_env_signals;
             const std::string m_policy_path;
             bool m_do_endpoint;
+            double m_sticker_freq;
     };
 }
 
