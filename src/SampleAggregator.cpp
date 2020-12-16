@@ -36,6 +36,7 @@
 #include "geopm_internal.h"
 #include "geopm_hash.h"
 #include "PlatformIO.hpp"
+#include "PlatformTopo.hpp"
 #include "ApplicationSampler.hpp"
 #include "Exception.hpp"
 #include "Helper.hpp"
@@ -54,13 +55,15 @@ namespace geopm
     }
 
     SampleAggregatorImp::SampleAggregatorImp()
-        : SampleAggregatorImp(platform_io())
+        : SampleAggregatorImp(platform_io(), application_sampler())
     {
 
     }
 
-    SampleAggregatorImp::SampleAggregatorImp(PlatformIO &platio)
+    SampleAggregatorImp::SampleAggregatorImp(PlatformIO &platio,
+                                             ApplicationSampler &sampler)
         : m_platform_io(platio)
+        , m_app_sampler(sampler)
         , m_epoch_count_idx(-1)
     {
 
@@ -159,7 +162,7 @@ namespace geopm
                     m_last_region_hash[it.first] = region_hash;
 
                     if (m_do_per_hint_agg.find(it.first) != m_do_per_hint_agg.end()) {
-                        m_app_sampler->cpu_hint_time();
+                        m_app_sampler.cpu_hint_time();
                     }
                 }
             }

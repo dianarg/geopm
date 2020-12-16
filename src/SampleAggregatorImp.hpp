@@ -42,6 +42,7 @@
 namespace geopm
 {
     class PlatformIO;
+    class ApplicationSampler;
 
     class SampleAggregatorImp : public SampleAggregator
     {
