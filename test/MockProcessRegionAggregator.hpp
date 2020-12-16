@@ -30,45 +30,22 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef SAMPLEAGGREGATORIMP_HPP_INCLUDE
-#define SAMPLEAGGREGATORIMP_HPP_INCLUDE
+#ifndef MOCKPROCESSREGIONAGGREGATOR_HPP_INCLUDE
+#define MOCKPROCESSREGIONAGGREGATOR_HPP_INCLUDE
 
-#include <cmath>
+#include "gmock/gmock.h"
 
-#include <map>
+#include "ProcessRegionAggregator.hpp"
 
-#include "SampleAggregator.hpp"
-
-namespace geopm
+class MockProcessRegionAggregator : public geopm::ProcessRegionAggregator
 {
-    class PlatformIO;
-
-    class SampleAggregatorImp : public SampleAggregator
-    {
-        public:
-            SampleAggregatorImp();
-            SampleAggregatorImp(PlatformIO &platio);
-            void init(void) override;
-            int push_signal_total(const std::string &signal_idx,
-                                  int domain_type,
-                                  int domain_idx) override;
-            double sample_total(int signal_idx, uint64_t region_hash) override;
-            void read_batch(void) override;
-            std::set<uint64_t> tracked_region_hash(void) const override;
-        private:
-            PlatformIO &m_platform_io;
-            std::map<int, int> m_region_hash_idx;
-            struct m_region_data_s
-            {
-                double total = 0.0;
-                double last_entry_value = NAN;
-            };
-            // Data for each combination of signal index and region hash
-            std::map<std::pair<int, uint64_t>, m_region_data_s> m_region_sample_data;
-            std::map<int, uint64_t> m_last_region_hash;
-            int m_epoch_count_idx;
-            std::set<uint64_t> m_tracked_region_hash;
-    };
-}
+    public:
+        MOCK_METHOD0(update,
+                     void(void));
+        MOCK_CONST_METHOD1(get_runtime_average,
+                           double(uint64_t region_hash));
+        MOCK_CONST_METHOD1(get_count_average,
+                           double(uint64_t region_hash));
+};
 
 #endif
