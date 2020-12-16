@@ -178,6 +178,10 @@ namespace geopm
                 throw Exception("Failed to open report file", GEOPM_ERROR_INVALID, __FILE__, __LINE__);
             }
             // make header
+            std::vector<std::pair<std::string, std::string> > header {
+                {"GEOPM Version", geopm_version()},
+                {"Start Time"
+            };
             master_report << "##### geopm " << geopm_version() << " #####" << std::endl;
             master_report << "Start Time: " << m_start_time << std::endl;
             master_report << "Profile: " << application_io.profile_name() << std::endl;
@@ -264,32 +268,12 @@ namespace geopm
                 report << "Epoch Totals:"
                        << std::endl;
             }
-            double sync_rt = m_region_agg->sample_total(m_region_bulk_runtime_idx, region.hash);
-            double package_energy = m_region_agg->sample_total(m_energy_pkg_idx, region.hash);
-            double power = sync_rt == 0 ? 0 : package_energy / sync_rt;
-            report << "    runtime (sec): " << region.per_rank_avg_runtime << std::endl;
-            report << "    sync-runtime (sec): " << sync_rt << std::endl;
-            report << "    package-energy (joules): " << package_energy << std::endl;
-            report << "    dram-energy (joules): " << m_region_agg->sample_total(m_energy_dram_idx, region.hash) << std::endl;
-            report << "    power (watts): " << power << std::endl;
-            double numer = m_region_agg->sample_total(m_clk_core_idx, region.hash);
-            double denom = m_region_agg->sample_total(m_clk_ref_idx, region.hash);
-            double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
-            report << "    frequency (%): " << freq << std::endl;
-            report << "    frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0) << std::endl;
-            double network_time = (region.hash == GEOPM_REGION_HASH_EPOCH) ?
-                                   application_io.total_epoch_runtime_network() :
-                                   application_io.total_region_runtime_mpi(region.hash);
-            report << "    network-time (sec): " << network_time << std::endl;
-            report << "    count: " << region.count << std::endl;
-            for (const auto &env_it : m_env_signal_name_idx) {
-                report << "    " << env_it.first << ": " << m_region_agg->sample_total(env_it.second, region.hash) << std::endl;
-            }
+            auto region_data = get_region_data(region.hash);
+
             const auto &it = agent_region_report.find(region.hash);
             if (it != agent_region_report.end()) {
-                for (const auto &kv : agent_region_report.at(region.hash)) {
-                    report << "    " << kv.first << ": " << kv.second << std::endl;
-                }
+                // TODO: get rid of numbers for indent level; probably need 3 vars
+                yaml_write(report, 2, agent_region_report.at(region.hash));
             }
         }
         // extra runtimes for epoch region
@@ -301,6 +285,7 @@ namespace geopm
         double app_energy_pkg = m_region_agg->sample_total(m_energy_pkg_idx);
         double avg_power = total_runtime == 0 ? 0 : app_energy_pkg / total_runtime;
         double app_energy_dram = m_region_agg->sample_total(m_energy_dram_idx);
+
         report << "Application Totals:" << std::endl
                << "    runtime (sec): " << total_runtime << std::endl
                << "    package-energy (joules): " << app_energy_pkg << std::endl
@@ -345,6 +330,33 @@ namespace geopm
             master_report.close();
         }
     }
+
+    std::vector<std::pair<string, string> > Reporter::get_region_data(uint64_t hash)
+    {
+        std::vector<std::pair<string, string> > result;
+
+            double sync_rt = m_region_agg->sample_total(m_region_bulk_runtime_idx, region.hash);
+            double package_energy = m_region_agg->sample_total(m_energy_pkg_idx, region.hash);
+            double power = sync_rt == 0 ? 0 : package_energy / sync_rt;
+            result.push_back({"runtime (s)", region.per_rank_avg_runtime});
+            result.push_back({"sync-runtime (s)", sync_rt});
+            result.push_back({"package-energy (J)", package_energy});
+            result.push_back({"dram-energy (joules)", m_region_agg->sample_total(m_energy_dram_idx, region.hash)});
+            result.push_back({"power (watts): " << power << std::endl;
+            double numer = m_region_agg->sample_total(m_clk_core_idx, region.hash);
+            double denom = m_region_agg->sample_total(m_clk_ref_idx, region.hash);
+            double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
+            result.push_back({"frequency (%): " << freq << std::endl;
+            result.push_back({"frequency (Hz): " << freq / 100.0 * m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0) << std::endl;
+            double network_time = (region.hash == GEOPM_REGION_HASH_EPOCH) ?
+                                   application_io.total_epoch_runtime_network() :
+                                   application_io.total_region_runtime_mpi(region.hash);
+            result.push_back({"network-time (sec): " << network_time << std::endl;
+            result.push_back({"count: " << region.count << std::endl;
+            for (const auto &env_it : m_env_signal_name_idx) {
+                result.push_back({env_it.first, m_region_agg->sample_total(env_it.second, region.hash)});
+            }
+
 
     std::string ReporterImp::get_max_memory()
     {
@@ -393,4 +405,21 @@ namespace geopm
         }
         return max_memory;
     }
+
+    void Reporter::yaml_write(std::ostream &os, int indent_level,
+                              const std::string &val)
+    {
+        std::string indent(indent_level * 2, ' ');
+        os << indent << val << '\n';
+    }
+
+    void Reporter::yaml_write(std::ostream &os, int indent_level,
+                              const std::vector<std::pair<string, string> > &data)
+    {
+        std::string indent(indent_level * 2, ' ');
+        for (const auto &kv: data) {
+            os << indent << kv.first << ": " < kv.second << '\n';
+        }
+    }
+
 }

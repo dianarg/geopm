@@ -129,6 +129,25 @@ namespace geopm
         private:
             std::string get_max_memory(void);
 
+            // TODO: yaml functions could be static?
+            // indent level * 2 spaces per indent
+            void yaml_write(std::ostream &os, int indent_level, const std::string &val);
+            void yaml_write(std::ostream &os, int indent_level,
+                            const std::vector<std::pair<string, string> > &data);
+            std::vector<std::pair<string, string> > get_region_data(uint64_t hash);
+
+            // void write_header(ostream, header_val_map, agent_vals);
+            // std::vector<string> header_order;
+            // //os << "Hosts:
+            // void write_host(ostream, hostname, host_data);
+            // std::vector<string> region_order;
+            // std::vector<string> region_field_order;
+            /*
+            host_data = {
+            "regions":
+            }
+            */
+
             std::string m_start_time;
             std::string m_report_name;
             PlatformIO &m_platform_io;
