@@ -105,7 +105,7 @@ class ReporterTest : public testing::Test
         std::map<uint64_t, double> m_region_runtime = {
             {geopm_crc32_str("all2all"), 33.33},
             {geopm_crc32_str("model-init"), 22.11},
-            {GEOPM_REGION_HASH_UNMARKED, 12.13}
+            {GEOPM_REGION_HASH_UNMARKED, 12.13},
         };
         std::map<uint64_t, double> m_region_mpi_time = {
             {geopm_crc32_str("all2all"), 3.4},
@@ -116,31 +116,35 @@ class ReporterTest : public testing::Test
         std::map<uint64_t, double> m_region_count = {
             {geopm_crc32_str("all2all"), 20},
             {geopm_crc32_str("model-init"), 1},
-            {GEOPM_REGION_HASH_EPOCH, 0}
+            {GEOPM_REGION_HASH_EPOCH, 66}
         };
-        std::map<uint64_t, double> m_region_rt = {
+        std::map<uint64_t, double> m_region_sync_rt = {
             {geopm_crc32_str("all2all"), 555},
             {geopm_crc32_str("model-init"), 333},
             {GEOPM_REGION_HASH_UNMARKED, 444},
-            {GEOPM_REGION_HASH_EPOCH, 666}
+            {GEOPM_REGION_HASH_EPOCH, 666},
+            //{GEOPM_REGION_HASH_INVALID, 2222222}
         };
         std::map<uint64_t, double> m_region_energy = {
             {geopm_crc32_str("all2all"), 777},
             {geopm_crc32_str("model-init"), 888},
             {GEOPM_REGION_HASH_UNMARKED, 222},
-            {GEOPM_REGION_HASH_EPOCH, 334}
+            {GEOPM_REGION_HASH_EPOCH, 334},
+            {GEOPM_REGION_HASH_INVALID, 4444}
         };
         std::map<uint64_t, double> m_region_clk_core = {
             {geopm_crc32_str("all2all"), 4545},
             {geopm_crc32_str("model-init"), 5656},
             {GEOPM_REGION_HASH_UNMARKED, 3434},
-            {GEOPM_REGION_HASH_EPOCH, 7878}
+            {GEOPM_REGION_HASH_EPOCH, 7878},
+            {GEOPM_REGION_HASH_INVALID, 22222}
         };
         std::map<uint64_t, double> m_region_clk_ref = {
             {geopm_crc32_str("all2all"), 5555},
             {geopm_crc32_str("model-init"), 6666},
             {GEOPM_REGION_HASH_UNMARKED, 4444},
-            {GEOPM_REGION_HASH_EPOCH, 8888}
+            {GEOPM_REGION_HASH_EPOCH, 8888},
+            {GEOPM_REGION_HASH_INVALID, 33344}
         };
         std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > m_region_agent_detail = {
             {geopm_crc32_str("all2all"), {{"agent stat", "1"}, {"agent other stat", "2"}}},
@@ -177,6 +181,8 @@ ReporterTest::ReporterTest()
         .WillOnce(Return(M_ENERGY_PKG_ENV_IDX_0));
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_PACKAGE", GEOPM_DOMAIN_PACKAGE, 1))
         .WillOnce(Return(M_ENERGY_PKG_ENV_IDX_1));
+    EXPECT_CALL(m_platform_io, read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0))
+        .WillOnce(Return(1.0));
 
     m_comm = std::make_shared<ReporterTestMockComm>();
     m_reporter = geopm::make_unique<ReporterImp>(m_start_time,
@@ -193,7 +199,7 @@ ReporterTest::ReporterTest()
 
 void ReporterTest::TearDown(void)
 {
-    std::remove(m_report_name.c_str());
+    //std::remove(m_report_name.c_str());
 }
 
 void check_report(std::istream &expected, std::istream &result);
@@ -204,21 +210,20 @@ TEST_F(ReporterTest, generate)
     EXPECT_CALL(m_application_io, profile_name());
     EXPECT_CALL(m_application_io, region_name_set());
     EXPECT_CALL(m_application_io, total_app_runtime_mpi()).WillOnce(Return(45));
-    EXPECT_CALL(m_application_io, total_app_runtime_ignore()).WillOnce(Return(0.7));
+    // EXPECT_CALL(m_application_io, total_app_runtime_ignore()).WillOnce(Return(0.7));
     EXPECT_CALL(m_application_io, total_epoch_runtime_ignore()).WillRepeatedly(Return(0.7));
     EXPECT_CALL(m_application_io, total_epoch_runtime()).WillOnce(Return(70.0));
     EXPECT_CALL(*m_agg, read_batch);
     // Application totals
-    EXPECT_CALL(*m_agg, sample_total(M_TIME_IDX))
-        .WillOnce(Return(56));
-    EXPECT_CALL(*m_agg, sample_total(M_ENERGY_PKG_IDX))
-        .WillOnce(Return(2222));
-    EXPECT_CALL(*m_agg, sample_total(M_ENERGY_DRAM_IDX))
-        .WillOnce(Return(1111));
+    // TODO: fix these calls or remove sample_total(_) overload
+    EXPECT_CALL(*m_agg, sample_total(M_TIME_IDX, 0))
+        .Times(2)  // TODO: sync-rt and runtime for app totals are the same currently
+        .WillRepeatedly(Return(56));
+    // EXPECT_CALL(*m_agg, sample_total(M_ENERGY_PKG_IDX, 0))
+    //     .WillOnce(Return(2222));
+    // EXPECT_CALL(*m_agg, sample_total(M_ENERGY_DRAM_IDX, 0))
+    //     .WillOnce(Return(1111));
 
-    EXPECT_CALL(m_platform_io, read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0))
-        .Times(4)
-        .WillRepeatedly(Return(1.0));
     EXPECT_CALL(m_tree_comm, overhead_send()).WillOnce(Return(678 * 56));
     for (auto rid : m_region_runtime) {
         EXPECT_CALL(m_application_io, total_region_runtime(rid.first))
@@ -244,7 +249,7 @@ TEST_F(ReporterTest, generate)
                 .WillOnce(Return(rid.second));
         }
     }
-    for (auto rid : m_region_rt) {
+    for (auto rid : m_region_sync_rt) {
         EXPECT_CALL(*m_agg, sample_total(M_TIME_IDX, rid.first))
             .WillOnce(Return(rid.second));
     }
@@ -276,9 +281,7 @@ TEST_F(ReporterTest, generate)
         {"three", "3"},
         {"four", "4"} };
 
-    // Check for labels at start of line but ignore numbers
-    // Note that region lines start with tab
-    std::string expected = "#####\n"
+    std::string expected = "GEOPM Version:\n"
         "Start Time: " + m_start_time + "\n"
         "Profile: " + m_profile_name + "\n"
         "Agent: my_agent\n"
@@ -286,71 +289,82 @@ TEST_F(ReporterTest, generate)
         "one: 1\n"
         "two: 2\n"
         "\n"
-        "Host:\n"
-        "three: 3\n"
-        "four: 4\n"
-        "Region all2all (\n"
-        "    runtime (sec): 33.33\n"
-        "    sync-runtime (sec): 555\n"
-        "    package-energy (joules): 388.5\n"
-        "    dram-energy (joules): 388.5\n"
-        "    power (watts): 0.7\n"
-        "    frequency (%): 81.81\n"
-        "    frequency (Hz): 0.818182\n"
-        "    network-time (sec): 3.4\n"
-        "    count: 20\n"
-        "    ENERGY_PACKAGE@package-0: 194.25\n"
-        "    ENERGY_PACKAGE@package-1: 194.25\n"
-        "    agent stat: 1\n"
-        "    agent other stat: 2\n"
-        "Region model-init (\n"
-        "    runtime (sec): 22.11\n"
-        "    sync-runtime (sec): 333\n"
-        "    package-energy (joules): 444\n"
-        "    dram-energy (joules): 444\n"
-        "    power (watts): 1.33333\n"
-        "    frequency (%): 84.84\n"
-        "    frequency (Hz): 0.848485\n"
-        "    network-time (sec): 5.6\n"
-        "    count: 1\n"
-        "    ENERGY_PACKAGE@package-0: 222\n"
-        "    ENERGY_PACKAGE@package-1: 222\n"
-        "    agent stat: 2\n"
-        "Region unmarked-region (\n"
-        "    runtime (sec): 12.13\n"
-        "    sync-runtime (sec): 444\n"
-        "    package-energy (joules): 111\n"
-        "    dram-energy (joules): 111\n"
-        "    power (watts): 0.25\n"
+        "Hosts:\n"
+        "  \n"   // TODO: no way to mock hostname
+        "    three: 3\n"
+        "    four: 4\n"
+        "    regions:\n"
+        "    -\n"
+        "      name: all2all\n"
+        "      hash:\n"
+        "      runtime (s): 33.33\n"
+        "      sync-runtime (s): 555\n"
+        "      package-energy (J): 388.5\n"
+        "      dram-energy (J): 388.5\n"
+        "      power (W): 0.7\n"
+        "      frequency (%): 81.81\n"
+        "      frequency (Hz): 0.818182\n"
+        "      network-time (s): 3.4\n"
+        "      count: 20\n"
+        "      ENERGY_PACKAGE@package-0: 194.25\n"
+        "      ENERGY_PACKAGE@package-1: 194.25\n"
+        "      agent stat: 1\n"
+        "      agent other stat: 2\n"
+        "    -\n"
+        "      name: model-init\n"
+        "      hash:\n"
+        "      runtime (s): 22.11\n"
+        "      sync-runtime (s): 333\n"
+        "      package-energy (J): 444\n"
+        "      dram-energy (J): 444\n"
+        "      power (W): 1.33333\n"
+        "      frequency (%): 84.84\n"
+        "      frequency (Hz): 0.848485\n"
+        "      network-time (s): 5.6\n"
+        "      count: 1\n"
+        "      ENERGY_PACKAGE@package-0: 222\n"
+        "      ENERGY_PACKAGE@package-1: 222\n"
+        "      agent stat: 2\n"
+        "  Unmarked Totals:\n"
+        "    runtime (s): 12.13\n"
+        "    sync-runtime (s): 444\n"
+        "    package-energy (J): 111\n"
+        "    dram-energy (J): 111\n"
+        "    power (W): 0.25\n"
         "    frequency (%): 77.2727\n"
         "    frequency (Hz): 0.772727\n"
-        "    network-time (sec): 1.2\n"
+        "    network-time (s): 1.2\n"
         "    count: 0\n"
         "    ENERGY_PACKAGE@package-0: 55.5\n"
         "    ENERGY_PACKAGE@package-1: 55.5\n"
         "    agent stat: 3\n"
-        "Epoch Totals:\n"
-        "    runtime (sec): 70\n"
-        "    sync-runtime (sec): 666\n"
-        "    package-energy (joules): 167\n"
-        "    dram-energy (joules): 167\n"
-        "    power (watts): 0.250751\n"
+        "  Epoch Totals:\n"
+        "    runtime (s): 70\n"
+        "    sync-runtime (s): 666\n"
+        "    package-energy (J): 167\n"
+        "    dram-energy (J): 167\n"
+        "    power (W): 0.250751\n"
         "    frequency (%): 88.6364\n"
         "    frequency (Hz): 0.886364\n"
-        "    network-time (sec): 4.2\n"
-        "    count: 0\n"
+        "    network-time (s): 4.2\n"
+        "    count: 66\n"
         "    ENERGY_PACKAGE@package-0: 83.5\n"
         "    ENERGY_PACKAGE@package-1: 83.5\n"
-        "    epoch-runtime-ignore (sec): 0.7\n"
-        "Application Totals:\n"
-        "    runtime (sec): 56\n"
-        "    package-energy (joules): 2222\n"
-        "    dram-energy (joules): 1111\n"
-        "    power (watts): 39.6786\n"
-        "    network-time (sec): 45\n"
-        "    ignore-time (sec): 0.7\n"
+        "    epoch-runtime-ignore (s): 0.7\n"
+        "  Application Totals:\n"
+        "    runtime (s): 56\n"
+        "    sync-runtime (s): 56\n"
+        "    package-energy (J): 2222\n"
+        "    dram-energy (J): 2222\n"
+        "    power (W): 39.6786\n"
+        "    frequency (%): 66.6447\n"
+        "    frequency (Hz): 0.666447\n"
+        "    network-time (s): 45\n"
+        "    count: 0\n"
+        "    ENERGY_PACKAGE@package-0: 1111\n"
+        "    ENERGY_PACKAGE@package-1: 1111\n"
         "    geopmctl memory HWM:\n"
-        "    geopmctl network BW (B/sec): 678\n\n";
+        "    geopmctl network BW (B/s): 678\n\n";
 
     std::istringstream exp_stream(expected);
 

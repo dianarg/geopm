@@ -40,6 +40,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <ostream>
 
 namespace geopm
 {
@@ -93,6 +94,13 @@ namespace geopm
                                   const ApplicationIO &application_io,
                                   std::shared_ptr<Comm> comm,
                                   const TreeComm &tree_comm) = 0;
+            struct region_info {
+                std::string name;
+                uint64_t hash;
+                double per_rank_avg_runtime;
+                double network_time;
+                int count;
+            };
     };
 
     class PlatformIO;
@@ -129,6 +137,29 @@ namespace geopm
         private:
             std::string get_max_memory(void);
 
+            // TODO: yaml functions could be static?
+            // TODO: rename to indent_write?  does not enforce correct yaml
+            // indent level * 2 spaces per indent
+            void yaml_write(std::ostream &os, int indent_level, const std::string &val);
+            void yaml_write(std::ostream &os, int indent_level,
+                            const std::vector<std::pair<std::string, std::string> > &data);
+            void yaml_write(std::ostream &os, int indent_level,
+                            const std::vector<std::pair<std::string, double> > &data);
+
+            std::vector<std::pair<std::string, double> > get_region_data(const region_info &region);
+
+            // void write_header(ostream, header_val_map, agent_vals);
+            // std::vector<string> header_order;
+            // //os << "Hosts:
+            // void write_host(ostream, hostname, host_data);
+            // std::vector<string> region_order;
+            // std::vector<string> region_field_order;
+            /*
+            host_data = {
+            "regions":
+            }
+            */
+
             std::string m_start_time;
             std::string m_report_name;
             PlatformIO &m_platform_io;
@@ -144,6 +175,7 @@ namespace geopm
             const std::string m_env_signals;
             const std::string m_policy_path;
             bool m_do_endpoint;
+            double m_sticker_freq;
     };
 }
 
