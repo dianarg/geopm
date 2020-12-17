@@ -81,6 +81,8 @@ class ReporterTest : public testing::Test
     protected:
         enum {
             M_TIME_IDX,
+            M_TIME_NETWORK_IDX,
+            M_TIME_IGNORE_IDX,
             M_ENERGY_PKG_IDX,
             M_ENERGY_DRAM_IDX,
             M_CLK_CORE_IDX,
@@ -107,11 +109,19 @@ class ReporterTest : public testing::Test
             {geopm_crc32_str("model-init"), 22.11},
             {GEOPM_REGION_HASH_UNMARKED, 12.13},
         };
-        std::map<uint64_t, double> m_region_mpi_time = {
+        std::map<uint64_t, double> m_region_network_time = {
             {geopm_crc32_str("all2all"), 3.4},
             {geopm_crc32_str("model-init"), 5.6},
             {GEOPM_REGION_HASH_UNMARKED, 1.2},
-            {GEOPM_REGION_HASH_EPOCH, 4.2}
+            {GEOPM_REGION_HASH_EPOCH, 4.2},
+            {GEOPM_REGION_HASH_INVALID, 45}
+        };
+        std::map<uint64_t, double> m_region_ignore_time = {
+            {geopm_crc32_str("all2all"), 3.5},
+            {geopm_crc32_str("model-init"), 5.7},
+            {GEOPM_REGION_HASH_UNMARKED, 1.3},
+            {GEOPM_REGION_HASH_EPOCH, 4.3},
+            {GEOPM_REGION_HASH_INVALID, 46}
         };
         std::map<uint64_t, double> m_region_count = {
             {geopm_crc32_str("all2all"), 20},
@@ -165,6 +175,10 @@ ReporterTest::ReporterTest()
     EXPECT_CALL(*m_agg, init());
     EXPECT_CALL(*m_agg, push_signal_total("TIME", _, _))
         .WillOnce(Return(M_TIME_IDX));
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_NETWORK", _, _))
+        .WillOnce(Return(M_TIME_NETWORK_IDX));
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_IGNORE", _, _))
+        .WillOnce(Return(M_TIME_IGNORE_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0))
         .WillOnce(Return(M_ENERGY_PKG_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_DRAM", _, _))
@@ -209,7 +223,7 @@ TEST_F(ReporterTest, generate)
     EXPECT_CALL(m_application_io, report_name()).WillOnce(Return(m_report_name));
     EXPECT_CALL(m_application_io, profile_name());
     EXPECT_CALL(m_application_io, region_name_set());
-    EXPECT_CALL(m_application_io, total_app_runtime_mpi()).WillOnce(Return(45));
+    //EXPECT_CALL(m_application_io, total_app_runtime_mpi()).WillOnce(Return(45));
     // EXPECT_CALL(m_application_io, total_app_runtime_ignore()).WillOnce(Return(0.7));
     EXPECT_CALL(m_application_io, total_epoch_runtime_ignore()).WillRepeatedly(Return(0.7));
     EXPECT_CALL(m_application_io, total_epoch_runtime()).WillOnce(Return(70.0));
@@ -229,15 +243,13 @@ TEST_F(ReporterTest, generate)
         EXPECT_CALL(m_application_io, total_region_runtime(rid.first))
             .WillOnce(Return(rid.second));
     }
-    for (auto rid : m_region_mpi_time) {
-        if (GEOPM_REGION_HASH_EPOCH == rid.first) {
-            EXPECT_CALL(m_application_io, total_epoch_runtime_network())
-                .WillOnce(Return(rid.second));
-        }
-        else {
-            EXPECT_CALL(m_application_io, total_region_runtime_mpi(rid.first))
-                .WillOnce(Return(rid.second));
-        }
+    for (auto rid : m_region_network_time) {
+        EXPECT_CALL(*m_agg, sample_total(M_TIME_NETWORK_IDX, rid.first))
+            .WillOnce(Return(rid.second));
+    }
+    for (auto rid : m_region_ignore_time) {
+        EXPECT_CALL(*m_agg, sample_total(M_TIME_IGNORE_IDX, rid.first))
+            .WillOnce(Return(rid.second));
     }
     for (auto rid : m_region_count) {
         if (GEOPM_REGION_HASH_EPOCH == rid.first) {
@@ -305,6 +317,7 @@ TEST_F(ReporterTest, generate)
         "      frequency (%): 81.81\n"
         "      frequency (Hz): 0.818182\n"
         "      network-time (s): 3.4\n"
+        "      ignore-time (s): 3.5\n"
         "      count: 20\n"
         "      ENERGY_PACKAGE@package-0: 194.25\n"
         "      ENERGY_PACKAGE@package-1: 194.25\n"
@@ -321,6 +334,7 @@ TEST_F(ReporterTest, generate)
         "      frequency (%): 84.84\n"
         "      frequency (Hz): 0.848485\n"
         "      network-time (s): 5.6\n"
+        "      ignore-time (s): 5.7\n"
         "      count: 1\n"
         "      ENERGY_PACKAGE@package-0: 222\n"
         "      ENERGY_PACKAGE@package-1: 222\n"
@@ -334,6 +348,7 @@ TEST_F(ReporterTest, generate)
         "    frequency (%): 77.2727\n"
         "    frequency (Hz): 0.772727\n"
         "    network-time (s): 1.2\n"
+        "    ignore-time (s): 1.3\n"
         "    count: 0\n"
         "    ENERGY_PACKAGE@package-0: 55.5\n"
         "    ENERGY_PACKAGE@package-1: 55.5\n"
@@ -347,6 +362,7 @@ TEST_F(ReporterTest, generate)
         "    frequency (%): 88.6364\n"
         "    frequency (Hz): 0.886364\n"
         "    network-time (s): 4.2\n"
+        "    ignore-time (s): 4.3\n"
         "    count: 66\n"
         "    ENERGY_PACKAGE@package-0: 83.5\n"
         "    ENERGY_PACKAGE@package-1: 83.5\n"
@@ -360,6 +376,7 @@ TEST_F(ReporterTest, generate)
         "    frequency (%): 66.6447\n"
         "    frequency (Hz): 0.666447\n"
         "    network-time (s): 45\n"
+        "    ignore-time (s): 46\n"
         "    count: 0\n"
         "    ENERGY_PACKAGE@package-0: 1111\n"
         "    ENERGY_PACKAGE@package-1: 1111\n"

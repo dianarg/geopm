@@ -98,7 +98,7 @@ namespace geopm
                 std::string name;
                 uint64_t hash;
                 double per_rank_avg_runtime;
-                double network_time;
+                    //double network_time;
                 int count;
             };
     };
@@ -167,6 +167,8 @@ namespace geopm
             std::unique_ptr<SampleAggregator> m_region_agg;
             int m_rank;
             int m_region_bulk_runtime_idx;
+            int m_runtime_network_idx;
+            int m_runtime_ignore_idx;
             int m_energy_pkg_idx;
             int m_energy_dram_idx;
             int m_clk_core_idx;

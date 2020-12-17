@@ -114,6 +114,8 @@ namespace geopm
     void ReporterImp::init(void)
     {
         m_region_bulk_runtime_idx = m_region_agg->push_signal_total("TIME", GEOPM_DOMAIN_BOARD, 0);
+        m_runtime_network_idx = m_region_agg->push_signal_total("TIME_NETWORK", GEOPM_DOMAIN_BOARD, 0);
+        m_runtime_ignore_idx = m_region_agg->push_signal_total("TIME_IGNORE", GEOPM_DOMAIN_BOARD, 0);
         m_energy_pkg_idx = m_region_agg->push_signal_total("ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0);
         m_energy_dram_idx = m_region_agg->push_signal_total("ENERGY_DRAM", GEOPM_DOMAIN_BOARD, 0);
         m_clk_core_idx = m_region_agg->push_signal_total("CYCLES_THREAD", GEOPM_DOMAIN_BOARD, 0);
@@ -221,7 +223,7 @@ namespace geopm
                 region_ordered.push_back({region,
                                           region_hash,
                                           application_io.total_region_runtime(region_hash),
-                                          application_io.total_region_runtime_mpi(region_hash),
+                                          //application_io.total_region_runtime_mpi(region_hash),
                                           count});
             }
         }
@@ -256,9 +258,9 @@ namespace geopm
 
         yaml_write(report, 1, "Unmarked Totals:");
         double unmarked_time = application_io.total_region_runtime(GEOPM_REGION_HASH_UNMARKED);
-        double unmarked_time_mpi = application_io.total_region_runtime_mpi(GEOPM_REGION_HASH_UNMARKED);
+        //double unmarked_time_mpi = application_io.total_region_runtime_mpi(GEOPM_REGION_HASH_UNMARKED);
         region_info unmarked {"unmarked", GEOPM_REGION_HASH_UNMARKED,
-            unmarked_time, unmarked_time_mpi, 0};
+            unmarked_time,  0};
         auto unmarked_data = get_region_data(unmarked);
         yaml_write(report, 2, unmarked_data);
         // agent extensions for unmarked
@@ -270,9 +272,9 @@ namespace geopm
 
         yaml_write(report, 1, "Epoch Totals:");
         double epoch_runtime = application_io.total_epoch_runtime();
-        double epoch_runtime_mpi = application_io.total_epoch_runtime_network();
+        //double epoch_runtime_mpi = application_io.total_epoch_runtime_network();
         int epoch_count = application_io.total_epoch_count();
-        region_info epoch {"epoch", GEOPM_REGION_HASH_EPOCH, epoch_runtime, epoch_runtime_mpi, epoch_count};
+        region_info epoch {"epoch", GEOPM_REGION_HASH_EPOCH, epoch_runtime,  epoch_count};
         auto epoch_data = get_region_data(epoch);
         // extra runtimes for epoch region
         epoch_data.push_back({"epoch-runtime-ignore (s)",
@@ -282,34 +284,12 @@ namespace geopm
         yaml_write(report, 1, "Application Totals:");
         double total_runtime = m_region_agg->sample_total(m_region_bulk_runtime_idx,
                                                           GEOPM_REGION_HASH_INVALID);
-        double total_runtime_mpi = application_io.total_app_runtime_mpi();
-        // double app_energy_pkg = m_region_agg->sample_total(m_energy_pkg_idx);
-        // double avg_power = total_runtime == 0 ? 0 : app_energy_pkg / total_runtime;
-        // double app_energy_dram = m_region_agg->sample_total(m_energy_dram_idx);
-
+        //double total_runtime_mpi = application_io.total_app_runtime_mpi();
         region_info app_totals {"totals", GEOPM_REGION_HASH_INVALID, total_runtime,
-            total_runtime_mpi, 0};
+             0};
         auto region_data = get_region_data(app_totals);
         yaml_write(report, 2, region_data);
         // TODO: app total ignore time is temporarily removed
-
-        // // Note: this is "sync-runtime" total but there's very little
-        // // difference with "accurate" runtime for app totals
-        // double total_runtime = m_region_agg->sample_total(m_region_bulk_runtime_idx);
-        // double app_energy_pkg = m_region_agg->sample_total(m_energy_pkg_idx);
-        // double avg_power = total_runtime == 0 ? 0 : app_energy_pkg / total_runtime;
-        // double app_energy_dram = m_region_agg->sample_total(m_energy_dram_idx);
-
-        // report << "Application Totals:" << std::endl
-        //        << "    runtime (sec): " << total_runtime << std::endl
-        //        << "    package-energy (joules): " << app_energy_pkg << std::endl
-        //        << "    dram-energy (joules): " << app_energy_dram << std::endl
-        //        << "    power (watts): " << avg_power << std::endl
-        //        << "    network-time (sec): " << application_io.total_app_runtime_mpi() << std::endl
-        //        << "    ignore-time (sec): " << application_io.total_app_runtime_ignore() << std::endl;
-        // for (const auto &env_it : m_env_signal_name_idx) {
-        //     report << "    " << env_it.first << ": " << m_region_agg->sample_total(env_it.second) << std::endl;
-        // }
 
         // TODO: can't mix string and double in these vectors.... annoying
         std::string max_memory = get_max_memory();
@@ -369,7 +349,8 @@ namespace geopm
         double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
         result.push_back({"frequency (%)", freq});
         result.push_back({"frequency (Hz)", freq / 100.0 * m_sticker_freq});
-        result.push_back({"network-time (s)", region.network_time});
+        result.push_back({"network-time (s)", m_region_agg->sample_total(m_runtime_network_idx, region.hash)});
+        result.push_back({"ignore-time (s)", m_region_agg->sample_total(m_runtime_ignore_idx, region.hash)});
         result.push_back({"count", region.count});
         for (const auto &env_it : m_env_signal_name_idx) {
             result.push_back({env_it.first, m_region_agg->sample_total(env_it.second, region.hash)});
