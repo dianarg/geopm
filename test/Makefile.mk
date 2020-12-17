@@ -652,6 +652,7 @@ test_geopm_test_SOURCES = test/AcceleratorTopoTest.cpp \
                           test/ProfileTableTest.cpp \
                           test/ProfileTest.cpp \
                           test/ProfileTestIntegration.cpp \
+                          test/ProfileTestPerformance.cpp \
                           test/ProfileTracerTest.cpp \
                           test/ProxyEpochRecordFilterTest.cpp \
                           test/RawMSRSignalTest.cpp \
