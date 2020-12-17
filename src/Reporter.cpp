@@ -98,28 +98,24 @@ namespace geopm
         , m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
         , m_region_agg(std::move(agg))
-        , m_rank(rank)
-        , m_region_bulk_runtime_idx(-1)
-        , m_energy_pkg_idx(-1)
-        , m_energy_dram_idx(-1)
-        , m_clk_core_idx(-1)
-        , m_clk_ref_idx(-1)
         , m_env_signals(env_signals)
         , m_policy_path(policy_path)
         , m_do_endpoint(do_endpoint)
+        , m_rank(rank)
+        , m_sticker_freq(m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0))
     {
-        m_sticker_freq = m_platform_io.read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0);
+
     }
 
     void ReporterImp::init(void)
     {
-        m_region_bulk_runtime_idx = m_region_agg->push_signal_total("TIME", GEOPM_DOMAIN_BOARD, 0);
-        m_runtime_network_idx = m_region_agg->push_signal_total("TIME_NETWORK", GEOPM_DOMAIN_BOARD, 0);
-        m_runtime_ignore_idx = m_region_agg->push_signal_total("TIME_IGNORE", GEOPM_DOMAIN_BOARD, 0);
-        m_energy_pkg_idx = m_region_agg->push_signal_total("ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0);
-        m_energy_dram_idx = m_region_agg->push_signal_total("ENERGY_DRAM", GEOPM_DOMAIN_BOARD, 0);
-        m_clk_core_idx = m_region_agg->push_signal_total("CYCLES_THREAD", GEOPM_DOMAIN_BOARD, 0);
-        m_clk_ref_idx = m_region_agg->push_signal_total("CYCLES_REFERENCE", GEOPM_DOMAIN_BOARD, 0);
+        init_sync_fields();
+
+        for (const auto &field : m_sync_fields) {
+            for (const auto &signal : field.supporting_signals) {
+                m_sync_signal_idx[signal] = m_region_agg->push_signal_total(signal, GEOPM_DOMAIN_BOARD, 0);
+            }
+        }
 
         for (const std::string &signal_name : string_split(m_env_signals, ",")) {
             std::vector<std::string> signal_name_domain = string_split(signal_name, "@");
@@ -269,29 +265,25 @@ namespace geopm
             yaml_write(report, 3, agent_region_report.at(GEOPM_REGION_HASH_UNMARKED));
         }
 
-
         yaml_write(report, 1, "Epoch Totals:");
         double epoch_runtime = application_io.total_epoch_runtime();
         //double epoch_runtime_mpi = application_io.total_epoch_runtime_network();
         int epoch_count = application_io.total_epoch_count();
         region_info epoch {"epoch", GEOPM_REGION_HASH_EPOCH, epoch_runtime,  epoch_count};
         auto epoch_data = get_region_data(epoch);
-        // extra runtimes for epoch region
-        epoch_data.push_back({"epoch-runtime-ignore (s)",
-            application_io.total_epoch_runtime_ignore()});
         yaml_write(report, 2, epoch_data);
 
         yaml_write(report, 1, "Application Totals:");
-        double total_runtime = m_region_agg->sample_total(m_region_bulk_runtime_idx,
+        double total_runtime = m_region_agg->sample_total(m_sync_signal_idx["TIME"],
                                                           GEOPM_REGION_HASH_INVALID);
         //double total_runtime_mpi = application_io.total_app_runtime_mpi();
         region_info app_totals {"totals", GEOPM_REGION_HASH_INVALID, total_runtime,
              0};
         auto region_data = get_region_data(app_totals);
         yaml_write(report, 2, region_data);
-        // TODO: app total ignore time is temporarily removed
 
         // TODO: can't mix string and double in these vectors.... annoying
+        // can max_memory return a double?
         std::string max_memory = get_max_memory();
         yaml_write(report, 2, "geopmctl memory HWM: " + max_memory);
 
@@ -333,25 +325,62 @@ namespace geopm
         }
     }
 
+    void ReporterImp::init_sync_fields(void)
+    {
+        auto sample_only = [this](uint64_t hash, const std::vector<std::string> &sig) -> double
+        {
+            GEOPM_DEBUG_ASSERT(sig.size() == 1, "Wrong number of signals for sample_only()");
+            return m_region_agg->sample_total(m_sync_signal_idx[sig[0]], hash);
+        };
+        auto divide = [this](uint64_t hash, const std::vector<std::string> &sig) -> double
+        {
+            GEOPM_DEBUG_ASSERT(sig.size() == 2, "Wrong number of signals for divide()");
+            double numer = m_region_agg->sample_total(m_sync_signal_idx[sig[0]], hash);
+            double denom = m_region_agg->sample_total(m_sync_signal_idx[sig[1]], hash);
+            return denom == 0 ? 0.0 : numer / denom;
+        };
+        auto divide_pct = [this](uint64_t hash, const std::vector<std::string> &sig) -> double
+        {
+            GEOPM_DEBUG_ASSERT(sig.size() == 2, "Wrong number of signals for divide_pct()");
+            double numer = m_region_agg->sample_total(m_sync_signal_idx[sig[0]], hash);
+            double denom = m_region_agg->sample_total(m_sync_signal_idx[sig[1]], hash);
+            return denom == 0 ? 0.0 : 100.0 * numer / denom;
+        };
+        auto divide_sticker_scale = [this](uint64_t hash, const std::vector<std::string> &sig) -> double
+        {
+            GEOPM_DEBUG_ASSERT(sig.size() == 2, "Wrong number of signals for divide_sticker_scale()");
+            double numer = m_region_agg->sample_total(m_sync_signal_idx[sig[0]], hash);
+            double denom = m_region_agg->sample_total(m_sync_signal_idx[sig[1]], hash);
+            return denom == 0 ? 0.0 : m_sticker_freq * numer / denom;
+        };
+
+        m_sync_fields = {
+            {"sync-runtime (s)", {"TIME"}, sample_only},
+            {"package-energy (J)", {"ENERGY_PACKAGE"}, sample_only},
+            {"dram-energy (J)", {"ENERGY_DRAM"}, sample_only},
+            {"power (W)", {"ENERGY_PACKAGE", "TIME"}, divide},
+            {"frequency (%)", {"CYCLES_THREAD", "CYCLES_REFERENCE"}, divide_pct},
+            {"frequency (Hz)", {"CYCLES_THREAD", "CYCLES_REFERENCE"}, divide_sticker_scale},
+            {"network-time (s)", {"TIME_NETWORK"}, sample_only},
+            {"ignore-time (s)", {"TIME_IGNORE"}, sample_only}
+        };
+
+    }
+
     std::vector<std::pair<std::string, double> > ReporterImp::get_region_data(const region_info &region)
     {
         std::vector<std::pair<std::string, double> > result;
-        double sync_rt = m_region_agg->sample_total(m_region_bulk_runtime_idx, region.hash);
-        double package_energy = m_region_agg->sample_total(m_energy_pkg_idx, region.hash);
-        double power = sync_rt == 0 ? 0 : package_energy / sync_rt;
+        // non-sync fields
         result.push_back({"runtime (s)", region.per_rank_avg_runtime});
-        result.push_back({"sync-runtime (s)", sync_rt});
-        result.push_back({"package-energy (J)", package_energy});
-        result.push_back({"dram-energy (J)", m_region_agg->sample_total(m_energy_dram_idx, region.hash)});
-        result.push_back({"power (W)", power});
-        double numer = m_region_agg->sample_total(m_clk_core_idx, region.hash);
-        double denom = m_region_agg->sample_total(m_clk_ref_idx, region.hash);
-        double freq = denom != 0 ? 100.0 * numer / denom : 0.0;
-        result.push_back({"frequency (%)", freq});
-        result.push_back({"frequency (Hz)", freq / 100.0 * m_sticker_freq});
-        result.push_back({"network-time (s)", m_region_agg->sample_total(m_runtime_network_idx, region.hash)});
-        result.push_back({"ignore-time (s)", m_region_agg->sample_total(m_runtime_ignore_idx, region.hash)});
         result.push_back({"count", region.count});
+
+        // sync fields as initialized in init_sync_fields
+        uint64_t hash = region.hash;
+        for (auto &field : m_sync_fields) {
+            result.push_back({field.field_label, field.func(hash, field.supporting_signals)});
+        }
+
+        // signals added by user through environment
         for (const auto &env_it : m_env_signal_name_idx) {
             result.push_back({env_it.first, m_region_agg->sample_total(env_it.second, region.hash)});
         }

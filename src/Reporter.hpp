@@ -135,6 +135,10 @@ namespace geopm
                           std::shared_ptr<Comm> comm,
                           const TreeComm &tree_comm) override;
         private:
+            /// @brief Set up structures used to calculate region-synchronous
+            ///        field data to be sampled from SampleAggregator.
+            void init_sync_fields(void);
+
             std::string get_max_memory(void);
 
             // TODO: yaml functions could be static?
@@ -148,36 +152,33 @@ namespace geopm
 
             std::vector<std::pair<std::string, double> > get_region_data(const region_info &region);
 
-            // void write_header(ostream, header_val_map, agent_vals);
-            // std::vector<string> header_order;
-            // //os << "Hosts:
-            // void write_host(ostream, hostname, host_data);
-            // std::vector<string> region_order;
-            // std::vector<string> region_field_order;
-            /*
-            host_data = {
-            "regions":
-            }
-            */
-
             std::string m_start_time;
             std::string m_report_name;
             PlatformIO &m_platform_io;
             const PlatformTopo &m_platform_topo;
             std::unique_ptr<SampleAggregator> m_region_agg;
-            int m_rank;
-            int m_region_bulk_runtime_idx;
-            int m_runtime_network_idx;
-            int m_runtime_ignore_idx;
-            int m_energy_pkg_idx;
-            int m_energy_dram_idx;
-            int m_clk_core_idx;
-            int m_clk_ref_idx;
-            std::vector<std::pair<std::string, int> > m_env_signal_name_idx;
             const std::string m_env_signals;
             const std::string m_policy_path;
             bool m_do_endpoint;
+            int m_rank;
             double m_sticker_freq;
+
+            // Mapping from pushed signal name to index
+            std::map<std::string, int> m_sync_signal_idx;
+
+            // Fields for each section in order.  function can be
+            // passthrough, or combo of other fields
+            struct m_sync_field_s
+            {
+                std::string field_label;
+                std::vector<std::string> supporting_signals;
+                std::function<double(uint64_t, const std::vector<std::string>&)> func;
+            };
+            // All default fields supported by sample aggregator
+            std::vector<m_sync_field_s> m_sync_fields;
+
+            // Signals added through environment
+            std::vector<std::pair<std::string, int> > m_env_signal_name_idx;
     };
 }
 

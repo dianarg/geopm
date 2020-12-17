@@ -133,7 +133,7 @@ class ReporterTest : public testing::Test
             {geopm_crc32_str("model-init"), 333},
             {GEOPM_REGION_HASH_UNMARKED, 444},
             {GEOPM_REGION_HASH_EPOCH, 666},
-            //{GEOPM_REGION_HASH_INVALID, 2222222}
+            {GEOPM_REGION_HASH_INVALID, 56}
         };
         std::map<uint64_t, double> m_region_energy = {
             {geopm_crc32_str("all2all"), 777},
@@ -174,27 +174,28 @@ ReporterTest::ReporterTest()
 
     EXPECT_CALL(*m_agg, init());
     EXPECT_CALL(*m_agg, push_signal_total("TIME", _, _))
-        .WillOnce(Return(M_TIME_IDX));
+        .WillRepeatedly(Return(M_TIME_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("TIME_NETWORK", _, _))
-        .WillOnce(Return(M_TIME_NETWORK_IDX));
+        .WillRepeatedly(Return(M_TIME_NETWORK_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("TIME_IGNORE", _, _))
-        .WillOnce(Return(M_TIME_IGNORE_IDX));
+        .WillRepeatedly(Return(M_TIME_IGNORE_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0))
-        .WillOnce(Return(M_ENERGY_PKG_IDX));
+        .WillRepeatedly(Return(M_ENERGY_PKG_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_DRAM", _, _))
-        .WillOnce(Return(M_ENERGY_DRAM_IDX));
+        .WillRepeatedly(Return(M_ENERGY_DRAM_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("CYCLES_REFERENCE", _, _))
-        .WillOnce(Return(M_CLK_REF_IDX));
+        .WillRepeatedly(Return(M_CLK_REF_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("CYCLES_THREAD", _, _))
-        .WillOnce(Return(M_CLK_CORE_IDX));
+        .WillRepeatedly(Return(M_CLK_CORE_IDX));
 
+    // environment signals
     EXPECT_CALL(m_platform_topo, num_domain(GEOPM_DOMAIN_PACKAGE))
         .WillRepeatedly(Return(2));
-
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_PACKAGE", GEOPM_DOMAIN_PACKAGE, 0))
         .WillOnce(Return(M_ENERGY_PKG_ENV_IDX_0));
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_PACKAGE", GEOPM_DOMAIN_PACKAGE, 1))
         .WillOnce(Return(M_ENERGY_PKG_ENV_IDX_1));
+
     EXPECT_CALL(m_platform_io, read_signal("CPUINFO::FREQ_STICKER", GEOPM_DOMAIN_BOARD, 0))
         .WillOnce(Return(1.0));
 
@@ -220,35 +221,13 @@ void check_report(std::istream &expected, std::istream &result);
 
 TEST_F(ReporterTest, generate)
 {
+    // ApplicationIO calls: to be removed
     EXPECT_CALL(m_application_io, report_name()).WillOnce(Return(m_report_name));
     EXPECT_CALL(m_application_io, profile_name());
     EXPECT_CALL(m_application_io, region_name_set());
-    //EXPECT_CALL(m_application_io, total_app_runtime_mpi()).WillOnce(Return(45));
-    // EXPECT_CALL(m_application_io, total_app_runtime_ignore()).WillOnce(Return(0.7));
-    EXPECT_CALL(m_application_io, total_epoch_runtime_ignore()).WillRepeatedly(Return(0.7));
     EXPECT_CALL(m_application_io, total_epoch_runtime()).WillOnce(Return(70.0));
-    EXPECT_CALL(*m_agg, read_batch);
-    // Application totals
-    // TODO: fix these calls or remove sample_total(_) overload
-    EXPECT_CALL(*m_agg, sample_total(M_TIME_IDX, 0))
-        .Times(2)  // TODO: sync-rt and runtime for app totals are the same currently
-        .WillRepeatedly(Return(56));
-    // EXPECT_CALL(*m_agg, sample_total(M_ENERGY_PKG_IDX, 0))
-    //     .WillOnce(Return(2222));
-    // EXPECT_CALL(*m_agg, sample_total(M_ENERGY_DRAM_IDX, 0))
-    //     .WillOnce(Return(1111));
-
-    EXPECT_CALL(m_tree_comm, overhead_send()).WillOnce(Return(678 * 56));
     for (auto rid : m_region_runtime) {
         EXPECT_CALL(m_application_io, total_region_runtime(rid.first))
-            .WillOnce(Return(rid.second));
-    }
-    for (auto rid : m_region_network_time) {
-        EXPECT_CALL(*m_agg, sample_total(M_TIME_NETWORK_IDX, rid.first))
-            .WillOnce(Return(rid.second));
-    }
-    for (auto rid : m_region_ignore_time) {
-        EXPECT_CALL(*m_agg, sample_total(M_TIME_IGNORE_IDX, rid.first))
             .WillOnce(Return(rid.second));
     }
     for (auto rid : m_region_count) {
@@ -261,28 +240,42 @@ TEST_F(ReporterTest, generate)
                 .WillOnce(Return(rid.second));
         }
     }
+
+    // SampleAggregator
+    EXPECT_CALL(*m_agg, read_batch);
+    for (auto rid : m_region_network_time) {
+        EXPECT_CALL(*m_agg, sample_total(M_TIME_NETWORK_IDX, rid.first))
+            .WillRepeatedly(Return(rid.second));
+    }
+    for (auto rid : m_region_ignore_time) {
+        EXPECT_CALL(*m_agg, sample_total(M_TIME_IGNORE_IDX, rid.first))
+            .WillRepeatedly(Return(rid.second));
+    }
     for (auto rid : m_region_sync_rt) {
         EXPECT_CALL(*m_agg, sample_total(M_TIME_IDX, rid.first))
-            .WillOnce(Return(rid.second));
+            .WillRepeatedly(Return(rid.second));
     }
     for (auto rid : m_region_energy) {
         EXPECT_CALL(*m_agg, sample_total(M_ENERGY_PKG_IDX, rid.first))
-            .WillOnce(Return(rid.second/2.0));
+            .WillRepeatedly(Return(rid.second/2.0));
         EXPECT_CALL(*m_agg, sample_total(M_ENERGY_DRAM_IDX, rid.first))
-            .WillOnce(Return(rid.second/2.0));
+            .WillRepeatedly(Return(rid.second/2.0));
         EXPECT_CALL(*m_agg, sample_total(M_ENERGY_PKG_ENV_IDX_0, rid.first))
-            .WillOnce(Return(rid.second/4.0));
+            .WillRepeatedly(Return(rid.second/4.0));
         EXPECT_CALL(*m_agg, sample_total(M_ENERGY_PKG_ENV_IDX_1, rid.first))
-            .WillOnce(Return(rid.second/4.0));
+            .WillRepeatedly(Return(rid.second/4.0));
     }
     for (auto rid : m_region_clk_core) {
         EXPECT_CALL(*m_agg, sample_total(M_CLK_CORE_IDX, rid.first))
-            .WillOnce(Return(rid.second));
+            .WillRepeatedly(Return(rid.second));
     }
     for (auto rid : m_region_clk_ref) {
         EXPECT_CALL(*m_agg, sample_total(M_CLK_REF_IDX, rid.first))
-            .WillOnce(Return(rid.second));
+            .WillRepeatedly(Return(rid.second));
     }
+
+    // Other calls
+    EXPECT_CALL(m_tree_comm, overhead_send()).WillOnce(Return(678 * 56));
     EXPECT_CALL(*m_comm, rank()).WillOnce(Return(0));
     EXPECT_CALL(*m_comm, num_rank()).WillOnce(Return(1));
 
@@ -310,6 +303,7 @@ TEST_F(ReporterTest, generate)
         "      name: all2all\n"
         "      hash:\n"
         "      runtime (s): 33.33\n"
+        "      count: 20\n"
         "      sync-runtime (s): 555\n"
         "      package-energy (J): 388.5\n"
         "      dram-energy (J): 388.5\n"
@@ -318,7 +312,6 @@ TEST_F(ReporterTest, generate)
         "      frequency (Hz): 0.818182\n"
         "      network-time (s): 3.4\n"
         "      ignore-time (s): 3.5\n"
-        "      count: 20\n"
         "      ENERGY_PACKAGE@package-0: 194.25\n"
         "      ENERGY_PACKAGE@package-1: 194.25\n"
         "      agent stat: 1\n"
@@ -327,6 +320,7 @@ TEST_F(ReporterTest, generate)
         "      name: model-init\n"
         "      hash:\n"
         "      runtime (s): 22.11\n"
+        "      count: 1\n"
         "      sync-runtime (s): 333\n"
         "      package-energy (J): 444\n"
         "      dram-energy (J): 444\n"
@@ -335,12 +329,12 @@ TEST_F(ReporterTest, generate)
         "      frequency (Hz): 0.848485\n"
         "      network-time (s): 5.6\n"
         "      ignore-time (s): 5.7\n"
-        "      count: 1\n"
         "      ENERGY_PACKAGE@package-0: 222\n"
         "      ENERGY_PACKAGE@package-1: 222\n"
         "      agent stat: 2\n"
         "  Unmarked Totals:\n"
         "    runtime (s): 12.13\n"
+        "    count: 0\n"
         "    sync-runtime (s): 444\n"
         "    package-energy (J): 111\n"
         "    dram-energy (J): 111\n"
@@ -349,12 +343,12 @@ TEST_F(ReporterTest, generate)
         "    frequency (Hz): 0.772727\n"
         "    network-time (s): 1.2\n"
         "    ignore-time (s): 1.3\n"
-        "    count: 0\n"
         "    ENERGY_PACKAGE@package-0: 55.5\n"
         "    ENERGY_PACKAGE@package-1: 55.5\n"
         "    agent stat: 3\n"
         "  Epoch Totals:\n"
         "    runtime (s): 70\n"
+        "    count: 66\n"
         "    sync-runtime (s): 666\n"
         "    package-energy (J): 167\n"
         "    dram-energy (J): 167\n"
@@ -363,12 +357,11 @@ TEST_F(ReporterTest, generate)
         "    frequency (Hz): 0.886364\n"
         "    network-time (s): 4.2\n"
         "    ignore-time (s): 4.3\n"
-        "    count: 66\n"
         "    ENERGY_PACKAGE@package-0: 83.5\n"
         "    ENERGY_PACKAGE@package-1: 83.5\n"
-        "    epoch-runtime-ignore (s): 0.7\n"
         "  Application Totals:\n"
         "    runtime (s): 56\n"
+        "    count: 0\n"
         "    sync-runtime (s): 56\n"
         "    package-energy (J): 2222\n"
         "    dram-energy (J): 2222\n"
@@ -377,7 +370,6 @@ TEST_F(ReporterTest, generate)
         "    frequency (Hz): 0.666447\n"
         "    network-time (s): 45\n"
         "    ignore-time (s): 46\n"
-        "    count: 0\n"
         "    ENERGY_PACKAGE@package-0: 1111\n"
         "    ENERGY_PACKAGE@package-1: 1111\n"
         "    geopmctl memory HWM:\n"
