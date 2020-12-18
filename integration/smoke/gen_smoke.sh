@@ -31,18 +31,8 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-# TODO: fix this
-if [ -f ${HOME}/.geopmrc ]; then
-    source ${HOME}/.geopmrc
-fi
+source smoke_env.sh
 
-if [ ! -z ${GEOPM_SYSTEM_ENV} ]; then
-    source ${GEOPM_SYSTEM_ENV}
-fi
-
-GEOPM_SOURCE=${GEOPM_SOURCE:?Please set GEOPM_SOURCE in your environment.}
-source ${GEOPM_SOURCE}/integration/config/run_env.sh
-EXP_DIR=${GEOPM_SOURCE}/integration/experiment
 RESULT_DB_SCRIPT=${GEOPM_SOURCE}/integration/smoke/db_demo/smoke.py
 
 # TODO: fix; needed for mysql dependency
