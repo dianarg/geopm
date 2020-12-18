@@ -271,8 +271,8 @@ namespace geopm
 
         yaml_write(report, 1, "Application Totals:");
         double total_runtime = m_region_agg->sample_total(m_sync_signal_idx["TIME"],
-                                                          GEOPM_REGION_HASH_INVALID);
-        region_info app_totals {"totals", GEOPM_REGION_HASH_INVALID, total_runtime, 0};
+                                                          GEOPM_REGION_HASH_APP);
+        region_info app_totals {"totals", GEOPM_REGION_HASH_APP, total_runtime, 0};
         auto region_data = get_region_data(app_totals);
         yaml_write(report, 2, region_data);
 
