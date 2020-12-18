@@ -120,14 +120,14 @@ class ReporterTest : public testing::Test
             {geopm_crc32_str("model-init"), 5.6},
             {GEOPM_REGION_HASH_UNMARKED, 1.2},
             {GEOPM_REGION_HASH_EPOCH, 4.2},
-            {GEOPM_REGION_HASH_INVALID, 45}
+            {GEOPM_REGION_HASH_APP, 45}
         };
         std::map<uint64_t, double> m_region_ignore_time = {
             {geopm_crc32_str("all2all"), 3.5},
             {geopm_crc32_str("model-init"), 5.7},
             {GEOPM_REGION_HASH_UNMARKED, 1.3},
             {GEOPM_REGION_HASH_EPOCH, 4.3},
-            {GEOPM_REGION_HASH_INVALID, 46}
+            {GEOPM_REGION_HASH_APP, 46}
         };
         std::map<uint64_t, double> m_region_count = {
             {geopm_crc32_str("all2all"), 20},
@@ -139,28 +139,28 @@ class ReporterTest : public testing::Test
             {geopm_crc32_str("model-init"), 333},
             {GEOPM_REGION_HASH_UNMARKED, 444},
             {GEOPM_REGION_HASH_EPOCH, 666},
-            {GEOPM_REGION_HASH_INVALID, 56}
+            {GEOPM_REGION_HASH_APP, 56}
         };
         std::map<uint64_t, double> m_region_energy = {
             {geopm_crc32_str("all2all"), 777},
             {geopm_crc32_str("model-init"), 888},
             {GEOPM_REGION_HASH_UNMARKED, 222},
             {GEOPM_REGION_HASH_EPOCH, 334},
-            {GEOPM_REGION_HASH_INVALID, 4444}
+            {GEOPM_REGION_HASH_APP, 4444}
         };
         std::map<uint64_t, double> m_region_clk_core = {
             {geopm_crc32_str("all2all"), 4545},
             {geopm_crc32_str("model-init"), 5656},
             {GEOPM_REGION_HASH_UNMARKED, 3434},
             {GEOPM_REGION_HASH_EPOCH, 7878},
-            {GEOPM_REGION_HASH_INVALID, 22222}
+            {GEOPM_REGION_HASH_APP, 22222}
         };
         std::map<uint64_t, double> m_region_clk_ref = {
             {geopm_crc32_str("all2all"), 5555},
             {geopm_crc32_str("model-init"), 6666},
             {GEOPM_REGION_HASH_UNMARKED, 4444},
             {GEOPM_REGION_HASH_EPOCH, 8888},
-            {GEOPM_REGION_HASH_INVALID, 33344}
+            {GEOPM_REGION_HASH_APP, 33344}
         };
         std::map<uint64_t, std::vector<std::pair<std::string, std::string> > > m_region_agent_detail = {
             {geopm_crc32_str("all2all"), {{"agent stat", "1"}, {"agent other stat", "2"}}},
