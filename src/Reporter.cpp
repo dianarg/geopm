@@ -219,7 +219,6 @@ namespace geopm
                 region_ordered.push_back({region,
                                           region_hash,
                                           application_io.total_region_runtime(region_hash),
-                                          //application_io.total_region_runtime_mpi(region_hash),
                                           count});
             }
         }
@@ -254,9 +253,7 @@ namespace geopm
 
         yaml_write(report, 1, "Unmarked Totals:");
         double unmarked_time = application_io.total_region_runtime(GEOPM_REGION_HASH_UNMARKED);
-        //double unmarked_time_mpi = application_io.total_region_runtime_mpi(GEOPM_REGION_HASH_UNMARKED);
-        region_info unmarked {"unmarked", GEOPM_REGION_HASH_UNMARKED,
-            unmarked_time,  0};
+        region_info unmarked {"unmarked", GEOPM_REGION_HASH_UNMARKED, unmarked_time, 0};
         auto unmarked_data = get_region_data(unmarked);
         yaml_write(report, 2, unmarked_data);
         // agent extensions for unmarked
@@ -267,18 +264,15 @@ namespace geopm
 
         yaml_write(report, 1, "Epoch Totals:");
         double epoch_runtime = application_io.total_epoch_runtime();
-        //double epoch_runtime_mpi = application_io.total_epoch_runtime_network();
         int epoch_count = application_io.total_epoch_count();
-        region_info epoch {"epoch", GEOPM_REGION_HASH_EPOCH, epoch_runtime,  epoch_count};
+        region_info epoch {"epoch", GEOPM_REGION_HASH_EPOCH, epoch_runtime, epoch_count};
         auto epoch_data = get_region_data(epoch);
         yaml_write(report, 2, epoch_data);
 
         yaml_write(report, 1, "Application Totals:");
         double total_runtime = m_region_agg->sample_total(m_sync_signal_idx["TIME"],
                                                           GEOPM_REGION_HASH_INVALID);
-        //double total_runtime_mpi = application_io.total_app_runtime_mpi();
-        region_info app_totals {"totals", GEOPM_REGION_HASH_INVALID, total_runtime,
-             0};
+        region_info app_totals {"totals", GEOPM_REGION_HASH_INVALID, total_runtime, 0};
         auto region_data = get_region_data(app_totals);
         yaml_write(report, 2, region_data);
 
@@ -361,8 +355,14 @@ namespace geopm
             {"power (W)", {"ENERGY_PACKAGE", "TIME"}, divide},
             {"frequency (%)", {"CYCLES_THREAD", "CYCLES_REFERENCE"}, divide_pct},
             {"frequency (Hz)", {"CYCLES_THREAD", "CYCLES_REFERENCE"}, divide_sticker_scale},
-            {"network-time (s)", {"TIME_NETWORK"}, sample_only},
-            {"ignore-time (s)", {"TIME_IGNORE"}, sample_only}
+            {"time-hint-network (s)", {"TIME_HINT_NETWORK"}, sample_only},
+            {"time-hint-ignore (s)", {"TIME_HINT_IGNORE"}, sample_only},
+            {"time-hint-compute (s)", {"TIME_HINT_COMPUTE"}, sample_only},
+            {"time-hint-memory (s)", {"TIME_HINT_MEMORY"}, sample_only},
+            {"time-hint-io (s)", {"TIME_HINT_IO"}, sample_only},
+            {"time-hint-serial (s)", {"TIME_HINT_SERIAL"}, sample_only},
+            {"time-hint-parallel (s)", {"TIME_HINT_PARALLEL"}, sample_only},
+            {"time-hint-unknown (s)", {"TIME_HINT_UNKNOWN"}, sample_only},
         };
 
     }

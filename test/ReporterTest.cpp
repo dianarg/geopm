@@ -83,6 +83,12 @@ class ReporterTest : public testing::Test
             M_TIME_IDX,
             M_TIME_NETWORK_IDX,
             M_TIME_IGNORE_IDX,
+            M_TIME_COMPUTE_IDX,
+            M_TIME_MEMORY_IDX,
+            M_TIME_IO_IDX,
+            M_TIME_SERIAL_IDX,
+            M_TIME_PARALLEL_IDX,
+            M_TIME_UNKNOWN_IDX,
             M_ENERGY_PKG_IDX,
             M_ENERGY_DRAM_IDX,
             M_CLK_CORE_IDX,
@@ -175,10 +181,22 @@ ReporterTest::ReporterTest()
     EXPECT_CALL(*m_agg, init());
     EXPECT_CALL(*m_agg, push_signal_total("TIME", _, _))
         .WillRepeatedly(Return(M_TIME_IDX));
-    EXPECT_CALL(*m_agg, push_signal_total("TIME_NETWORK", _, _))
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_HINT_NETWORK", _, _))
         .WillRepeatedly(Return(M_TIME_NETWORK_IDX));
-    EXPECT_CALL(*m_agg, push_signal_total("TIME_IGNORE", _, _))
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_HINT_IGNORE", _, _))
         .WillRepeatedly(Return(M_TIME_IGNORE_IDX));
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_HINT_COMPUTE", _, _))
+        .WillRepeatedly(Return(M_TIME_COMPUTE_IDX));
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_HINT_MEMORY", _, _))
+        .WillRepeatedly(Return(M_TIME_MEMORY_IDX));
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_HINT_IO", _, _))
+        .WillRepeatedly(Return(M_TIME_IO_IDX));
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_HINT_SERIAL", _, _))
+        .WillRepeatedly(Return(M_TIME_SERIAL_IDX));
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_HINT_PARALLEL", _, _))
+        .WillRepeatedly(Return(M_TIME_PARALLEL_IDX));
+    EXPECT_CALL(*m_agg, push_signal_total("TIME_HINT_UNKNOWN", _, _))
+        .WillRepeatedly(Return(M_TIME_UNKNOWN_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_PACKAGE", GEOPM_DOMAIN_BOARD, 0))
         .WillRepeatedly(Return(M_ENERGY_PKG_IDX));
     EXPECT_CALL(*m_agg, push_signal_total("ENERGY_DRAM", _, _))
@@ -274,6 +292,21 @@ TEST_F(ReporterTest, generate)
             .WillRepeatedly(Return(rid.second));
     }
 
+    // same hint values for all regions
+    EXPECT_CALL(*m_agg, sample_total(M_TIME_COMPUTE_IDX, _))
+        .WillRepeatedly(Return(0.2));
+    EXPECT_CALL(*m_agg, sample_total(M_TIME_MEMORY_IDX, _))
+        .WillRepeatedly(Return(0.3));
+    EXPECT_CALL(*m_agg, sample_total(M_TIME_IO_IDX, _))
+        .WillRepeatedly(Return(0.4));
+    EXPECT_CALL(*m_agg, sample_total(M_TIME_SERIAL_IDX, _))
+        .WillRepeatedly(Return(0.5));
+    EXPECT_CALL(*m_agg, sample_total(M_TIME_PARALLEL_IDX, _))
+        .WillRepeatedly(Return(0.6));
+    EXPECT_CALL(*m_agg, sample_total(M_TIME_UNKNOWN_IDX, _))
+        .WillRepeatedly(Return(0.7));
+
+
     // Other calls
     EXPECT_CALL(m_tree_comm, overhead_send()).WillOnce(Return(678 * 56));
     EXPECT_CALL(*m_comm, rank()).WillOnce(Return(0));
@@ -310,8 +343,14 @@ TEST_F(ReporterTest, generate)
         "      power (W): 0.7\n"
         "      frequency (%): 81.81\n"
         "      frequency (Hz): 0.818182\n"
-        "      network-time (s): 3.4\n"
-        "      ignore-time (s): 3.5\n"
+        "      time-hint-network (s): 3.4\n"
+        "      time-hint-ignore (s): 3.5\n"
+        "      time-hint-compute (s): 0.2\n"
+        "      time-hint-memory (s): 0.3\n"
+        "      time-hint-io (s): 0.4\n"
+        "      time-hint-serial (s): 0.5\n"
+        "      time-hint-parallel (s): 0.6\n"
+        "      time-hint-unknown (s): 0.7\n"
         "      ENERGY_PACKAGE@package-0: 194.25\n"
         "      ENERGY_PACKAGE@package-1: 194.25\n"
         "      agent stat: 1\n"
@@ -327,8 +366,14 @@ TEST_F(ReporterTest, generate)
         "      power (W): 1.33333\n"
         "      frequency (%): 84.84\n"
         "      frequency (Hz): 0.848485\n"
-        "      network-time (s): 5.6\n"
-        "      ignore-time (s): 5.7\n"
+        "      time-hint-network (s): 5.6\n"
+        "      time-hint-ignore (s): 5.7\n"
+        "      time-hint-compute (s): 0.2\n"
+        "      time-hint-memory (s): 0.3\n"
+        "      time-hint-io (s): 0.4\n"
+        "      time-hint-serial (s): 0.5\n"
+        "      time-hint-parallel (s): 0.6\n"
+        "      time-hint-unknown (s): 0.7\n"
         "      ENERGY_PACKAGE@package-0: 222\n"
         "      ENERGY_PACKAGE@package-1: 222\n"
         "      agent stat: 2\n"
@@ -341,8 +386,14 @@ TEST_F(ReporterTest, generate)
         "    power (W): 0.25\n"
         "    frequency (%): 77.2727\n"
         "    frequency (Hz): 0.772727\n"
-        "    network-time (s): 1.2\n"
-        "    ignore-time (s): 1.3\n"
+        "    time-hint-network (s): 1.2\n"
+        "    time-hint-ignore (s): 1.3\n"
+        "    time-hint-compute (s): 0.2\n"
+        "    time-hint-memory (s): 0.3\n"
+        "    time-hint-io (s): 0.4\n"
+        "    time-hint-serial (s): 0.5\n"
+        "    time-hint-parallel (s): 0.6\n"
+        "    time-hint-unknown (s): 0.7\n"
         "    ENERGY_PACKAGE@package-0: 55.5\n"
         "    ENERGY_PACKAGE@package-1: 55.5\n"
         "    agent stat: 3\n"
@@ -355,8 +406,14 @@ TEST_F(ReporterTest, generate)
         "    power (W): 0.250751\n"
         "    frequency (%): 88.6364\n"
         "    frequency (Hz): 0.886364\n"
-        "    network-time (s): 4.2\n"
-        "    ignore-time (s): 4.3\n"
+        "    time-hint-network (s): 4.2\n"
+        "    time-hint-ignore (s): 4.3\n"
+        "    time-hint-compute (s): 0.2\n"
+        "    time-hint-memory (s): 0.3\n"
+        "    time-hint-io (s): 0.4\n"
+        "    time-hint-serial (s): 0.5\n"
+        "    time-hint-parallel (s): 0.6\n"
+        "    time-hint-unknown (s): 0.7\n"
         "    ENERGY_PACKAGE@package-0: 83.5\n"
         "    ENERGY_PACKAGE@package-1: 83.5\n"
         "  Application Totals:\n"
@@ -368,8 +425,14 @@ TEST_F(ReporterTest, generate)
         "    power (W): 39.6786\n"
         "    frequency (%): 66.6447\n"
         "    frequency (Hz): 0.666447\n"
-        "    network-time (s): 45\n"
-        "    ignore-time (s): 46\n"
+        "    time-hint-network (s): 45\n"
+        "    time-hint-ignore (s): 46\n"
+        "    time-hint-compute (s): 0.2\n"
+        "    time-hint-memory (s): 0.3\n"
+        "    time-hint-io (s): 0.4\n"
+        "    time-hint-serial (s): 0.5\n"
+        "    time-hint-parallel (s): 0.6\n"
+        "    time-hint-unknown (s): 0.7\n"
         "    ENERGY_PACKAGE@package-0: 1111\n"
         "    ENERGY_PACKAGE@package-1: 1111\n"
         "    geopmctl memory HWM:\n"
