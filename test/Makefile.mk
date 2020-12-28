@@ -438,6 +438,7 @@ GTEST_TESTS = test/gtest_links/AcceleratorTopoTest.default_config \
               test/gtest_links/RawMSRSignalTest.read \
               test/gtest_links/RawMSRSignalTest.read_batch \
               test/gtest_links/RawMSRSignalTest.setup_batch \
+              test/gtest_links/RecordAccountTest.add_me \
               test/gtest_links/RecordFilterTest.invalid_filter_name \
               test/gtest_links/RecordFilterTest.make_proxy_epoch \
               test/gtest_links/ReporterTest.generate \
@@ -661,6 +662,7 @@ test_geopm_test_SOURCES = test/AcceleratorTopoTest.cpp \
                           test/ProfileTracerTest.cpp \
                           test/ProxyEpochRecordFilterTest.cpp \
                           test/RawMSRSignalTest.cpp \
+                          test/RecordAccountTest.cpp \
                           test/RecordFilterTest.cpp \
                           test/ReporterTest.cpp \
                           test/RuntimeRegulatorTest.cpp \
