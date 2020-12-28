@@ -79,6 +79,7 @@ namespace geopm
     };
 
     class ApplicationSampler;
+    class SumAccumlator;
 
     class RecordAccountImp : public RecordAccount
     {
@@ -101,9 +102,12 @@ namespace geopm
             // iteration over all the process maps.  Build a cache and
             // invalidate it if update() is called.
             struct region_info_s {
-                    double total_runtime;
-                    int total_count;
-                    double last_entry_time;
+                    std::unique_ptr<SumAccumlator> runtime;
+                    std::unique_ptr<SumAccumlator> count;
+
+                    //double total_runtime;
+                    //int total_count;
+                    //double last_entry_time;
             };
             std::map<int, std::map<uint64_t, region_info_s> > m_region_info;
 
@@ -111,9 +115,9 @@ namespace geopm
             // TODO: this can just use new Accumulator for Sum ?
 
             // Mapping from process and region hash to last entry and total runtime
-            std::map<std::pair<int, uint64_t>, std::pair<double, double> > m_region_runtimes;
+            //std::map<std::pair<int, uint64_t>, std::pair<double, double> > m_region_runtimes;
             // Mapping from process and region hash to count
-            std::map<std::pair<int, uint64_t>, int > m_region_counts;
+            //std::map<std::pair<int, uint64_t>, int > m_region_counts;
 
     };
 }

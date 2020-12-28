@@ -64,7 +64,15 @@ namespace geopm
                 auto region = proc.first->second.emplace(std::piecewise_construct,
                                                          std::forward_as_tuple(region_hash),
                                                          std::forward_as_tuple());
-                region.first->second.last_entry_time = entry_time;
+                if (region.first->second.runtime == nullptr) {
+                    region.first->second.runtime = SumAccumulator::make_unique();
+                }
+                if (region.first->second.count == nullptr) {
+                    region.first->second.count = SumAccumulator::make_unique();
+                }
+                region.first->second.runtime.enter();
+                region.first->second.count.enter();
+                //region.first->second.last_entry_time = entry_time;
             }
             else if (rec.event == EVENT_REGION_EXIT) {
                 int process = rec.process;
