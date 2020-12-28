@@ -41,6 +41,7 @@
 #include "Reporter.hpp"
 #include "MockPlatformIO.hpp"
 #include "MockPlatformTopo.hpp"
+#include "MockApplicationSampler.hpp"
 #include "MockSampleAggregator.hpp"
 #include "MockApplicationIO.hpp"
 #include "MockComm.hpp"
@@ -102,6 +103,7 @@ class ReporterTest : public testing::Test
 
         MockPlatformIO m_platform_io;
         MockPlatformTopo m_platform_topo;
+        MockApplicationSampler m_sampler;
         MockSampleAggregator *m_agg;  // freed with Reporter
         MockApplicationIO m_application_io;
         std::shared_ptr<ReporterTestMockComm> m_comm;
@@ -223,6 +225,7 @@ ReporterTest::ReporterTest()
                                                  m_platform_io,
                                                  m_platform_topo,
                                                  0,
+                                                 m_sampler,
                                                  std::unique_ptr<MockSampleAggregator>(m_agg),
                                                  "ENERGY_PACKAGE@package",
                                                  "",
@@ -245,8 +248,8 @@ TEST_F(ReporterTest, generate)
     EXPECT_CALL(m_application_io, region_name_set());
     EXPECT_CALL(m_application_io, total_epoch_runtime()).WillOnce(Return(70.0));
     for (auto rid : m_region_runtime) {
-        EXPECT_CALL(m_application_io, total_region_runtime(rid.first))
-            .WillOnce(Return(rid.second));
+        //EXPECT_CALL(m_application_io, total_region_runtime(rid.first))
+        //    .WillOnce(Return(rid.second));
     }
     for (auto rid : m_region_count) {
         if (GEOPM_REGION_HASH_EPOCH == rid.first) {

@@ -98,13 +98,13 @@ namespace geopm
                 std::string name;
                 uint64_t hash;
                 double per_rank_avg_runtime;
-                    //double network_time;
                 int count;
             };
     };
 
     class PlatformIO;
     class PlatformTopo;
+    class ApplicationSampler;
     class SampleAggregator;
 
     class ReporterImp : public Reporter
@@ -120,6 +120,7 @@ namespace geopm
                         PlatformIO &platform_io,
                         const PlatformTopo &platform_topo,
                         int rank,
+                        ApplicationSampler &sampler,
                         std::unique_ptr<SampleAggregator> agg,
                         const std::string &env_signal,
                         const std::string &policy_path,
@@ -156,6 +157,7 @@ namespace geopm
             std::string m_report_name;
             PlatformIO &m_platform_io;
             const PlatformTopo &m_platform_topo;
+            ApplicationSampler &m_app_sampler;
             std::unique_ptr<SampleAggregator> m_region_agg;
             const std::string m_env_signals;
             const std::string m_policy_path;

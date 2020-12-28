@@ -52,6 +52,7 @@
 
 #include "PlatformIO.hpp"
 #include "PlatformTopo.hpp"
+#include "ApplicationSampler.hpp"
 #include "SampleAggregator.hpp"
 #include "ApplicationIO.hpp"
 #include "Comm.hpp"
@@ -63,6 +64,8 @@
 #include "geopm_version.h"
 #include "Environment.hpp"
 #include "geopm_debug.hpp"
+#include "record.hpp"
+
 
 namespace geopm
 {
@@ -76,6 +79,7 @@ namespace geopm
                       platform_io,
                       platform_topo,
                       rank,
+                      ApplicationSampler::application_sampler(),
                       SampleAggregator::make_unique(),
                       environment().report_signals(),
                       environment().policy(),
@@ -89,6 +93,7 @@ namespace geopm
                              PlatformIO &platform_io,
                              const PlatformTopo &platform_topo,
                              int rank,
+                             ApplicationSampler &sampler,
                              std::unique_ptr<SampleAggregator> agg,
                              const std::string &env_signals,
                              const std::string &policy_path,
@@ -97,6 +102,7 @@ namespace geopm
         , m_report_name(report_name)
         , m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
+        , m_app_sampler(sampler)
         , m_region_agg(std::move(agg))
         , m_env_signals(env_signals)
         , m_policy_path(policy_path)
@@ -153,6 +159,7 @@ namespace geopm
 
     void ReporterImp::update()
     {
+        // PlatformIO samples
         m_region_agg->read_batch();
     }
 
@@ -412,7 +419,6 @@ namespace geopm
             throw Exception("ReporterImp::generate(): Unable to close " + std::string(proc_path),
                             errno ? errno : GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
-
 
         std::istringstream proc_stream(status_buffer);
         std::string line;
