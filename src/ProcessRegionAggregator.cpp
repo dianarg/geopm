@@ -113,9 +113,6 @@ namespace geopm
 
     double ProcessRegionAggregatorImp::get_runtime_average(uint64_t region_hash) const
     {
-        // Since this should be called infrequently, loop through all
-        // processes in the map and lookup region hash
-        // TODO: this logic also in count average
         double total = 0;
         for (const auto &kv : m_region_info) {
             auto it = kv.second.find(region_hash);
@@ -129,8 +126,6 @@ namespace geopm
 
     double ProcessRegionAggregatorImp::get_count_average(uint64_t region_hash) const
     {
-        // Since this should be called infrequently, loop through all
-        // processes in the map and lookup region hash
         double total = 0;
         for (const auto &kv : m_region_info) {
             auto it = kv.second.find(region_hash);
@@ -140,10 +135,5 @@ namespace geopm
         }
         total = total / m_num_process;
         return total;
-    }
-
-    double get_epoch_runtime_average(void)
-    {
-        return 0.0;
     }
 }
