@@ -329,5 +329,5 @@ TEST_F(SampleAggregatorTest, epoch_application_total)
     EXPECT_DOUBLE_EQ(2.0, m_agg->sample_total(M_SIGNAL_TIME, GEOPM_REGION_HASH_EPOCH));
 
     // Application totals
-    EXPECT_DOUBLE_EQ(4.0, m_agg->sample_total(M_SIGNAL_TIME));
+    EXPECT_DOUBLE_EQ(4.0, m_agg->sample_total(M_SIGNAL_TIME, GEOPM_REGION_HASH_APP));
 }
