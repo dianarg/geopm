@@ -99,6 +99,18 @@ namespace geopm
             ///        to query.
             /// @return The hint associated with the CPU.
             virtual uint64_t cpu_hint(int cpu_idx) const = 0;
+            /// @brief Get the hint associated with a CPU.
+            ///
+            /// Returns the most recently sampled value for the hint
+            /// associated with the Linux logical CPU specified by the
+            /// user.  An exception is raised if the value of cpu_idx
+            /// is negative or greater or equal to
+            /// platform_topo().num_domain(GEOPM_DOMAIN_CPU).
+            ///
+            /// @param [in] cpu_idx The index of the linux logical CPU
+            ///        to query.
+            /// @return The hint associated with the CPU.
+            virtual uint64_t cpu_hint(int cpu_idx) const = 0;
             /// @brief Get the amount of time a CPU has been measured
             ///        running with a hint.
             ///

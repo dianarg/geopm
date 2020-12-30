@@ -506,12 +506,10 @@ TEST_F(ApplicationSamplerTest, cpu_process)
     EXPECT_EQ(expected, cpu_process);
 }
 
-
 TEST_F(ApplicationSamplerTest, cpu_progress)
 {
     double expected = 0.75;
     EXPECT_CALL(*m_mock_status, get_progress_cpu(1))
         .WillOnce(Return(expected));
     EXPECT_EQ(expected, m_app_sampler->cpu_progress(1));
-
 }
