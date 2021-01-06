@@ -29,7 +29,9 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-check_PROGRAMS += test/geopm_test
+check_PROGRAMS += test/geopm_test \
+                  test/geopm_perftest \
+                  # end
 
 if ENABLE_MPI
     check_PROGRAMS += test/geopm_mpi_test_api
@@ -763,6 +765,10 @@ else
                   test/geopm_test.cpp \
                   # end
 endif
+
+test_geopm_perftest_SOURCES = test/ProfileTestPerformance.cpp \
+                              # end
+test_geopm_perftest_CXXFLAGS = $(AM_CXXFLAGS)
 
 # Target for building test programs.
 gtest-checkprogs: $(GTEST_TESTS)
