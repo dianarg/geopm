@@ -10,10 +10,10 @@ APPS_2NODE="dgemm_tiny dgemm nasft nekbone hpcg pennant hpl_mkl hpl_netlib"
 APPS_1NODE="minife amg"
 ALL_EXP="monitor power_sweep power_balancer_energy frequency_sweep barrier_frequency_sweep uncore_frequency_sweep"
 
-EXP_DIR=${EXP_ROOT}/monitor
+EXP_SUBDIR=${EXP_DIR}/monitor
 for exp in $ALL_EXP; do
     for app in ${APPS_2NODE}; do
-        SCRIPT=${EXP_DIR}/run_${exp}_${app}.py
+        #SCRIPT=${EXP_SUBDIR}/run_${exp}_${app}.py
         if [ -f $SCRIPT ]; then
             ./gen_sbatch.py --app=${app} --exp-type=${exp} --node-count=2
             sbatch ${app}_${exp}.sbatch
@@ -24,7 +24,7 @@ for exp in $ALL_EXP; do
     done
 
     for app in ${APPS_1NODE}; do
-        SCRIPT=${EXP_DIR}/run_${exp}_${app}.py
+        #SCRIPT=${EXP_SUBDIR}/run_${exp}_${app}.py
         if [ -f $SCRIPT ]; then
             ./gen_sbatch.py --app=${app} --exp-type=${exp} --node-count=1
             sbatch ${app}_${exp}.sbatch
@@ -35,3 +35,5 @@ for exp in $ALL_EXP; do
     done
 
 done
+
+################
