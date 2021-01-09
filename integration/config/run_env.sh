@@ -124,4 +124,3 @@ if ! ldd $(which geopmbench) | grep --quiet libimf; then
     echo "       to ensure the best performance."
     return 1
 fi
-

@@ -41,4 +41,4 @@ fi
 
 GEOPM_SOURCE=${GEOPM_SOURCE:?Please set GEOPM_SOURCE in your environment.}
 source ${GEOPM_SOURCE}/integration/config/run_env.sh
-EXP_DIR=${GEOPM_SOURCE}/integration/experiment
+EXP_ROOT=${GEOPM_SOURCE}/integration/experiment

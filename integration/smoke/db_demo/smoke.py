@@ -7,7 +7,6 @@ import datetime
 import sqlite3
 import argparse
 import getpass
-import mysql.connector
 
 
 class SQLiteDBConn:
@@ -40,6 +39,7 @@ class SQLiteDBConn:
 
 class MariaDBConn:
     def __init__(self):
+        import mysql
         config = {
             'user': 'diana',
             'database': 'test',
