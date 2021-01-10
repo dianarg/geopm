@@ -1501,7 +1501,11 @@ class RawReportCollection(object):
             except IOError:
                 sys.stderr.write('Warning: <geopm> geopmpy.io: Report HDF5 file not detected or older than reports.  Data will be saved to {}.\n'
                                  .format(self._report_h5_name))
-                self.parse_reports(report_paths, verbose)
+                try:
+                    self.parse_reports(report_paths, verbose)
+                except Exception as ex:
+                    sys.stderr.write('{}\n{}\n'.format(ex, self._reports_df))
+                #self.parse_reports(report_paths, verbose)
 
                 # Cache report dataframe
                 cache_created = False
@@ -1530,7 +1534,11 @@ class RawReportCollection(object):
                     sys.stdout.write('Done.\n')
                     sys.stdout.flush()
         else:
-            self.parse_reports(report_paths, verbose)
+            try:
+                self.parse_reports(report_paths, verbose)
+            except Exception as ex:
+                sys.stderr.write('{}\n{}\n'.format(ex, self._reports_df))
+            #self.parse_reports(report_paths, verbose)
 
     def parse_reports(self, report_paths, verbose):
         # Note: overlapping key names can break this

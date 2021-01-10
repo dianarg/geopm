@@ -2,35 +2,133 @@
 
 source smoke_env.sh
 
-#ALL_APPS="dgemm_tiny amg dgemm minife nekbone hpcg nasft"
-#ALL_EXP="monitor power_sweep frequency_sweep power_balancer_energy barrier_frequency_sweep"
-
 APPS_2NODE="dgemm_tiny dgemm nasft nekbone hpcg pennant hpl_mkl hpl_netlib"
 # apps with no 2-node config
 APPS_1NODE="minife amg"
 ALL_EXP="monitor power_sweep power_balancer_energy frequency_sweep barrier_frequency_sweep uncore_frequency_sweep"
 
-EXP_SUBDIR=${EXP_DIR}/monitor
-for exp in $ALL_EXP; do
-    for app in ${APPS_2NODE}; do
-        #SCRIPT=${EXP_SUBDIR}/run_${exp}_${app}.py
-        if [ -f $SCRIPT ]; then
-            ./gen_sbatch.py --app=${app} --exp-type=${exp} --node-count=2
-            sbatch ${app}_${exp}.sbatch
+function save_test_result_line {
+    # Logs the result of a run.
+    # TODO: a future patch can use calls to script that saves in the DB, and
+    #       might want to support other strings for result such as "no script"
+    #
+    # Inputs:
+    #   SLURM_JOBID: Slurm job id from the job environment
+    #   APP: name of the application
+    #   EXP_TYPE: experiment type string
+    #
+    # Returns:
+    #   PASS_RESULT: command to be run at the end of the slurm job to
+    #                log the result with PASS
+    #   FAIL_RESULT: command to be run at the end of the slurm job to
+    #                log the result with FAIL
+    #   SKIP_RESULT: command to be run at the end of the slurm job to
+    #                log the result with SKIP
+
+    local LOG_NAME="smoke_test_run_results.log"
+
+    PASS_RESULT="echo \"\${SLURM_JOBID} ${APP} ${EXP_TYPE} PASS\" >> ${LOG_NAME}"
+    FAIL_RESULT="echo \"\${SLURM_JOBID} ${APP} ${EXP_TYPE} FAIL\" >> ${LOG_NAME}"
+    SKIP_RESULT="echo \"${APP} ${EXP_TYPE} SKIP\" >> ${LOG_NAME}"
+}
+
+function gen_sbatch {
+    # Creates a slurm batch script to run the given smoke test experiment.
+    #
+    # TODO: This function has some copied code from
+    # integration/experiment/gen_slurm.sh
+    #
+    # Inputs:
+    #   NUM_NODES: number of nodes to use for the job
+    #   APP: name of the application in integration/apps
+    #   EXP_TYPE: experiment type string
+    #
+    # Returns:
+    #   SBATCH_NAME: name of the sbatch script to be submitted, or
+    #                empty if the run script is missing
+    #   RUN_SCRIPT: name of the experiment run script for the given
+    #               app and experiment type
+
+    local EXP_DIR=${EXP_TYPE}
+    if [ "${EXP_TYPE}" == "barrier_frequency_sweep" ] ||
+       [ "${EXP_TYPE}" == "power_balancer_energy" ]; then
+        EXP_DIR="energy_efficiency"
+    fi
+
+    local EXP_ARGS=""
+    if [ "${EXP_TYPE}" == "power_sweep" ] ||
+       [ "${EXP_TYPE}" == "power_balancer_energy" ]; then
+        EXP_ARGS="--min-power=190 --max-power=230"
+    elif [ "${EXP_TYPE}" == "frequency_sweep" ] ||
+         [ "${EXP_TYPE}" == "barrier_frequency_sweep" ]; then
+        EXP_ARGS="--min-frequency=1.9e9 --max-frequency=2.0e9"
+    elif [ "${EXP_TYPE}" == "uncore_frequency_sweep" ]; then
+        EXP_ARGS="--min-frequency=1.9e9 --max-frequency=2.0e9 --min-uncore-frequency=2.1e9 --max-uncore-frequency=2.2e9"
+    fi
+
+    # set up commands for PASS_RESULT, FAIL_RESULT, and SKIP_RESULT
+    save_test_result_line
+
+    RUN_SCRIPT=${GEOPM_SOURCE}/integration/experiment/${EXP_DIR}/run_${EXP_TYPE}_${APP}.py
+    if [ -f "${RUN_SCRIPT}" ]; then
+        SBATCH_NAME=${APP}_${EXP_TYPE}_${NUM_NODES}.sbatch
+        cat > ${SBATCH_NAME} << EOF
+#!/bin/bash
+#SBATCH -N ${NUM_NODES}
+#SBATCH -o %j.out
+#SBATCH -J ${APP}_${EXP_TYPE}
+#SBATCH -t 00:30:00
+
+source ${GEOPM_SOURCE}/integration/config/run_env.sh
+OUTPUT_DIR=\${SLURM_JOBID}_\${SLURM_JOB_NAME}
+
+${RUN_SCRIPT} \\
+    --node-count=\${SLURM_NNODES} \\
+    --output-dir=\${OUTPUT_DIR} \\
+    ${EXP_ARGS} \\
+    # end
+
+result=\$?
+if [ \$result -eq 0 ]; then
+   ${PASS_RESULT}
+else
+   ${FAIL_RESULT}
+fi
+
+EOF
+        # Remove blank lines
+        uniq ${SBATCH_NAME} .${SBATCH_NAME}
+        mv .${SBATCH_NAME} ${SBATCH_NAME}
+    else
+        SBATCH_NAME=""
+    fi
+}
+
+for EXP_TYPE in $ALL_EXP; do
+
+    NUM_NODES=2
+    for APP in ${APPS_2NODE}; do
+        gen_sbatch
+        if [ ! -z $SBATCH_NAME ]; then
+            sbatch ${SBATCH_NAME}
+            echo "${SBATCH_NAME} submitted"
         else
-            echo "$SCRIPT not found"
-            ${GEOPM_SOURCE}/integration/smoke/db_demo/smoke.py --app=${app} --exp-type=${exp} --result="No script"
+            echo "${RUN_SCRIPT} not found; skipping"
+            # TODO: danger!
+            eval ${SKIP_RESULT}
         fi
     done
 
-    for app in ${APPS_1NODE}; do
-        #SCRIPT=${EXP_SUBDIR}/run_${exp}_${app}.py
-        if [ -f $SCRIPT ]; then
-            ./gen_sbatch.py --app=${app} --exp-type=${exp} --node-count=1
-            sbatch ${app}_${exp}.sbatch
+    NUM_NODES=1
+    for APP in ${APPS_1NODE}; do
+        gen_sbatch
+        if [ ! -z $SBATCH_NAME ]; then
+            sbatch ${SBATCH_NAME}
+            echo "${SBATCH_NAME} submitted"
         else
-            echo "$SCRIPT not found"
-            ${GEOPM_SOURCE}/integration/smoke/db_demo/smoke.py --app=${app} --exp-type=${exp} --result="No script"
+            echo "${RUN_SCRIPT} not found; skipping"
+            # TODO: danger!
+            eval ${SKIP_RESULT}
         fi
     done
 
