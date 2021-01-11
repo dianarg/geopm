@@ -271,102 +271,6 @@ class TestIntegration(unittest.TestCase):
 
         self.assertEqual(len(node_names), len(idle_nodes))
 
-    def test_runtime(self):
-        name = 'test_runtime'
-        report_path = name + '.report'
-        num_node = 1
-        num_rank = 5
-        delay = 3.0
-        app_conf = geopmpy.io.BenchConf(name + '_app.config')
-        self._tmp_files.append(app_conf.get_path())
-        app_conf.append_region('sleep', delay)
-        agent_conf = geopmpy.io.AgentConf(name + '_agent.config', self._agent, self._options)
-        self._tmp_files.append(agent_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path)
-        launcher.set_num_node(num_node)
-        launcher.set_num_rank(num_rank)
-        launcher.run(name)
-        self._output = geopmpy.io.AppOutput(report_path)
-        node_names = self._output.get_node_names()
-        self.assertEqual(num_node, len(node_names))
-        for nn in node_names:
-            report = self._output.get_report_data(node_name=nn, region='sleep')
-            app_total = self._output.get_app_total_data(node_name=nn)
-            util.assertNear(self, delay, report['runtime'].item())
-            self.assertGreater(app_total['runtime'].item(), report['runtime'].item())
-
-    def test_runtime_epoch(self):
-        name = 'test_runtime_epoch'
-        report_path = name + '.report'
-        num_node = 1
-        num_rank = 5
-        delay = 3.0
-        app_conf = geopmpy.io.BenchConf(name + '_app.config')
-        self._tmp_files.append(app_conf.get_path())
-        app_conf.append_region('sleep', delay)
-        app_conf.append_region('spin', delay)
-        agent_conf = geopmpy.io.AgentConf(name + '_agent.config', self._agent, self._options)
-        self._tmp_files.append(agent_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path)
-        launcher.set_num_node(num_node)
-        launcher.set_num_rank(num_rank)
-        launcher.run(name)
-        self._output = geopmpy.io.AppOutput(report_path)
-        node_names = self._output.get_node_names()
-        self.assertEqual(num_node, len(node_names))
-        for nn in node_names:
-            spin_data = self._output.get_report_data(node_name=nn, region='spin')
-            sleep_data = self._output.get_report_data(node_name=nn, region='sleep')
-            epoch_data = self._output.get_report_data(node_name=nn, region='epoch')
-            total_runtime = sleep_data['runtime'].item() + spin_data['runtime'].item()
-            util.assertNear(self, total_runtime, epoch_data['runtime'].item())
-
-    def test_epoch_data_valid(self):
-        name = 'test_epoch_data_valid'
-        report_path = name + '.report'
-        num_node = 1
-        num_rank = 1
-        big_o = 1.0
-        loop_count = 10
-        app_conf = geopmpy.io.BenchConf(name + '_app.config')
-        self._tmp_files.append(app_conf.get_path())
-        app_conf.set_loop_count(loop_count)
-        app_conf.append_region('spin-unmarked', big_o)
-        agent_conf = geopmpy.io.AgentConf(name + '_agent.config', self._agent, self._options)
-        self._tmp_files.append(agent_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path)
-        launcher.set_num_node(num_node)
-        launcher.set_num_rank(num_rank)
-        launcher.run(name)
-
-        report = geopmpy.io.RawReport(report_path)
-        node_names = report.host_names()
-        self.assertEqual(num_node, len(node_names))
-        for nn in node_names:
-            regions = report.region_names(nn)
-            self.assertTrue('model-init' not in regions)
-            totals = report.raw_totals(nn)
-            unmarked = report.raw_region(nn, 'unmarked-region')
-            epoch = report.raw_epoch(nn)
-
-            # Epoch has valid data
-            self.assertGreater(epoch['runtime (sec)'], 0)
-            self.assertGreater(epoch['sync-runtime (sec)'], 0)
-            self.assertGreater(epoch['package-energy (joules)'], 0)
-            self.assertGreater(epoch['dram-energy (joules)'], 0)
-            self.assertGreater(epoch['power (watts)'], 0)
-            self.assertGreater(epoch['frequency (%)'], 0)
-            self.assertGreater(epoch['frequency (Hz)'], 0)
-            self.assertEqual(epoch['count'], loop_count)
-
-            for signal in ['runtime (sec)', 'package-energy (joules)', 'dram-energy (joules)']:
-                util.assertNear(self, totals[signal], unmarked[signal], msg='signal={}'.format(signal))
-                util.assertNear(self, totals[signal], epoch[signal], msg='signal={}'.format(signal))
-                util.assertNear(self, totals[signal], epoch[signal], msg='signal={}'.format(signal))
-
-            util.assertNear(self, unmarked['runtime (sec)'], unmarked['sync-runtime (sec)'])
-            util.assertNear(self, epoch['runtime (sec)'], epoch['sync-runtime (sec)'])
-
     def test_runtime_nested(self):
         name = 'test_runtime_nested'
         report_path = name + '.report'
@@ -591,36 +495,6 @@ class TestIntegration(unittest.TestCase):
             util.assertNear(self, delay, sleep_data['runtime'].item())
             self.assertGreater(app_total['runtime'].item(), sleep_data['runtime'].item())
             self.assertEqual(1, sleep_data['count'].item())
-
-    def test_count(self):
-        name = 'test_count'
-        report_path = name + '.report'
-        trace_path = name + '.trace'
-        num_node = 1
-        num_rank = 4
-        delay = 0.01
-        loop_count = 100
-        app_conf = geopmpy.io.BenchConf(name + '_app.config')
-        self._tmp_files.append(app_conf.get_path())
-        app_conf.set_loop_count(loop_count)
-        app_conf.append_region('spin', delay)
-        agent_conf = geopmpy.io.AgentConf(name + '_agent.config', self._agent, self._options)
-        self._tmp_files.append(agent_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path, trace_path)
-        launcher.set_num_node(num_node)
-        launcher.set_num_rank(num_rank)
-        launcher.run(name)
-        self._output = geopmpy.io.AppOutput(report_path, trace_path + '*')
-        node_names = self._output.get_node_names()
-        self.assertEqual(len(node_names), num_node)
-        for nn in node_names:
-            trace_data = self._output.get_trace_data(node_name=nn)
-            spin_data = self._output.get_report_data(node_name=nn, region='spin')
-            epoch_data = self._output.get_report_data(node_name=nn, region='epoch')
-            util.assertNear(self, delay * loop_count, spin_data['runtime'].item())
-            self.assertEqual(loop_count, spin_data['count'].item())
-            self.assertEqual(loop_count, epoch_data['count'].item())
-            self.assertEqual(loop_count, trace_data['EPOCH_COUNT'][-1])
 
     @util.skip_unless_run_long_tests()
     def test_scaling(self):
