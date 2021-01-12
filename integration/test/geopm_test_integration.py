@@ -226,6 +226,7 @@ class TestIntegration(unittest.TestCase):
             trace = self._output.get_trace_data(node_name=nn)
             self.assertNotEqual(0, len(trace))
 
+    # TODO: fix up checks, leave here, let Brad decide what to do with it
     @unittest.skipUnless(geopm_test_launcher.detect_launcher() == "srun" and os.getenv('SLURM_NODELIST') is None,
                          'Requires non-sbatch SLURM session for alloc\'d and idle nodes.')
     def test_report_generation_all_nodes(self):
@@ -271,6 +272,8 @@ class TestIntegration(unittest.TestCase):
 
         self.assertEqual(len(node_names), len(idle_nodes))
 
+    # TODO: write custom app with multiple hints, get rid of nested
+    # model region from geopmbench
     def test_runtime_nested(self):
         name = 'test_runtime_nested'
         report_path = name + '.report'
@@ -302,6 +305,7 @@ class TestIntegration(unittest.TestCase):
             self.assertGreater(0.1, app_totals['network-time'].item())
             self.assertEqual(loop_count, spin_data['count'].item())
 
+    # TODO: move to test_monitor
     def test_trace_runtimes(self):
         name = 'test_trace_runtimes'
         report_path = name + '.report'
@@ -355,122 +359,7 @@ class TestIntegration(unittest.TestCase):
             msg = 'for epoch on node {nn}'.format(nn=nn)
             util.assertNear(self, trace_elapsed_time, region_data['runtime'].item(), msg=msg)
 
-    @util.skip_unless_config_enable('bloat')
-    def test_runtime_regulator(self):
-        name = 'test_runtime_regulator'
-        report_path = name + '.report'
-        trace_path = name + '.trace'
-        num_node = 1
-        num_rank = 4
-        loop_count = 20
-        app_conf = geopmpy.io.BenchConf(name + '_app.config')
-        self._tmp_files.append(app_conf.get_path())
-        app_conf.set_loop_count(loop_count)
-        sleep_big_o = 1.0
-        spin_big_o = 0.5
-        expected_region_runtime = {'spin': spin_big_o, 'sleep': sleep_big_o}
-        app_conf.append_region('sleep', sleep_big_o)
-        app_conf.append_region('spin', spin_big_o)
-        agent_conf = geopmpy.io.AgentConf(name + '_agent.config', self._agent, self._options)
-        self._tmp_files.append(agent_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path, trace_path, region_barrier=True)
-        launcher.set_num_node(num_node)
-        launcher.set_num_rank(num_rank)
-        launcher.run(name)
-
-        self._output = geopmpy.io.AppOutput(report_path, trace_path + '*')
-        node_names = self._output.get_node_names()
-        self.assertEqual(len(node_names), num_node)
-        regions = self._output.get_region_names()
-        for nn in node_names:
-            app_totals = self._output.get_app_total_data(node_name=nn)
-            trace = self._output.get_trace_data(node_name=nn)
-            util.assertNear(self, trace.iloc[-1]['TIME'], app_totals['runtime'].item())
-            tt = trace.set_index(['REGION_HASH'], append=True)
-            tt = tt.groupby(level=['REGION_HASH'])
-            for region_name in regions:
-                region_data = self._output.get_report_data(node_name=nn, region=region_name)
-                if region_name not in ['unmarked-region', 'model-init', 'epoch'] and not region_name.startswith('MPI_') and region_data['runtime'].item() != 0:
-                    trace_data = tt.get_group(region_data['id'].item())
-                    filtered_df = self.create_progress_df(trace_data)
-                    first_time = False
-                    epsilon = 0.001 if region_name != 'sleep' else 0.05
-                    for index, df in filtered_df.iterrows():
-                        if df['REGION_PROGRESS'] == 1:
-                            util.assertNear(self, df['REGION_RUNTIME'], expected_region_runtime[region_name], epsilon=epsilon)
-                            first_time = True
-                        if first_time is True and df['REGION_PROGRESS'] == 0:
-                            util.assertNear(self, df['REGION_RUNTIME'], expected_region_runtime[region_name], epsilon=epsilon)
-
-    @util.skip_unless_run_long_tests()
-    @util.skip_unless_config_enable('bloat')
-    def test_region_runtimes(self):
-        name = 'test_region_runtimes'
-        report_path = name + '.report'
-        trace_path = name + '.trace'
-        num_node = 4
-        num_rank = 16
-        loop_count = 500
-        app_conf = geopmpy.io.BenchConf(name + '_app.config')
-        self._tmp_files.append(app_conf.get_path())
-        app_conf.append_region('dgemm', 8.0)
-        app_conf.set_loop_count(loop_count)
-        agent_conf = geopmpy.io.AgentConf(name + '_agent.config', self._agent, self._options)
-        self._tmp_files.append(agent_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path, trace_path, time_limit=900)
-        launcher.set_num_node(num_node)
-        launcher.set_num_rank(num_rank)
-        launcher.run(name)
-
-        self._output = geopmpy.io.AppOutput(report_path, trace_path + '*')
-        node_names = self._output.get_node_names()
-        self.assertEqual(len(node_names), num_node)
-
-        # Calculate region times from traces
-        region_times = collections.defaultdict(lambda: collections.defaultdict(dict))
-        for nn in node_names:
-            tt = self._output.get_trace_data(node_name=nn).set_index(['REGION_HASH'], append=True).groupby(level=['REGION_HASH'])
-
-            for region_hash, data in tt:
-                filtered_df = self.create_progress_df(data)
-                filtered_df = filtered_df.diff()
-                # Since I'm not separating out the progress 0's from 1's, when I do the diff I only care about the
-                # case where 1 - 0 = 1 for the progress column.
-                filtered_df = filtered_df.loc[filtered_df['REGION_PROGRESS'] == 1]
-
-                if len(filtered_df) > 1:
-                    launcher.write_log(name, 'Region elapsed time stats from {} - {} :\n{}'\
-                                       .format(nn, region_hash, filtered_df['TIME'].describe()))
-                    filtered_df['TIME'].describe()
-                    region_times[nn][region_hash] = filtered_df
-
-            launcher.write_log(name, '{}'.format('-' * 80))
-
-        # Loop through the reports to see if the region runtimes line up with what was calculated from the trace files above.
-        regions = self._output.get_region_names()
-        write_regions = True
-        for nn in node_names:
-            for region_name in regions:
-                rr = self._output.get_report_data(node_name=nn, region=region_name)
-                if (region_name != 'epoch' and
-                    rr['id'].item() != 0 and
-                    rr['count'].item() > 1):
-                    if write_regions:
-                        launcher.write_log(name, 'Region {} is {}.'.format(rr['id'].item(), region_name))
-                    runtime = rr['sync_runtime'].item()
-                    util.assertNear(self, runtime,
-                                    region_times[nn][rr['id'].item()]['TIME'].sum())
-            write_regions = False
-
-        # Test to ensure every region detected in the trace is captured in the report.
-        for nn in node_names:
-            report_ids = []
-            for region_name in regions:
-                rr = self._output.get_report_data(node_name=nn, region=region_name)
-                report_ids.append(rr['id'].item())
-            for region_hash in region_times[nn].keys():
-                self.assertTrue(region_hash in report_ids, msg='Report from {} missing region_hash {}'.format(nn, region_hash))
-
+    # TODO: this test needs to look at the progress signal in the trace
     def test_progress(self):
         name = 'test_progress'
         report_path = name + '.report'
@@ -496,6 +385,7 @@ class TestIntegration(unittest.TestCase):
             self.assertGreater(app_total['runtime'].item(), sleep_data['runtime'].item())
             self.assertEqual(1, sleep_data['count'].item())
 
+    # TODO: fix up checks, leave here, let Brad decide what to do with it
     @util.skip_unless_run_long_tests()
     def test_scaling(self):
         """
@@ -549,6 +439,7 @@ class TestIntegration(unittest.TestCase):
                 num_node *= 2
                 self._output.remove_files()
 
+    # TODO: move to test_power_governor.py
     @util.skip_unless_run_long_tests()
     def test_power_consumption(self):
         name = 'test_power_consumption'
@@ -613,48 +504,9 @@ class TestIntegration(unittest.TestCase):
             # TODO Checks on the maximum power computed during the run?
             # TODO Checks to see how much power was left on the table?
 
-    def test_progress_exit(self):
-        """
-        Check that when we always see progress exit before the next entry.
-        Make sure that progress only decreases when a new region is entered.
-        """
-        name = 'test_progress_exit'
-        report_path = name + '.report'
-        trace_path = name + '.trace'
-        num_node = 1
-        num_rank = 16
-        loop_count = 100
-        big_o = 0.1
-        app_conf = geopmpy.io.BenchConf(name + '_app.config')
-        self._tmp_files.append(app_conf.get_path())
-        app_conf.set_loop_count(loop_count)
-        app_conf.append_region('dgemm-progress', big_o)
-        app_conf.append_region('spin-progress', big_o)
-        agent_conf = geopmpy.io.AgentConf(name + '_agent.config', self._agent, self._options)
-        self._tmp_files.append(agent_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path, trace_path, region_barrier=True)
-        launcher.set_num_node(num_node)
-        launcher.set_num_rank(num_rank)
-        launcher.run(name)
-
-        self._output = geopmpy.io.AppOutput(report_path, trace_path + '*')
-        node_names = self._output.get_node_names()
-        self.assertEqual(num_node, len(node_names))
-
-        for nn in node_names:
-            tt = self._output.get_trace_data(node_name=nn)
-            tt = tt.set_index(['REGION_HASH'], append=True)
-            tt = tt.groupby(level=['REGION_HASH'])
-            for region_hash, data in tt:
-                tmp = data['REGION_PROGRESS'].diff()
-                #@todo legacy branch?
-                # Look for changes in progress that are more negative
-                # than can be expected due to extrapolation error.
-                if region_hash == 8300189175:
-                    negative_progress = tmp.loc[(tmp > -1) & (tmp < -0.1)]
-                    launcher.write_log(name, '{}'.format(negative_progress))
-                    self.assertEqual(0, len(negative_progress))
-
+    # TODO: ability to test any app.  take in a trace and expected
+    # rate, output pass or fail.  this check could be added to any
+    # integration test or smoke tests
     @util.skip_unless_run_long_tests()
     @util.skip_unless_optimized()
     def test_sample_rate(self):
@@ -697,6 +549,8 @@ class TestIntegration(unittest.TestCase):
             self.assertGreater(0.06, 1 - (float(len(delta_t)) / size_orig))
             self.assertGreater(max_nstd, delta_t.std() / delta_t.mean())
 
+    # TODO: custom app with both unnested and nested MPI and check
+    # that fraction of the time is time-hint-network
     def test_network_times(self):
         name = 'test_network_times'
         report_path = name + '.report'
@@ -743,6 +597,8 @@ class TestIntegration(unittest.TestCase):
             self.assertEqual(0, sleep_data['network_time'].item())
             self.assertEqual(0, dgemm_data['network_time'].item())
 
+    # TODO: combine with nested region test, have some unnested
+    # regions with hints; call it test_hint_time
     def test_ignore_runtime(self):
         name = 'test_ignore_runtime'
         report_path = name + '.report'
@@ -772,6 +628,7 @@ class TestIntegration(unittest.TestCase):
             util.assertNear(self, ignore_data['runtime'].item() + startup_data['runtime'].item(),
                             app_data['ignore-runtime'].item(), 0.00005)
 
+    #TODO: fine as is, move to file
     @util.skip_unless_config_enable('ompt')
     def test_unmarked_ompt(self):
         name = 'test_unmarked_ompt'
