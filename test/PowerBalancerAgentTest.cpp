@@ -37,6 +37,7 @@
 
 #include "MockPowerGovernor.hpp"
 #include "MockPowerBalancer.hpp"
+#include "MockSampleAggregator.hpp"
 #include "MockPlatformIO.hpp"
 #include "MockPlatformTopo.hpp"
 #include "PowerBalancerAgent.hpp"
@@ -71,6 +72,7 @@ class PowerBalancerAgentTest : public ::testing::Test
 
         MockPlatformIO m_platform_io;
         MockPlatformTopo m_platform_topo;
+        std::shared_ptr<MockSampleAggregator> m_sample_agg;
         std::unique_ptr<MockPowerGovernor> m_power_gov;
         std::unique_ptr<MockPowerBalancer> m_power_bal;
         std::unique_ptr<PowerBalancerAgent> m_agent;
@@ -84,6 +86,7 @@ class PowerBalancerAgentTest : public ::testing::Test
 
 void PowerBalancerAgentTest::SetUp()
 {
+    m_sample_agg = std::make_shared<MockSampleAggregator>();
     m_power_gov = geopm::make_unique<MockPowerGovernor>();
     m_power_bal = geopm::make_unique<MockPowerBalancer>();
 
@@ -109,7 +112,7 @@ TEST_F(PowerBalancerAgentTest, power_balancer_agent)
                                                     "SUM_POWER_SLACK",
                                                     "MIN_POWER_HEADROOM"};
     MockPowerGovernor *power_gov_p = m_power_gov.get();
-    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo,
+    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo, m_sample_agg,
                                                      std::move(m_power_gov), std::move(m_power_bal));
 
     EXPECT_EQ("power_balancer", m_agent->plugin_name());
@@ -146,7 +149,7 @@ TEST_F(PowerBalancerAgentTest, tree_root_agent)
     EXPECT_CALL(m_platform_topo, num_domain(GEOPM_DOMAIN_PACKAGE))
         .WillOnce(Return(2));
 
-    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo,
+    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo, m_sample_agg,
                                                      std::move(m_power_gov), std::move(m_power_bal));
     m_agent->init(level, M_FAN_IN, IS_ROOT);
 
@@ -272,7 +275,7 @@ TEST_F(PowerBalancerAgentTest, tree_agent)
     int level = 1;
     int num_children = M_FAN_IN[level - 1];
 
-    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo,
+    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo, m_sample_agg,
                                                      std::move(m_power_gov), std::move(m_power_bal));
     m_agent->init(level, M_FAN_IN, IS_ROOT);
 
@@ -494,7 +497,7 @@ TEST_F(PowerBalancerAgentTest, leaf_agent)
     EXPECT_CALL(*m_power_bal, power_limit())
         .WillRepeatedly(Return(300.0));
     EXPECT_CALL(*m_power_bal, power_slack());
-    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo,
+    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo, m_sample_agg,
                                                      std::move(m_power_gov), std::move(m_power_bal));
     m_agent->init(level, M_FAN_IN, IS_ROOT);
 
@@ -625,7 +628,7 @@ TEST_F(PowerBalancerAgentTest, enforce_policy)
     EXPECT_CALL(m_platform_io, write_control("POWER_PACKAGE_LIMIT", GEOPM_DOMAIN_BOARD,
                                              0, limit/M_NUM_PKGS));
 
-    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo,
+    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo, m_sample_agg,
                                                      std::move(m_power_gov), std::move(m_power_bal));
     m_agent->enforce_policy(policy);
 
@@ -634,7 +637,7 @@ TEST_F(PowerBalancerAgentTest, enforce_policy)
 
 TEST_F(PowerBalancerAgentTest, validate_policy)
 {
-    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo,
+    m_agent = geopm::make_unique<PowerBalancerAgent>(m_platform_io, m_platform_topo, m_sample_agg,
                                                      std::move(m_power_gov), std::move(m_power_bal));
 
     std::vector<double> policy;
