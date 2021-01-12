@@ -45,6 +45,7 @@ namespace geopm
     class PlatformTopo;
     class PowerBalancer;
     class PowerGovernor;
+    class SampleAggregator;
 
     class PowerBalancerAgent : public Agent
     {
@@ -113,14 +114,6 @@ namespace geopm
                 M_NUM_SAMPLE,
             };
 
-            enum m_plat_signal_e {
-                M_PLAT_SIGNAL_EPOCH_RUNTIME,
-                M_PLAT_SIGNAL_EPOCH_COUNT,
-                M_PLAT_SIGNAL_EPOCH_RUNTIME_NETWORK,
-                M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE,
-                M_PLAT_NUM_SIGNAL,
-            };
-
             enum m_trace_sample_e {
                 M_TRACE_SAMPLE_POLICY_POWER_PACKAGE_LIMIT_TOTAL,
                 M_TRACE_SAMPLE_POLICY_STEP_COUNT,
@@ -157,6 +150,7 @@ namespace geopm
 
             PowerBalancerAgent(PlatformIO &platform_io,
                                const PlatformTopo &platform_topo,
+                               std::shared_ptr<SampleAggregator> sample_agg,
                                std::unique_ptr<PowerGovernor> power_governor,
                                std::unique_ptr<PowerBalancer> power_balancer);
             PowerBalancerAgent();
@@ -211,6 +205,7 @@ namespace geopm
 
             PlatformIO &m_platform_io;
             const PlatformTopo &m_platform_topo;
+            std::shared_ptr<SampleAggregator> m_sample_agg;
             std::shared_ptr<Role> m_role;
             std::unique_ptr<PowerGovernor> m_power_governor;   /// temporary ownership, std::move'd to Role on init
             std::unique_ptr<PowerBalancer> m_power_balancer;   /// temporary ownership, std::move'd to Role on init
@@ -302,6 +297,7 @@ namespace geopm
                 public:
                     LeafRole(PlatformIO &platform_io,
                              const PlatformTopo &platform_topo,
+                             std::shared_ptr<SampleAggregator> sample_agg,
                              std::unique_ptr<PowerGovernor> power_governor,
                              std::unique_ptr<PowerBalancer> power_balancer);
                     virtual ~LeafRole();
@@ -312,8 +308,12 @@ namespace geopm
                     void init_platform_io(void);
                     PlatformIO &m_platform_io;
                     const PlatformTopo &m_platform_topo;
+                    std::shared_ptr<SampleAggregator> m_sample_agg;
                     double m_power_max;
-                    std::vector<int> m_pio_idx;
+                    int m_count_pio_idx;
+                    int m_time_agg_idx;
+                    int m_network_agg_idx;
+                    int m_ignore_agg_idx;
                     std::unique_ptr<PowerGovernor> m_power_governor;
                     std::unique_ptr<PowerBalancer> m_power_balancer;
                     int m_last_epoch_count;

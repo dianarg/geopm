@@ -44,6 +44,7 @@
 #include "Exception.hpp"
 #include "Agg.hpp"
 #include "Helper.hpp"
+#include "SampleAggregator.hpp"
 #include "config.h"
 
 namespace geopm
@@ -131,14 +132,19 @@ namespace geopm
 
     PowerBalancerAgent::LeafRole::LeafRole(PlatformIO &platform_io,
                                            const PlatformTopo &platform_topo,
+                                           std::shared_ptr<SampleAggregator> sample_agg,
                                            std::unique_ptr<PowerGovernor> power_governor,
                                            std::unique_ptr<PowerBalancer> power_balancer)
         : Role()
         , m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
+        , m_sample_agg(sample_agg)
         , m_power_max(m_platform_topo.num_domain(GEOPM_DOMAIN_PACKAGE) *
                       m_platform_io.read_signal("POWER_PACKAGE_MAX", GEOPM_DOMAIN_PACKAGE, 0))
-        , m_pio_idx(M_PLAT_NUM_SIGNAL)
+        , m_count_pio_idx(-1)
+        , m_time_agg_idx(-1)
+        , m_network_agg_idx(-1)
+        , m_ignore_agg_idx(-1)
         , m_power_governor(std::move(power_governor))
         , m_power_balancer(std::move(power_balancer))
         , m_last_epoch_count(0)
@@ -165,10 +171,10 @@ namespace geopm
     {
         m_power_governor->init_platform_io();
         // Setup signals
-        m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME] = m_platform_io.push_signal("EPOCH_RUNTIME", GEOPM_DOMAIN_BOARD, 0);
-        m_pio_idx[M_PLAT_SIGNAL_EPOCH_COUNT] = m_platform_io.push_signal("EPOCH_COUNT", GEOPM_DOMAIN_BOARD, 0);
-        m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME_NETWORK] = m_platform_io.push_signal("EPOCH_RUNTIME_NETWORK", GEOPM_DOMAIN_BOARD, 0);
-        m_pio_idx[M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE] = m_platform_io.push_signal("EPOCH_RUNTIME_IGNORE", GEOPM_DOMAIN_BOARD, 0);
+        m_count_pio_idx = m_platform_io.push_signal("EPOCH_COUNT", GEOPM_DOMAIN_BOARD, 0);
+        m_time_agg_idx = m_sample_agg->push_signal_total("TIME", GEOPM_DOMAIN_BOARD, 0);
+        m_network_agg_idx = m_sample_agg->push_signal_total("TIME_HINT_NETWORK", GEOPM_DOMAIN_BOARD, 0);
+        m_ignore_agg_idx = m_sample_agg->push_signal_total("TIME_HINT_IGNORE", GEOPM_DOMAIN_BOARD, 0);
     }
 
     bool PowerBalancerAgent::LeafRole::adjust_platform(const std::vector<double> &in_policy)
@@ -435,16 +441,16 @@ namespace geopm
 
     void PowerBalancerAgent::MeasureRuntimeStep::sample_platform(PowerBalancerAgent::LeafRole &role) const
     {
-        int epoch_count = role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_COUNT]);
+        int epoch_count = role.m_platform_io.sample(role.m_count_pio_idx);
         // If all of the ranks have observed a new epoch then update
         // the power_balancer.
         if (epoch_count != role.m_last_epoch_count &&
             !role.m_is_step_complete) {
 
             /// We wish to measure runtime that is a function of node local optimizations only, and therefore uncorrelated between compute nodes.
-            double balanced_epoch_runtime = role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME]) -
-                                            role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_NETWORK]) -
-                                            role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE]);
+            double balanced_epoch_runtime = role.m_sample_agg->sample_epoch_last(role.m_time_agg_idx) -
+                                            role.m_sample_agg->sample_epoch_last(role.m_network_agg_idx) -
+                                            role.m_sample_agg->sample_epoch_last(role.m_ignore_agg_idx);
             role.m_is_step_complete = role.m_power_balancer->is_runtime_stable(balanced_epoch_runtime);
             role.m_power_balancer->calculate_runtime_sample();
             role.m_runtime = role.m_power_balancer->runtime_sample();
@@ -466,16 +472,16 @@ namespace geopm
 
     void PowerBalancerAgent::ReduceLimitStep::sample_platform(PowerBalancerAgent::LeafRole &role) const
     {
-        int epoch_count = role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_COUNT]);
+        int epoch_count = role.m_platform_io.sample(role.m_count_pio_idx);
         // If all of the ranks have observed a new epoch then update
         // the power_balancer.
         if (epoch_count != role.m_last_epoch_count &&
             !role.m_is_step_complete) {
 
             /// We wish to measure runtime that is a function of node local optimizations only, and therefore uncorrelated between compute nodes.
-            double balanced_epoch_runtime = role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME]) -
-                                            role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_NETWORK]) -
-                                            role.m_platform_io.sample(role.m_pio_idx[PowerBalancerAgent::M_PLAT_SIGNAL_EPOCH_RUNTIME_IGNORE]);
+            double balanced_epoch_runtime = role.m_sample_agg->sample_epoch_last(role.m_time_agg_idx) -
+                                            role.m_sample_agg->sample_epoch_last(role.m_network_agg_idx) -
+                                            role.m_sample_agg->sample_epoch_last(role.m_ignore_agg_idx);
             role.m_power_balancer->calculate_runtime_sample();
             role.m_is_step_complete = role.m_is_out_of_bounds ||
                                       role.m_power_balancer->is_target_met(balanced_epoch_runtime);
@@ -487,17 +493,23 @@ namespace geopm
     }
 
     PowerBalancerAgent::PowerBalancerAgent()
-        : PowerBalancerAgent(platform_io(), platform_topo(), nullptr, nullptr)
+        : PowerBalancerAgent(platform_io(),
+                             platform_topo(),
+                             SampleAggregator::make_unique(),
+                             nullptr,
+                             nullptr)
     {
 
     }
 
     PowerBalancerAgent::PowerBalancerAgent(PlatformIO &platform_io,
                                            const PlatformTopo &platform_topo,
+                                           std::shared_ptr<SampleAggregator> sample_agg,
                                            std::unique_ptr<PowerGovernor> power_governor,
                                            std::unique_ptr<PowerBalancer> power_balancer)
         : m_platform_io(platform_io)
         , m_platform_topo(platform_topo)
+        , m_sample_agg(sample_agg)
         , m_role(nullptr)
         , m_power_governor(std::move(power_governor))
         , m_power_balancer(std::move(power_balancer))
@@ -523,7 +535,9 @@ namespace geopm
         }
         bool is_tree_root = (level == (int)fan_in.size());
         if (level == 0) {
-            m_role = std::make_shared<LeafRole>(m_platform_io, m_platform_topo, std::move(m_power_governor), std::move(m_power_balancer));
+            m_role = std::make_shared<LeafRole>(m_platform_io, m_platform_topo,
+                                                m_sample_agg, std::move(m_power_governor),
+                                                std::move(m_power_balancer));
         }
         else if (is_tree_root) {
             int num_pkg = m_platform_topo.num_domain(m_platform_io.control_domain_type("POWER_PACKAGE_LIMIT"));
