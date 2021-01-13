@@ -504,51 +504,6 @@ class TestIntegration(unittest.TestCase):
             # TODO Checks on the maximum power computed during the run?
             # TODO Checks to see how much power was left on the table?
 
-    # TODO: ability to test any app.  take in a trace and expected
-    # rate, output pass or fail.  this check could be added to any
-    # integration test or smoke tests
-    @util.skip_unless_run_long_tests()
-    @util.skip_unless_optimized()
-    def test_sample_rate(self):
-        """
-        Check that sample rate is regular and fast.
-        """
-        name = 'test_sample_rate'
-        report_path = name + '.report'
-        trace_path = name + '.trace'
-        num_node = 1
-        num_rank = 16
-        loop_count = 10
-        big_o = 10.0
-        region = 'dgemm-progress'
-        max_mean = 0.01  # 10 millisecond max sample period
-        max_nstd = 0.1  # 10% normalized standard deviation (std / mean)
-        app_conf = geopmpy.io.BenchConf(name + '_app.config')
-        self._tmp_files.append(app_conf.get_path())
-        app_conf.set_loop_count(loop_count)
-        app_conf.append_region(region, big_o)
-        agent_conf = geopmpy.io.AgentConf(name + '_agent.config', self._agent, self._options)
-        self._tmp_files.append(agent_conf.get_path())
-        launcher = geopm_test_launcher.TestLauncher(app_conf, agent_conf, report_path, trace_path)
-        launcher.set_num_node(num_node)
-        launcher.set_num_rank(num_rank)
-        launcher.run(name)
-        self._output = geopmpy.io.AppOutput(report_path, trace_path + '*')
-        node_names = self._output.get_node_names()
-        self.assertEqual(num_node, len(node_names))
-
-        for nn in node_names:
-            tt = self._output.get_trace_data(node_name=nn)
-            delta_t = tt['TIME'].diff()
-            delta_t = delta_t.loc[delta_t != 0]
-            self.assertGreater(max_mean, delta_t.mean())
-            # WARNING : The following line may mask issues in the sampling rate. To do a fine grained analysis, comment
-            # out the next line and do NOT run on the BSP. This will require modifications to the launcher or manual testing.
-            size_orig = len(delta_t)
-            delta_t = delta_t[(delta_t - delta_t.mean()) < 3*delta_t.std()]  # Only keep samples within 3 stds of the mean
-            self.assertGreater(0.06, 1 - (float(len(delta_t)) / size_orig))
-            self.assertGreater(max_nstd, delta_t.std() / delta_t.mean())
-
     # TODO: custom app with both unnested and nested MPI and check
     # that fraction of the time is time-hint-network
     def test_network_times(self):
