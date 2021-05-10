@@ -100,7 +100,11 @@ namespace geopm
     {
         // Load available signals and controls from files
         parse_json_msrs(arch_msr_json());
-        parse_json_msrs(platform_data(m_cpuid));
+	try {
+	    parse_json_msrs(platform_data(m_cpuid));
+	} catch(...) {
+
+	}
         auto custom_files = msr_data_files();
         for (const auto &filename : custom_files) {
             std::string data = read_file(filename);
@@ -128,13 +132,14 @@ namespace geopm
                 max_turbo_name = "MSR::TURBO_RATIO_LIMIT:MAX_RATIO_LIMIT_0";
                 break;
             default:
-                throw Exception("MSRIOGroup: Unsupported CPUID",
-                                GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
+	      ;
+	      //throw Exception("MSRIOGroup: Unsupported CPUID",
+              //                  GEOPM_ERROR_RUNTIME, __FILE__, __LINE__);
         }
-        register_signal_alias("FREQUENCY_MAX", max_turbo_name); // TODO: Remove @ v2.0
-        set_signal_description("FREQUENCY_MAX", "Maximum processor frequency."); // TODO: Remove @ v2.0
-        register_signal_alias("CPU_FREQUENCY_MAX", max_turbo_name);
-        set_signal_description("CPU_FREQUENCY_MAX", "Maximum processor frequency.");
+        //register_signal_alias("FREQUENCY_MAX", max_turbo_name); // TODO: Remove @ v2.0
+        //set_signal_description("FREQUENCY_MAX", "Maximum processor frequency."); // TODO: Remove @ v2.0
+        //register_signal_alias("CPU_FREQUENCY_MAX", max_turbo_name);
+        //set_signal_description("CPU_FREQUENCY_MAX", "Maximum processor frequency.");
 
         register_signal_alias("ENERGY_PACKAGE", "MSR::PKG_ENERGY_STATUS:ENERGY");
         register_signal_alias("ENERGY_DRAM", "MSR::DRAM_ENERGY_STATUS:ENERGY");
