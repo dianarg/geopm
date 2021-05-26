@@ -57,6 +57,9 @@ endif
 if ENABLE_FORTRAN
     lib_LTLIBRARIES += libgeopmfort.la
 endif
+
+else
+    bin_PROGRAMS += geopmctlmini
 endif
 
 install-exec-hook: install-python install-fortran install-plugin-dir
@@ -436,6 +439,7 @@ geopmread_LDADD = libgeopmpolicy.la
 geopmwrite_LDADD = libgeopmpolicy.la
 geopmagent_LDADD = libgeopmpolicy.la
 geopmadmin_LDADD = libgeopmpolicy.la
+geopmctlmini_LDADD = libgeopmpolicy.la
 if ENABLE_MPI
     geopmctl_LDADD = libgeopm.la $(MPI_CLIBS)
     geopmbench_LDADD = libgeopm.la $(MATH_LIB) $(MPI_CLIBS)
@@ -680,6 +684,7 @@ geopmread_SOURCES = src/geopmread_main.cpp
 geopmwrite_SOURCES = src/geopmwrite_main.cpp
 geopmagent_SOURCES = src/geopmagent_main.cpp
 geopmadmin_SOURCES = src/geopmadmin_main.cpp
+geopmctlmini_SOURCES = src/geopmctlmini_main.cpp
 
 mpi_source_files = src/DefaultProfile.cpp \
                    src/MPIComm.cpp \

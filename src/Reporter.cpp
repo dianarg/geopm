@@ -158,7 +158,10 @@ namespace geopm
             return;
         }
 
-        int rank = comm->rank();
+        int rank = 0;
+        if (comm) {
+            rank = comm->rank();
+        }
         std::ofstream common_report;
         if (!rank) {
             common_report.open(report_name);
@@ -290,30 +293,37 @@ namespace geopm
         report.seekp(0, std::ios::end);
         size_t buffer_size = (size_t) report.tellp();
         report.seekp(0, std::ios::beg);
-        std::vector<char> report_buffer;
-        std::vector<size_t> buffer_size_array;
-        std::vector<off_t> buffer_displacement;
-        int num_ranks = comm->num_rank();
-        buffer_size_array.resize(num_ranks);
-        buffer_displacement.resize(num_ranks);
-        comm->gather(&buffer_size, sizeof(size_t), buffer_size_array.data(),
-                     sizeof(size_t), 0);
 
-        if (!rank) {
-            int full_report_size = std::accumulate(buffer_size_array.begin(), buffer_size_array.end(), 0) + 1;
-            report_buffer.resize(full_report_size);
-            buffer_displacement[0] = 0;
-            for (int i = 1; i < num_ranks; ++i) {
-                buffer_displacement[i] = buffer_displacement[i-1] + buffer_size_array[i-1];
+        if (comm) {
+            std::vector<char> report_buffer;
+            std::vector<size_t> buffer_size_array;
+            std::vector<off_t> buffer_displacement;
+            int num_ranks = comm->num_rank();
+            buffer_size_array.resize(num_ranks);
+            buffer_displacement.resize(num_ranks);
+            comm->gather(&buffer_size, sizeof(size_t), buffer_size_array.data(),
+                         sizeof(size_t), 0);
+
+            if (!rank) {
+                int full_report_size = std::accumulate(buffer_size_array.begin(), buffer_size_array.end(), 0) + 1;
+                report_buffer.resize(full_report_size);
+                buffer_displacement[0] = 0;
+                for (int i = 1; i < num_ranks; ++i) {
+                    buffer_displacement[i] = buffer_displacement[i-1] + buffer_size_array[i-1];
+                }
+            }
+
+            comm->gatherv((void *) (report.str().data()), sizeof(char) * buffer_size,
+                          (void *) report_buffer.data(), buffer_size_array, buffer_displacement, 0);
+
+            if (!rank) {
+                report_buffer.back() = '\0';
+                common_report << report_buffer.data();
+                common_report << std::endl;
+                common_report.close();
             }
         }
-
-        comm->gatherv((void *) (report.str().data()), sizeof(char) * buffer_size,
-                      (void *) report_buffer.data(), buffer_size_array, buffer_displacement, 0);
-
-        if (!rank) {
-            report_buffer.back() = '\0';
-            common_report << report_buffer.data();
+        else {
             common_report << std::endl;
             common_report.close();
         }

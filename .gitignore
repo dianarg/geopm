@@ -46,6 +46,7 @@
 /geopmagent
 /geopmbench
 /geopmctl
+/geopmctlmini
 /geopm.mod
 /geopm.o
 /geopmpolicy

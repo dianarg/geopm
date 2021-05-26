@@ -65,6 +65,8 @@ namespace geopm
             /// @param [in] ppn1_comm The MPI communicator that supports
             ///        the control messages.
             Controller(std::shared_ptr<Comm> ppn1_comm);
+            Controller(std::shared_ptr<Comm> ppn1_comm,
+                       std::unique_ptr<TreeComm> tree_comm);
             /// @brief Constructor for testing that allows injecting mocked
             ///        versions of internal objects.
             Controller(std::shared_ptr<Comm> comm,

@@ -178,13 +178,21 @@ namespace geopm
 
     Controller::Controller(std::shared_ptr<Comm> ppn1_comm)
         : Controller(ppn1_comm,
+                     std::unique_ptr<TreeComm>(new TreeCommImp(ppn1_comm,
+                         Agent::num_policy(environment().agent()),
+                         Agent::num_sample(environment().agent()))))
+    {
+
+    }
+
+    Controller::Controller(std::shared_ptr<Comm> ppn1_comm,
+                           std::unique_ptr<TreeComm> tree_comm)
+        : Controller(ppn1_comm,
                      platform_io(),
                      environment().agent(),
                      Agent::num_policy(environment().agent()),
                      Agent::num_sample(environment().agent()),
-                     std::unique_ptr<TreeComm>(new TreeCommImp(ppn1_comm,
-                         Agent::num_policy(environment().agent()),
-                         Agent::num_sample(environment().agent()))),
+                     std::move(tree_comm),
                      ApplicationSampler::application_sampler(),
                      std::shared_ptr<ApplicationIO>(new ApplicationIOImp()),
                      std::unique_ptr<Reporter>(new ReporterImp(get_start_time(),
@@ -206,6 +214,7 @@ namespace geopm
     {
 
     }
+
     Controller::Controller(std::shared_ptr<Comm> comm,
                            PlatformIO &plat_io,
                            const std::string &agent_name,
@@ -326,22 +335,27 @@ namespace geopm
     std::set<std::string> Controller::get_hostnames(const std::string &hostname)
     {
         std::set<std::string> hostnames;
-        int num_rank = m_comm->num_rank();
-        int rank = m_comm->rank();
-        // resize hostname string to fixed size buffer
-        std::string temp = hostname;
-        temp.resize(NAME_MAX, 0);
-        std::vector<char> name_buffer(num_rank * NAME_MAX, 0);
-        m_comm->gather((void*)temp.c_str(), NAME_MAX,
-                     (void*)name_buffer.data(), NAME_MAX, 0);
-        if (rank == 0) {
-            auto ind = name_buffer.begin();
-            for (int rr = 0; rr < num_rank; ++rr) {
-                auto term = std::find(ind, ind + NAME_MAX, '\0');
-                std::string host(ind, term);
-                hostnames.insert(host);
-                ind += NAME_MAX;
+        if (m_comm) {
+            int num_rank = m_comm->num_rank();
+            int rank = m_comm->rank();
+            // resize hostname string to fixed size buffer
+            std::string temp = hostname;
+            temp.resize(NAME_MAX, 0);
+            std::vector<char> name_buffer(num_rank * NAME_MAX, 0);
+            m_comm->gather((void*)temp.c_str(), NAME_MAX,
+                           (void*)name_buffer.data(), NAME_MAX, 0);
+            if (rank == 0) {
+                auto ind = name_buffer.begin();
+                for (int rr = 0; rr < num_rank; ++rr) {
+                    auto term = std::find(ind, ind + NAME_MAX, '\0');
+                    std::string host(ind, term);
+                    hostnames.insert(host);
+                    ind += NAME_MAX;
+                }
             }
+        }
+        else {
+            hostnames.insert(hostname);
         }
         return hostnames;
     }
